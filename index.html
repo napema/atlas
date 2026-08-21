@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="it" data-tema="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ATLAS</title>
+<meta name="description" content="Finanze, mobilità e abitudini in una sola app.">
+
+<!-- PWA -->
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#F2F2F7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ATLAS">
+<link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
+<link rel="icon" href="./assets/icons/icon-192.png">
+
+<!-- I fogli di stile sono due e in quest'ordine: i token prima, sempre. -->
+<link rel="stylesheet" href="./styles/tokens.css">
+<link rel="stylesheet" href="./styles/base.css">
+
+<!-- I font sono self-hosted: precaricarli evita il lampo di testo di sistema
+     al primo avvio, che su una PWA installata si nota parecchio. -->
+<link rel="preload" href="./assets/fonts/sf-pro-text-regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./assets/fonts/sf-pro-display-bold.woff2" as="font" type="font/woff2" crossorigin>
+
+<!-- La configurazione NON è un modulo ES: deve essere già in memoria quando
+     core/sync.js viene valutato. Perciò script normale, prima di tutto. -->
+<script src="./config.js"></script>
+</head>
+<body>
+
+<div id="app">
+  <main id="vista" role="main">
+    <!-- Il router riempie qui. Il vuoto iniziale dura pochi millisecondi:
+         niente scheletro finto, che a quella durata dà solo un lampo. -->
+  </main>
+
+  <nav id="barra" role="navigation" aria-label="Moduli">
+    <!-- costruita da core/app.js a partire da core/registro.js -->
+  </nav>
+</div>
+
+<noscript>
+  <p style="padding:2rem;text-align:center">
+    ATLAS ha bisogno di JavaScript: tutto il calcolo avviene nel browser,
+    non c'è un server che possa disegnare le pagine al posto suo.
+  </p>
+</noscript>
+
+<script type="module" src="./core/app.js"></script>
+</body>
+</html>

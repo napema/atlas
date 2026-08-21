@@ -1,0 +1,329 @@
+/* =========================================================================
+   ATLAS — base e componenti condivisi.
+   Qui vive solo ciò che TUTTI i moduli usano: reset, layout della shell,
+   barra inferiore, schede, liste, pulsanti, campi. Nulla di specifico di
+   un modulo: quella roba sta in moduli/<nome>/stile.css.
+   ========================================================================= */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+html {
+  background: var(--sfondo);
+  /* Niente zoom accidentale col doppio tap, niente rimbalzo orizzontale. */
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-testo);
+  font-size: var(--t-corpo);
+  line-height: 1.45;
+  color: var(--etichetta);
+  background: var(--sfondo);
+  -webkit-font-smoothing: antialiased;
+  /* La selezione del testo su una PWA a tocchi è quasi sempre un incidente. */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
+
+h1, h2, h3 { font-family: var(--font-titolo); margin: 0; line-height: 1.2; letter-spacing: -0.02em; }
+h1 { font-size: var(--t-largo);   font-weight: 700; }
+h2 { font-size: var(--t-titolo2); font-weight: 700; }
+h3 { font-size: var(--t-titolo3); font-weight: 600; }
+p  { margin: 0 0 var(--s3); }
+a  { color: var(--accento); text-decoration: none; }
+
+/* ---------------------------------------------------------------- shell -- */
+
+#app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* La vista scorre; la barra no. L'imbottitura in fondo tiene conto sia
+   della barra sia della tacca inferiore dell'iPhone. */
+#vista {
+  flex: 1;
+  padding:
+    calc(env(safe-area-inset-top) + var(--s4))
+    calc(env(safe-area-inset-right) + var(--s4))
+    calc(env(safe-area-inset-bottom) + 96px)
+    calc(env(safe-area-inset-left) + var(--s4));
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.intestazione {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: var(--s5);
+}
+.intestazione .occhiello {
+  font-size: var(--t-nota);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--etichetta-2);
+}
+
+/* --------------------------------------------------------- barra moduli -- */
+
+#barra {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  gap: var(--s1);
+  padding: var(--s2) var(--s2) calc(env(safe-area-inset-bottom) + var(--s2));
+  background: var(--barra);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 0.5px solid var(--separatore);
+}
+
+.scheda-barra {
+  flex: 1 1 0;
+  max-width: 120px;
+  min-height: var(--tocco);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--s1);
+  border: 0;
+  background: none;
+  color: var(--etichetta-2);
+  font-family: inherit;
+  font-size: var(--t-minuscolo);
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--veloce) var(--curva);
+}
+.scheda-barra svg { width: 26px; height: 26px; display: block; }
+.scheda-barra[aria-current="page"] { color: var(--accento); }
+.scheda-barra:active { opacity: 0.5; }
+
+/* ------------------------------------------------------------- schede --- */
+
+.scheda {
+  background: var(--sfondo-2);
+  border-radius: var(--r-scheda);
+  padding: var(--s4);
+  box-shadow: var(--ombra);
+  margin-bottom: var(--s3);
+}
+.scheda-titolo {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--t-callout);
+  font-weight: 600;
+  margin-bottom: var(--s2);
+}
+.scheda-titolo .pallino {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accento); flex: none;
+}
+
+/* Griglia delle scorciatoie in Oggi. */
+.griglia {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--s3);
+}
+
+/* --------------------------------------------------------------- liste -- */
+
+.lista {
+  list-style: none;
+  margin: 0 0 var(--s5);
+  padding: 0;
+  background: var(--sfondo-2);
+  border-radius: var(--r-grande);
+  overflow: hidden;
+  box-shadow: var(--ombra);
+}
+.lista > li + li { border-top: 0.5px solid var(--separatore); }
+.riga {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: var(--tocco);
+  padding: var(--s3) var(--s4);
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.riga:active { background: var(--riempimento); }
+.riga .valore { margin-left: auto; color: var(--etichetta-2); }
+
+/* ------------------------------------------------------------ pulsanti -- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: var(--tocco);
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--r-medio);
+  background: var(--accento);
+  color: #fff;
+  font: 600 var(--t-corpo) / 1 var(--font-testo);
+  cursor: pointer;
+  transition: opacity var(--veloce) var(--curva);
+}
+.btn:active { opacity: 0.7; }
+.btn[disabled] { opacity: 0.35; pointer-events: none; }
+.btn.secondario { background: var(--riempimento); color: var(--accento); }
+.btn.distruttivo { background: var(--rosso); }
+.btn.pieno { width: 100%; }
+
+/* --------------------------------------------------------------- campi -- */
+
+.campo {
+  width: 100%;
+  min-height: var(--tocco);
+  padding: var(--s3) var(--s4);
+  border: 0.5px solid var(--separatore);
+  border-radius: var(--r-medio);
+  background: var(--sfondo-2);
+  color: var(--etichetta);
+  /* 17px minimo: sotto, iOS zooma sul focus e non torna più indietro. */
+  font: 400 var(--t-corpo) / 1.4 var(--font-testo);
+}
+.campo:focus-visible { outline: 2px solid var(--accento); outline-offset: 1px; }
+
+/* --------------------------------------------------------- stato sync --- */
+
+.sync-pallino {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--etichetta-3);
+  flex: none;
+  transition: background var(--normale) var(--curva);
+}
+.sync-pallino.is-ok    { background: var(--verde); }
+.sync-pallino.is-corso { background: var(--arancio); animation: pulsa 1.2s infinite; }
+.sync-pallino.is-err   { background: var(--rosso); }
+.sync-pallino.is-off   { background: var(--etichetta-3); }
+@keyframes pulsa { 50% { opacity: 0.25; } }
+
+/* -------------------------------------------------------------- utilità -- */
+
+.nota      { font-size: var(--t-nota); color: var(--etichetta-2); }
+.mono      { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.cifra     { font-family: var(--font-titolo); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.vuoto     { padding: var(--s10) var(--s4); text-align: center; color: var(--etichetta-2); }
+[hidden]   { display: none !important; }
+.solo-lettori-schermo {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* ======================================================================
+   Componenti della shell: Oggi, Impostazioni, Cantiere, avvisi.
+   Stanno qui e non nei moduli perché la shell li possiede: un modulo non
+   deve poter cambiare la forma della home.
+   ====================================================================== */
+
+/* ------------------------------------------------------------- avvisi --- */
+
+#avvisi {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 88px);
+  transform: translateX(-50%);
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  pointer-events: none;
+}
+.avviso {
+  padding: var(--s3) var(--s5);
+  border-radius: 999px;
+  background: var(--etichetta);
+  color: var(--sfondo);
+  font-size: var(--t-piccolo);
+  font-weight: 500;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  animation: sali var(--normale) var(--curva);
+}
+.avviso.errore { background: var(--rosso); color: #fff; }
+.avviso.via    { opacity: 0; transition: opacity var(--normale) var(--curva); }
+@keyframes sali { from { opacity: 0; transform: translateY(8px); } }
+
+/* ---------------------------------------------------------------- oggi --- */
+
+.oggi-elenco { display: flex; flex-direction: column; gap: var(--s3); }
+
+.oggi-scheda {
+  display: block;
+  color: inherit;
+  /* Il bordo a sinistra è l'unico punto in cui il colore di un modulo
+     compare nella home: basta a riconoscerlo, non abbastanza da urlare. */
+  border-left: 3px solid var(--accento);
+}
+.oggi-scheda:active { background: var(--sfondo-3); }
+.oggi-scheda.urgente { box-shadow: 0 0 0 1.5px var(--accento), var(--ombra); }
+
+.oggi-testa { display: flex; align-items: center; gap: var(--s2); }
+.oggi-icona { color: var(--accento); display: flex; }
+.oggi-nome  { font-weight: 600; font-size: var(--t-callout); }
+.oggi-freccia { margin-left: auto; color: var(--etichetta-3); display: flex; }
+.oggi-valore  { font-size: var(--t-titolo1); font-weight: 700; margin-top: var(--s2); }
+
+/* -------------------------------------------------------- impostazioni --- */
+
+.segmenti {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--r-piccolo);
+  background: var(--riempimento);
+}
+.segmento {
+  flex: 1;
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--etichetta);
+  font: 500 var(--t-piccolo) / 1 var(--font-testo);
+  cursor: pointer;
+}
+.segmento[aria-pressed="true"] { background: var(--sfondo-2); box-shadow: var(--ombra); font-weight: 600; }
+
+.errore { color: var(--rosso); }
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--riempimento);
+}
+
+/* ------------------------------------------------------------ cantiere --- */
+
+.cantiere-passi {
+  margin: 0;
+  padding-left: var(--s5);
+  color: var(--etichetta-2);
+  font-size: var(--t-piccolo);
+}
+.cantiere-passi li { margin-bottom: var(--s2); }
+
+.icona { display: inline-flex; color: var(--etichetta-2); }

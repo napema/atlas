@@ -1,0 +1,1646 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f2f7">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Abitudini">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<title>Abitudini</title>
+<style>
+:root{
+  --bg:#ffffff;
+  --bg-elevated:#ffffff;
+  --surface-grouped:#f2f2f7;
+  --fill-quaternary:rgba(116,116,128,0.08);
+  --fill-tertiary:rgba(118,118,128,0.12);
+  --separator:rgba(60,60,67,0.18);
+  --text:#1d1d1f;
+  --text-secondary:rgba(60,60,67,0.78);
+  --text-tertiary:rgba(60,60,67,0.55);
+
+  --system-blue:#007aff;
+  --system-green:#34c759;
+  --system-red:#ff3b30;
+  --system-orange:#ff9500;
+  --system-purple:#af52de;
+  --system-pink:#ff2d55;
+  --system-yellow:#ffcc00;
+  --system-teal:#30b0c7;
+  --system-indigo:#5856d6;
+  --system-mint:#00c7be;
+  --system-brown:#a2845e;
+  --system-gray:#8e8e93;
+
+  --material-thin:rgba(255,255,255,0.60);
+  --material-regular:rgba(255,255,255,0.78);
+  --material-thick:rgba(255,255,255,0.92);
+
+  --page:var(--surface-grouped);
+  --tint:var(--system-blue);
+
+  --r-card:14px;
+  --r-ctl:12px;
+  --r-input:10px;
+
+  --u:8px;
+
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+
+  --font-text:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,"Segoe UI Variable Text","Segoe UI",Roboto,sans-serif;
+  --font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,"Segoe UI Variable Display","Segoe UI",Roboto,sans-serif;
+  --font-mono:"SF Mono",Menlo,ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#000000;
+    --bg-elevated:#1c1c1e;
+    --surface-grouped:#2c2c2e;
+    --fill-quaternary:rgba(118,118,128,0.18);
+    --fill-tertiary:rgba(118,118,128,0.24);
+    --separator:rgba(84,84,88,0.65);
+    --text:#ffffff;
+    --text-secondary:rgba(235,235,245,0.72);
+    --text-tertiary:rgba(235,235,245,0.48);
+    --material-thin:rgba(30,30,32,0.62);
+    --material-regular:rgba(30,30,32,0.80);
+    --material-thick:rgba(30,30,32,0.93);
+    --page:#000000;
+    --system-blue:#0a84ff;
+    --system-green:#30d158;
+    --system-red:#ff453a;
+    --system-orange:#ff9f0a;
+    --system-purple:#bf5af2;
+    --system-pink:#ff375f;
+    --system-yellow:#ffd60a;
+    --system-teal:#40c8e0;
+    --system-indigo:#5e5ce6;
+    --system-mint:#63e6e2;
+    --system-brown:#ac8e68;
+    --system-gray:#98989d;
+  }
+}
+html[data-theme="light"]{
+  --bg:#ffffff;--bg-elevated:#ffffff;--surface-grouped:#f2f2f7;
+  --fill-quaternary:rgba(116,116,128,0.08);--fill-tertiary:rgba(118,118,128,0.12);
+  --separator:rgba(60,60,67,0.18);--text:#1d1d1f;--text-secondary:rgba(60,60,67,0.78);
+  --text-tertiary:rgba(60,60,67,0.55);--material-thin:rgba(255,255,255,0.60);
+  --material-regular:rgba(255,255,255,0.78);--material-thick:rgba(255,255,255,0.92);
+  --page:#f2f2f7;--system-blue:#007aff;--system-green:#34c759;--system-red:#ff3b30;
+  --system-orange:#ff9500;--system-purple:#af52de;--system-pink:#ff2d55;--system-yellow:#ffcc00;
+  --system-teal:#30b0c7;--system-indigo:#5856d6;--system-mint:#00c7be;--system-brown:#a2845e;--system-gray:#8e8e93;
+}
+html[data-theme="dark"]{
+  --bg:#000000;--bg-elevated:#1c1c1e;--surface-grouped:#2c2c2e;
+  --fill-quaternary:rgba(118,118,128,0.18);--fill-tertiary:rgba(118,118,128,0.24);
+  --separator:rgba(84,84,88,0.65);--text:#ffffff;--text-secondary:rgba(235,235,245,0.72);
+  --text-tertiary:rgba(235,235,245,0.48);--material-thin:rgba(30,30,32,0.62);
+  --material-regular:rgba(30,30,32,0.80);--material-thick:rgba(30,30,32,0.93);
+  --page:#000000;--system-blue:#0a84ff;--system-green:#30d158;--system-red:#ff453a;
+  --system-orange:#ff9f0a;--system-purple:#bf5af2;--system-pink:#ff375f;--system-yellow:#ffd60a;
+  --system-teal:#40c8e0;--system-indigo:#5e5ce6;--system-mint:#63e6e2;--system-brown:#ac8e68;--system-gray:#98989d;
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{margin:0;padding:0;height:100%}
+#pageRoot{
+  min-height:100%;
+  transform-origin:50% 0;
+  transition:transform .42s cubic-bezier(.32,.72,0,1),border-radius .42s cubic-bezier(.32,.72,0,1);
+  will-change:transform;
+}
+body.sheet-open #pageRoot{
+  transform:scale(.955) translateY(6px);
+  border-radius:20px;
+  overflow:hidden;
+}
+@media (min-width:900px) and (pointer:fine){
+  body.sheet-open #pageRoot{ transform:none; border-radius:0; filter:saturate(.94) brightness(.97); }
+}
+body{
+  background:var(--page);
+  color:var(--text);
+  font-family:var(--font-text);
+  font-size:17px;
+  line-height:1.32;
+  font-optical-sizing:auto;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-y:scroll;
+  overscroll-behavior-y:none;
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{background:none;border:0;padding:0;cursor:pointer}
+h1,h2,h3,p{margin:0}
+.display{font-family:var(--font-display);letter-spacing:-0.02em}
+
+/* ---------- layout ---------- */
+.wrap{max-width:680px;margin:0 auto;padding:0 max(16px,var(--safe-l)) calc(48px + var(--safe-b)) max(16px,var(--safe-r))}
+
+/* ---------- nav bar ---------- */
+.nav{
+  position:sticky;top:0;z-index:40;
+  padding-top:var(--safe-t);
+  background:transparent;
+  transition:background .25s ease, box-shadow .25s ease;
+}
+.nav.stuck{
+  background:var(--material-thin);
+  -webkit-backdrop-filter:blur(30px) saturate(180%);
+  backdrop-filter:blur(30px) saturate(180%);
+  box-shadow:0 1px 0 var(--separator);
+}
+.nav-inner{max-width:680px;margin:0 auto;padding:0 max(16px,var(--safe-l)) 0 max(16px,var(--safe-r));display:flex;align-items:center;gap:12px;min-height:48px}
+.nav-title{
+  flex:1;min-width:0;font-family:var(--font-display);font-size:17px;font-weight:600;
+  letter-spacing:-0.01em;opacity:0;transform:translateY(6px);
+  transition:opacity .2s ease,transform .2s ease;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.nav.stuck .nav-title{opacity:1;transform:none}
+.nav-actions{display:flex;align-items:center;gap:4px;margin-left:auto}
+.icon-btn{
+  width:36px;height:36px;border-radius:18px;display:grid;place-items:center;color:var(--tint);
+  transition:background .15s ease,transform .1s ease;
+}
+.icon-btn:active{background:var(--fill-tertiary);transform:scale(.94)}
+.icon-btn svg{width:22px;height:22px;display:block}
+
+.dot{width:9px;height:9px;border-radius:50%;background:var(--system-gray);flex:none;transition:background .3s ease}
+.dot.ok{background:var(--system-green)}
+.dot.busy{background:var(--system-orange);animation:pulse 1.1s ease-in-out infinite}
+.dot.err{background:var(--system-red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ---------- large title ---------- */
+.large{padding:4px 0 12px}
+.large h1{font-family:var(--font-display);font-size:34px;line-height:1.08;font-weight:700;letter-spacing:-0.028em}
+.large .sub{margin-top:5px;font-size:15px;color:var(--text-secondary)}
+.large .sub::first-letter{text-transform:uppercase}
+
+/* ---------- week strip ---------- */
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:4px 0 20px}
+.day{
+  border-radius:var(--r-ctl);padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:7px;
+  transition:background .15s ease;
+}
+.day:active{background:var(--fill-quaternary)}
+.day .dl{font-size:11px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.04em}
+.day.sel{background:var(--fill-tertiary)}
+.day.sel .dl{color:var(--tint)}
+.day .ringwrap{position:relative;width:34px;height:34px}
+.day .ringwrap svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.day .dn{position:absolute;inset:0;display:grid;place-items:center;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.day.today .dn{color:var(--tint)}
+.day.future{opacity:.42}
+
+/* ---------- cards / grouped list ---------- */
+.card{background:var(--bg-elevated);border-radius:var(--r-card);overflow:hidden}
+#summary .card{margin-bottom:14px}
+#summary:empty{display:none}
+.group-title{font-size:13px;font-weight:600;color:var(--text-tertiary);letter-spacing:.02em;text-transform:uppercase;padding:0 4px 8px;margin-top:24px}
+.rows{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:12px;padding:11px 14px;min-height:56px;position:relative;text-align:left;width:100%;transition:background .12s ease}
+.row + .row::before{content:"";position:absolute;left:60px;right:0;top:0;height:1px;background:var(--separator);transform:scaleY(.5);transform-origin:top}
+.row.plain + .row.plain::before{left:14px}
+.row-main{flex:1;min-width:0;text-align:left;background:none !important;border:0;border-radius:8px;transition:background .12s ease,opacity .12s ease}
+.row-main:active{background:var(--fill-tertiary) !important;opacity:.75}
+.row:has(> .row-main:active){background:var(--fill-quaternary)}
+.chip{transition:transform .12s ease}
+button.chip:active{transform:scale(.92)}
+.row-title{font-size:17px;font-weight:400;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-sub{font-size:13px;color:var(--text-secondary);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cap::first-letter{text-transform:uppercase}
+.row-val{font-size:15px;color:var(--text-tertiary);font-variant-numeric:tabular-nums;flex:none}
+.chev{width:9px;height:15px;flex:none;color:var(--text-tertiary);opacity:.6}
+
+.chip{
+  width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex:none;
+  background:var(--chip,var(--system-gray));
+}
+.chip .emo{font-size:19px;line-height:1}
+.chip img.emo{width:20px;height:20px}
+.emo{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;font-style:normal}
+img.emo{vertical-align:-2px;object-fit:contain}
+
+/* check control */
+.check{
+  width:29px;height:29px;border-radius:50%;flex:none;position:relative;
+  border:2px solid var(--text-tertiary);
+  transition:border-color .18s ease,background .18s ease,transform .12s cubic-bezier(.2,.9,.3,1.4);
+}
+.check svg{position:absolute;inset:0;width:100%;height:100%;opacity:0;transform:scale(.5);transition:opacity .16s ease,transform .2s cubic-bezier(.2,.9,.3,1.5)}
+.check.on{background:var(--chk,var(--system-blue));border-color:var(--chk,var(--system-blue))}
+.check.on svg{opacity:1;transform:none;color:#fff}
+.check:active{transform:scale(.86)}
+.row.done .row-title{color:var(--text-secondary)}
+.row.notdue{opacity:.55}
+
+/* ---------- summary ---------- */
+.summary{display:flex;align-items:center;gap:16px;padding:16px}
+.summary .big{position:relative;width:64px;height:64px;flex:none}
+.summary .big svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.summary .big span{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--font-display);font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.summary h2{font-family:var(--font-display);font-size:22px;font-weight:600;letter-spacing:-0.02em}
+.summary p{font-size:15px;color:var(--text-secondary);margin-top:3px}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:var(--r-ctl);padding:10px 20px;font-size:17px;font-weight:600;letter-spacing:-0.01em;
+  min-height:44px;transition:opacity .15s ease,transform .1s ease,background .15s ease;
+}
+.btn:active{transform:scale(.975);opacity:.82}
+.btn-primary{background:var(--tint);color:#fff}
+.btn-bordered{border:1px solid var(--tint);color:var(--tint)}
+.btn-plain{color:var(--tint);padding:10px 6px}
+.btn-danger{color:var(--system-red)}
+.btn-full{display:flex;width:100%}
+.btn[disabled]{opacity:.4;pointer-events:none}
+
+/* ---------- empty ---------- */
+.empty{text-align:center;padding:56px 24px}
+.empty .glyph{font-size:56px;line-height:1;margin-bottom:16px}
+.empty h2{font-family:var(--font-display);font-size:22px;font-weight:600;letter-spacing:-0.02em}
+.empty p{font-size:15px;color:var(--text-secondary);margin:8px auto 20px;max-width:34ch}
+
+/* ---------- sheets ---------- */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.32);opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:80}
+.scrim.show{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:90;
+  max-height:92vh;height:auto;
+  background:var(--material-regular);
+  -webkit-backdrop-filter:blur(30px) saturate(180%);
+  backdrop-filter:blur(30px) saturate(180%);
+  border-radius:16px 16px 0 0;
+  transform:translateY(101%);
+  transition:transform .38s cubic-bezier(.32,.72,0,1);
+  display:flex;flex-direction:column;
+  padding-bottom:var(--safe-b);
+}
+.sheet.show{transform:none}
+@supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){
+  .sheet{background:var(--material-thick)}
+}
+.grabber{width:36px;height:5px;border-radius:3px;background:var(--text-tertiary);opacity:.5;margin:8px auto 0;flex:none}
+.sheet-head{display:flex;align-items:center;gap:12px;padding:10px 16px 12px;flex:none;min-height:52px}
+.sheet-head h2{flex:1;text-align:center;font-family:var(--font-display);font-size:17px;font-weight:600;letter-spacing:-0.01em}
+.sheet-head .btn-plain{font-weight:400;font-size:17px;min-width:72px;min-height:36px}
+.sheet-head .btn-plain.right{justify-content:flex-end;font-weight:600}
+.sheet-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 max(16px,var(--safe-l)) 24px max(16px,var(--safe-r));flex:1}
+.sheet-body .group-title:first-child{margin-top:4px}
+
+/* ---------- inputs ---------- */
+.field{background:var(--fill-quaternary);border-radius:var(--r-input);padding:11px 14px;border:0;width:100%;outline:none;font-size:17px;transition:box-shadow .15s ease}
+.field:focus{box-shadow:0 0 0 4px color-mix(in srgb,var(--tint) 18%,transparent)}
+.field::placeholder{color:var(--text-tertiary)}
+select.field{appearance:none;background-image:none}
+.inline-field{display:flex;align-items:center;gap:12px;padding:11px 14px;min-height:52px}
+.inline-field label{flex:1;font-size:17px}
+.inline-field input[type="time"]{background:var(--fill-quaternary);border:0;border-radius:8px;padding:6px 10px;font-size:17px;font-variant-numeric:tabular-nums}
+
+.seg{display:flex;background:var(--fill-quaternary);border-radius:9px;padding:2px;gap:2px}
+.seg button{flex:1;border-radius:7px;padding:7px 4px;font-size:13px;font-weight:500;color:var(--text);transition:background .2s ease,transform .1s ease}
+.seg button:active{transform:scale(.94)}
+.seg button.on{background:var(--bg-elevated);font-weight:600}
+
+.daypicks{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.daypicks button{aspect-ratio:1;border-radius:50%;font-size:13px;font-weight:600;background:var(--fill-quaternary);color:var(--text-secondary);display:grid;place-items:center;min-height:38px;transition:transform .1s ease,background .12s ease}
+.daypicks button:active{transform:scale(.88)}
+.daypicks button.on{background:var(--tint);color:#fff}
+
+.emoji-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:4px;max-height:190px;overflow-y:auto;padding:4px 0}
+.emoji-grid button{aspect-ratio:1;border-radius:9px;display:grid;place-items:center;font-size:24px;min-height:44px;transition:background .12s ease,transform .1s ease}
+.emoji-grid button:active{transform:scale(.85);background:var(--fill-tertiary)}
+.emoji-grid button.on{background:var(--fill-tertiary)}
+.emoji-grid img.emo{width:26px;height:26px}
+
+.tints{display:flex;flex-wrap:wrap;gap:10px;padding:4px 0}
+.tints button{width:32px;height:32px;border-radius:50%;position:relative;flex:none;transition:transform .12s cubic-bezier(.32,.72,0,1)}
+.tints button:active{transform:scale(.82)}
+.tints button.on::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--text-tertiary)}
+
+.switch{width:51px;height:31px;border-radius:16px;background:var(--fill-tertiary);position:relative;flex:none;transition:background .25s ease,transform .1s ease}
+.switch:active{transform:scale(.94)}
+.switch.on{background:var(--system-green)}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.15);transition:transform .25s cubic-bezier(.32,.72,0,1)}
+.switch.on::after{transform:translateX(20px)}
+
+/* ---------- detail ---------- */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--separator);border-radius:var(--r-card);overflow:hidden}
+.stat{background:var(--bg-elevated);padding:14px 10px;text-align:center}
+.stat .n{font-family:var(--font-display);font-size:28px;font-weight:600;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.stat .l{font-size:11px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.04em;margin-top:4px}
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px;padding:14px;overflow-x:auto}
+.heat i{width:13px;height:13px;border-radius:3px;background:var(--fill-quaternary);display:block}
+.heat i.on{background:var(--chip,var(--system-blue))}
+.heat i.na{opacity:.35}
+.legend{font-size:13px;color:var(--text-tertiary);padding:0 14px 14px}
+
+.note{font-size:13px;color:var(--text-tertiary);padding:8px 4px 0;line-height:1.42}
+.note a{color:var(--tint)}
+
+/* ---------- toast ---------- */
+.toast{
+  position:fixed;left:50%;bottom:calc(24px + var(--safe-b));transform:translate(-50%,20px);
+  background:var(--material-thick);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);
+  color:var(--text);padding:11px 18px;border-radius:22px;font-size:15px;z-index:120;
+  opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;max-width:min(90vw,420px);text-align:center;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- desktop density ---------- */
+@media (min-width:900px) and (pointer:fine){
+  body{font-size:15px}
+  .row{min-height:44px;padding:8px 14px}
+  .row-title{font-size:15px}
+  .large h1{font-size:34px}
+  .sheet{
+    left:50%;right:auto;bottom:auto;top:50%;transform:translate(-50%,-46%) scale(.98);
+    width:min(560px,92vw);max-height:84vh;border-radius:16px;opacity:0;
+    transition:transform .28s cubic-bezier(.32,.72,0,1),opacity .22s ease;
+  }
+  .sheet.show{transform:translate(-50%,-50%);opacity:1}
+  .grabber{display:none}
+  .sheet-head{padding-top:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+}
+:focus-visible{outline:3px solid var(--tint);outline-offset:2px;border-radius:6px}
+</style>
+</head>
+<body>
+
+<div id="pageRoot"><header class="nav" id="nav">
+  <div class="nav-inner">
+    <div class="nav-title display" id="navTitle">Abitudini</div>
+    <div class="nav-actions">
+      <button class="icon-btn" id="btnSync" aria-label="Stato sincronizzazione" title="Sincronizzazione">
+        <span class="dot" id="syncDot"></span>
+      </button>
+      <button class="icon-btn" id="btnSettings" aria-label="Impostazioni">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="large">
+    <h1 class="display">Abitudini</h1>
+    <div class="sub" id="dateSub"></div>
+  </div>
+
+  <nav class="week" id="week" aria-label="Settimana"></nav>
+
+  <section id="summary"></section>
+  <section id="list"></section>
+
+  <p class="note" id="installHint" hidden></p>
+</main></div>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- IMPOSTAZIONI -->
+<section class="sheet" id="sheetSettings" role="dialog" aria-modal="true" aria-label="Impostazioni">
+  <div class="grabber"></div>
+  <div class="sheet-head">
+    <button class="btn btn-plain" data-close>Fine</button>
+    <h2>Impostazioni</h2>
+    <button class="btn btn-plain right" id="btnAddHabit">Aggiungi</button>
+  </div>
+  <div class="sheet-body" id="settingsBody"></div>
+</section>
+
+<!-- EDITOR ABITUDINE -->
+<section class="sheet" id="sheetEdit" role="dialog" aria-modal="true" aria-label="Modifica abitudine">
+  <div class="grabber"></div>
+  <div class="sheet-head">
+    <button class="btn btn-plain" data-close>Annulla</button>
+    <h2 id="editTitle">Nuova abitudine</h2>
+    <button class="btn btn-plain right" id="btnSaveHabit">Salva</button>
+  </div>
+  <div class="sheet-body" id="editBody"></div>
+</section>
+
+<!-- DETTAGLIO -->
+<section class="sheet" id="sheetDetail" role="dialog" aria-modal="true" aria-label="Dettaglio abitudine">
+  <div class="grabber"></div>
+  <div class="sheet-head">
+    <button class="btn btn-plain" data-close>Fine</button>
+    <h2 id="detailTitle">Dettaglio</h2>
+    <button class="btn btn-plain right" id="btnEditFromDetail">Modifica</button>
+  </div>
+  <div class="sheet-body" id="detailBody"></div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script>
+"use strict";
+/* =========================================================================
+   Abitudini — PWA habit tracker
+   Sync: singolo JSON in repo GitHub privato, merge per id/up + lapidi.
+   ========================================================================= */
+
+/* ---------- config ---------- */
+var CFG = (function(){
+  var c = window.APP_CFG || {};
+  var token = "";
+  if (c.t1 && c.t2 && c.t3) { try { token = atob(String(c.t1)+String(c.t2)+String(c.t3)); } catch(e){ token=""; } }
+  return {
+    owner: c.owner, repo: c.repo, path: c.path, branch: c.branch || "main",
+    token: token, vapid: c.vapidPublicKey || ""
+  };
+})();
+
+var LS_KEY = "abitudini.v1";
+var SCHEMA = 1;
+
+/* ---------- util ---------- */
+function $(s, r){ return (r||document).querySelector(s); }
+function $$(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
+function now(){ return Date.now(); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function pad2(n){ return n<10 ? "0"+n : ""+n; }
+function isoOf(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function todayISO(){ return isoOf(new Date()); }
+function parseISO(s){ var p=String(s).split("-"); return new Date(+p[0], +p[1]-1, +p[2]); }
+function addDays(iso, n){ var d=parseISO(iso); d.setDate(d.getDate()+n); return isoOf(d); }
+function dowOf(iso){ return parseISO(iso).getDay(); } /* 0=dom ... 6=sab */
+function b64enc(s){ return btoa(unescape(encodeURIComponent(s))); }
+function b64dec(s){ return decodeURIComponent(escape(atob(String(s).replace(/\s/g,"")))); }
+function hashStr(s){ var h=5381; for(var i=0;i<s.length;i++){ h=((h<<5)+h+s.charCodeAt(i))>>>0; } return h.toString(36); }
+function haptic(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||8); }catch(e){} }
+
+var DOW_SHORT = ["D","L","M","M","G","V","S"];
+var DOW_LONG  = ["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
+var TINTS = ["blue","green","orange","red","purple","pink","teal","indigo","yellow","mint","brown","gray"];
+function tintVar(t){ return "var(--system-" + (TINTS.indexOf(t)>=0 ? t : "blue") + ")"; }
+
+/* ---------- emoji (Apple artwork anche su Windows) ---------- */
+var IS_APPLE = /Mac|iPhone|iPad|iPod/.test(navigator.platform || "") ||
+               /Macintosh|iPhone|iPad|iPod/.test(navigator.userAgent || "");
+var EMOJI_CDN = "https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.1.2/img/apple/64/";
+function emojiHTML(ch, cls){
+  var safe = esc(ch);
+  cls = cls || "";
+  if (IS_APPLE) return '<span class="emo '+cls+'">'+safe+'</span>';
+  var cps = Array.from(String(ch)).map(function(c){ return c.codePointAt(0).toString(16); });
+  var full = cps.join("-");
+  var bare = cps.filter(function(c){ return c !== "fe0f" && c !== "200d"; }).join("-");
+  return '<img class="emo '+cls+'" alt="'+safe+'" draggable="false" src="'+EMOJI_CDN+full+'.png"'+
+         ' data-alt="'+EMOJI_CDN+bare+'.png" onerror="emojiFallback(this)">';
+}
+window.emojiFallback = function(img){
+  var alt = img.getAttribute("data-alt");
+  if (alt && img.src !== alt){ img.removeAttribute("data-alt"); img.src = alt; return; }
+  var sp = document.createElement("span");
+  sp.className = img.className; sp.textContent = img.alt;
+  if (img.parentNode) img.parentNode.replaceChild(sp, img);
+};
+
+var EMOJI_SET = ("💪 🏃 🚴 🏊 🧘 🥊 🧗 🥋 🏐 ⚽️ 🏀 🎾 🥾 📚 📖 🧠 🎓 💻 📝 🎯 ⏰ 🌅 🛏️ 😴 🚿 🧴 💊 🥗 🥦 🍎 🥛 💧 🍳 🧃 🚭 🍺 📵 📱 🧹 🧺 🐕 🌱 💰 📈 💳 🎸 🎹 🎨 🎧 📷 🎬 🧩 🗣️ 🇬🇧 🇫🇷 ✈️ 🗺️ 🙏 📔 ☀️ 🌙 ❤️ 🔥 ⭐️ ✅ 🪖 🥇 ⚡️ 🌊 ⛰️").split(" ");
+
+/* =========================================================================
+   STATO
+   ========================================================================= */
+var DB = {
+  v: SCHEMA,
+  habits: [],
+  logs: [],
+  subs: [],
+  meta: { theme: "auto", weekStart: 1 },
+  metaUp: 0
+};
+var UI = { selDate: todayISO(), editingId: null, detailId: null, draft: null, openSheets: [] };
+
+function payload(){
+  return { v: SCHEMA, habits: DB.habits, logs: DB.logs, subs: DB.subs, meta: DB.meta, metaUp: DB.metaUp };
+}
+function load(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    var j = JSON.parse(raw);
+    DB.habits = Array.isArray(j.habits) ? j.habits : [];
+    DB.logs   = Array.isArray(j.logs)   ? j.logs   : [];
+    DB.subs   = Array.isArray(j.subs)   ? j.subs   : [];
+    DB.meta   = Object.assign({ theme:"auto", weekStart:1 }, j.meta || {});
+    DB.metaUp = j.metaUp || 0;
+  }catch(e){ console.warn("load", e); }
+}
+function save(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(payload())); }
+  catch(e){ toast("Spazio locale esaurito: i dati non sono stati salvati."); }
+}
+function touchMeta(){ DB.metaUp = now(); }
+
+/* record vivi */
+function liveHabits(){
+  return DB.habits.filter(function(h){ return !h.del && !h.archived; })
+                  .sort(function(a,b){ return (a.order||0)-(b.order||0) || (a.created||0)-(b.created||0); });
+}
+function allHabits(){
+  return DB.habits.filter(function(h){ return !h.del; })
+                  .sort(function(a,b){ return (a.order||0)-(b.order||0) || (a.created||0)-(b.created||0); });
+}
+function habitById(id){ for(var i=0;i<DB.habits.length;i++){ if(DB.habits[i].id===id && !DB.habits[i].del) return DB.habits[i]; } return null; }
+
+var logIndex = null;
+function rebuildLogIndex(){
+  logIndex = Object.create(null);
+  for(var i=0;i<DB.logs.length;i++){
+    var l = DB.logs[i];
+    if(!l || !l.id) continue;
+    if(!l.del) logIndex[l.id] = true;
+  }
+}
+function logId(hid, date){ return hid + "|" + date; }
+function isDone(hid, date){
+  if(!logIndex) rebuildLogIndex();
+  return !!logIndex[logId(hid, date)];
+}
+
+/* =========================================================================
+   MERGE / SYNC (metodo collaudato: GET → merge → salva → PUT se serve)
+   ========================================================================= */
+function mergeRecords(local, remote){
+  var map = new Map();
+  var all = (remote||[]).concat(local||[]);   /* il locale passa per ultimo a parità di up */
+  for(var i=0;i<all.length;i++){
+    var r = all[i];
+    if(!r || !r.id) continue;
+    var ex = map.get(r.id);
+    if(!ex || (r.up||0) > (ex.up||0)) map.set(r.id, r);
+  }
+  return Array.from(map.values());
+}
+function pruneTombstones(){
+  var cut = now() - 90*24*3600*1000;
+  function keep(r){ return !(r.del && (r.up||0) < cut); }
+  DB.habits = DB.habits.filter(keep);
+  DB.logs   = DB.logs.filter(keep);
+  DB.subs   = DB.subs.filter(keep);
+}
+function snapshot(o){
+  if(!o) return "";
+  function norm(a){
+    return (a||[]).slice().sort(function(x,y){ return x.id<y.id?-1:x.id>y.id?1:0; })
+      .map(function(r){
+        var k = Object.keys(r).sort(), out = {};
+        for(var i=0;i<k.length;i++){ if(r[k[i]] !== undefined) out[k[i]] = r[k[i]]; }
+        return out;
+      });
+  }
+  var meta = o.meta || {};
+  var mk = Object.keys(meta).sort(), mo = {};
+  for(var i=0;i<mk.length;i++) mo[mk[i]] = meta[mk[i]];
+  return JSON.stringify({ v: o.v||SCHEMA, habits: norm(o.habits), logs: norm(o.logs), subs: norm(o.subs), meta: mo, metaUp: o.metaUp||0 });
+}
+
+var SYNC = { busy:false, sha:null, state:"idle", msg:"", pendingRender:false, timer:null, pushT:null };
+
+function apiURL(){
+  return "https://api.github.com/repos/" + CFG.owner + "/" + CFG.repo + "/contents/" +
+         encodeURI(CFG.path) + "?ref=" + encodeURIComponent(CFG.branch);
+}
+function putURL(){
+  return "https://api.github.com/repos/" + CFG.owner + "/" + CFG.repo + "/contents/" + encodeURI(CFG.path);
+}
+function hdr(){
+  return { "Authorization":"Bearer "+CFG.token, "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" };
+}
+function setSyncState(s, msg){
+  SYNC.state = s; SYNC.msg = msg || "";
+  var d = $("#syncDot");
+  if(!d) return;
+  d.className = "dot" + (s==="ok"?" ok":s==="busy"?" busy":s==="err"?" err":"");
+  var label = s==="ok" ? "Sincronizzato" : s==="busy" ? "Sincronizzazione…" :
+              s==="err" ? ("Errore: "+SYNC.msg) : "Sync non configurato";
+  $("#btnSync").title = label;
+  $("#btnSync").setAttribute("aria-label", label);
+  var el = $("#syncLine"); if(el) el.textContent = label;
+}
+
+function uiBusy(){
+  var a = document.activeElement;
+  var typing = a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.isContentEditable);
+  return !!typing || !!document.querySelector(".sheet.show");
+}
+function scheduleRender(){
+  if(uiBusy()) SYNC.pendingRender = true;
+  else render();
+}
+
+async function syncNow(){
+  if(!CFG.token || !CFG.owner || SYNC.busy) return;
+  SYNC.busy = true;
+  setSyncState("busy");
+  try{
+    var remote = null;
+    var res = await fetch(apiURL(), { headers: hdr(), cache: "no-store" });
+    if(res.status === 200){
+      var j = await res.json();
+      SYNC.sha = j.sha;
+      try{ remote = JSON.parse(b64dec(j.content)); }catch(e){ remote = null; }
+    } else if(res.status === 404){
+      SYNC.sha = null;
+    } else {
+      throw new Error("HTTP " + res.status);
+    }
+
+    var before = snapshot(payload());
+
+    if(remote){
+      DB.habits = mergeRecords(DB.habits, remote.habits || []);
+      DB.logs   = mergeRecords(DB.logs,   remote.logs   || []);
+      DB.subs   = mergeRecords(DB.subs,   remote.subs   || []);
+      if((remote.metaUp||0) > (DB.metaUp||0)){
+        DB.meta = Object.assign({ theme:"auto", weekStart:1 }, remote.meta || {});
+        DB.metaUp = remote.metaUp || 0;
+      }
+      pruneTombstones();
+      rebuildLogIndex();
+    }
+
+    var after = snapshot(payload());
+    if(after !== before){ save(); scheduleRender(); }
+    if(after !== snapshot(remote)) await push();
+    else setSyncState("ok");
+  }catch(e){
+    setSyncState("err", e.message || String(e));
+  }finally{
+    SYNC.busy = false;
+  }
+}
+
+async function push(){
+  if(!CFG.token || !CFG.owner) return;
+  var body = {
+    message: "abitudini: " + new Date().toISOString(),
+    content: b64enc(JSON.stringify(payload())),
+    branch: CFG.branch
+  };
+  if(SYNC.sha) body.sha = SYNC.sha;
+  var res = await fetch(putURL(), { method:"PUT", headers: Object.assign({"Content-Type":"application/json"}, hdr()), body: JSON.stringify(body) });
+  if(res.status === 409 || res.status === 422){
+    SYNC.sha = null;                 /* sha vecchio: il giro dopo rifà GET → merge → PUT */
+    setSyncState("busy", "conflitto, riprovo");
+    return;
+  }
+  if(!res.ok) throw new Error("PUT " + res.status);
+  var j = await res.json();
+  SYNC.sha = j.content && j.content.sha;
+  setSyncState("ok");
+}
+
+function schedulePush(){
+  clearTimeout(SYNC.pushT);
+  SYNC.pushT = setTimeout(function(){ syncNow(); }, 1500);
+}
+function startSync(){
+  if(!CFG.token || !CFG.owner){ setSyncState("idle"); return; }
+  syncNow();
+  clearInterval(SYNC.timer);
+  SYNC.timer = setInterval(syncNow, 20000);
+  window.addEventListener("focus", function(){ syncNow(); });
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden) syncNow(); });
+}
+
+/* =========================================================================
+   LOGICA ABITUDINI
+   ========================================================================= */
+function schedOf(h){ return h.sched || { type:"daily", days:[1,2,3,4,5,6,0], times:3 }; }
+
+function isScheduled(h, date){
+  if(h.created && date < isoOf(new Date(h.created))) return false;
+  var s = schedOf(h);
+  if(s.type === "days") return (s.days || []).indexOf(dowOf(date)) >= 0;
+  return true;   /* daily e weekly: ogni giorno è valido */
+}
+function isDueOn(h, date){
+  var s = schedOf(h);
+  if(s.type === "weekly") return weeklyMandatory(h, date) || isDone(h.id, date);
+  return isScheduled(h, date);
+}
+/* una settimanale diventa obbligatoria il giorno in cui saltarla ti fa
+   mancare la quota: giorni rimasti nella settimana <= volte ancora dovute */
+function weeklyMandatory(h, date){
+  var s = schedOf(h);
+  var target = Math.max(1, s.times || 1);
+  var c = weekCount(h, date);
+  if(c >= target) return false;
+  var ds = weekDates(date), i = ds.indexOf(date);
+  if(i < 0) return false;
+  var left = 7 - i;                      /* giorni rimasti, oggi compreso */
+  return (target - c) >= left;
+}
+
+function weekStartISO(date){
+  var ws = (DB.meta.weekStart === 0) ? 0 : 1;
+  var d = parseISO(date), diff = (d.getDay() - ws + 7) % 7;
+  d.setDate(d.getDate() - diff);
+  return isoOf(d);
+}
+function weekDates(date){
+  var s = weekStartISO(date), out = [];
+  for(var i=0;i<7;i++) out.push(addDays(s, i));
+  return out;
+}
+function weekCount(h, date){
+  var ds = weekDates(date), n = 0;
+  for(var i=0;i<ds.length;i++) if(isDone(h.id, ds[i])) n++;
+  return n;
+}
+
+/* progresso del giorno: quante abitudini previste e quante fatte */
+function dayProgress(date){
+  var hs = liveHabits(), total = 0, done = 0;
+  for(var i=0;i<hs.length;i++){
+    var h = hs[i];
+    if(!isScheduled(h, date)) continue;
+    var s = schedOf(h);
+    if(s.type === "weekly"){
+      /* contano nel giorno se già fatte o se oggi sono diventate obbligatorie */
+      if(isDone(h.id, date)){ total++; done++; }
+      else if(weeklyMandatory(h, date)) total++;
+      continue;
+    }
+    total++;
+    if(isDone(h.id, date)) done++;
+  }
+  return { total: total, done: done };
+}
+
+function streakOf(h){
+  var s = schedOf(h);
+  var today = todayISO();
+  if(s.type === "weekly"){
+    var target = Math.max(1, s.times || 1);
+    var wk = weekStartISO(today), n = 0;
+    if(weekCount(h, wk) >= target) n++;      /* settimana corrente solo se già completata */
+    var cur = addDays(wk, -7);
+    for(var g=0; g<260; g++){
+      if(h.created && cur < isoOf(new Date(h.created))) break;
+      if(weekCount(h, cur) >= target){ n++; cur = addDays(cur, -7); }
+      else break;
+    }
+    return n;
+  }
+  var d = today, n2 = 0;
+  if(isScheduled(h, d) && !isDone(h.id, d)) d = addDays(d, -1);   /* oggi non ancora fatto: non spezza */
+  for(var i=0;i<730;i++){
+    if(h.created && d < isoOf(new Date(h.created))) break;
+    if(!isScheduled(h, d)){ d = addDays(d, -1); continue; }
+    if(isDone(h.id, d)){ n2++; d = addDays(d, -1); }
+    else break;
+  }
+  return n2;
+}
+function bestStreakOf(h){
+  var s = schedOf(h);
+  var start = h.created ? isoOf(new Date(h.created)) : addDays(todayISO(), -365);
+  var best = 0, run = 0, d = start, end = todayISO();
+  if(s.type === "weekly"){
+    var target = Math.max(1, s.times || 1);
+    var w = weekStartISO(start), wend = weekStartISO(end);
+    while(w <= wend){
+      if(weekCount(h, w) >= target){ run++; if(run>best) best=run; } else run = 0;
+      w = addDays(w, 7);
+    }
+    return best;
+  }
+  var guard = 0;
+  while(d <= end && guard++ < 1500){
+    if(isScheduled(h, d)){
+      if(isDone(h.id, d)){ run++; if(run>best) best = run; } else run = 0;
+    }
+    d = addDays(d, 1);
+  }
+  return best;
+}
+function rate30(h){
+  var d = todayISO(), tot = 0, ok = 0;
+  for(var i=0;i<30;i++){
+    if(isScheduled(h, d)){ tot++; if(isDone(h.id, d)) ok++; }
+    d = addDays(d, -1);
+  }
+  return tot ? Math.round(ok*100/tot) : 0;
+}
+function schedLabel(h){
+  var s = schedOf(h);
+  if(s.type === "daily") return "Ogni giorno";
+  if(s.type === "weekly") return (s.times||1) + "× a settimana";
+  var ds = (s.days||[]).slice().sort(function(a,b){
+    var ws = (DB.meta.weekStart===0)?0:1;
+    return ((a-ws+7)%7) - ((b-ws+7)%7);
+  });
+  if(!ds.length) return "Nessun giorno";
+  if(ds.length === 7) return "Ogni giorno";
+  var ws2 = (DB.meta.weekStart===0)?0:1;
+  var names = ds.map(function(d){ return ["dom","lun","mar","mer","gio","ven","sab"][d]; });
+  return names.join(" · ");
+}
+
+/* toggle */
+function toggleLog(hid, date){
+  var id = logId(hid, date);
+  var done = isDone(hid, date);
+  var rec = null;
+  for(var i=0;i<DB.logs.length;i++){ if(DB.logs[i].id === id){ rec = DB.logs[i]; break; } }
+  if(!rec){ rec = { id:id, h:hid, d:date, up:0 }; DB.logs.push(rec); }
+  rec.h = hid; rec.d = date; rec.up = now();
+  if(done) rec.del = true; else delete rec.del;
+  rebuildLogIndex();
+  save();
+  schedulePush();
+  haptic(done ? 6 : 12);
+  return !done;
+}
+
+/* =========================================================================
+   RENDER
+   ========================================================================= */
+function ringSVG(size, stroke, pct, color, track){
+  var r = (size - stroke) / 2, c = 2 * Math.PI * r, off = c * (1 - Math.max(0, Math.min(1, pct)));
+  return '<svg viewBox="0 0 '+size+' '+size+'" width="'+size+'" height="'+size+'" aria-hidden="true">'+
+    '<circle cx="'+(size/2)+'" cy="'+(size/2)+'" r="'+r+'" fill="none" stroke="'+(track||"var(--fill-tertiary)")+'" stroke-width="'+stroke+'"/>'+
+    '<circle cx="'+(size/2)+'" cy="'+(size/2)+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="'+stroke+
+    '" stroke-linecap="round" stroke-dasharray="'+c.toFixed(2)+'" stroke-dashoffset="'+off.toFixed(2)+
+    '" style="transition:stroke-dashoffset .45s cubic-bezier(.32,.72,0,1)"/></svg>';
+}
+var CHECK_SVG = '<svg viewBox="0 0 29 29" fill="none" aria-hidden="true"><path d="M8.4 15.1l3.9 3.9 8.3-8.9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var CHEV_SVG = '<svg class="chev" viewBox="0 0 9 15" fill="none" aria-hidden="true"><path d="M1.4 1.4L7.4 7.5l-6 6.1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function renderDateSub(){
+  var d = parseISO(UI.selDate);
+  var s = d.toLocaleDateString("it-IT", { weekday:"long", day:"numeric", month:"long" });
+  $("#dateSub").textContent = (UI.selDate === todayISO() ? "Oggi · " : "") + s;
+}
+
+function renderWeek(){
+  var el = $("#week"), t = todayISO();
+  var dates = weekDates(UI.selDate);
+  el.innerHTML = dates.map(function(d){
+    var p = dayProgress(d);
+    var pct = p.total ? p.done / p.total : 0;
+    var cls = "day" + (d===UI.selDate?" sel":"") + (d===t?" today":"") + (d>t?" future":"");
+    var num = parseISO(d).getDate();
+    return '<button class="'+cls+'" data-date="'+d+'" aria-label="'+esc(DOW_LONG[dowOf(d)])+' '+num+'">'+
+      '<span class="dl">'+DOW_SHORT[dowOf(d)]+'</span>'+
+      '<span class="ringwrap">'+ringSVG(34, 3, pct, p.total && p.done===p.total ? "var(--system-green)" : "var(--system-blue)")+
+      '<span class="dn">'+num+'</span></span></button>';
+  }).join("");
+}
+
+function renderSummary(){
+  var hs = liveHabits();
+  if(!hs.length){ $("#summary").innerHTML = ""; return; }
+  var p = dayProgress(UI.selDate);
+  var pct = p.total ? p.done/p.total : 0;
+  var all = p.total>0 && p.done===p.total;
+  var openWeekly = hs.filter(function(h){
+    var s = schedOf(h);
+    return s.type === "weekly" && weekCount(h, UI.selDate) < Math.max(1, s.times||1);
+  });
+  var msg;
+  if(!p.total && openWeekly.length) msg = "Restano solo le quote settimanali.";
+  else if(!p.total) msg = "Nessuna abitudine in programma.";
+  else if(all) msg = openWeekly.length ? "Restano le quote settimanali." : "Giornata chiusa.";
+  else msg = (p.total - p.done) + (p.total-p.done===1 ? " rimasta." : " rimaste.");
+  $("#summary").innerHTML =
+    '<div class="card summary">'+
+      '<div class="big">'+ringSVG(64, 6, pct, all ? "var(--system-green)" : "var(--system-blue)")+
+      '<span>'+p.done+'/'+p.total+'</span></div>'+
+      '<div><h2 class="display">'+(all ? "Tutto fatto" : p.done+" su "+p.total)+'</h2><p>'+esc(msg)+'</p></div>'+
+    '</div>';
+}
+
+function renderList(){
+  var hs = liveHabits(), el = $("#list");
+  if(!hs.length){
+    el.innerHTML = '<div class="empty"><div class="glyph">'+emojiHTML("🌱")+'</div>'+
+      '<h2 class="display">Inizia da una</h2>'+
+      '<p>Aggiungi la prima abitudine dalle impostazioni. Una sola, quella che conta di più.</p>'+
+      '<button class="btn btn-primary" id="emptyAdd">Aggiungi abitudine</button></div>';
+    $("#emptyAdd").addEventListener("click", function(){ openSettings(); openEditor(null); });
+    return;
+  }
+  var date = UI.selDate, isFuture = date > todayISO();
+  var rows = hs.map(function(h){
+    var s = schedOf(h), done = isDone(h.id, date), due = isDueOn(h, date);
+    var st = streakOf(h);
+    var sub;
+    if(s.type === "weekly"){
+      var c = weekCount(h, date), tg = Math.max(1, s.times||1);
+      sub = c + " di " + tg + " questa settimana";
+      if(c < tg && weeklyMandatory(h, date) && !done) sub += " · da fare oggi";
+      else if(st) sub += " · " + st + (st===1?" settimana":" settimane");
+    } else {
+      sub = st ? st + (st===1 ? " giorno di fila" : " giorni di fila") : schedLabel(h);
+    }
+    var cls = "row" + (done?" done":"") + (!due?" notdue":"");
+    return '<div class="'+cls+'" data-h="'+esc(h.id)+'">'+
+      '<button class="chip" data-open="'+esc(h.id)+'" style="--chip:'+tintVar(h.tint)+'" aria-label="Dettagli '+esc(h.name)+'">'+emojiHTML(h.emoji||"⭐️")+'</button>'+
+      '<button class="row-main" data-open="'+esc(h.id)+'">'+
+        '<div class="row-title">'+esc(h.name)+'</div>'+
+        '<div class="row-sub">'+esc(sub)+'</div>'+
+      '</button>'+
+      '<button class="check'+(done?" on":"")+'" data-toggle="'+esc(h.id)+'" style="--chk:'+tintVar(h.tint)+'"'+
+        (isFuture ? " disabled" : "")+' aria-pressed="'+(done?"true":"false")+'" aria-label="'+(done?"Segna come non fatta":"Segna come fatta")+'">'+CHECK_SVG+'</button>'+
+    '</div>';
+  }).join("");
+  el.innerHTML = '<div class="card"><div class="rows">'+rows+'</div></div>' +
+    (isFuture ? '<p class="note">I giorni futuri non si possono ancora segnare.</p>' : '');
+}
+
+function render(){
+  SYNC.pendingRender = false;
+  applyTheme();
+  renderDateSub();
+  renderWeek();
+  renderSummary();
+  renderList();
+  if($("#sheetSettings").classList.contains("show")) renderSettings();
+}
+
+function applyTheme(){
+  var t = DB.meta.theme || "auto";
+  if(t === "auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", t);
+}
+
+/* =========================================================================
+   SHEETS
+   ========================================================================= */
+function openSheet(id){
+  var s = document.getElementById(id);
+  if(UI.openSheets.indexOf(id) < 0) UI.openSheets.push(id);
+  $("#scrim").classList.add("show");
+  s.classList.add("show");
+  document.body.classList.add("sheet-open");
+  document.body.style.overflow = "hidden";
+}
+function closeSheet(id){
+  var s = document.getElementById(id);
+  s.classList.remove("show");
+  UI.openSheets = UI.openSheets.filter(function(x){ return x !== id; });
+  if(!UI.openSheets.length){
+    $("#scrim").classList.remove("show");
+    document.body.classList.remove("sheet-open");
+    document.body.style.overflow = "";
+    if(SYNC.pendingRender) render();
+  }
+}
+function closeTopSheet(){
+  if(UI.openSheets.length) closeSheet(UI.openSheets[UI.openSheets.length-1]);
+}
+function toast(msg){
+  var t = $("#toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove("show"); }, 2600);
+}
+
+/* ---------- impostazioni ---------- */
+function openSettings(){ renderSettings(); openSheet("sheetSettings"); }
+
+function renderSettings(){
+  var hs = allHabits();
+  var html = "";
+
+  html += '<div class="group-title">Le tue abitudini</div><div class="card"><div class="rows" id="habitAdmin">';
+  if(!hs.length){
+    html += '<div class="row plain"><div class="row-main"><div class="row-title" style="color:var(--text-tertiary)">Nessuna abitudine</div></div></div>';
+  } else {
+    html += hs.map(function(h, i){
+      return '<div class="row" data-hid="'+esc(h.id)+'">'+
+        '<span class="chip" style="--chip:'+tintVar(h.tint)+'">'+emojiHTML(h.emoji||"⭐️")+'</span>'+
+        '<button class="row-main" data-edit="'+esc(h.id)+'">'+
+          '<div class="row-title">'+esc(h.name)+(h.archived?' <span style="color:var(--text-tertiary);font-size:13px">· in pausa</span>':'')+'</div>'+
+          '<div class="row-sub">'+esc(schedLabel(h))+(h.remind?" · "+esc(h.remind):"")+'</div>'+
+        '</button>'+
+        '<button class="icon-btn" data-move="'+esc(h.id)+'" data-dir="-1"'+(i===0?' disabled style="opacity:.25"':'')+' aria-label="Sposta su"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>'+
+        '<button class="icon-btn" data-move="'+esc(h.id)+'" data-dir="1"'+(i===hs.length-1?' disabled style="opacity:.25"':'')+' aria-label="Sposta giù"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>'+
+      '</div>';
+    }).join("");
+  }
+  html += '</div></div>';
+  html += '<button class="btn btn-bordered btn-full" id="addHabit2" style="margin-top:12px">Aggiungi abitudine</button>';
+
+  /* notifiche */
+  var perm = ("Notification" in window) ? Notification.permission : "unsupported";
+  var pushOn = !!SETTINGS_PUSH.enabled;
+  html += '<div class="group-title">Promemoria</div><div class="card"><div class="rows">'+
+    '<div class="row plain"><div class="row-main"><div class="row-title">Notifiche su questo dispositivo</div>'+
+    '<div class="row-sub" id="pushState">'+esc(pushStateLabel(perm, pushOn))+'</div></div>'+
+    '<button class="switch'+(pushOn?" on":"")+'" id="pushToggle" role="switch" aria-checked="'+(pushOn?"true":"false")+'" aria-label="Attiva notifiche"></button></div>'+
+    '<button class="row plain" id="testPush"><div class="row-main"><div class="row-title" style="color:var(--tint)">Invia una notifica di prova</div></div></button>'+
+    '</div>';
+  html += '<p class="note" id="pushNote">'+pushNoteHTML()+'</p>';
+
+  /* aspetto */
+  var th = DB.meta.theme || "auto";
+  html += '<div class="group-title">Aspetto</div><div class="card"><div class="rows">'+
+    '<div class="row plain"><div class="row-main"><div class="row-title">Tema</div></div>'+
+    '<div class="seg" style="width:200px" id="themeSeg">'+
+      ['auto','light','dark'].map(function(v){
+        return '<button data-theme-v="'+v+'" class="'+(th===v?"on":"")+'">'+(v==="auto"?"Auto":v==="light"?"Chiaro":"Scuro")+'</button>';
+      }).join("")+
+    '</div></div>'+
+    '<div class="row plain"><div class="row-main"><div class="row-title">La settimana inizia</div></div>'+
+    '<div class="seg" style="width:180px" id="wsSeg">'+
+      '<button data-ws="1" class="'+(DB.meta.weekStart!==0?"on":"")+'">Lunedì</button>'+
+      '<button data-ws="0" class="'+(DB.meta.weekStart===0?"on":"")+'">Domenica</button>'+
+    '</div></div>'+
+  '</div></div>';
+
+  /* sync */
+  html += '<div class="group-title">Sincronizzazione</div><div class="card"><div class="rows">'+
+    '<div class="row plain"><div class="row-main"><div class="row-title">Stato</div><div class="row-sub" id="syncLine"></div></div>'+
+      '<span class="dot '+(SYNC.state==="ok"?"ok":SYNC.state==="err"?"err":SYNC.state==="busy"?"busy":"")+'"></span></div>'+
+    '<div class="row plain"><div class="row-main"><div class="row-title">Archivio</div>'+
+      '<div class="row-sub">'+esc(CFG.owner?CFG.owner+"/"+CFG.repo+" · "+CFG.path:"non configurato")+'</div></div></div>'+
+    '<button class="row plain" id="syncNowBtn"><div class="row-main"><div class="row-title" style="color:var(--tint)">Sincronizza adesso</div></div></button>'+
+    '<button class="row plain" id="exportBtn"><div class="row-main"><div class="row-title" style="color:var(--tint)">Esporta un backup JSON</div></div></button>'+
+    '</div></div>';
+
+  html += '<div class="group-title">Avanzate</div><div class="card"><div class="rows">'+
+    '<button class="row plain" id="clearCache"><div class="row-main"><div class="row-title" style="color:var(--tint)">Svuota cache e ricarica</div>'+
+    '<div class="row-sub">Usalo se resta incastrata una versione vecchia.</div></div></button>'+
+    '</div></div>';
+  html += '<p class="note">Versione dati '+SCHEMA+' · '+DB.habits.filter(function(h){return !h.del;}).length+' abitudini · '+
+          DB.logs.filter(function(l){return !l.del;}).length+' segni.</p>';
+
+  $("#settingsBody").innerHTML = html;
+  setSyncState(SYNC.state, SYNC.msg);
+  wireSettings();
+}
+
+function pushStateLabel(perm, on){
+  if(perm === "unsupported") return "Questo browser non supporta le notifiche.";
+  if(perm === "denied") return "Bloccate nelle impostazioni del browser.";
+  if(on) return "Attive. Arrivano anche ad app chiusa.";
+  return "Disattivate.";
+}
+function isStandalone(){
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+function isIOS(){ return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); }
+function pushNoteHTML(){
+  if(isIOS() && !isStandalone())
+    return "Su iPhone le notifiche funzionano solo dopo aver aggiunto l'app alla schermata Home: tocca Condividi in Safari, poi <b>Aggiungi alla schermata Home</b>, e riapri l'app da lì.";
+  if(!CFG.vapid) return "Chiave push non configurata in config.js: le notifiche programmate non partiranno.";
+  return "I promemoria arrivano all'orario che imposti su ogni abitudine, e solo se non l'hai ancora segnata.";
+}
+
+var SETTINGS_PUSH = { enabled:false, sub:null };
+
+function wireSettings(){
+  var b = $("#settingsBody");
+  $("#addHabit2").addEventListener("click", function(){ openEditor(null); });
+
+  $$("[data-edit]", b).forEach(function(el){
+    el.addEventListener("click", function(){ openEditor(el.getAttribute("data-edit")); });
+  });
+  $$("[data-move]", b).forEach(function(el){
+    el.addEventListener("click", function(){
+      moveHabit(el.getAttribute("data-move"), +el.getAttribute("data-dir"));
+    });
+  });
+  $$("#themeSeg button", b).forEach(function(el){
+    el.addEventListener("click", function(){
+      DB.meta.theme = el.getAttribute("data-theme-v"); touchMeta(); save(); schedulePush(); applyTheme();
+      $$("#themeSeg button", b).forEach(function(x){ x.classList.toggle("on", x===el); });
+      haptic(4);
+    });
+  });
+  $$("#wsSeg button", b).forEach(function(el){
+    el.addEventListener("click", function(){
+      DB.meta.weekStart = +el.getAttribute("data-ws"); touchMeta(); save(); schedulePush();
+      $$("#wsSeg button", b).forEach(function(x){ x.classList.toggle("on", x===el); });
+      renderWeek(); haptic(4);
+    });
+  });
+  $("#syncNowBtn").addEventListener("click", function(){ syncNow(); toast("Sincronizzo…"); });
+  $("#exportBtn").addEventListener("click", exportBackup);
+  $("#clearCache").addEventListener("click", clearCacheAndReload);
+  $("#pushToggle").addEventListener("click", togglePush);
+  $("#testPush").addEventListener("click", testNotification);
+}
+
+function moveHabit(id, dir){
+  var hs = allHabits();
+  var i = hs.findIndex(function(h){ return h.id === id; });
+  var j = i + dir;
+  if(i < 0 || j < 0 || j >= hs.length) return;
+  var a = hs[i], bb = hs[j];
+  var oa = a.order || 0, ob = bb.order || 0;
+  a.order = ob; bb.order = oa;
+  a.up = now(); bb.up = now();
+  save(); schedulePush(); renderSettings(); renderList();
+  haptic(6);
+}
+
+function exportBackup(){
+  var blob = new Blob([JSON.stringify(payload(), null, 2)], { type:"application/json" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "abitudini-" + todayISO() + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+}
+
+async function clearCacheAndReload(){
+  try{
+    if("serviceWorker" in navigator){
+      var regs = await navigator.serviceWorker.getRegistrations();
+      for(var i=0;i<regs.length;i++) await regs[i].unregister();
+    }
+    if(window.caches){
+      var keys = await caches.keys();
+      for(var k=0;k<keys.length;k++) await caches.delete(keys[k]);
+    }
+  }catch(e){}
+  location.reload(true);
+}
+
+/* =========================================================================
+   EDITOR ABITUDINE
+   ========================================================================= */
+function blankHabit(){
+  return { id: uid(), name:"", emoji:"⭐️", tint:"blue",
+           sched:{ type:"daily", days:[1,2,3,4,5,6,0], times:3 },
+           remind:"", archived:false, created: now(), order: (liveHabits().length+1)*10, up: now() };
+}
+function openEditor(id){
+  var h = id ? habitById(id) : null;
+  UI.editingId = id || null;
+  UI.draft = h ? JSON.parse(JSON.stringify(h)) : blankHabit();
+  if(!UI.draft.sched) UI.draft.sched = { type:"daily", days:[1,2,3,4,5,6,0], times:3 };
+  $("#editTitle").textContent = h ? "Modifica abitudine" : "Nuova abitudine";
+  renderEditor();
+  openSheet("sheetEdit");
+  setTimeout(function(){ var n = $("#hName"); if(n && !h) n.focus(); }, 380);
+}
+
+function renderEditor(){
+  var d = UI.draft, s = d.sched;
+  var ws = (DB.meta.weekStart === 0) ? 0 : 1;
+  var order = [0,1,2,3,4,5,6].map(function(i){ return (i + ws) % 7; });
+
+  var html = "";
+  html += '<div class="group-title">Nome</div>'+
+    '<input class="field" id="hName" placeholder="Es. Corsa mattutina" value="'+esc(d.name)+'" maxlength="42" autocomplete="off">';
+
+  html += '<div class="group-title">Icona</div><div class="card" style="padding:8px 10px"><div class="emoji-grid" id="emojiGrid">'+
+    EMOJI_SET.map(function(e){
+      return '<button data-emoji="'+esc(e)+'" class="'+(e===d.emoji?"on":"")+'" aria-label="'+esc(e)+'">'+emojiHTML(e)+'</button>';
+    }).join("")+'</div></div>';
+
+  html += '<div class="group-title">Colore</div><div class="card" style="padding:14px"><div class="tints" id="tintRow">'+
+    TINTS.map(function(t){
+      return '<button data-tint="'+t+'" class="'+(t===d.tint?"on":"")+'" style="background:'+tintVar(t)+'" aria-label="'+t+'"></button>';
+    }).join("")+'</div></div>';
+
+  html += '<div class="group-title">Quando</div><div class="card" style="padding:14px">'+
+    '<div class="seg" id="schedSeg">'+
+      '<button data-st="daily" class="'+(s.type==="daily"?"on":"")+'">Ogni giorno</button>'+
+      '<button data-st="days" class="'+(s.type==="days"?"on":"")+'">Giorni scelti</button>'+
+      '<button data-st="weekly" class="'+(s.type==="weekly"?"on":"")+'">A settimana</button>'+
+    '</div>';
+  if(s.type === "days"){
+    html += '<div class="daypicks" id="dayPicks" style="margin-top:14px">'+
+      order.map(function(i){
+        return '<button data-day="'+i+'" class="'+((s.days||[]).indexOf(i)>=0?"on":"")+'" aria-label="'+DOW_LONG[i]+'">'+DOW_SHORT[i]+'</button>';
+      }).join("")+'</div>';
+  }
+  if(s.type === "weekly"){
+    html += '<div class="group-title" style="margin-top:14px;padding-left:0">Volte a settimana</div>'+
+      '<div class="seg" id="timesSeg">'+
+      [1,2,3,4,5,6].map(function(n){ return '<button data-times="'+n+'" class="'+(+s.times===n?"on":"")+'">'+n+'</button>'; }).join("")+
+      '</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="group-title">Promemoria</div><div class="card"><div class="rows">'+
+    '<div class="row plain inline-field"><label for="hRemind">Avvisami alle</label>'+
+      '<input type="time" id="hRemind" value="'+esc(d.remind||"")+'">'+
+      (d.remind ? '<button class="btn btn-plain" id="clearRemind" style="min-height:auto;padding:6px">Togli</button>' : '')+
+    '</div></div></div>'+
+    '<p class="note">Lascia vuoto per nessun promemoria. Il promemoria non arriva se hai già segnato l\'abitudine.</p>';
+
+  html += '<div class="group-title">Altro</div><div class="card"><div class="rows">'+
+    '<div class="row plain"><div class="row-main"><div class="row-title">Metti in pausa</div>'+
+      '<div class="row-sub">Sparisce dalla lista, lo storico resta.</div></div>'+
+      '<button class="switch'+(d.archived?" on":"")+'" id="archToggle" role="switch" aria-checked="'+(d.archived?"true":"false")+'"></button></div>'+
+    '</div></div>';
+
+  if(UI.editingId){
+    html += '<button class="btn btn-danger btn-full" id="delHabit" style="margin-top:18px">Elimina abitudine</button>'+
+            '<p class="note">Elimina anche tutto il suo storico su tutti i dispositivi.</p>';
+  }
+
+  $("#editBody").innerHTML = html;
+  wireEditor();
+}
+
+function wireEditor(){
+  var b = $("#editBody"), d = UI.draft;
+  $("#hName").addEventListener("input", function(e){ d.name = e.target.value; });
+  $$("[data-emoji]", b).forEach(function(el){
+    el.addEventListener("click", function(){
+      d.emoji = el.getAttribute("data-emoji");
+      $$("[data-emoji]", b).forEach(function(x){ x.classList.remove("on"); });
+      el.classList.add("on"); haptic(5);
+    });
+  });
+  $$("[data-tint]", b).forEach(function(el){
+    el.addEventListener("click", function(){
+      d.tint = el.getAttribute("data-tint");
+      $$("[data-tint]", b).forEach(function(x){ x.classList.remove("on"); });
+      el.classList.add("on"); haptic(5);
+    });
+  });
+  $$("#schedSeg button", b).forEach(function(el){
+    el.addEventListener("click", function(){
+      d.sched.type = el.getAttribute("data-st");
+      if(d.sched.type === "days" && !(d.sched.days||[]).length) d.sched.days = [1,2,3,4,5];
+      renderEditor();
+    });
+  });
+  $$("[data-day]", b).forEach(function(el){
+    el.addEventListener("click", function(){
+      var v = +el.getAttribute("data-day");
+      var arr = d.sched.days || [];
+      var i = arr.indexOf(v);
+      if(i >= 0) arr.splice(i,1); else arr.push(v);
+      d.sched.days = arr;
+      el.classList.toggle("on"); haptic(5);
+    });
+  });
+  $$("[data-times]", b).forEach(function(el){
+    el.addEventListener("click", function(){
+      d.sched.times = +el.getAttribute("data-times");
+      $$("[data-times]", b).forEach(function(x){ x.classList.remove("on"); });
+      el.classList.add("on");
+    });
+  });
+  $("#hRemind").addEventListener("change", function(e){ d.remind = e.target.value || ""; renderEditor(); });
+  var cr = $("#clearRemind"); if(cr) cr.addEventListener("click", function(){ d.remind = ""; renderEditor(); });
+  $("#archToggle").addEventListener("click", function(){
+    d.archived = !d.archived;
+    $("#archToggle").classList.toggle("on", d.archived);
+    $("#archToggle").setAttribute("aria-checked", d.archived ? "true" : "false");
+  });
+  var del = $("#delHabit");
+  if(del) del.addEventListener("click", function(){
+    if(!confirm("Eliminare «"+(d.name||"questa abitudine")+"» e tutto il suo storico?")) return;
+    deleteHabit(UI.editingId);
+    closeSheet("sheetEdit");
+    renderSettings(); render();
+    toast("Abitudine eliminata.");
+  });
+}
+
+function saveHabit(){
+  var d = UI.draft;
+  d.name = (d.name || "").trim();
+  if(!d.name){ toast("Dai un nome all'abitudine."); var n=$("#hName"); if(n) n.focus(); return; }
+  if(d.sched.type === "days" && !(d.sched.days||[]).length){ toast("Scegli almeno un giorno."); return; }
+  d.up = now();
+  var ex = null;
+  for(var i=0;i<DB.habits.length;i++){ if(DB.habits[i].id === d.id){ ex = i; break; } }
+  if(ex === null) DB.habits.push(d); else DB.habits[ex] = d;
+  save(); schedulePush(); armLocalReminders();
+  closeSheet("sheetEdit");
+  render(); renderSettings();
+  toast(UI.editingId ? "Modifiche salvate." : "Abitudine aggiunta.");
+  UI.editingId = null;
+}
+
+function deleteHabit(id){
+  for(var i=0;i<DB.habits.length;i++){
+    if(DB.habits[i].id === id){ DB.habits[i] = { id:id, del:true, up:now() }; break; }
+  }
+  for(var j=0;j<DB.logs.length;j++){
+    if(DB.logs[j].h === id && !DB.logs[j].del){ DB.logs[j] = { id:DB.logs[j].id, h:id, d:DB.logs[j].d, del:true, up:now() }; }
+  }
+  rebuildLogIndex(); save(); schedulePush();
+}
+
+/* =========================================================================
+   DETTAGLIO
+   ========================================================================= */
+function openDetail(id){
+  var h = habitById(id);
+  if(!h) return;
+  UI.detailId = id;
+  $("#detailTitle").textContent = h.name;
+  renderDetail();
+  openSheet("sheetDetail");
+}
+function renderDetail(){
+  var h = habitById(UI.detailId);
+  if(!h) return;
+  var s = schedOf(h);
+  var st = streakOf(h), best = bestStreakOf(h), rate = rate30(h);
+  var unit = s.type === "weekly" ? "sett." : "gg";
+
+  /* heatmap: 12 settimane, colonne = settimane, righe = giorni */
+  var end = weekStartISO(todayISO());
+  var start = addDays(end, -7*11);
+  var cells = "", d = start, today = todayISO();
+  var wsOff = (DB.meta.weekStart===0)?0:1;
+  for(var w=0; w<12; w++){
+    for(var i=0;i<7;i++){
+      var day = addDays(start, w*7 + i);
+      var on = isDone(h.id, day);
+      var sch = isScheduled(h, day) && day <= today;
+      cells += '<i class="'+(on?"on":"")+(!sch&&!on?" na":"")+'" title="'+day+'"></i>';
+    }
+  }
+
+  var html = '<div class="stats">'+
+    '<div class="stat"><div class="n" style="color:'+tintVar(h.tint)+'">'+st+'</div><div class="l">Serie · '+unit+'</div></div>'+
+    '<div class="stat"><div class="n">'+best+'</div><div class="l">Record · '+unit+'</div></div>'+
+    '<div class="stat"><div class="n">'+rate+'%</div><div class="l">30 giorni</div></div>'+
+  '</div>';
+
+  html += '<div class="group-title">Ultime 12 settimane</div>'+
+    '<div class="card" style="--chip:'+tintVar(h.tint)+'"><div class="heat">'+cells+'</div>'+
+    '<div class="legend">'+esc(schedLabel(h))+(h.remind?" · promemoria alle "+esc(h.remind):"")+'</div></div>';
+
+  /* ultimi 14 giorni, marcabili */
+  html += '<div class="group-title">Ultimi 14 giorni</div><div class="card"><div class="rows">';
+  for(var k=0;k<14;k++){
+    var dd = addDays(today, -k);
+    var done = isDone(h.id, dd);
+    var due = isDueOn(h, dd);
+    var lbl = parseISO(dd).toLocaleDateString("it-IT", { weekday:"short", day:"numeric", month:"short" });
+    html += '<div class="row plain'+(due?"":" notdue")+'">'+
+      '<div class="row-main"><div class="row-title cap">'+esc(lbl)+(k===0?" · oggi":"")+'</div></div>'+
+      '<button class="check'+(done?" on":"")+'" data-dtoggle="'+dd+'" style="--chk:'+tintVar(h.tint)+'" aria-pressed="'+(done?"true":"false")+'" aria-label="'+esc(lbl)+'">'+CHECK_SVG+'</button>'+
+    '</div>';
+  }
+  html += '</div></div>';
+
+  $("#detailBody").innerHTML = html;
+  $$("[data-dtoggle]", $("#detailBody")).forEach(function(el){
+    el.addEventListener("click", function(){
+      toggleLog(h.id, el.getAttribute("data-dtoggle"));
+      renderDetail();
+      SYNC.pendingRender = true;
+    });
+  });
+}
+
+/* =========================================================================
+   NOTIFICHE
+   ========================================================================= */
+function urlB64ToU8(s){
+  var padding = "=".repeat((4 - s.length % 4) % 4);
+  var b64 = (s + padding).replace(/-/g, "+").replace(/_/g, "/");
+  var raw = atob(b64), out = new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+async function currentSub(){
+  if(!("serviceWorker" in navigator) || !("PushManager" in window)) return null;
+  var reg = await navigator.serviceWorker.ready;
+  return await reg.pushManager.getSubscription();
+}
+async function refreshPushState(){
+  try{
+    var sub = await currentSub();
+    SETTINGS_PUSH.enabled = !!sub && Notification.permission === "granted";
+    SETTINGS_PUSH.sub = sub;
+  }catch(e){ SETTINGS_PUSH.enabled = false; }
+}
+async function togglePush(){
+  if(!("Notification" in window)){ toast("Questo browser non supporta le notifiche."); return; }
+  if(isIOS() && !isStandalone()){
+    toast("Prima aggiungi l'app alla schermata Home.");
+    return;
+  }
+  if(SETTINGS_PUSH.enabled){
+    try{
+      var sub = await currentSub();
+      if(sub){
+        var id = "sub_" + hashStr(sub.endpoint);
+        for(var i=0;i<DB.subs.length;i++){ if(DB.subs[i].id === id) DB.subs[i] = { id:id, del:true, up:now() }; }
+        await sub.unsubscribe();
+        save(); schedulePush();
+      }
+    }catch(e){}
+    SETTINGS_PUSH.enabled = false;
+    renderSettings();
+    toast("Notifiche disattivate su questo dispositivo.");
+    return;
+  }
+  try{
+    var perm = await Notification.requestPermission();
+    if(perm !== "granted"){ renderSettings(); toast("Permesso non concesso."); return; }
+    if(!CFG.vapid){ renderSettings(); toast("Manca la chiave push in config.js."); return; }
+    var reg = await navigator.serviceWorker.ready;
+    var s = await reg.pushManager.getSubscription();
+    if(!s) s = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: urlB64ToU8(CFG.vapid) });
+    var j = s.toJSON();
+    var rid = "sub_" + hashStr(s.endpoint);
+    var rec = { id:rid, endpoint:j.endpoint, p256dh:j.keys && j.keys.p256dh, auth:j.keys && j.keys.auth,
+                ua:(navigator.userAgent||"").slice(0,80), up:now() };
+    var found = false;
+    for(var k=0;k<DB.subs.length;k++){ if(DB.subs[k].id === rid){ DB.subs[k] = rec; found = true; } }
+    if(!found) DB.subs.push(rec);
+    save(); schedulePush();
+    SETTINGS_PUSH.enabled = true;
+    renderSettings();
+    toast("Notifiche attive.");
+  }catch(e){
+    renderSettings();
+    toast("Non è stato possibile attivarle: " + (e.message||e));
+  }
+}
+function reminderBody(h){
+  var st = streakOf(h);
+  if(st >= 2) return "Un tocco, e non perdi la serie di " + st + " giorni.";
+  return "Non l'hai ancora segnata oggi.";
+}
+async function testNotification(){
+  if(!("Notification" in window)){ toast("Notifiche non supportate."); return; }
+  var perm = Notification.permission;
+  if(perm !== "granted") perm = await Notification.requestPermission();
+  if(perm !== "granted"){ toast("Permesso non concesso."); return; }
+  try{
+    var reg = await navigator.serviceWorker.ready;
+    await reg.showNotification("Abitudini", { body:"Tutto pronto: i promemoria arriveranno così.", icon:"icon-192.png", badge:"badge-96.png", tag:"test" });
+  }catch(e){ toast("Non è stato possibile mostrarla."); }
+}
+
+/* promemoria locali mentre l'app è aperta (rete non necessaria) */
+var LOCAL_TIMERS = [];
+function armLocalReminders(){
+  LOCAL_TIMERS.forEach(clearTimeout);
+  LOCAL_TIMERS = [];
+  if(!("Notification" in window) || Notification.permission !== "granted") return;
+  var t = todayISO();
+  liveHabits().forEach(function(h){
+    if(!h.remind || !isScheduled(h, t)) return;
+    var p = h.remind.split(":");
+    var when = new Date(); when.setHours(+p[0], +p[1], 0, 0);
+    var delta = when.getTime() - Date.now();
+    if(delta <= 0 || delta > 14*3600*1000) return;
+    LOCAL_TIMERS.push(setTimeout(async function(){
+      if(isDone(h.id, todayISO())) return;
+      try{
+        var reg = await navigator.serviceWorker.ready;
+        reg.showNotification(h.name, { body: reminderBody(h), icon:"icon-192.png", badge:"badge-96.png", tag:"h-"+h.id, silent:false });
+      }catch(e){}
+    }, delta));
+  });
+}
+
+/* =========================================================================
+   AVVIO
+   ========================================================================= */
+function shiftDays(n){
+  var d = addDays(UI.selDate, n);
+  var limit = addDays(todayISO(), 6);
+  if(d > limit) d = limit;
+  if(d < addDays(todayISO(), -730)) return;
+  UI.selDate = d;
+  render(); haptic(4);
+}
+
+function wireGlobal(){
+  $("#btnSettings").addEventListener("click", openSettings);
+  $("#btnSync").addEventListener("click", function(){
+    if(!CFG.token){ toast("Sync non configurato in config.js."); return; }
+    syncNow(); toast(SYNC.state==="err" ? ("Errore: "+SYNC.msg) : "Sincronizzo…");
+  });
+  $("#btnAddHabit").addEventListener("click", function(){ openEditor(null); });
+  $("#btnSaveHabit").addEventListener("click", saveHabit);
+  $("#btnEditFromDetail").addEventListener("click", function(){ openEditor(UI.detailId); });
+  $("#scrim").addEventListener("click", closeTopSheet);
+  $$("[data-close]").forEach(function(el){
+    el.addEventListener("click", function(){
+      var sh = el.closest(".sheet");
+      if(sh) closeSheet(sh.id);
+    });
+  });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeTopSheet(); });
+
+  $("#week").addEventListener("click", function(e){
+    var b = e.target.closest("[data-date]");
+    if(!b) return;
+    UI.selDate = b.getAttribute("data-date");
+    render(); haptic(5);
+  });
+
+  $("#list").addEventListener("click", function(e){
+    var t = e.target.closest("[data-toggle]");
+    if(t){
+      var hid = t.getAttribute("data-toggle");
+      var on = toggleLog(hid, UI.selDate);
+      t.classList.toggle("on", on);
+      t.setAttribute("aria-pressed", on ? "true" : "false");
+      renderWeek(); renderSummary(); renderList();
+      return;
+    }
+    var o = e.target.closest("[data-open]");
+    if(o) openDetail(o.getAttribute("data-open"));
+  });
+
+  /* scorrere di lato cambia settimana */
+  var sx = null, sy = null;
+  $("#week").addEventListener("touchstart", function(e){
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+  }, { passive:true });
+  $("#week").addEventListener("touchend", function(e){
+    if(sx === null) return;
+    var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    sx = null;
+    if(Math.abs(dx) < 46 || Math.abs(dy) > Math.abs(dx)) return;
+    shiftDays(dx < 0 ? 7 : -7);
+  }, { passive:true });
+
+  document.addEventListener("keydown", function(e){
+    if(UI.openSheets.length) return;
+    var a = document.activeElement;
+    if(a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA")) return;
+    if(e.key === "ArrowLeft"){ shiftDays(-1); e.preventDefault(); }
+    if(e.key === "ArrowRight"){ shiftDays(1); e.preventDefault(); }
+    if(e.key === "t" || e.key === "T"){ UI.selDate = todayISO(); render(); }
+  });
+
+  var nav = $("#nav");
+  window.addEventListener("scroll", function(){
+    nav.classList.toggle("stuck", window.scrollY > 26);
+  }, { passive:true });
+
+  window.addEventListener("focus", function(){
+    if(UI.selDate < todayISO() && !UI.openSheets.length){ /* niente: la selezione resta */ }
+    armLocalReminders();
+  });
+}
+
+function showInstallHint(){
+  var el = $("#installHint");
+  if(isIOS() && !isStandalone()){
+    el.hidden = false;
+    el.innerHTML = "Per le notifiche e per l'icona sulla Home: tocca <b>Condividi</b> in Safari e poi <b>Aggiungi alla schermata Home</b>.";
+  }
+}
+
+function boot(){
+  load();
+  rebuildLogIndex();
+  applyTheme();
+  wireGlobal();
+  render();
+  showInstallHint();
+  setSyncState(CFG.token ? "busy" : "idle");
+  startSync();
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("sw.js").then(function(){
+        return refreshPushState();
+      }).then(function(){
+        armLocalReminders();
+      }).catch(function(){});
+    });
+  }
+  /* a mezzanotte la vista deve passare al giorno nuovo */
+  setInterval(function(){
+    if(UI.selDate !== todayISO() && !UI.openSheets.length && UI._lastToday !== todayISO()){
+      UI._lastToday = todayISO();
+      UI.selDate = todayISO();
+      render(); armLocalReminders();
+    }
+  }, 60000);
+  UI._lastToday = todayISO();
+}
+
+/* esposto per i test */
+window.__app = { mergeRecords:mergeRecords, snapshot:snapshot, DB:DB, streakOf:streakOf, isScheduled:isScheduled,
+                 weekStartISO:weekStartISO, dayProgress:dayProgress, rebuildLogIndex:rebuildLogIndex, toggleLog:toggleLog };
+
+boot();
+</script>
+</body>
+</html>

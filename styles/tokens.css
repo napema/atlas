@@ -1,0 +1,133 @@
+/* =========================================================================
+   ATLAS — token di design.
+   Un solo linguaggio per tutti i moduli. Semantica Apple: i colori hanno
+   un ruolo, non un nome cromatico, così chiaro e scuro si scambiano senza
+   toccare una riga dei moduli.
+
+   REGOLA: un modulo non scrive mai un colore letterale. Usa i token.
+   L'unica cosa che un modulo può scegliere è il proprio --accento.
+   ========================================================================= */
+
+/* SF Pro self-hosted: identico su iOS, Windows e offline. */
+@font-face { font-family: "SF Pro Text"; font-weight: 400; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/sf-pro-text-regular.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Text"; font-weight: 500; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/sf-pro-text-medium.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Text"; font-weight: 600; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/sf-pro-text-semibold.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Text"; font-weight: 700; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/sf-pro-text-bold.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Display"; font-weight: 600; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/sf-pro-display-semibold.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Display"; font-weight: 700; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/sf-pro-display-bold.woff2") format("woff2"); }
+
+:root {
+  /* --- colori funzionali (invarianti fra i temi) --- */
+  --blu:     #007AFF;
+  --verde:   #34C759;
+  --arancio: #FF9500;
+  --rosso:   #FF3B30;
+  --viola:   #AF52DE;
+  --menta:   #00C7BE;
+  --indaco:  #5856D6;
+
+  /* --- accenti di modulo: uno per modulo, mai riusato --- */
+  --accento-finanze:   var(--verde);
+  --accento-mobilita:  var(--blu);
+  --accento-abitudini: var(--viola);
+  /* Il modulo attivo riscrive --accento su di sé; questo è il fallback. */
+  --accento: var(--blu);
+
+  /* --- superfici e testo, tema chiaro --- */
+  --sfondo:      #F2F2F7;
+  --sfondo-2:    #FFFFFF;
+  --sfondo-3:    #FFFFFF;
+  --separatore:  rgba(60, 60, 67, 0.20);
+  --etichetta:   #000000;
+  --etichetta-2: rgba(60, 60, 67, 0.60);
+  --etichetta-3: rgba(60, 60, 67, 0.30);
+  --riempimento: rgba(120, 120, 128, 0.12);
+  --barra:       rgba(249, 249, 249, 0.82);
+  --ombra:       0 1px 3px rgba(0, 0, 0, 0.06);
+
+  /* --- tipografia (scala iOS) --- */
+  --font-testo:   "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-titolo:  "SF Pro Display", var(--font-testo);
+  --font-mono:    ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  --t-largo:      34px;   /* large title  */
+  --t-titolo1:    28px;
+  --t-titolo2:    22px;
+  --t-titolo3:    20px;
+  --t-corpo:      17px;
+  --t-callout:    16px;
+  --t-piccolo:    15px;
+  --t-nota:       13px;
+  --t-minuscolo:  11px;
+
+  /* --- spaziatura: multipli di 4, ritmo su 8 --- */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px;
+  --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px;
+
+  /* --- forma --- */
+  --r-piccolo: 8px;
+  --r-medio:   12px;
+  --r-grande:  16px;
+  --r-scheda:  20px;
+  --tocco:     44px;      /* area minima toccabile, non negoziabile */
+
+  /* --- movimento --- */
+  --curva: cubic-bezier(0.32, 0.72, 0, 1);
+  --veloce: 180ms;
+  --normale: 280ms;
+}
+
+/* Lo scuro arriva dal sistema, salvo che l'utente abbia forzato il chiaro
+   dalle impostazioni ATLAS. Il blocco è ripetuto sotto per il caso opposto:
+   CSS non permette di riusare un gruppo di dichiarazioni, e una variabile
+   che esiste solo dentro una media query non può essere forzata a mano. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="chiaro"]) {
+    --sfondo:      #000000;
+    --sfondo-2:    #1C1C1E;
+    --sfondo-3:    #2C2C2E;
+    --separatore:  rgba(84, 84, 88, 0.60);
+    --etichetta:   #FFFFFF;
+    --etichetta-2: rgba(235, 235, 245, 0.60);
+    --etichetta-3: rgba(235, 235, 245, 0.30);
+    --riempimento: rgba(120, 120, 128, 0.24);
+    --barra:       rgba(28, 28, 30, 0.82);
+    --ombra:       none;
+    --blu:     #0A84FF;
+    --verde:   #30D158;
+    --arancio: #FF9F0A;
+    --rosso:   #FF453A;
+    --viola:   #BF5AF2;
+  }
+}
+
+:root[data-tema="scuro"] {
+  --sfondo:      #000000;
+  --sfondo-2:    #1C1C1E;
+  --sfondo-3:    #2C2C2E;
+  --separatore:  rgba(84, 84, 88, 0.60);
+  --etichetta:   #FFFFFF;
+  --etichetta-2: rgba(235, 235, 245, 0.60);
+  --etichetta-3: rgba(235, 235, 245, 0.30);
+  --riempimento: rgba(120, 120, 128, 0.24);
+  --barra:       rgba(28, 28, 30, 0.82);
+  --ombra:       none;
+  --blu:     #0A84FF;
+  --verde:   #30D158;
+  --arancio: #FF9F0A;
+  --rosso:   #FF453A;
+  --viola:   #BF5AF2;
+}
+
+:root                     { color-scheme: light dark; }
+:root[data-tema="chiaro"] { color-scheme: light; }
+:root[data-tema="scuro"]  { color-scheme: dark; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --veloce: 0ms; --normale: 0ms; }
+}

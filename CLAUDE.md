@@ -1,0 +1,164 @@
+# ATLAS
+
+Un'app sola al posto di tre. Finanze, Mobilità, Abitudini — e quello che
+verrà — dentro un unico guscio installato sull'iPhone e aperto sul PC.
+
+Questo file è il contratto: chi lavora su ATLAS lo legge prima di toccare
+qualsiasi cosa.
+
+---
+
+## 0. Perché ATLAS esiste
+
+Non è un problema di funzionalità: le tre app funzionano già. È un problema
+di **frizione e di duplicazione**.
+
+1. Tre icone sulla home dell'iPhone, tre gesti per sapere come va la
+   giornata. Nessuna delle tre sa niente delle altre.
+2. Il motore di sincronizzazione è **scritto tre volte**, con tre bug
+   diversi corretti in momenti diversi. Una lezione imparata in Mobilità
+   (per esempio: chi non ha ancora letto non può scrivere) non è mai
+   arrivata alle altre due.
+3. Due coppie VAPID, due workflow di notifica, due `config.js`.
+4. Due delle tre app sono un `index.html` da centomila caratteri con CSS e
+   JS dentro. Sono al limite di quanto si può modificare senza rompere.
+
+**La misura del successo di ATLAS è una sola: la schermata Oggi.** Se aprire
+ATLAS al mattino non dice più di quanto dicevano tre app aperte in fila,
+ATLAS non è servito a niente ed è solo un refactoring.
+
+---
+
+## 1. Da dove si parte
+
+| Modulo | App di partenza | Repo dati oggi | Forma |
+|---|---|---|---|
+| Finanze | `napema/budget-tracker-webpage` | `finance-tracker` · `registro.json` | monolitico, 118 KB |
+| Mobilità | `napema/mobility-blueprint` | `mobilita-dati` · `dati.json` | già modulare, con push |
+| Abitudini | `napema/habit-tracker-webapp` | `abitudini-dati` · `abitudini.json` | monolitico, 73 KB, con push |
+
+I sorgenti di partenza sono in `legacy/`. Non vengono pubblicati e non
+vengono eseguiti: sono lì da leggere mentre si porta il codice.
+
+**Le app di partenza restano vive finché il modulo corrispondente non è
+finito.** Non si spegne niente in anticipo: se ATLAS ha un problema, il dato
+del giorno deve poter essere inserito lo stesso.
+
+---
+
+## 2. Architettura
+
+```
+index.html          guscio: barra, contenitore, nient'altro
+config.js           owner/repo/token/VAPID — dati, non codice
+sw.js               offline del guscio + notifiche push
+core/
+  app.js            avvio: barra → router → sync → service worker
+  registro.js       ELENCO DEI MODULI e contratto. Unico file da toccare
+                    per aggiungerne uno
+  router.js         navigazione a hash, caricamento pigro dei moduli
+  storage.js        una casella localStorage per modulo, isolate fra loro
+  sync.js           IL motore di sincronizzazione. Uno solo, mai copiato
+  blobs.js          IndexedDB per foto e allegati
+  ui.js             mattoni condivisi + formati italiani
+  icone.js          SVG inline
+styles/
+  tokens.css        i colori, i corpi, gli spazi. Nessun modulo ne inventa
+  base.css          reset, shell, componenti condivisi
+moduli/<id>/
+  modulo.js         export default che rispetta il contratto
+docs/               architettura, sync, migrazione
+legacy/             sorgenti di partenza, da leggere
+```
+
+### Il contratto di un modulo
+
+`moduli/<id>/modulo.js` esporta di default:
+
+```js
+export default {
+  async monta(contenitore, resto) {},  // disegna dentro il contenitore
+  smonta() {},                          // opzionale: timer, listener
+  oggi() { return null; },              // opzionale: la scheda per la home
+  avviaSync() {},                       // opzionale: apre il proprio canale
+};
+```
+
+`id`, `nome`, `icona` e `accento` **non** li dichiara il modulo: stanno in
+`core/registro.js`. Un modulo non può spostarsi nella barra da solo.
+
+`oggi()` è **sincrona e senza effetti collaterali**. Restituisce
+`{ titolo, valore, dettaglio, urgente, azione: { rotta } }`, oppure `null`
+se oggi non ha niente da dire — e allora sparisce dalla home.
+
+---
+
+## 3. Regole ferme
+
+Queste non si discutono senza una ragione scritta.
+
+1. **Un solo motore di sync.** Se serve un comportamento nuovo, si estende
+   `core/sync.js`. Nessun modulo parla con `api.github.com` da solo.
+2. **Nessun modulo tocca `localStorage` direttamente.** Chiede una casella
+   ad `apriCasella(id, default)` e vive dentro quella.
+3. **Un file di dati per modulo**, non uno unico. Gli sha restano
+   indipendenti: due moduli che salvano nello stesso istante non si
+   annullano a vicenda.
+4. **Chi non ha ancora LETTO non può SCRIVERE.** In una delle app di
+   partenza questa regola mancava e uno stato locale vuoto ha cancellato un
+   assessment intero dal repo. È già in `core/sync.js`: non toglierla.
+5. **Ogni record ha `id` stabile e `up`.** Le cancellazioni sono lapidi
+   (`del: true`), non rimozioni. Senza lapide, l'altro dispositivo
+   resuscita il record.
+6. **Il sync non ridisegna sotto le dita.** Se l'utente sta scrivendo o ha
+   una modale aperta, il ridisegno aspetta. I dati arrivano comunque.
+7. **Nessun colore letterale nei moduli.** Solo token. L'unica cosa che un
+   modulo sceglie è il proprio `--accento`, e lo sceglie nel registro.
+8. **Niente dipendenze esterne, niente build.** Nessun CDN: offline non
+   c'è. Se serve una libreria pesante (3D, grafici), sta in un solo modulo
+   e si carica pigramente.
+9. **17px minimo sui campi di testo.** Sotto, iOS zooma al focus e non
+   torna indietro.
+10. **`VERSIONE` in `sw.js` va alzata a ogni rilascio.** Altrimenti il
+    guscio vecchio resta appiccicato sui dispositivi.
+11. **I binari non stanno in `localStorage`.** Vanno in `core/blobs.js`.
+
+---
+
+## 4. Cosa ATLAS non fa
+
+- **Non è un backend.** Non c'è un server, non c'è un database, non c'è
+  autenticazione. Un utente solo, due dispositivi, un repo privato.
+- **Non risolve i conflitti in modo intelligente.** Vince il record più
+  recente. Per un utente solo su due dispositivi va bene; per due utenti
+  no, e allora servirebbe altro.
+- **Non sostituisce le app di partenza prima di essere pronto.** Un modulo
+  a metà non prende il posto di uno che funziona.
+- **Non aggiunge moduli nuovi prima che i tre siano dentro.** Lo scopo è
+  fondere, non accumulare.
+
+---
+
+## 5. Ordine di costruzione
+
+1. ~~Guscio: shell, router, registro, storage, sync, token, PWA~~ ✅
+2. **Repo dati `atlas-dati` + `config.js` compilato** — senza, non si può
+   verificare niente di quello che viene dopo
+3. **Abitudini** — il modulo più piccolo, e porta con sé le notifiche, che
+   servono a tutti
+4. **Mobilità** — già modulare, è quasi solo un innesto
+5. **Finanze** — il più grosso, e il solo che vada davvero riscritto
+6. Notifiche unificate: una coppia VAPID, un workflow
+7. Spegnimento delle tre app di partenza, una alla volta
+
+---
+
+## 6. Note per chi scrive il codice
+
+- **Italiano** per nomi di dominio e commenti, come nelle app di partenza.
+  I termini tecnici consolidati (`sync`, `push`, `blob`, `sha`) restano.
+- I commenti spiegano **perché**, non cosa. Un commento che ripete il codice
+  è rumore; uno che racconta la perdita di dati da cui nasce una regola vale
+  mezz'ora di indagine.
+- Prima di riscrivere un pezzo delle app di partenza, leggilo: quasi ogni
+  stranezza che ci trovi è una cicatrice, non una svista.

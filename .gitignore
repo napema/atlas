@@ -1,0 +1,9 @@
+# ATLAS
+.DS_Store
+Thumbs.db
+node_modules/
+*.log
+
+# Non ignoriamo config.js: GitHub Pages deve servirlo, altrimenti il sync
+# non parte. Il token che contiene è fine-grained su un repo privato di
+# dati personali e si revoca in un clic. Vedi il commento dentro il file.

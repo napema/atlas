@@ -1,0 +1,51 @@
+name: Promemoria abitudini
+
+on:
+  schedule:
+    # ogni 10 minuti. GitHub non garantisce la puntualità:
+    # con traffico alto il giro può slittare di parecchi minuti.
+    - cron: "*/10 * * * *"
+  workflow_dispatch:        # per lanciarlo a mano e provare
+
+permissions:
+  contents: write           # serve per riscrivere notify-state.json
+
+concurrency:
+  group: promemoria
+  cancel-in-progress: false
+
+jobs:
+  invia:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Installa web-push
+        run: npm install --no-audit --no-fund web-push@3
+
+      - name: Manda i promemoria scaduti
+        env:
+          VAPID_PUBLIC:  ${{ secrets.VAPID_PUBLIC }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          APP_URL:       ${{ vars.APP_URL }}
+          DATA_FILE:     abitudini.json
+          STATE_FILE:    notify-state.json
+          TZ_NAME:       Europe/Rome
+        run: node notify.js
+
+      - name: Salva lo stato
+        run: |
+          if [[ -n "$(git status --porcelain notify-state.json)" ]]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add notify-state.json
+            git commit -m "promemoria: stato $(date -u +%FT%TZ)"
+            git push
+          else
+            echo "Stato invariato."
+          fi
