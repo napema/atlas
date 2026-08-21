@@ -1,8 +1,13 @@
 /* =========================================================================
-   ATLAS — base e componenti condivisi.
-   Qui vive solo ciò che TUTTI i moduli usano: reset, layout della shell,
-   barra inferiore, schede, liste, pulsanti, campi. Nulla di specifico di
-   un modulo: quella roba sta in moduli/<nome>/stile.css.
+   ATLAS — componenti condivisi, in stile Apple glass (docs/APPLE.md).
+
+   Qui sta SOLO ciò che più di un modulo usa. Un componente usato da uno
+   solo vive nel suo `moduli/<id>/stile.css`; sale qui quando serve al
+   secondo, non prima.
+
+   Il contenuto scorre a tutta pagina; la cromatura (barra in alto, barra
+   dei moduli, fogli) galleggia sopra su materiale sfocato. È il motivo per
+   cui non c'è quasi nessuna ombra in tutto il file.
    ========================================================================= */
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -10,148 +15,285 @@ html, body { margin: 0; padding: 0; }
 
 html {
   background: var(--sfondo);
-  /* Niente zoom accidentale col doppio tap, niente rimbalzo orizzontale. */
   -webkit-text-size-adjust: 100%;
   overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: var(--font-testo);
-  font-size: var(--t-corpo);
+  font-size: var(--t-17);
   line-height: 1.45;
   color: var(--etichetta);
   background: var(--sfondo);
   -webkit-font-smoothing: antialiased;
-  /* La selezione del testo su una PWA a tocchi è quasi sempre un incidente. */
+  text-rendering: optimizeLegibility;
+  /* L'ottica di SF Pro non va mai disattivata: è ciò che tiene insieme la
+     scala tipografica quando i corpi cambiano. */
+  font-optical-sizing: auto;
+  font-synthesis: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
 }
 input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
 
-h1, h2, h3 { font-family: var(--font-titolo); margin: 0; line-height: 1.2; letter-spacing: -0.02em; }
-h1 { font-size: var(--t-largo);   font-weight: 700; }
-h2 { font-size: var(--t-titolo2); font-weight: 700; }
-h3 { font-size: var(--t-titolo3); font-weight: 600; }
+::selection { background: var(--accento-alone); }
+
+/* ---------------------------------------------------------- tipografia -- */
+
+h1, h2, h3, h4 { margin: 0; font-family: var(--font-titolo); letter-spacing: -0.022em; line-height: 1.14; }
+h1 { font-size: var(--t-34); font-weight: 700; }
+h2 { font-size: var(--t-28); font-weight: 700; }
+h3 { font-size: var(--t-22); font-weight: 600; }
+h4 { font-family: var(--font-testo); font-size: var(--t-17); font-weight: 600; letter-spacing: -0.01em; }
 p  { margin: 0 0 var(--s3); }
 a  { color: var(--accento); text-decoration: none; }
+b, strong { font-weight: 600; }
+small { font-size: var(--t-13); }
+
+/* La cifra grande di una scheda: Display, tabellare, crenatura stretta. */
+.cifra {
+  font-family: var(--font-titolo);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.num  { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+/* I centesimi rimpiccioliti e alzati, come in Wallet. */
+.cts { font-size: 0.62em; font-weight: 600; vertical-align: 0.32em; letter-spacing: 0; }
+
+.occhiello {
+  font-size: var(--t-13);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--etichetta-3);
+}
+.nota     { font-size: var(--t-13); color: var(--etichetta-3); line-height: 1.4; }
+.etichetta-riga {
+  font-size: var(--t-13); font-weight: 500; color: var(--etichetta-3);
+  letter-spacing: -0.005em;
+}
+.positivo { color: var(--verde); }
+.negativo { color: var(--rosso); }
+.attenzione { color: var(--arancio); }
 
 /* ---------------------------------------------------------------- shell -- */
 
-#app {
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-}
+#app { min-height: 100dvh; display: flex; flex-direction: column; }
 
-/* La vista scorre; la barra no. L'imbottitura in fondo tiene conto sia
-   della barra sia della tacca inferiore dell'iPhone. */
 #vista {
   flex: 1;
-  padding:
-    calc(env(safe-area-inset-top) + var(--s4))
-    calc(env(safe-area-inset-right) + var(--s4))
-    calc(env(safe-area-inset-bottom) + 96px)
-    calc(env(safe-area-inset-left) + var(--s4));
-  max-width: 720px;
   width: 100%;
+  max-width: 760px;
   margin: 0 auto;
+  /* In alto lascia passare la barra grande; in fondo la barra dei moduli
+     più la tacca. Il contenuto è a filo dei bordi laterali su iPhone. */
+  padding:
+    calc(env(safe-area-inset-top) + var(--s3))
+    calc(env(safe-area-inset-right) + var(--s4))
+    calc(env(safe-area-inset-bottom) + 104px)
+    calc(env(safe-area-inset-left) + var(--s4));
 }
+
+/* ------------------------------------------------------ intestazione ----
+   Il pattern del titolo grande: 34px che si rimpicciolisce a 17 e risale
+   nella barra quando si scorre. Qui la parte statica; il collasso lo fa
+   core/app.js osservando lo scorrimento. */
 
 .intestazione {
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   justify-content: space-between;
   gap: var(--s3);
-  margin-bottom: var(--s5);
+  margin: var(--s2) 0 var(--s5);
 }
-.intestazione .occhiello {
-  font-size: var(--t-nota);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--etichetta-2);
-}
+.intestazione h1 { font-size: var(--t-34); }
+.intestazione .occhiello { margin-bottom: var(--s1); }
 
-/* --------------------------------------------------------- barra moduli -- */
+/* Barra in alto: compare solo quando il titolo grande è uscito di scena. */
+#barra-alta {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  height: calc(env(safe-area-inset-top) + 44px);
+  padding: env(safe-area-inset-top) var(--s4) 0;
+  background: var(--materiale-sottile);
+  backdrop-filter: var(--sfocatura);
+  -webkit-backdrop-filter: var(--sfocatura);
+  border-bottom: 0.5px solid var(--separatore);
+  font-size: var(--t-17);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity var(--veloce) var(--curva), transform var(--veloce) var(--curva);
+}
+#barra-alta.visibile { opacity: 1; transform: none; }
+
+/* ------------------------------------------------------- barra moduli -- */
 
 #barra {
   position: fixed;
   left: 0; right: 0; bottom: 0;
-  z-index: 50;
+  z-index: 60;
   display: flex;
   justify-content: center;
-  gap: var(--s1);
   padding: var(--s2) var(--s2) calc(env(safe-area-inset-bottom) + var(--s2));
-  background: var(--barra);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  background: var(--materiale-sottile);
+  backdrop-filter: var(--sfocatura);
+  -webkit-backdrop-filter: var(--sfocatura);
   border-top: 0.5px solid var(--separatore);
 }
 
 .scheda-barra {
   flex: 1 1 0;
-  max-width: 120px;
+  max-width: 128px;
   min-height: var(--tocco);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: var(--s1);
+  gap: 3px;
+  padding: var(--s1) 2px;
   border: 0;
   background: none;
-  color: var(--etichetta-2);
+  color: var(--etichetta-3);
   font-family: inherit;
-  font-size: var(--t-minuscolo);
+  font-size: var(--t-11);
   font-weight: 500;
+  letter-spacing: -0.005em;
   cursor: pointer;
   transition: color var(--veloce) var(--curva);
 }
 .scheda-barra svg { width: 26px; height: 26px; display: block; }
+/* La scheda attiva prende l'accento DEL MODULO a cui porta, non quello
+   della schermata corrente: è l'unico punto dove più tinte convivono, ed
+   è voluto — sono quattro destinazioni diverse, non una superficie sola. */
 .scheda-barra[aria-current="page"] { color: var(--accento); }
-.scheda-barra:active { opacity: 0.5; }
+.scheda-barra:active { opacity: 0.45; }
 
-/* ------------------------------------------------------------- schede --- */
+/* --------------------------------------------------------------- schede -- */
 
 .scheda {
+  position: relative;
   background: var(--sfondo-2);
   border-radius: var(--r-scheda);
   padding: var(--s4);
-  box-shadow: var(--ombra);
   margin-bottom: var(--s3);
+  /* Niente bordo, niente ombra: raggio, superficie e il filo qui sotto. */
 }
+
+/* ------------------------------------------------------------- il vetro --
+   Il filo di luce sul bordo. Chiaro in alto, quasi nulla in basso: è la
+   luce che viene da sopra, ed è quel dettaglio a dare spessore. Senza, una
+   superficie translucida sembra solo una macchia sfocata.
+
+   Non è un `border: 1px`. È un gradiente ritagliato in maschera, per due
+   ragioni: un bordo pieno non può essere un gradiente, e un bordo netto sui
+   raggi grandi fa la scaletta. La maschera sottrae l'interno e lascia solo
+   la cornice, che segue il raggio perfettamente perché lo eredita. */
+.scheda::before,
+.vetro::before,
+.riquadro::before,
+.lista::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(var(--vetro-alto), var(--vetro-basso));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+/* Il contenuto deve stare sopra al filo, non sotto. */
+.scheda > *, .vetro > *, .riquadro > *, .lista > * { position: relative; z-index: 1; }
+
+/**
+ * La superficie di vetro vera: translucida, con lo sfondo che traspare.
+ * Si usa dove sotto c'è qualcosa da lasciar intravedere — non su ogni
+ * scheda, o l'effetto si annulla da solo e resta solo il costo di calcolo.
+ */
+.vetro {
+  position: relative;
+  background: var(--vetro-fondo);
+  backdrop-filter: var(--vetro-sfocatura);
+  -webkit-backdrop-filter: var(--vetro-sfocatura);
+  border-radius: var(--r-scheda);
+}
+
+/* Dove il backdrop-filter non c'è, il vetro diventa una superficie normale:
+   translucido senza sfocatura sotto è illeggibile. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .vetro, #barra, #barra-alta, .foglio, .avviso { background: var(--sfondo-2); }
+}
+/* In chiaro lo sfondo pagina è bianco come la scheda: serve un fondo
+   raggruppato dietro, altrimenti le schede spariscono. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="scuro"]) body { background: var(--sfondo-3); }
+  :root:not([data-tema="scuro"]) html { background: var(--sfondo-3); }
+}
+:root[data-tema="chiaro"] body,
+:root[data-tema="chiaro"] html { background: var(--sfondo-3); }
+
 .scheda-titolo {
   display: flex;
   align-items: center;
   gap: var(--s2);
-  font-size: var(--t-callout);
+  font-size: var(--t-15);
   font-weight: 600;
-  margin-bottom: var(--s2);
+  letter-spacing: -0.01em;
+  margin-bottom: var(--s3);
 }
 .scheda-titolo .pallino {
-  width: 10px; height: 10px; border-radius: 50%;
+  width: 8px; height: 8px; border-radius: 50%;
   background: var(--accento); flex: none;
 }
+.scheda > .nota:last-child { margin-bottom: 0; }
 
-/* Griglia delle scorciatoie in Oggi. */
-.griglia {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: var(--s3);
+.griglia   { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s3); }
+.griglia-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); margin-bottom: var(--s3); }
+
+/* Riquadro con una cifra sola. */
+.riquadro {
+  position: relative;
+  background: var(--sfondo-2);
+  border-radius: var(--r-scheda);
+  padding: var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
 }
+.riquadro .cifra { font-size: var(--t-28); }
 
-/* --------------------------------------------------------------- liste -- */
+/* ---------------------------------------------------- liste raggruppate -- */
 
 .lista {
+  position: relative;
   list-style: none;
   margin: 0 0 var(--s5);
   padding: 0;
   background: var(--sfondo-2);
-  border-radius: var(--r-grande);
+  border-radius: var(--r-scheda);
   overflow: hidden;
-  box-shadow: var(--ombra);
 }
-.lista > li + li { border-top: 0.5px solid var(--separatore); }
+/* Il filo di separazione parte dopo l'eventuale icona, come nelle liste
+   di sistema: allineato al testo, non al bordo. */
+.lista > li + li > * { box-shadow: inset 0 0.5px 0 var(--separatore); }
+
 .riga {
   display: flex;
   align-items: center;
@@ -165,11 +307,22 @@ a  { color: var(--accento); text-decoration: none; }
   color: inherit;
   text-align: left;
   cursor: pointer;
+  transition: background var(--veloce) var(--curva);
 }
 .riga:active { background: var(--riempimento); }
-.riga .valore { margin-left: auto; color: var(--etichetta-2); }
+.riga .valore { margin-left: auto; color: var(--etichetta-3); font-variant-numeric: tabular-nums; }
+.riga .freccia { color: var(--etichetta-4); display: flex; flex: none; margin-left: var(--s1); }
+.riga .icona { color: var(--etichetta-3); display: flex; flex: none; }
 
-/* ------------------------------------------------------------ pulsanti -- */
+/* Intestazione di gruppo sopra una lista, maiuscoletto come iOS. */
+.gruppo-titolo {
+  font-size: var(--t-13);
+  color: var(--etichetta-3);
+  padding: 0 var(--s4) var(--s2);
+  margin-top: var(--s5);
+}
+
+/* ------------------------------------------------------------- pulsanti -- */
 
 .btn {
   display: inline-flex;
@@ -177,229 +330,330 @@ a  { color: var(--accento); text-decoration: none; }
   justify-content: center;
   gap: var(--s2);
   min-height: var(--tocco);
-  padding: 0 var(--s5);
+  padding: 10px var(--s5);
   border: 0;
-  border-radius: var(--r-medio);
+  border-radius: var(--r-btn);
   background: var(--accento);
   color: #fff;
-  font: 600 var(--t-corpo) / 1 var(--font-testo);
+  font-family: var(--font-testo);
+  font-size: var(--t-17);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
   cursor: pointer;
-  transition: opacity var(--veloce) var(--curva);
+  transition: opacity var(--veloce) var(--curva), transform var(--veloce) var(--curva);
 }
-.btn:active { opacity: 0.7; }
-.btn[disabled] { opacity: 0.35; pointer-events: none; }
-.btn.secondario { background: var(--riempimento); color: var(--accento); }
-.btn.distruttivo { background: var(--rosso); }
+.btn:active { opacity: 0.72; transform: scale(0.985); }
+.btn[disabled] { opacity: 0.32; pointer-events: none; }
 .btn.pieno { width: 100%; }
+
+/* Bordato: riempimento trasparente, filo e testo nella tinta. */
+.btn.bordato {
+  background: transparent;
+  color: var(--accento);
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+/* Tenue: riempimento nella tinta al 14%. La variante che si usa di più,
+   perché non compete con l'azione primaria. */
+.btn.tenue { background: var(--accento-tenue); color: var(--accento); }
+/* Nudo: solo testo. */
+.btn.nudo  { background: none; color: var(--accento); padding-inline: var(--s2); }
+.btn.distruttivo { background: var(--rosso); color: #fff; }
+.btn.distruttivo.nudo, .btn.distruttivo.tenue { background: none; color: var(--rosso); }
+.btn.piccolo { min-height: 34px; font-size: var(--t-15); padding: 6px var(--s4); }
+
+/* Pulsante tondo di sola icona, per le barre. */
+.btn-icona {
+  width: var(--tocco); height: var(--tocco);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 50%;
+  background: none; color: var(--accento);
+  cursor: pointer;
+}
+.btn-icona:active { background: var(--riempimento); }
 
 /* --------------------------------------------------------------- campi -- */
 
 .campo {
   width: 100%;
   min-height: var(--tocco);
-  padding: var(--s3) var(--s4);
-  border: 0.5px solid var(--separatore);
-  border-radius: var(--r-medio);
-  background: var(--sfondo-2);
+  padding: 11px 14px;
+  border: 0;
+  border-radius: var(--r-campo);
+  background: var(--sfondo-3);
   color: var(--etichetta);
+  font-family: var(--font-testo);
   /* 17px minimo: sotto, iOS zooma sul focus e non torna più indietro. */
-  font: 400 var(--t-corpo) / 1.4 var(--font-testo);
+  font-size: var(--t-17);
+  line-height: 1.35;
+  transition: box-shadow var(--veloce) var(--curva);
 }
-.campo:focus-visible { outline: 2px solid var(--accento); outline-offset: 1px; }
+.campo::placeholder { color: var(--etichetta-4); }
+/* L'alone di focus è l'unica "ombra" ammessa: è un anello, non una caduta. */
+.campo:focus { outline: none; box-shadow: 0 0 0 4px var(--accento-alone); }
+select.campo { appearance: none; padding-right: var(--s8); }
 
-/* --------------------------------------------------------- stato sync --- */
+.campo-etichetta {
+  display: block;
+  font-size: var(--t-13);
+  font-weight: 500;
+  color: var(--etichetta-3);
+  margin: 0 0 var(--s2) 2px;
+}
+.campo-gruppo { margin-bottom: var(--s4); }
 
-.sync-pallino {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--etichetta-3);
+/* -------------------------------------------------- segmenti e pillole -- */
+
+.segmenti {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--r-campo);
+  background: var(--riempimento);
+}
+.segmento {
+  flex: 1;
+  min-height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--etichetta);
+  font-family: var(--font-testo);
+  font-size: var(--t-13);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva);
+}
+.segmento[aria-pressed="true"] {
+  background: var(--sfondo-2);
+  font-weight: 600;
+  box-shadow: var(--filo);
+}
+
+/* Pillole selezionabili: categorie, tinte, giorni. */
+.pillole { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.pillole.riga-unica { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.pillole.riga-unica::-webkit-scrollbar { display: none; }
+
+.pillola {
+  min-height: 34px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: var(--r-pillola);
+  background: var(--riempimento);
+  color: var(--etichetta);
+  font-family: var(--font-testo);
+  font-size: var(--t-15);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
+}
+.pillola[aria-pressed="true"] { background: var(--accento); color: #fff; font-weight: 600; }
+.pillola:active { opacity: 0.7; }
+
+/* ------------------------------------------------------- avanzamento --- */
+
+.traccia {
+  height: 6px;
+  border-radius: var(--r-pillola);
+  background: var(--sfondo-4);
+  overflow: hidden;
+}
+.traccia.sottile { height: 4px; }
+.traccia > .barra {
+  height: 100%;
+  border-radius: var(--r-pillola);
+  background: var(--accento);
+  transition: width var(--normale) var(--curva);
+}
+.traccia > .barra.avviso  { background: var(--arancio); }
+.traccia > .barra.oltre   { background: var(--rosso); }
+
+/* Anello di completamento: lo disegna core/ui.js come SVG. */
+.anello { display: block; transform: rotate(-90deg); }
+.anello circle { fill: none; }
+
+/* ------------------------------------------------------------- fogli --- */
+
+.velo {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: var(--velo);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--normale) var(--curva);
+}
+.velo.aperto { opacity: 1; pointer-events: auto; }
+
+.foglio {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 100;
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-foglio) var(--r-foglio) 0 0;
+  background: var(--materiale-regolare);
+  backdrop-filter: var(--sfocatura);
+  -webkit-backdrop-filter: var(--sfocatura);
+  transform: translateY(101%);
+  transition: transform var(--normale) var(--curva);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.foglio.aperto { transform: none; }
+/* Il detent al 50%: i fogli brevi non devono occupare tutto lo schermo. */
+.foglio.mezzo { max-height: 56dvh; }
+
+.foglio-maniglia {
+  width: 36px; height: 5px;
+  border-radius: var(--r-pillola);
+  background: var(--etichetta-4);
+  margin: var(--s2) auto var(--s1);
   flex: none;
-  transition: background var(--normale) var(--curva);
 }
-.sync-pallino.is-ok    { background: var(--verde); }
-.sync-pallino.is-corso { background: var(--arancio); animation: pulsa 1.2s infinite; }
-.sync-pallino.is-err   { background: var(--rosso); }
-.sync-pallino.is-off   { background: var(--etichetta-3); }
-@keyframes pulsa { 50% { opacity: 0.25; } }
-
-/* -------------------------------------------------------------- utilità -- */
-
-.nota      { font-size: var(--t-nota); color: var(--etichetta-2); }
-.mono      { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-.cifra     { font-family: var(--font-titolo); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
-.vuoto     { padding: var(--s10) var(--s4); text-align: center; color: var(--etichetta-2); }
-[hidden]   { display: none !important; }
-.solo-lettori-schermo {
-  position: absolute; width: 1px; height: 1px; overflow: hidden;
-  clip: rect(0 0 0 0); white-space: nowrap;
+.foglio-testa {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3) var(--s3);
+  flex: none;
 }
-
-/* ======================================================================
-   Componenti della shell: Oggi, Impostazioni, Cantiere, avvisi.
-   Stanno qui e non nei moduli perché la shell li possiede: un modulo non
-   deve poter cambiare la forma della home.
-   ====================================================================== */
+.foglio-testa h3 { font-size: var(--t-17); font-weight: 600; text-align: center; font-family: var(--font-testo); }
+.foglio-testa .btn.nudo:last-child { justify-self: end; }
+.foglio-testa .btn.nudo:first-child { justify-self: start; }
+.foglio-corpo {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 var(--s4) var(--s5);
+}
 
 /* ------------------------------------------------------------- avvisi --- */
 
 #avvisi {
   position: fixed;
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom) + 88px);
+  bottom: calc(env(safe-area-inset-bottom) + 96px);
   transform: translateX(-50%);
-  z-index: 80;
+  z-index: 120;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--s2);
   pointer-events: none;
+  width: max-content;
+  max-width: calc(100vw - var(--s8));
 }
 .avviso {
-  padding: var(--s3) var(--s5);
-  border-radius: 999px;
-  background: var(--etichetta);
-  color: var(--sfondo);
-  font-size: var(--t-piccolo);
+  padding: 10px var(--s5);
+  border-radius: var(--r-pillola);
+  background: var(--materiale-spesso);
+  backdrop-filter: var(--sfocatura);
+  -webkit-backdrop-filter: var(--sfocatura);
+  color: var(--etichetta);
+  font-size: var(--t-15);
   font-weight: 500;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  text-align: center;
   animation: sali var(--normale) var(--curva);
 }
-.avviso.errore { background: var(--rosso); color: #fff; }
-.avviso.via    { opacity: 0; transition: opacity var(--normale) var(--curva); }
-@keyframes sali { from { opacity: 0; transform: translateY(8px); } }
+.avviso.errore { color: var(--rosso); }
+.avviso.via { opacity: 0; transition: opacity var(--normale) var(--curva); }
+@keyframes sali { from { opacity: 0; transform: translateY(10px) scale(0.96); } }
 
-/* ---------------------------------------------------------------- oggi --- */
+/* --------------------------------------------------------- stato sync --- */
 
-.oggi-elenco { display: flex; flex-direction: column; gap: var(--s3); }
-
-.oggi-scheda {
-  display: block;
-  color: inherit;
-  /* Il bordo a sinistra è l'unico punto in cui il colore di un modulo
-     compare nella home: basta a riconoscerlo, non abbastanza da urlare. */
-  border-left: 3px solid var(--accento);
+.sync-pallino {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--etichetta-4);
+  flex: none;
+  transition: background var(--normale) var(--curva);
 }
-.oggi-scheda:active { background: var(--sfondo-3); }
-.oggi-scheda.urgente { box-shadow: 0 0 0 1.5px var(--accento), var(--ombra); }
+.sync-pallino.is-ok    { background: var(--verde); }
+.sync-pallino.is-corso { background: var(--arancio); animation: pulsa 1.3s ease-in-out infinite; }
+.sync-pallino.is-err   { background: var(--rosso); }
+.sync-pallino.is-off   { background: var(--etichetta-4); }
+@keyframes pulsa { 50% { opacity: 0.25; } }
 
-.oggi-testa { display: flex; align-items: center; gap: var(--s2); }
-.oggi-icona { color: var(--accento); display: flex; }
-.oggi-nome  { font-weight: 600; font-size: var(--t-callout); }
-.oggi-freccia { margin-left: auto; color: var(--etichetta-3); display: flex; }
-.oggi-valore  { font-size: var(--t-titolo1); font-weight: 700; margin-top: var(--s2); }
+/* ---------------------------------------------------------------- vuoto -- */
 
-/* -------------------------------------------------------- impostazioni --- */
-
-.segmenti {
-  display: flex;
-  gap: 2px;
-  padding: 2px;
-  border-radius: var(--r-piccolo);
-  background: var(--riempimento);
+.vuoto {
+  padding: var(--s14) var(--s4);
+  text-align: center;
+  color: var(--etichetta-3);
 }
-.segmento {
-  flex: 1;
-  min-height: 34px;
-  border: 0;
-  border-radius: 6px;
-  background: none;
-  color: var(--etichetta);
-  font: 500 var(--t-piccolo) / 1 var(--font-testo);
-  cursor: pointer;
-}
-.segmento[aria-pressed="true"] { background: var(--sfondo-2); box-shadow: var(--ombra); font-weight: 600; }
+.vuoto p { margin-bottom: var(--s2); }
+.vuoto .grande { font-size: var(--t-22); color: var(--etichetta-2); font-family: var(--font-titolo); }
 
-.errore { color: var(--rosso); }
+/* --------------------------------------------------------------- varie -- */
+
 code {
   font-family: var(--font-mono);
-  font-size: 0.9em;
-  padding: 1px 5px;
-  border-radius: 5px;
+  font-size: 0.88em;
+  padding: 2px 6px;
+  border-radius: 6px;
   background: var(--riempimento);
 }
-
-/* ------------------------------------------------------------ cantiere --- */
-
-.cantiere-passi {
-  margin: 0;
-  padding-left: var(--s5);
-  color: var(--etichetta-2);
-  font-size: var(--t-piccolo);
-}
-.cantiere-passi li { margin-bottom: var(--s2); }
-
-.icona { display: inline-flex; color: var(--etichetta-2); }
-
-/* --------------------------------------------------- i riquadri di Oggi --- */
-
-.striscia { margin: calc(var(--s5) * -1 + 0px) 0 var(--s5); }
-
-/* Due colonne sul telefono, tre da 560px in su. I riquadri restano nello
-   stesso posto a ogni apertura: è ciò che permette di leggerli senza
-   fermarsi a cercarli. Il terzo, su due colonne, occupa la riga intera. */
-.riquadri {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--s3);
-}
-.riquadri > :nth-child(3):last-child { grid-column: 1 / -1; }
-@media (min-width: 560px) {
-  .riquadri { grid-template-columns: repeat(3, 1fr); }
-  .riquadri > :nth-child(3):last-child { grid-column: auto; }
-}
-
-.riquadro {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s3);
-  min-height: 116px;
-  padding: var(--s4);
-  border-radius: var(--r-scheda);
-  background: var(--sfondo-2);
-  box-shadow: var(--ombra);
-  color: inherit;
-  border-top: 3px solid var(--accento);
-}
-.riquadro:active { background: var(--sfondo-3); }
-
-.riquadro-testa { display: flex; align-items: center; gap: var(--s2); }
-.riquadro-icona { color: var(--accento); display: flex; }
-.riquadro-nome  { font-size: var(--t-nota); font-weight: 600; letter-spacing: 0.01em; }
-.riquadro-corpo { margin-top: auto; }
-.riquadro-valore { font-size: var(--t-titolo2); font-weight: 700; line-height: 1.1; }
-.riquadro-nota  { font-size: var(--t-minuscolo); color: var(--etichetta-2); margin-top: 2px; }
-
-/* Lo stato quieto non è un errore: è il modulo che dice "oggi niente".
-   Deve leggersi come silenzio, non come guasto. */
-.riquadro-quieto { font-size: var(--t-nota); color: var(--etichetta-3); }
-.riquadro.stato-assente { border-top-color: var(--etichetta-3); }
-.riquadro.stato-assente .riquadro-icona { color: var(--etichetta-3); }
-
-.bollo {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--accento);
-  margin-left: auto;
-}
-
-.bottone-icona {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--tocco);
-  height: var(--tocco);
-  margin: calc(var(--s3) * -1);
-  border-radius: 50%;
-  color: var(--etichetta-2);
-}
-.bottone-icona:active { background: var(--riempimento); }
-
-/* ---------------------------------------------------------- diagnostica --- */
-
 .diagnostica {
   font-family: var(--font-mono);
-  font-size: var(--t-minuscolo);
-  line-height: 1.7;
+  font-size: var(--t-12);
+  line-height: 1.65;
   color: var(--etichetta-2);
-  max-height: 220px;
-  overflow-y: auto;
-  margin: 0;
+  word-break: break-word;
 }
-.diagnostica b { color: var(--etichetta); font-weight: 600; }
+hr {
+  border: 0;
+  height: 0.5px;
+  background: var(--separatore);
+  margin: var(--s4) 0;
+}
+[hidden] { display: none !important; }
+.solo-lettori-schermo {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
+
+/* Da scrivania il tocco non serve: le righe si stringono. */
+@media (min-width: 900px) and (pointer: fine) {
+  .riga { min-height: var(--tocco-denso); padding-block: var(--s2); }
+  #vista { padding-top: calc(var(--s6)); }
+}
+
+/* Il filo di luce anche sulla cromatura. Sulla barra in basso solo in alto,
+   sui fogli solo sul bordo superiore: è da lì che si vede il taglio. */
+#barra::before, #barra-alta::after, .foglio::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--vetro-alto) 20%, var(--vetro-alto) 80%, transparent);
+  pointer-events: none;
+}
+#barra::before  { top: 0; }
+#barra-alta::after { bottom: 0; }
+.foglio::before { top: 0; }
+
+/* ------------------------------------------------------- interruttore --- */
+
+.interruttore {
+  width: 51px; height: 31px;
+  flex: none;
+  border: 0;
+  border-radius: var(--r-pillola);
+  background: var(--riempimento-2);
+  padding: 2px;
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva);
+  display: block;
+}
+.interruttore-pallina {
+  display: block;
+  width: 27px; height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: transform var(--veloce) var(--curva);
+}
+.interruttore.acceso { background: var(--verde); }
+.interruttore.acceso .interruttore-pallina { transform: translateX(20px); }

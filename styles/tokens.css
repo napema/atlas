@@ -1,14 +1,19 @@
 /* =========================================================================
    ATLAS — token di design.
-   Un solo linguaggio per tutti i moduli. Semantica Apple: i colori hanno
-   un ruolo, non un nome cromatico, così chiaro e scuro si scambiano senza
-   toccare una riga dei moduli.
+   Riferimento: docs/APPLE.md. Soft futurism: materiali vibranti al posto
+   dei riempimenti pieni, SF Pro a ogni corpo, tinte di sistema come accento
+   e mai come sfondo.
 
-   REGOLA: un modulo non scrive mai un colore letterale. Usa i token.
-   L'unica cosa che un modulo può scegliere è il proprio --accento.
+   TRE REGOLE che nessun modulo può violare:
+     1. nessun colore letterale — solo token
+     2. una sola tinta per schermata, e solo sull'azione primaria
+     3. niente ombre su schede, pulsanti, campi. La profondità viene dal
+        materiale e dal raggio, non dal drop-shadow
    ========================================================================= */
 
-/* SF Pro self-hosted: identico su iOS, Windows e offline. */
+/* SF Pro self-hosted: identico su iOS, Windows e offline.
+   Le soglie ottiche di Apple sono Text ≤19px e Display ≥20px — rispettarle
+   è metà dell'effetto "piattaforma". */
 @font-face { font-family: "SF Pro Text"; font-weight: 400; font-style: normal; font-display: swap;
   src: url("../assets/fonts/sf-pro-text-regular.woff2") format("woff2"); }
 @font-face { font-family: "SF Pro Text"; font-weight: 500; font-style: normal; font-display: swap;
@@ -23,105 +28,184 @@
   src: url("../assets/fonts/sf-pro-display-bold.woff2") format("woff2"); }
 
 :root {
-  /* --- colori funzionali (invarianti fra i temi) --- */
-  --blu:     #007AFF;
-  --verde:   #34C759;
-  --arancio: #FF9500;
-  --rosso:   #FF3B30;
-  --viola:   #AF52DE;
-  --menta:   #00C7BE;
-  --indaco:  #5856D6;
+  /* ---------------------------------------------------- tinte di sistema --
+     Invarianti fra i temi nei nomi, non nei valori: in scuro schiariscono
+     per reggere il contrasto sul nero. Una per superficie, mai mescolate. */
+  --blu:     #007aff;
+  --verde:   #34c759;
+  --rosso:   #ff3b30;
+  --arancio: #ff9500;
+  --viola:   #af52de;
+  --rosa:    #ff2d55;
+  --giallo:  #ffcc00;
+  --menta:   #00c7be;
+  --indaco:  #5856d6;
+  --grigio:  #8e8e93;
 
-  /* --- accenti di modulo: uno per modulo, mai riusato --- */
-  --accento-finanze:   var(--verde);
-  --accento-mobilita:  var(--blu);
-  --accento-abitudini: var(--viola);
-  /* Il modulo attivo riscrive --accento su di sé; questo è il fallback. */
+  /* Il modulo attivo riscrive --accento su :root; questo è il ripiego. */
   --accento: var(--blu);
+  /* Versione traslucida dell'accento, per aloni e riempimenti tenui.
+     I moduli la ridefiniscono insieme a --accento. */
+  --accento-tenue: rgba(0, 122, 255, 0.14);
+  --accento-alone: rgba(0, 122, 255, 0.18);
 
-  /* --- superfici e testo, tema chiaro --- */
-  --sfondo:      #F2F2F7;
-  --sfondo-2:    #FFFFFF;
-  --sfondo-3:    #FFFFFF;
-  --separatore:  rgba(60, 60, 67, 0.20);
-  --etichetta:   #000000;
-  --etichetta-2: rgba(60, 60, 67, 0.60);
-  --etichetta-3: rgba(60, 60, 67, 0.30);
-  --riempimento: rgba(120, 120, 128, 0.12);
-  --barra:       rgba(249, 249, 249, 0.82);
-  --ombra:       0 1px 3px rgba(0, 0, 0, 0.06);
+  /* --------------------------------------------------- superfici, chiaro --
+     `sfondo` è la pagina, `elevata` è la scheda, `raggruppata` è il fondo
+     di una lista o di un campo. Tre livelli bastano: un quarto costringe a
+     inventare gerarchie che l'occhio non legge. */
+  --sfondo:        #ffffff;
+  --sfondo-2:      #ffffff;   /* superficie elevata: scheda, foglio */
+  --sfondo-3:      #f2f2f7;   /* raggruppata: campi, righe, incassi */
+  --sfondo-4:      #e5e5ea;   /* traccia di una barra di avanzamento */
+  --separatore:    rgba(60, 60, 67, 0.18);
+  --etichetta:     #1d1d1f;
+  --etichetta-2:   rgba(60, 60, 67, 0.78);
+  --etichetta-3:   rgba(60, 60, 67, 0.55);
+  --etichetta-4:   rgba(60, 60, 67, 0.30);
+  --riempimento:   rgba(120, 120, 128, 0.12);
+  --riempimento-2: rgba(120, 120, 128, 0.20);
 
-  /* --- tipografia (scala iOS) --- */
-  --font-testo:   "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-titolo:  "SF Pro Display", var(--font-testo);
-  --font-mono:    ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
-  --t-largo:      34px;   /* large title  */
-  --t-titolo1:    28px;
-  --t-titolo2:    22px;
-  --t-titolo3:    20px;
-  --t-corpo:      17px;
-  --t-callout:    16px;
-  --t-piccolo:    15px;
-  --t-nota:       13px;
-  --t-minuscolo:  11px;
+  /* ------------------------------------------------- materiali vibranti --
+     Alpha sopra un backdrop-filter. Sostituiscono i riempimenti pieni su
+     barre, fogli e sovrapposizioni. Mai un'ombra sopra un materiale: la
+     sfoca e annulla l'effetto. */
+  --materiale-sottile:  rgba(255, 255, 255, 0.60);
+  --materiale-regolare: rgba(255, 255, 255, 0.78);
+  --materiale-spesso:   rgba(255, 255, 255, 0.92);
+  --sfocatura: blur(30px) saturate(180%);
 
-  /* --- spaziatura: multipli di 4, ritmo su 8 --- */
-  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px;
-  --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px;
+  /* --- il vetro ---
+     Superficie translucida con un filo di luce sul bordo: chiaro in alto,
+     scuro in basso, come se la luce venisse da sopra. È quel filo a dare la
+     sensazione di spessore — senza, una superficie sfocata sembra solo una
+     macchia. Non è un bordo da 1px: è un gradiente ritagliato in maschera,
+     quindi non compete con il raggio e non fa la scaletta sugli angoli. */
+  --vetro-fondo: rgba(255, 255, 255, 0.55);
+  --vetro-alto:  rgba(255, 255, 255, 0.70);
+  --vetro-basso: rgba(255, 255, 255, 0.10);
+  --vetro-sfocatura: blur(20px) saturate(180%);
 
-  /* --- forma --- */
-  --r-piccolo: 8px;
-  --r-medio:   12px;
-  --r-grande:  16px;
-  --r-scheda:  20px;
-  --tocco:     44px;      /* area minima toccabile, non negoziabile */
+  /* Il velo dietro un foglio modale. Non è un materiale: è oscuramento. */
+  --velo: rgba(0, 0, 0, 0.28);
 
-  /* --- movimento --- */
-  --curva: cubic-bezier(0.32, 0.72, 0, 1);
-  --veloce: 180ms;
-  --normale: 280ms;
+  /* ------------------------------------------------------------ tipografia --
+     Scala HIG. Corpo 17 sul tocco, 13 sul denso da scrivania. */
+  --font-testo:  "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-titolo: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono:   "SF Mono", ui-monospace, Menlo, "Cascadia Mono", monospace;
+
+  --t-56: 56px;  --t-44: 44px;  --t-34: 34px;  --t-28: 28px;
+  --t-22: 22px;  --t-17: 17px;  --t-15: 15px;  --t-13: 13px;
+  --t-12: 12px;  --t-11: 11px;
+
+  /* ------------------------------------------------------------ spaziatura --
+     Base 8. La scala di apple.md, niente valori fuori scala. */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px; --s5: 20px;
+  --s6: 24px; --s8: 32px; --s11: 44px; --s14: 56px; --s20: 80px;
+
+  /* ---------------------------------------------------------------- forma --
+     12 sui controlli, 14 sulle schede, 10 sui campi, 16 in cima ai fogli.
+     Niente bordi netti da 1px sulle schede: raggio più materiale. */
+  --r-campo:   10px;
+  --r-btn:     12px;
+  --r-scheda:  14px;
+  --r-foglio:  16px;
+  --r-pillola: 999px;
+  --tocco:     44px;   /* area minima toccabile, non negoziabile */
+  --tocco-denso: 28px; /* solo da scrivania, con puntatore fine */
+
+  /* ------------------------------------------------------------- profondità --
+     Su iOS la stratificazione è materiale, non ombra. L'unica cosa
+     ammessa è il filo di separazione alla macOS. */
+  --filo: 0 1px 0 rgba(0, 0, 0, 0.04);
+
+  /* ------------------------------------------------------------- movimento --*/
+  --curva:   cubic-bezier(0.32, 0.72, 0, 1);   /* la curva di iOS */
+  --veloce:  180ms;
+  --normale: 320ms;
+  --lento:   450ms;
 }
 
-/* Lo scuro arriva dal sistema, salvo che l'utente abbia forzato il chiaro
-   dalle impostazioni ATLAS. Il blocco è ripetuto sotto per il caso opposto:
-   CSS non permette di riusare un gruppo di dichiarazioni, e una variabile
-   che esiste solo dentro una media query non può essere forzata a mano. */
+/* ------------------------------------------------------------------ scuro --
+   Il blocco è ripetuto perché CSS non permette di riusare un gruppo di
+   dichiarazioni, e una variabile definita solo dentro una media query non
+   può essere forzata a mano dalle impostazioni. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema="chiaro"]) {
-    --sfondo:      #000000;
-    --sfondo-2:    #1C1C1E;
-    --sfondo-3:    #2C2C2E;
-    --separatore:  rgba(84, 84, 88, 0.60);
-    --etichetta:   #FFFFFF;
-    --etichetta-2: rgba(235, 235, 245, 0.60);
-    --etichetta-3: rgba(235, 235, 245, 0.30);
-    --riempimento: rgba(120, 120, 128, 0.24);
-    --barra:       rgba(28, 28, 30, 0.82);
-    --ombra:       none;
-    --blu:     #0A84FF;
-    --verde:   #30D158;
-    --arancio: #FF9F0A;
-    --rosso:   #FF453A;
-    --viola:   #BF5AF2;
+    --blu:     #0a84ff;
+    --verde:   #30d158;
+    --rosso:   #ff453a;
+    --arancio: #ff9f0a;
+    --viola:   #bf5af2;
+    --rosa:    #ff375f;
+    --giallo:  #ffd60a;
+    --menta:   #63e6e2;
+    --indaco:  #7d7aff;
+    --grigio:  #98989d;
+
+    --accento-tenue: rgba(10, 132, 255, 0.22);
+    --accento-alone: rgba(10, 132, 255, 0.28);
+
+    --sfondo:        #000000;
+    --sfondo-2:      #1c1c1e;
+    --sfondo-3:      #2c2c2e;
+    --sfondo-4:      #3a3a3c;
+    --separatore:    rgba(84, 84, 88, 0.65);
+    --etichetta:     #f5f5f7;
+    --etichetta-2:   rgba(235, 235, 245, 0.78);
+    --etichetta-3:   rgba(235, 235, 245, 0.55);
+    --etichetta-4:   rgba(235, 235, 245, 0.30);
+    --riempimento:   rgba(120, 120, 128, 0.24);
+    --riempimento-2: rgba(120, 120, 128, 0.36);
+
+    --materiale-sottile:  rgba(30, 30, 32, 0.62);
+    --materiale-regolare: rgba(30, 30, 32, 0.80);
+    --materiale-spesso:   rgba(30, 30, 32, 0.94);
+    --vetro-fondo: rgba(60, 60, 66, 0.42);
+    --vetro-alto:  rgba(255, 255, 255, 0.16);
+    --vetro-basso: rgba(255, 255, 255, 0.03);
+    --velo: rgba(0, 0, 0, 0.48);
+
+    --filo: 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 }
 
 :root[data-tema="scuro"] {
-  --sfondo:      #000000;
-  --sfondo-2:    #1C1C1E;
-  --sfondo-3:    #2C2C2E;
-  --separatore:  rgba(84, 84, 88, 0.60);
-  --etichetta:   #FFFFFF;
-  --etichetta-2: rgba(235, 235, 245, 0.60);
-  --etichetta-3: rgba(235, 235, 245, 0.30);
-  --riempimento: rgba(120, 120, 128, 0.24);
-  --barra:       rgba(28, 28, 30, 0.82);
-  --ombra:       none;
-  --blu:     #0A84FF;
-  --verde:   #30D158;
-  --arancio: #FF9F0A;
-  --rosso:   #FF453A;
-  --viola:   #BF5AF2;
+  --blu:     #0a84ff;
+  --verde:   #30d158;
+  --rosso:   #ff453a;
+  --arancio: #ff9f0a;
+  --viola:   #bf5af2;
+  --rosa:    #ff375f;
+  --giallo:  #ffd60a;
+  --menta:   #63e6e2;
+  --indaco:  #7d7aff;
+  --grigio:  #98989d;
+
+  --accento-tenue: rgba(10, 132, 255, 0.22);
+  --accento-alone: rgba(10, 132, 255, 0.28);
+
+  --sfondo:        #000000;
+  --sfondo-2:      #1c1c1e;
+  --sfondo-3:      #2c2c2e;
+  --sfondo-4:      #3a3a3c;
+  --separatore:    rgba(84, 84, 88, 0.65);
+  --etichetta:     #f5f5f7;
+  --etichetta-2:   rgba(235, 235, 245, 0.78);
+  --etichetta-3:   rgba(235, 235, 245, 0.55);
+  --etichetta-4:   rgba(235, 235, 245, 0.30);
+  --riempimento:   rgba(120, 120, 128, 0.24);
+  --riempimento-2: rgba(120, 120, 128, 0.36);
+
+  --materiale-sottile:  rgba(30, 30, 32, 0.62);
+  --materiale-regolare: rgba(30, 30, 32, 0.80);
+  --materiale-spesso:   rgba(30, 30, 32, 0.94);
+  --vetro-fondo: rgba(60, 60, 66, 0.42);
+  --vetro-alto:  rgba(255, 255, 255, 0.16);
+  --vetro-basso: rgba(255, 255, 255, 0.03);
+  --velo: rgba(0, 0, 0, 0.48);
+
+  --filo: 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 :root                     { color-scheme: light dark; }
@@ -129,5 +213,5 @@
 :root[data-tema="scuro"]  { color-scheme: dark; }
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --veloce: 0ms; --normale: 0ms; }
+  :root { --veloce: 0ms; --normale: 0ms; --lento: 0ms; }
 }

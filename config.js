@@ -34,8 +34,12 @@ window.ATLAS_CFG = {
   t2: "Z2X3B2TlV4UGZLcjBjZjNyUDFkRzRBWTNNZW5zSHEz",
   t3: "Um5palVmNDA1dXZNVVNKV1ZPRzVBU3FsaDJZVW5w",
 
-  // Chiave PUBBLICA VAPID per le notifiche. È pubblica per definizione:
-  // sta nel client ed è giusto così. La privata vive nei secret del repo.
-  // Vuota = niente notifiche, tutto il resto funziona.
-  vapidPublic: "",
+  // Chiave PUBBLICA VAPID per le notifiche. È pubblica per definizione: sta
+  // nel client ed è giusto così. La privata vive nei secret di atlas-dati e
+  // non compare da nessuna parte in questo repo.
+  //
+  // Una coppia sola per tutti i moduli — prima erano due, una per Mobilità e
+  // una per Abitudini. Rigenerarla obbliga a reiscrivere ogni dispositivo:
+  // una subscription è legata alla chiave con cui è stata creata.
+  vapidPublic: "BA-MCfD2AgZsi0o2XbR07FMTZE0WGJ_aw5CRaHc2Vrbp77wR57yHn9nVGRb0E_U_gWbmOil08oBUGCcZNPn0WaQ",
 };

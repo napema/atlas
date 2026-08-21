@@ -30,6 +30,7 @@
 
 
 import { avviaSync as sincronizzaContesto } from "./contesto.js";
+import { avviaSync as sincronizzaNotifiche } from "./notifiche.js";
 
 /**
  * L'ordine di questa lista è l'ordine della barra in basso.
@@ -51,32 +52,33 @@ export const MODULI = [
     nome: "Finanze",
     icona: "portafoglio",
     accento: "var(--verde)",
+    stile: true,
     carica: () => import("../moduli/finanze/modulo.js"),
-    // Previsti: "finanze:movimento-registrato" — permetterà ad Abitudini di
-    // spuntare da sé un'eventuale abitudine "segnare le spese".
-    pubblica: [],
-    ascolta: [],
+    pubblica: ["finanze:movimento-registrato"],
+    ascolta: ["giorno:cambiato"],
   },
   {
     id: "mobilita",
     nome: "Mobilità",
     icona: "corpo",
     accento: "var(--blu)",
+    stile: true,
     carica: () => import("../moduli/mobilita/modulo.js"),
-    // Previsti: "mobilita:sessione-completata" — è l'annuncio che evita
-    // all'utente di spuntare a mano un'abitudine che ha appena fatto.
-    pubblica: [],
-    ascolta: [],
+    // "mobilita:sessione-completata" è l'annuncio che evita all'utente di
+    // spuntare a mano un'abitudine che ha appena fatto. È il caso concreto
+    // per cui il bus esiste.
+    pubblica: ["mobilita:sessione-completata"],
+    ascolta: ["giorno:cambiato"],
   },
   {
     id: "abitudini",
     nome: "Abitudini",
     icona: "spunta",
     accento: "var(--viola)",
+    stile: true,
     carica: () => import("../moduli/abitudini/modulo.js"),
     pubblica: [],
-    // Previsto: ascolterà "mobilita:sessione-completata".
-    ascolta: [],
+    ascolta: ["mobilita:sessione-completata", "giorno:cambiato"],
   },
   {
     id: "impostazioni",
@@ -106,6 +108,7 @@ export async function prendiModulo(id) {
   const completo = {
     ...mod,
     id: voce.id, nome: voce.nome, icona: voce.icona, accento: voce.accento,
+    stile: Boolean(voce.stile),
     pubblica: voce.pubblica || [], ascolta: voce.ascolta || [],
   };
   caricati.set(id, completo);
@@ -129,6 +132,12 @@ export async function avviaTuttiISync() {
   try {
     sincronizzaContesto();
   } catch (e) { console.error("[registro] sync della lavagna non avviato", e); }
+
+  // Le iscrizioni push non appartengono a nessun modulo: sono di core, e
+  // il workflow che manda le notifiche legge da quel file.
+  try {
+    sincronizzaNotifiche();
+  } catch (e) { console.error("[registro] sync delle notifiche non avviato", e); }
 
   const esiti = await Promise.allSettled(MODULI.map((m) => prendiModulo(m.id)));
   for (const e of esiti) {

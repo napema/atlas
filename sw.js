@@ -12,7 +12,7 @@
  * appiccicato. È l'errore che costa più tempo a diagnosticare.
  */
 
-const VERSIONE = "atlas-v4";
+const VERSIONE = "atlas-v6";
 const GUSCIO = `guscio-${VERSIONE}`;
 
 const DA_PRECARICARE = [
@@ -30,8 +30,33 @@ const DA_PRECARICARE = [
   "./core/blobs.js",
   "./core/bus.js",
   "./core/contesto.js",
+  "./core/notifiche.js",
   "./core/ui.js",
   "./core/icone.js",
+
+  // I moduli si caricano pigramente all'apertura, ma nel precarico ci vanno
+  // lo stesso: la prima volta che apri Finanze offline è proprio il caso in
+  // cui servono, e "arrivano quando c'è rete" lì vuol dire non averli.
+  "./moduli/oggi/modulo.js",
+  "./moduli/impostazioni/modulo.js",
+  "./moduli/finanze/modulo.js",
+  "./moduli/finanze/dati.js",
+  "./moduli/finanze/calcolo.js",
+  "./moduli/finanze/viste.js",
+  "./moduli/finanze/stile.css",
+  "./moduli/mobilita/modulo.js",
+  "./moduli/mobilita/dati.js",
+  "./moduli/mobilita/calcolo.js",
+  "./moduli/mobilita/viste.js",
+  "./moduli/mobilita/esercizi.js",
+  "./moduli/mobilita/engine.js",
+  "./moduli/mobilita/stile.css",
+  "./moduli/abitudini/modulo.js",
+  "./moduli/abitudini/dati.js",
+  "./moduli/abitudini/calcolo.js",
+  "./moduli/abitudini/viste.js",
+  "./moduli/abitudini/stile.css",
+
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
   "./assets/icons/apple-touch-icon.png",
@@ -43,8 +68,8 @@ const DA_PRECARICARE = [
   "./assets/fonts/sf-pro-display-bold.woff2",
 ];
 
-// I moduli si caricano pigramente: non stanno nel precarico, ma la prima
-// volta che li apri online finiscono in cache e da lì restano disponibili.
+
+
 
 self.addEventListener("install", (e) => {
   e.waitUntil((async () => {
@@ -97,9 +122,12 @@ self.addEventListener("fetch", (e) => {
 });
 
 /* ------------------------------------------------------------- notifiche --
- * Mobilità e Abitudini hanno già le loro notifiche push, con due coppie
- * VAPID diverse. In ATLAS la coppia diventa una sola e il campo `modulo`
- * del messaggio dice chi ha parlato: è quello che decide dove aprire.
+ * Mobilità e Abitudini avevano due sistemi di push identici e incompatibili,
+ * con due coppie VAPID. Qui la coppia è una sola e il campo `modulo` del
+ * messaggio dice chi ha parlato: è quello che decide dove aprire.
+ *
+ * Chi manda è il workflow `promemoria.yml` dentro il repo atlas-dati: gira
+ * ogni dieci minuti, legge i file dei moduli e spedisce quello che è scaduto.
  */
 
 self.addEventListener("push", (e) => {

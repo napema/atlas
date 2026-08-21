@@ -1,31 +1,177 @@
 // moduli/abitudini — le abitudini del giorno, marcate in un tocco.
 //
-// Parte da napema/habit-tracker-webapp: index.html da 73 KB, monolitico, con
-// notifiche push già funzionanti (notify.js + un workflow che gira su GitHub
-// Actions). Il codice delle notifiche è la parte più preziosa: in ATLAS
-// diventa il servizio unico per tutti i moduli, con una sola coppia VAPID.
-//
-// Dati oggi: napema/abitudini-dati → abitudini.json
-// Dati dopo: napema/atlas-dati     → abitudini.json
+// Portato da napema/habit-tracker-webapp. Del monolite restano lo schema
+// (invariato: aveva già id, up e lapidi) e il motore delle serie, che è la
+// parte pensata bene. Sono spariti il suo storage, il suo sync e le sue
+// notifiche: ora sono di core, e valgono per tutti i moduli.
 
-import { cantiere } from "../cantiere.js";
+import { el, aggiungi, intestazione, avviso, oggiISO, piuGiorni } from "../../core/ui.js";
+import { icona } from "../../core/icone.js";
+import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
+import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
+import { annuncia, ascolta } from "../../core/bus.js";
+import { casella, stato, abitudiniVive, eFatta, alterna, idLog } from "./dati.js";
+import { progressoGiorno, mancantiOggi, serie, eAttesa } from "./calcolo.js";
+import { strisciaSettimana, riepilogo, elenco, apriModifica } from "./viste.js";
+
+let contenitore = null;
+let giornoScelto = oggiISO();
+const staccatori = [];
+
+/* --------------------------------------------------------------- vista -- */
+
+function disegna() {
+  if (!contenitore) return;
+  const scorrimento = globalThis.scrollY;
+  contenitore.replaceChildren();
+
+  aggiungi(contenitore, [
+    intestazione("Abitudini", etichettaGiorno(), el("button", {
+      class: "btn-icona", type: "button", "aria-label": "Nuova abitudine",
+      html: icona("piu", 26),
+      onClick: () => apriModifica(null, disegna),
+    })),
+    strisciaSettimana(giornoScelto, (g) => { giornoScelto = g; disegna(); }),
+    riepilogo(giornoScelto),
+    elenco(giornoScelto, disegna),
+  ]);
+
+  pubblicaSullaLavagna();
+  globalThis.scrollTo(0, scorrimento);
+}
+
+function etichettaGiorno() {
+  const oggi = oggiISO();
+  if (giornoScelto === oggi) return "oggi";
+  if (giornoScelto === piuGiorni(oggi, -1)) return "ieri";
+  return new Date(`${giornoScelto}T12:00:00`)
+    .toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+}
+
+/* ------------------------------------------------------------- lavagna -- */
+
+/**
+ * Quello che gli altri moduli possono sapere di Abitudini: due numeri, non
+ * l'archivio. `attese` insieme a `spuntate` perché "3" da solo non dice
+ * niente — 3 di 3 e 3 di 7 sono giornate diverse.
+ */
+function pubblicaSullaLavagna() {
+  const p = progressoGiorno(giornoCorrente());
+  if (leggiFatto("abitudini", "spuntate") !== p.fatte) scriviFatto("abitudini", "spuntate", p.fatte);
+  if (leggiFatto("abitudini", "attese") !== p.attese) scriviFatto("abitudini", "attese", p.attese);
+}
+
+/**
+ * Il pezzo che giustifica ATLAS: se esiste un'abitudine che corrisponde
+ * alla sessione di mobilità, si spunta da sé.
+ *
+ * Il riconoscimento è per nome, ed è volutamente grossolano: legare le due
+ * cose con un id vorrebbe dire che Abitudini conosce Mobilità, che è
+ * esattamente l'accoppiamento che il bus esiste per evitare. Un nome che
+ * contiene "mobilit" o "stretch" è un'euristica che l'utente può cambiare
+ * rinominando l'abitudine, e questo è un pregio.
+ */
+function spuntaDaSessione() {
+  const oggi = giornoCorrente();
+  const candidate = abitudiniVive().filter((h) => /mobilit|stretch|allungam/i.test(h.name));
+  let spuntate = 0;
+  for (const h of candidate) {
+    if (eFatta(h.id, oggi)) continue;
+    alterna(h.id, oggi);
+    spuntate++;
+  }
+  if (spuntate) {
+    avviso(spuntate === 1 ? "Abitudine spuntata dalla sessione." : `${spuntate} abitudini spuntate.`);
+    disegna();
+  }
+}
+
+/* ---------------------------------------------------------------- sync -- */
+
+export function avviaSync() {
+  const canale = apriCanale({
+    id: "abitudini",
+    file: "abitudini.json",
+    impacchetta: () => {
+      const s = stato();
+      return {
+        v: 1,
+        habits: s.habits,
+        logs: s.logs,
+        meta: s.meta,
+        metaUp: s.metaUp || 0,
+      };
+    },
+    applica: (remoto) => {
+      casella.aggiorna((s) => {
+        s.habits = potaLapidi(fondiRecord(s.habits, remoto.habits));
+        s.logs = potaLapidi(fondiRecord(s.logs, remoto.logs));
+        // `meta` non ha id: si confronta con un solo timestamp.
+        // Il caso `metaUp: 0` è reale — nell'app di partenza non è mai stato
+        // scritto — quindi un remoto a zero non deve poter vincere su un
+        // locale che invece è stato toccato.
+        if ((remoto.metaUp || 0) > (s.metaUp || 0)) {
+          s.meta = { ...s.meta, ...remoto.meta };
+          s.metaUp = remoto.metaUp;
+        }
+      }, { origine: "sync", tocca: false });   // applicare il remoto NON è una
+                                               // modifica locale: senza questo
+                                               // i due dispositivi si rimbalzano
+                                               // PUT a vicenda per sempre
+    },
+    ridisegna: () => { if (contenitore) disegna(); },
+  });
+
+  casella.osserva((_, origine) => { if (origine !== "sync") canale.segnalaModifica(); });
+  canale.avvia();
+  return canale;
+}
+
+/* ------------------------------------------------------------ contratto -- */
 
 export default {
-  monta: cantiere({
-    titolo: "Abitudini",
-    origine: "https://napema.github.io/habit-tracker-webapp/",
-    repoDati: "napema/abitudini-dati · abitudini.json",
-    daFare: [
-      "Estrarre lo schema di abitudini.json: definizioni, spunte per giorno, streak.",
-      "Separare la griglia dei giorni dal calcolo delle serie.",
-      "Portare notify.js in core/notifiche.js come servizio di tutti i moduli.",
-      "Unificare le due coppie VAPID in una sola e rifare l'iscrizione sull'iPhone.",
-      "Fondere i tre workflow di notifica in uno, con gli orari letti dal repo dati.",
-    ],
-  }),
+  async monta(cont, posizione) {
+    contenitore = cont;
+    giornoScelto = oggiISO();
 
-  // `oggi()` volutamente non c'è ancora: vedi la nota in moduli/finanze.
-  // Quando ci sarà: le abitudini del giorno non ancora spuntate e la serie
-  // più lunga in corso. E leggerà dalla lavagna quello che gli altri moduli
-  // hanno già fatto, invece di chiederlo di nuovo all'utente.
+    // Rotta #/abitudini/nuova: la scorciatoia della schermata Home.
+    if (posizione?.resto?.[0] === "nuova") {
+      queueMicrotask(() => apriModifica(null, disegna));
+    }
+
+    disegna();
+
+    // Chi ascolta DEVE staccarsi in smonta(): senza, ogni visita alla
+    // schermata lascia dietro una copia dell'ascoltatore, e i ridisegni
+    // raddoppiano a ogni giro.
+    staccatori.push(ascolta("mobilita:sessione-completata", spuntaDaSessione));
+    staccatori.push(ascolta("giorno:cambiato", () => { giornoScelto = oggiISO(); disegna(); }));
+  },
+
+  smonta() {
+    while (staccatori.length) staccatori.pop()();
+    contenitore = null;
+  },
+
+  /** La scheda per la home. Sincrona, senza effetti collaterali. */
+  oggi() {
+    const p = progressoGiorno(giornoCorrente());
+    if (!p.attese) return null;
+    const mancano = mancantiOggi();
+    const migliore = abitudiniVive().reduce((m, h) => Math.max(m, serie(h)), 0);
+
+    return {
+      titolo: "Abitudini",
+      valore: `${p.fatte} / ${p.attese}`,
+      dettaglio: !mancano.length
+        ? (migliore > 1 ? `Tutto fatto · ${migliore} giorni di fila` : "Tutto fatto.")
+        : mancano.length === 1 ? `Manca: ${mancano[0].name}`
+        : `Mancano ${mancano.length}: ${mancano.slice(0, 2).map((h) => h.name).join(", ")}${mancano.length > 2 ? "…" : ""}`,
+      // Urgente solo di sera: prima è solo una giornata in corso.
+      urgente: mancano.length > 0 && new Date().getHours() >= 20,
+      azione: { rotta: "#/abitudini" },
+    };
+  },
+
+  avviaSync,
 };

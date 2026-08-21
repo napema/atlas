@@ -79,6 +79,30 @@ function posizioneDi(id, resto) {
 // ritrovarsi in cima a una lista di trecento movimenti è un fastidio vero.
 const scorrimenti = new Map();
 
+/**
+ * Il foglio di stile di un modulo arriva insieme al modulo, non prima.
+ *
+ * Si ASPETTA che abbia finito di caricare: montare la vista mentre il CSS è
+ * ancora in volo produce un lampo di contenuto senza stile, e su una PWA
+ * installata quel lampo si nota a ogni cambio di scheda.
+ */
+const stiliCaricati = new Set();
+
+function caricaStile(mod) {
+  if (!mod.stile || stiliCaricati.has(mod.id)) return Promise.resolve();
+  stiliCaricati.add(mod.id);
+  return new Promise((risolvi) => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = `./moduli/${mod.id}/stile.css`;
+    link.dataset.modulo = mod.id;
+    // Anche in caso di errore si prosegue: senza il suo CSS il modulo è
+    // brutto, ma funziona. Bloccarlo lo renderebbe irraggiungibile.
+    link.onload = link.onerror = () => risolvi();
+    document.head.append(link);
+  });
+}
+
 async function disegna() {
   const { id, resto } = rottaCorrente();
 
@@ -91,6 +115,8 @@ async function disegna() {
 
   const mod = await prendiModulo(id);
   if (!mod) { contenitore.innerHTML = '<p class="vuoto">Questa schermata non esiste.</p>'; return; }
+
+  await caricaStile(mod);
 
   // L'accento del modulo entra come variabile: da qui in giù ogni
   // `var(--accento)` dei componenti condivisi diventa il colore giusto,

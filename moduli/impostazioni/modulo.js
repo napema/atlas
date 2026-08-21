@@ -10,6 +10,7 @@ import { spazio, chiediPersistenza } from "../../core/blobs.js";
 import { ultimiEventi, chiAscolta } from "../../core/bus.js";
 import { mappaEventi } from "../../core/registro.js";
 import { fattiDelGiorno, giornoCorrente } from "../../core/contesto.js";
+import * as notifiche from "../../core/notifiche.js";
 
 const ETICHETTE_STATO = {
   ok: "sincronizzato",
@@ -62,7 +63,7 @@ function bloccoSync() {
     lista,
     ...errori.map((c) => el("p", { class: "nota errore", testo: `${c.id}: ${c.messaggio}` })),
     el("button", {
-      class: "btn secondario pieno",
+      class: "btn tenue pieno",
       type: "button",
       testo: "Sincronizza adesso",
       onClick: () => { sincronizzaTutto(); avviso("Giro di sincronizzazione avviato."); },
@@ -84,7 +85,7 @@ async function bloccoSpazio() {
              "Il repo di sync resta comunque la copia che conta.",
     }),
     el("button", {
-      class: "btn secondario pieno",
+      class: "btn tenue pieno",
       type: "button",
       testo: "Chiedi persistenza",
       onClick: async () => {
@@ -103,7 +104,7 @@ function bloccoBackup() {
              "quelle stanno in IndexedDB e nel repo dati.",
     }),
     el("button", {
-      class: "btn secondario pieno",
+      class: "btn tenue pieno",
       type: "button",
       testo: "Esporta stato",
       onClick: () => {
@@ -114,6 +115,103 @@ function bloccoBackup() {
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       },
     }),
+  ]);
+}
+
+/**
+ * Le notifiche.
+ *
+ * Una coppia VAPID sola per tutti i moduli: prima erano due, una per
+ * Mobilità e una per Abitudini. Le iscrizioni delle vecchie app NON si
+ * possono riusare — una subscription è legata all'origine e allo scope del
+ * service worker, e ATLAS sta su un percorso diverso. Il telefono va
+ * iscritto di nuovo da qui, e non c'è modo di evitarlo.
+ */
+async function bloccoNotifiche(ridisegna) {
+  const perm = notifiche.permesso();
+  const attive = await notifiche.iscritto();
+  const s = notifiche.stato();
+  const nSub = s.subs.filter((x) => !x.del).length;
+
+  const corpo = [];
+
+  // Su iPhone il push funziona SOLO da PWA installata. Dirlo prima evita
+  // il giro a vuoto di chiedere il permesso e vederselo negare in silenzio.
+  if (notifiche.suIOS() && !notifiche.installata()) {
+    corpo.push(el("p", { class: "nota attenzione",
+      testo: "Su iPhone le notifiche funzionano solo se ATLAS è aggiunta alla schermata Home. Condividi → Aggiungi alla schermata Home, poi riapri da lì." }));
+  }
+
+  if (perm === "unsupported") {
+    corpo.push(el("p", { class: "nota", testo: "Questo browser non supporta le notifiche push." }));
+  } else if (perm === "denied") {
+    corpo.push(el("p", { class: "nota errore",
+      testo: "Permesso negato. Va riattivato dalle impostazioni del browser: da qui non si può più chiedere." }));
+  } else if (!attive) {
+    corpo.push(el("button", {
+      class: "btn pieno", type: "button", testo: "Attiva le notifiche",
+      onClick: async (e) => {
+        e.currentTarget.disabled = true;
+        const r = await notifiche.iscrivi();
+        avviso(r.ok ? "Dispositivo iscritto." : r.motivo, { tono: r.ok ? "" : "errore", durata: r.ok ? 2400 : 5000 });
+        ridisegna();
+      },
+    }));
+  } else {
+    corpo.push(el("p", { class: "nota positivo", testo: `Questo dispositivo è iscritto. In tutto: ${nSub}.` }));
+
+    // Interruttori per modulo. Le abitudini hanno il proprio orario per
+    // abitudine, quindi qui c'è solo l'interruttore generale.
+    corpo.push(el("ul", { class: "lista" }, [
+      interruttore("Abitudini", s.orari.abitudini.attiva, (v) => { notifiche.scriviOrari("abitudini", { attiva: v }); ridisegna(); }),
+      interruttore("Mobilità", s.orari.mobilita.attiva, (v) => { notifiche.scriviOrari("mobilita", { attiva: v }); ridisegna(); }),
+      interruttore("Finanze", s.orari.finanze.attiva, (v) => { notifiche.scriviOrari("finanze", { attiva: v }); ridisegna(); }),
+    ]));
+
+    if (s.orari.mobilita.attiva) {
+      corpo.push(el("div", { class: "gruppo-titolo", testo: "Orari · Mobilità" }));
+      corpo.push(oraCampo("Sessione", s.orari.mobilita.principale, (v) => notifiche.scriviOrari("mobilita", { principale: v })));
+      corpo.push(oraCampo("Ripiego (dose minima)", s.orari.mobilita.recupero, (v) => notifiche.scriviOrari("mobilita", { recupero: v })));
+    }
+    if (s.orari.finanze.attiva) {
+      corpo.push(el("div", { class: "gruppo-titolo", testo: "Orari · Finanze" }));
+      corpo.push(oraCampo("Riepilogo serale", s.orari.finanze.riepilogo, (v) => notifiche.scriviOrari("finanze", { riepilogo: v })));
+    }
+
+    corpo.push(el("button", {
+      class: "btn tenue pieno", type: "button", testo: "Manda una notifica di prova",
+      style: "margin-top:var(--s4)",
+      onClick: async () => {
+        const ok = await notifiche.provaLocale();
+        avviso(ok ? "Mandata." : "Non riuscita.", { tono: ok ? "" : "errore" });
+      },
+    }));
+    corpo.push(el("p", { class: "nota",
+      testo: "La prova è locale: dimostra che il dispositivo sa mostrarle. I promemoria veri partono da GitHub Actions ogni dieci minuti, e possono slittare di qualche minuto." }));
+    corpo.push(el("button", {
+      class: "btn distruttivo nudo pieno", type: "button", testo: "Disiscrivi questo dispositivo",
+      onClick: async () => { await notifiche.disiscrivi(); avviso("Disiscritto."); ridisegna(); },
+    }));
+  }
+
+  return scheda("Notifiche", corpo);
+}
+
+function interruttore(etichetta, acceso, alCambio) {
+  const sw = el("button", {
+    class: "interruttore" + (acceso ? " acceso" : ""),
+    type: "button", role: "switch", "aria-checked": String(Boolean(acceso)),
+    "aria-label": etichetta,
+    onClick: () => alCambio(!acceso),
+  }, [el("span", { class: "interruttore-pallina" })]);
+  return el("li", {}, [el("div", { class: "riga" }, [el("span", { testo: etichetta }), el("span", { class: "valore" }, [sw])])]);
+}
+
+function oraCampo(etichetta, valore, alCambio) {
+  return el("div", { class: "campo-gruppo" }, [
+    el("label", { class: "campo-etichetta", testo: etichetta }),
+    el("input", { class: "campo", type: "time", value: valore || "",
+      onChange: (e) => { alCambio(e.target.value); avviso("Orario salvato."); } }),
   ]);
 }
 
@@ -177,30 +275,48 @@ function bloccoCaselle() {
   ]);
 }
 
+let contenitoreCorrente = null;
+let posizioneCorrente = null;
+
+async function disegna() {
+  const contenitore = contenitoreCorrente;
+  if (!contenitore) return;
+  const scorrimento = globalThis.scrollY;
+  contenitore.replaceChildren();
+
+  const testa = intestazione("Impostazioni");
+  testa.querySelector(".sync-pallino")?.remove();
+  contenitore.append(testa);
+
+  contenitore.append(scheda("Aspetto", [bloccoTema()]));
+  contenitore.append(await bloccoNotifiche(disegna));
+  contenitore.append(bloccoSync());
+  contenitore.append(bloccoLavagna());
+  contenitore.append(bloccoEventi());
+  contenitore.append(bloccoCaselle());
+  contenitore.append(await bloccoSpazio());
+  contenitore.append(bloccoBackup());
+
+  contenitore.append(el("a", {
+    class: "btn tenue pieno",
+    href: posizioneCorrente?.linkA?.("oggi") || "#/oggi",
+    testo: "Torna a Oggi",
+    style: "margin-top:var(--s5)",
+  }));
+  contenitore.append(el("p", {
+    class: "nota",
+    style: "text-align:center;margin-top:var(--s6)",
+    testo: "ATLAS · tre moduli, un guscio",
+  }));
+
+  globalThis.scrollTo(0, scorrimento);
+}
+
 export default {
   async monta(contenitore, posizione) {
-    const testa = intestazione("Impostazioni");
-    testa.querySelector(".sync-pallino")?.remove();
-    contenitore.append(testa);
-
-    contenitore.append(scheda("Aspetto", [bloccoTema()]));
-    contenitore.append(bloccoSync());
-    contenitore.append(bloccoLavagna());
-    contenitore.append(bloccoEventi());
-    contenitore.append(bloccoCaselle());
-    contenitore.append(await bloccoSpazio());
-    contenitore.append(bloccoBackup());
-
-    contenitore.append(el("a", {
-      class: "btn secondario pieno",
-      href: posizione.linkA("oggi"),
-      testo: "Torna a Oggi",
-      style: "margin-top:var(--s5)",
-    }));
-    contenitore.append(el("p", {
-      class: "nota",
-      style: "text-align:center;margin-top:var(--s6)",
-      testo: "ATLAS · guscio v1",
-    }));
+    contenitoreCorrente = contenitore;
+    posizioneCorrente = posizione;
+    await disegna();
   },
+  smonta() { contenitoreCorrente = null; },
 };

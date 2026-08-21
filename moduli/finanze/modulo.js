@@ -1,32 +1,215 @@
 // moduli/finanze — il registro di entrate e uscite.
 //
-// Parte da napema/budget-tracker-webpage: un index.html da 118 KB con CSS e
-// JS dentro. Il codice è buono, la forma no: va spezzato in dati / calcolo /
-// viste, e il suo motore di sync va buttato in favore di core/sync.js.
-//
-// Dati oggi: napema/finance-tracker → registro.json
-// Dati dopo: napema/atlas-dati      → finanze.json
+// Portato da napema/budget-tracker-webpage: 118 KB di index.html monolitico,
+// spezzati in dati / calcolo / viste. Il motore di calcolo è passato quasi
+// intatto — è la parte pensata bene — mentre il suo sync è stato buttato:
+// core/sync.js fa già tutto quello che faceva, e in più le cose che le altre
+// due app avevano imparato per conto loro.
 
-import { cantiere } from "../cantiere.js";
+import { el, aggiungi, intestazione, oggiISO, euro } from "../../core/ui.js";
+import { icona } from "../../core/icone.js";
+import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
+import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
+import { annuncia, ascolta } from "../../core/bus.js";
+import { casella, stato, movimentiVivi } from "./dati.js";
+import {
+  statistiche, budgetTotale, cassaSettimana, verdetto, meseDi, spostaMese,
+  nomeMese, importoEffettivo, proiezione,
+} from "./calcolo.js";
+import {
+  vistaHome, vistaMovimenti, vistaAnalisi, apriMovimento, apriImpostazioni,
+} from "./viste.js";
+
+let contenitore = null;
+const staccatori = [];
+
+// Lo stato della schermata. Non va nella casella: è come stai guardando i
+// dati, non un dato. Sincronizzarlo farebbe cambiare vista al PC perché
+// l'hai cambiata sull'iPhone.
+const vista = { scheda: "home", mese: meseDi(), grafico: "settimana", filtro: "tutti" };
+
+/* --------------------------------------------------------------- vista -- */
+
+function ridisegna(patch = {}) {
+  Object.assign(vista, patch);
+  disegna();
+}
+
+function disegna() {
+  if (!contenitore) return;
+  const scorrimento = globalThis.scrollY;
+  contenitore.replaceChildren();
+
+  aggiungi(contenitore, [
+    intestazione("Finanze", nomeMese(vista.mese), el("div", { class: "fi-azioni" }, [
+      el("button", {
+        class: "btn-icona", type: "button", "aria-label": "Budget",
+        html: icona("ingranaggio", 22),
+        onClick: () => apriImpostazioni(vista.mese, disegna),
+      }),
+      el("button", {
+        class: "btn-icona", type: "button", "aria-label": "Nuovo movimento",
+        html: icona("piu", 26),
+        onClick: () => apriMovimento({ ridisegna: disegna }),
+      }),
+    ])),
+
+    navigatoreMese(),
+
+    el("div", { class: "fi-schede" }, [
+      pillolaScheda("home", "Riepilogo"),
+      pillolaScheda("movimenti", "Movimenti"),
+      pillolaScheda("analisi", "Analisi"),
+    ]),
+
+    vista.scheda === "home" ? vistaHome(vista.mese, vista.grafico, (p) => ridisegna({ grafico: p.vista ?? vista.grafico }))
+      : vista.scheda === "movimenti" ? vistaMovimenti(vista.mese, vista.filtro, (p) => ridisegna(p))
+      : vistaAnalisi(vista.mese, disegna),
+  ]);
+
+  pubblicaSullaLavagna();
+  globalThis.scrollTo(0, scorrimento);
+}
+
+function pillolaScheda(id, testo) {
+  return el("button", {
+    class: "fi-scheda" + (vista.scheda === id ? " attiva" : ""),
+    type: "button", testo,
+    "aria-pressed": String(vista.scheda === id),
+    onClick: () => ridisegna({ scheda: id }),
+  });
+}
+
+function navigatoreMese() {
+  const corrente = meseDi();
+  return el("div", { class: "fi-mese" }, [
+    el("button", {
+      class: "btn-icona", type: "button", "aria-label": "Mese precedente",
+      html: icona("indietro", 20),
+      onClick: () => ridisegna({ mese: spostaMese(vista.mese, -1) }),
+    }),
+    el("button", {
+      class: "fi-mese-nome", type: "button", testo: nomeMese(vista.mese),
+      onClick: () => ridisegna({ mese: corrente }),
+      title: "Torna al mese corrente",
+    }),
+    el("button", {
+      class: "btn-icona", type: "button", "aria-label": "Mese successivo",
+      html: icona("freccia", 20),
+      disabled: vista.mese >= corrente,
+      onClick: () => ridisegna({ mese: spostaMese(vista.mese, +1) }),
+    }),
+  ]);
+}
+
+/* ------------------------------------------------------------- lavagna -- */
+
+/**
+ * Cosa gli altri moduli possono sapere di Finanze: quanti movimenti oggi e
+ * quanto è uscito. Serve perché un'abitudine "segnare le spese" possa
+ * spuntarsi da sé. L'archivio resta qui.
+ */
+function pubblicaSullaLavagna() {
+  const oggi = giornoCorrente();
+  const diOggi = movimentiVivi().filter((m) => m.data === oggi && m.tipo === "out");
+  const speso = diOggi.reduce((s, m) => s + importoEffettivo(m), 0);
+  if (leggiFatto("finanze", "movimenti") !== diOggi.length) scriviFatto("finanze", "movimenti", diOggi.length);
+  if (leggiFatto("finanze", "speso") !== speso) scriviFatto("finanze", "speso", speso);
+}
+
+/* ---------------------------------------------------------------- sync -- */
+
+export function avviaSync() {
+  const canale = apriCanale({
+    id: "finanze",
+    file: "finanze.json",
+    impacchetta: () => {
+      const s = stato();
+      return {
+        v: 3,
+        movs: s.movs,
+        meta: { cats: s.cats, profili: s.profili, rules: s.rules, config: s.config, up: s.metaUp || 0 },
+      };
+    },
+    applica: (remoto) => {
+      casella.aggiorna((s) => {
+        s.movs = potaLapidi(fondiRecord(s.movs, remoto.movs));
+        // `meta` non ha record con id: un solo timestamp, vince il più recente.
+        const rm = remoto.meta;
+        if (rm && (rm.up || 0) > (s.metaUp || 0)) {
+          if (rm.cats?.length) s.cats = rm.cats;
+          if (rm.profili) s.profili = rm.profili;
+          if (rm.rules) s.rules = rm.rules;
+          if (rm.config) s.config = { ...s.config, ...rm.config };
+          s.metaUp = rm.up;
+        }
+      }, { origine: "sync", tocca: false });
+    },
+    ridisegna: () => { if (contenitore) disegna(); },
+  });
+
+  casella.osserva((_, origine) => {
+    if (origine === "sync") return;
+    canale.segnalaModifica();
+    annuncia("finanze:movimento-registrato", {});
+  });
+
+  canale.avvia();
+  return canale;
+}
+
+/* ------------------------------------------------------------ contratto -- */
 
 export default {
-  monta: cantiere({
-    titolo: "Finanze",
-    origine: "https://napema.github.io/budget-tracker-webpage/",
-    repoDati: "napema/finance-tracker · registro.json",
-    daFare: [
-      "Leggere registro.json e fissare per iscritto lo schema dei movimenti.",
-      "Dare a ogni movimento un id stabile e un campo up: senza, la fusione per record non può funzionare.",
-      "Estrarre il calcolo (saldi, categorie, ricorrenti) in calcolo.js, senza toccare il DOM.",
-      "Ridisegnare le viste con i token condivisi al posto del CSS incorporato.",
-      "Aprire il canale su finanze.json e migrare i dati una volta sola.",
-    ],
-  }),
+  async monta(cont, posizione) {
+    contenitore = cont;
+    vista.mese = meseDi();
 
-  // `oggi()` volutamente NON c'è ancora. Un modulo che risponde `null` sta
-  // dicendo "oggi niente da segnalare"; uno che non risponde affatto sta
-  // dicendo "non ci sono ancora". La home mostra le due cose in modo
-  // diverso, ed è giusto che lo faccia.
-  //
-  // Quando ci sarà: saldo del mese e sforamento sulle categorie.
+    const resto = posizione?.resto || [];
+    if (resto[0] === "nuovo") queueMicrotask(() => apriMovimento({ ridisegna: disegna }));
+    else if (resto[0] === "movimenti" || resto[0] === "analisi") vista.scheda = resto[0];
+
+    disegna();
+    staccatori.push(ascolta("giorno:cambiato", () => { vista.mese = meseDi(); disegna(); }));
+  },
+
+  smonta() {
+    while (staccatori.length) staccatori.pop()();
+    contenitore = null;
+  },
+
+  oggi() {
+    const mese = meseDi();
+    const st = statistiche(mese);
+    if (!st.nMovimenti && !budgetTotale(mese)) return null;
+
+    const cassa = cassaSettimana(mese, oggiISO());
+    const v = verdetto(mese);
+
+    // In settimana il numero utile è quello che resta in cassa, non il
+    // totale del mese: è la cifra su cui si decide se uscire a cena.
+    if (cassa.attiva) {
+      return {
+        titolo: "Finanze",
+        valore: euro(cassa.resta),
+        dettaglio: cassa.resta < 0
+          ? `Cassa sforata di ${euro(-cassa.resta)}`
+          : `In cassa · ${cassa.giorniRimasti} ${cassa.giorniRimasti === 1 ? "giorno" : "giorni"} alla ricarica`,
+        urgente: cassa.resta <= 0,
+        azione: { rotta: "#/finanze" },
+      };
+    }
+
+    const bt = budgetTotale(mese);
+    const proj = proiezione(mese);
+    return {
+      titolo: "Finanze",
+      valore: euro(st.ordinaria, { tondo: true }),
+      dettaglio: bt ? `${Math.round((st.ordinaria / bt) * 100)}% del budget${proj ? ` · proiezione ${euro(proj, { tondo: true })}` : ""}` : v.testo,
+      urgente: v.livello === "rosso",
+      azione: { rotta: "#/finanze" },
+    };
+  },
+
+  avviaSync,
 };

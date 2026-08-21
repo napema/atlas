@@ -105,6 +105,26 @@ function interfacciaOccupata() {
   return Boolean(staScrivendo || modaleAperta);
 }
 
+// ===================== la coda delle scritture =====================
+//
+// I canali sono indipendenti nei DATI — un file per modulo, sha separati —
+// ma non nel BRANCH: le commit vanno tutte su main, e GitHub rifiuta con 409
+// due commit che partono dallo stesso punto. Con quattro canali che si
+// svegliano insieme all'avvio, tre su quattro fallivano.
+//
+// La coda serializza le sole PUT. Le GET restano parallele: leggere non crea
+// commit e non ha niente da serializzare.
+
+let ultimaScrittura = Promise.resolve();
+
+function inCoda(fn) {
+  const mio = ultimaScrittura.then(fn, fn);
+  // La catena non deve spezzarsi se una scrittura fallisce, altrimenti da
+  // quel momento in poi la coda non scorre più.
+  ultimaScrittura = mio.catch(() => {});
+  return mio;
+}
+
 // ===================== il canale =====================
 
 const canali = new Map();
@@ -192,11 +212,11 @@ export function apriCanale({ id, file, impacchetta, applica, ridisegna = () => {
     };
     if (canale.sha) corpo.sha = canale.sha;
 
-    const res = await fetch(urlDi(file), {
+    const res = await inCoda(() => fetch(urlDi(file), {
       method: "PUT",
       headers: intestazioni(),
       body: JSON.stringify(corpo),
-    });
+    }));
     if (res.status === 409 || res.status === 422) {
       // sha vecchio: qualcun altro ha scritto nel frattempo. Azzera e lascia
       // che sia il giro dopo a rifare GET → fondi → PUT.
