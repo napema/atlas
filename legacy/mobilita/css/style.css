@@ -1,0 +1,933 @@
+/* =========================================================================
+   Mobilità — sistema di design in linguaggio Apple.
+   Chiarezza, Deferenza, Profondità: il contenuto comanda, la cromatura
+   arretra, la gerarchia nasce dalla stratificazione traslucida.
+   Tipografia SF Pro (17pt corpo, 34pt titolo), colori semantici validi in
+   chiaro e scuro, spaziatura a multipli di 8, tocchi minimi 44pt.
+   ========================================================================= */
+
+/* --- SF Pro self-hosted: non dipende dal sistema, quindi resta identico
+   anche fuori da iOS e offline. Text per il corpo, Display per i titoli. --- */
+@font-face {
+  font-family: "SF Pro Text"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("../fonts/sf-pro-text-regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "SF Pro Text"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("../fonts/sf-pro-text-medium.woff2") format("woff2");
+}
+@font-face {
+  font-family: "SF Pro Text"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("../fonts/sf-pro-text-semibold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "SF Pro Text"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("../fonts/sf-pro-text-bold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "SF Pro Display"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("../fonts/sf-pro-display-semibold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "SF Pro Display"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("../fonts/sf-pro-display-bold.woff2") format("woff2");
+}
+
+:root {
+  /* --- colori semantici, modalità chiara --- */
+  --blu: #007AFF;
+  --blu-premuto: #0062CC;
+  --verde: #34C759;
+  --arancio: #FF9500;
+  --rosso: #FF3B30;
+
+  --etichetta: #000000;
+  --etichetta-2: rgba(60, 60, 67, 0.60);
+  --etichetta-3: rgba(60, 60, 67, 0.30);
+  --separatore: rgba(60, 60, 67, 0.20);
+
+  --sfondo: #F2F2F7;
+  --sfondo-2: #FFFFFF;
+  --riempimento: rgba(120, 120, 128, 0.12);
+  --riempimento-2: rgba(120, 120, 128, 0.08);
+
+  /* --- Liquid Glass --- Il vetro non è "bianco trasparente": è un
+     materiale. Serve la rifrazione (blur + saturazione), un bordo che
+     raccoglie la luce, e un riflesso speculare sul bordo superiore.
+     Senza il riflesso resta una scatola opaca. */
+  --vetro: rgba(255, 255, 255, 0.62);
+  --vetro-bordo: rgba(255, 255, 255, 0.7);
+  --vetro-luce: rgba(255, 255, 255, 0.9);
+  --vetro-ombra:
+    0 1px 1px rgba(0, 0, 0, 0.04),
+    0 8px 32px rgba(0, 0, 0, 0.09),
+    inset 0 1px 0 var(--vetro-luce),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.25);
+  --vetro-barra: rgba(249, 249, 251, 0.7);
+  --sfocatura: 32px;
+
+  /* --- ambiente cromatico: dà qualcosa da rifrangere al vetro --- */
+  --alone-1: rgba(0, 122, 255, 0.16);
+  --alone-2: rgba(52, 199, 89, 0.13);
+
+  /* --- spaziatura: multipli di 8 --- */
+  --sp-05: 4px;
+  --sp-1: 8px;
+  --sp-2: 16px;
+  --sp-3: 24px;
+  --sp-4: 32px;
+  --sp-5: 40px;
+
+  --raggio: 18px;
+  --raggio-s: 12px;
+  --tocco: 44px;
+
+  --sicura-alto: env(safe-area-inset-top, 0px);
+  --sicura-basso: env(safe-area-inset-bottom, 0px);
+  --colonna: 560px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --blu: #0A84FF;
+    --blu-premuto: #409CFF;
+    --verde: #30D158;
+    --arancio: #FF9F0A;
+    --rosso: #FF453A;
+
+    --etichetta: #FFFFFF;
+    --etichetta-2: rgba(235, 235, 245, 0.60);
+    --etichetta-3: rgba(235, 235, 245, 0.30);
+    --separatore: rgba(84, 84, 88, 0.60);
+
+    --sfondo: #000000;
+    --sfondo-2: #1C1C1E;
+    --riempimento: rgba(120, 120, 128, 0.24);
+    --riempimento-2: rgba(120, 120, 128, 0.16);
+
+    --vetro: rgba(28, 28, 30, 0.62);
+    --vetro-bordo: rgba(255, 255, 255, 0.14);
+    --vetro-luce: rgba(255, 255, 255, 0.16);
+    --vetro-ombra:
+      0 1px 1px rgba(0, 0, 0, 0.4),
+      0 8px 32px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 var(--vetro-luce),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+    --vetro-barra: rgba(18, 18, 20, 0.68);
+
+    --alone-1: rgba(10, 132, 255, 0.24);
+    --alone-2: rgba(48, 209, 88, 0.16);
+  }
+}
+
+* { box-sizing: border-box; }
+
+/* L'attributo hidden deve battere qualsiasi display impostato più sotto. */
+[hidden] { display: none !important; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  background: var(--sfondo);
+  color: var(--etichetta);
+  font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Ambiente: aloni morbidi che il vetro rifrange. Deferenza — non si notano. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  background:
+    radial-gradient(42vw 42vw at 12% 4%, var(--alone-1), transparent 62%),
+    radial-gradient(38vw 38vw at 92% 88%, var(--alone-2), transparent 60%);
+  pointer-events: none;
+}
+
+#app { display: flex; flex-direction: column; min-height: 100dvh; }
+
+/* ============================ tipografia ============================ */
+
+.titolo-grande { font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif; font-size: 34px; font-weight: 700; letter-spacing: -0.026em; line-height: 1.12; margin: 0; }
+.titolo-2      { font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.021em; margin: 0; }
+.testata       { font-size: 17px; font-weight: 600; letter-spacing: -0.014em; margin: 0; }
+.corpo         { font-size: 17px; }
+.sottotitolo   { font-size: 15px; color: var(--etichetta-2); }
+.didascalia    { font-size: 13px; color: var(--etichetta-2); line-height: 1.35; }
+.mini          { font-size: 12px; color: var(--etichetta-2); }
+
+.occhiello {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--etichetta-2);
+}
+
+.icona { display: block; flex: 0 0 auto; }
+
+/* ============================ struttura ============================ */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: calc(var(--sicura-alto) + var(--sp-2)) var(--sp-3) var(--sp-2);
+  background: var(--vetro-barra);
+  backdrop-filter: saturate(190%) blur(var(--sfocatura));
+  -webkit-backdrop-filter: saturate(190%) blur(var(--sfocatura));
+  border-bottom: 0.5px solid var(--separatore);
+}
+
+.app-header__interno {
+  max-width: var(--colonna);
+  margin-inline: auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-header__title { font-size: 17px; font-weight: 600; letter-spacing: -0.014em; }
+
+.app-header__streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--arancio);
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--riempimento-2);
+}
+
+.app-main {
+  flex: 1;
+  overflow-y: auto;
+  /* spazio per la pillola galleggiante in basso */
+  padding: var(--sp-3) var(--sp-3) calc(110px + var(--sicura-basso));
+}
+
+.app-main > .view { max-width: var(--colonna); margin-inline: auto; width: 100%; }
+
+.vista-intestazione { margin-bottom: var(--sp-3); }
+.vista-intestazione .sottotitolo { margin-top: var(--sp-05); }
+
+/* ============================ Liquid Glass ============================ */
+
+.vetro {
+  position: relative;
+  background: var(--vetro);
+  backdrop-filter: saturate(190%) blur(var(--sfocatura));
+  -webkit-backdrop-filter: saturate(190%) blur(var(--sfocatura));
+  border: 0.5px solid var(--vetro-bordo);
+  border-radius: var(--raggio);
+  box-shadow: var(--vetro-ombra);
+  overflow: hidden;
+}
+
+/* Il riflesso speculare: una banda chiara sul bordo alto, che è quello
+   che fa leggere la superficie come vetro invece che come pannello. */
+.vetro::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 40%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.14), transparent);
+  pointer-events: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .vetro::before { background: linear-gradient(to bottom, rgba(255, 255, 255, 0.06), transparent); }
+}
+
+.scheda { padding: var(--sp-2) var(--sp-2) var(--sp-2); margin-bottom: var(--sp-2); }
+
+.scheda__testa {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-1);
+  color: var(--etichetta-2);
+}
+
+.scheda__testa .icona { color: var(--blu); }
+
+/* ============================ controlli ============================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  min-height: var(--tocco);
+  width: 100%;
+  padding: 12px var(--sp-3);
+  border: none;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.12s ease, opacity 0.12s ease;
+}
+
+.btn:active { transform: scale(0.975); }
+
+.btn-primary { background: var(--blu); color: #fff; }
+.btn-primary:active { background: var(--blu-premuto); }
+
+.btn-secondary {
+  background: var(--riempimento);
+  color: var(--blu);
+}
+
+.btn-testo {
+  background: none;
+  border: none;
+  color: var(--blu);
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 400;
+  min-height: var(--tocco);
+  padding: 0 var(--sp-1);
+  cursor: pointer;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tocco);
+  height: var(--tocco);
+  border: none;
+  border-radius: 999px;
+  background: var(--riempimento-2);
+  color: var(--blu);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.btn-icon:active { background: var(--riempimento); }
+
+/* ============================ barra inferiore ============================ */
+
+/* La barra non è attaccata al bordo: è una pillola di vetro che
+   galleggia sopra il contenuto, come in iOS 26. */
+.bottom-nav {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--sp-1) + var(--sicura-basso));
+  z-index: 15;
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-05);
+  padding: 6px;
+  width: min(calc(100% - 32px), 420px);
+  background: var(--vetro-barra);
+  backdrop-filter: saturate(190%) blur(var(--sfocatura));
+  -webkit-backdrop-filter: saturate(190%) blur(var(--sfocatura));
+  border: 0.5px solid var(--vetro-bordo);
+  border-radius: 999px;
+  box-shadow: var(--vetro-ombra);
+}
+
+.bottom-nav__item { border-radius: 999px; transition: background-color 0.2s ease, color 0.2s ease; }
+
+/* La voce attiva è una pastiglia dentro la pillola, non solo un colore. */
+.bottom-nav__item.is-active {
+  background: var(--riempimento-2);
+}
+
+.bottom-nav__item {
+  flex: 1 1 0;
+  max-width: 160px;
+  min-height: var(--tocco);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 0;
+  border: none;
+  background: none;
+  color: var(--etichetta-2);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.bottom-nav__item.is-active { color: var(--blu); }
+
+/* ============================ overlay ============================ */
+
+.view-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  background: var(--sfondo);
+  padding-top: var(--sicura-alto);
+  padding-bottom: var(--sicura-basso);
+}
+
+.overlay-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  border-bottom: 0.5px solid var(--separatore);
+  background: var(--vetro-barra);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.overlay-header > span {
+  flex: 1;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--etichetta-2);
+}
+
+.overlay-body { flex: 1; overflow-y: auto; padding: var(--sp-3) var(--sp-3) var(--sp-4); }
+.overlay-body > * { max-width: var(--colonna); margin-inline: auto; width: 100%; }
+
+/* ============================ OGGI ============================ */
+
+/* striscia settimanale: dice a colpo d'occhio che il programma è quotidiano */
+.settimana {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-05);
+  padding: var(--sp-2) var(--sp-1);
+  margin-bottom: var(--sp-2);
+}
+
+.giorno {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.giorno__lettera { font-size: 12px; font-weight: 600; color: var(--etichetta-2); }
+
+.giorno__pallino {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--etichetta-2);
+  background: var(--riempimento-2);
+  border: 1.5px solid transparent;
+}
+
+.giorno.is-fatto .giorno__pallino { background: var(--verde); color: #fff; }
+.giorno.is-oggi .giorno__pallino { border-color: var(--blu); color: var(--blu); }
+.giorno.is-oggi.is-fatto .giorno__pallino { color: #fff; }
+.giorno.is-futuro .giorno__pallino { opacity: 0.45; }
+
+.riquadro-oggi { padding: var(--sp-3); margin-bottom: var(--sp-2); }
+
+.riquadro-oggi__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--etichetta-2);
+  font-size: 15px;
+  margin-bottom: var(--sp-1);
+}
+
+.riquadro-oggi__durata { font-size: 34px; font-weight: 700; letter-spacing: -0.026em; }
+
+.elenco-moduli { list-style: none; margin: var(--sp-2) 0 0; padding: 0; }
+
+.elenco-moduli li {
+  display: flex;
+  gap: var(--sp-2);
+  padding: 10px 0;
+  border-top: 0.5px solid var(--separatore);
+}
+
+.elenco-moduli li:first-child { border-top: none; }
+
+.modulo__nome { font-size: 15px; font-weight: 600; }
+.modulo__muscoli { font-size: 13px; color: var(--etichetta-2); margin-top: 2px; }
+.modulo__durata { margin-left: auto; font-size: 15px; color: var(--etichetta-2); white-space: nowrap; }
+
+.pillola {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--riempimento);
+  color: var(--etichetta-2);
+}
+
+.pillola.is-blu { background: rgba(0, 122, 255, 0.14); color: var(--blu); }
+.pillola.is-verde { background: rgba(52, 199, 89, 0.16); color: var(--verde); }
+.pillola.is-arancio { background: rgba(255, 149, 0, 0.16); color: var(--arancio); }
+
+/* ============================ PROGRESSI ============================ */
+
+.barra-volume {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--riempimento);
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.barra-volume__pieno { height: 100%; border-radius: 999px; background: var(--verde); }
+.barra-volume__pieno.is-sotto { background: var(--arancio); }
+
+.riga-volume { padding: 10px 0; border-top: 0.5px solid var(--separatore); }
+.riga-volume:first-of-type { border-top: none; }
+
+.riga-volume__testa { display: flex; justify-content: space-between; gap: var(--sp-2); font-size: 15px; }
+.riga-volume__valore { color: var(--etichetta-2); white-space: nowrap; }
+
+.bersaglio { display: flex; gap: var(--sp-2); align-items: center; padding: 12px 0; border-top: 0.5px solid var(--separatore); }
+.bersaglio:first-of-type { border-top: none; }
+.bersaglio__foto { width: 52px; height: 52px; border-radius: var(--raggio-s); background: var(--riempimento); background-size: cover; background-position: center; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; color: var(--etichetta-3); }
+.bersaglio__testo { flex: 1; min-width: 0; }
+.bersaglio__nome { font-size: 15px; font-weight: 600; }
+.bersaglio__valore { font-size: 13px; color: var(--etichetta-2); margin-top: 2px; }
+
+.griglia-mesi { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: var(--sp-1); }
+.cella { aspect-ratio: 1; border-radius: 7px; background: var(--riempimento-2); }
+.cella.is-fatto { background: var(--verde); }
+.cella.is-oggi { outline: 1.5px solid var(--blu); outline-offset: 1px; }
+.cella.is-futuro { opacity: 0.35; }
+
+/* ============================ SESSIONE ============================ */
+
+.sess-centro { max-width: var(--colonna); margin-inline: auto; width: 100%; }
+
+.sess-schermo { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+.sess-alto { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+
+.sess-video { border-radius: var(--raggio); overflow: hidden; background: #000; }
+.sess-video iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; display: block; }
+
+.sess-cronometro { display: flex; flex-direction: column; align-items: center; gap: var(--sp-05); padding: var(--sp-2) 0; }
+
+.sess-countdown {
+  font-size: 76px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.sess-stato { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.is-prep .sess-countdown, .is-prep .sess-stato { color: var(--etichetta-2); }
+.is-lavoro .sess-countdown { color: var(--blu); }
+.is-lavoro .sess-stato { color: var(--blu); }
+
+.sess-anello { --p: 0; width: 100%; height: 4px; border-radius: 999px; background: var(--riempimento); overflow: hidden; }
+.sess-anello__pieno { height: 100%; width: calc(var(--p) * 1%); background: var(--blu); border-radius: 999px; transition: width 0.9s linear; }
+
+.sess-chip-riga { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Cambio lato: deve saltare all'occhio, altrimenti due serie identiche
+   di fila sembrano una ripetizione inutile invece che "ora l'altra gamba". */
+.sess-cambio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: var(--raggio-s);
+  background: rgba(255, 149, 0, 0.16);
+  color: var(--arancio);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Confronto fotografico: prima e ultima, affiancate. È la risposta
+   visiva alla domanda "sto migliorando?". */
+.confronto-foto { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 16px; }
+.confronto-foto figure { margin: 0; }
+.confronto-foto img { width: 100%; border-radius: var(--raggio-s); display: block; }
+.confronto-foto figcaption { font-size: 12px; color: var(--etichetta-2); text-align: center; margin-top: 4px; }
+
+/* ---------------- Orari delle notifiche ---------------- */
+
+.orari { margin-top: var(--sp-2); }
+
+.riga-orario {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: 12px 0;
+  border-top: 0.5px solid var(--separatore);
+}
+
+.riga-orario:first-child { border-top: none; }
+.riga-orario__nome { font-size: 15px; font-weight: 500; }
+.riga-orario__nota { font-size: 13px; color: var(--etichetta-2); margin-top: 2px; }
+.riga-orario__controlli { display: flex; align-items: center; gap: var(--sp-1); flex: 0 0 auto; }
+
+.campo-ora {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 0.5px solid var(--separatore);
+  border-radius: 10px;
+  background: var(--riempimento-2);
+  color: var(--etichetta);
+  font-family: inherit;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Interruttore in stile iOS: 51×31, pollice che scorre. */
+.interruttore { position: relative; display: inline-block; width: 51px; height: 31px; flex: 0 0 auto; }
+.interruttore input { opacity: 0; width: 0; height: 0; }
+.interruttore span {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--riempimento);
+  transition: background-color 0.25s ease;
+}
+.interruttore span::before {
+  content: "";
+  position: absolute;
+  width: 27px; height: 27px;
+  left: 2px; top: 2px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.interruttore input:checked + span { background: var(--verde); }
+.interruttore input:checked + span::before { transform: translateX(20px); }
+
+/* Pallino di stato del sync: un sync silenzioso che fallisce è peggio
+   di nessun sync. */
+.sync-dot { width: 9px; height: 9px; border-radius: 999px; flex: 0 0 auto; display: inline-block; }
+.sync-dot.is-off { background: var(--etichetta-3); }
+.sync-dot.is-corso { background: var(--arancio); }
+.sync-dot.is-ok { background: var(--verde); }
+.sync-dot.is-err { background: var(--rosso); }
+
+.campo-testo {
+  width: 100%;
+  padding: 10px 14px;
+  border: 0.5px solid var(--separatore);
+  border-radius: var(--raggio-s);
+  background: var(--sfondo-2);
+  color: var(--etichetta);
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  resize: vertical;
+}
+
+/* Zona di azzeramento */
+.zona-pericolo { border-color: rgba(255, 59, 48, 0.35); }
+.btn-pericolo { background: rgba(255, 59, 48, 0.14); color: var(--rosso); }
+.btn-pericolo:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.field input[type="text"] {
+  min-height: var(--tocco);
+  padding: 10px 14px;
+  border: 0.5px solid var(--separatore);
+  border-radius: var(--raggio-s);
+  background: var(--sfondo-2);
+  color: var(--etichetta);
+  font-family: inherit;
+  font-size: 17px;
+  width: 100%;
+}
+
+.sess-passi { list-style: none; margin: 0; padding: 0; counter-reset: passo; }
+
+.sess-passi li {
+  display: flex;
+  gap: var(--sp-2);
+  padding: 10px 0;
+  border-top: 0.5px solid var(--separatore);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.sess-passi li:first-child { border-top: none; }
+
+.sess-passi li::before {
+  counter-increment: passo;
+  content: counter(passo);
+  flex: 0 0 auto;
+  width: 24px; height: 24px;
+  border-radius: 999px;
+  background: var(--riempimento);
+  color: var(--etichetta-2);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.sess-gate, .sess-fine { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); text-align: center; padding-top: var(--sp-4); }
+.sess-gate p, .sess-fine p { margin: 0; color: var(--etichetta-2); }
+
+.sess-avviso { display: flex; gap: var(--sp-1); align-items: flex-start; padding: var(--sp-2); border-radius: var(--raggio-s); background: rgba(255, 149, 0, 0.14); color: var(--arancio); font-size: 13px; line-height: 1.4; text-align: left; }
+
+/* ============================ ASSESSMENT ============================ */
+
+.assess-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  margin-bottom: var(--sp-3);
+  border-radius: 10px;
+  background: var(--riempimento-2);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.assess-tab {
+  flex: 1;
+  min-height: var(--tocco);
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--etichetta);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.assess-tab.is-active { background: var(--sfondo-2); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.10); }
+
+.assess-part[hidden] { display: none; }
+.assess-intro { font-size: 15px; color: var(--etichetta-2); margin: 0 0 var(--sp-3); line-height: 1.45; }
+.assess-note { font-size: 13px; color: var(--etichetta-2); margin-top: var(--sp-1); line-height: 1.4; }
+.assess-footer { margin-top: var(--sp-4); }
+
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--sp-2); }
+.field label { font-size: 15px; color: var(--etichetta-2); }
+
+.field input[type="number"] {
+  min-height: var(--tocco);
+  padding: 10px 14px;
+  border: 0.5px solid var(--separatore);
+  border-radius: var(--raggio-s);
+  background: var(--sfondo-2);
+  color: var(--etichetta);
+  font-family: inherit;
+  font-size: 17px;
+  width: 100%;
+}
+
+.field input[type="number"]:focus { outline: 2px solid var(--blu); outline-offset: -1px; }
+
+.esito-box, .verdict-box {
+  padding: var(--sp-2);
+  border-radius: var(--raggio);
+  background: var(--vetro);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  border: 0.5px solid var(--vetro-bordo);
+  box-shadow: var(--vetro-ombra);
+  margin: var(--sp-2) 0 var(--sp-3);
+}
+
+.verdict-box { border-color: var(--blu); }
+.esito-box.is-pending, .verdict-box.is-pending { border-color: var(--vetro-bordo); color: var(--etichetta-2); box-shadow: none; }
+.esito-titolo, .verdict-titolo { font-size: 17px; font-weight: 600; margin-bottom: var(--sp-05); }
+.verdict-corpo { font-size: 15px; color: var(--etichetta-2); line-height: 1.45; }
+
+.lat-card {
+  padding: var(--sp-2);
+  border-radius: var(--raggio);
+  background: var(--sfondo-2);
+  border: 0.5px solid var(--separatore);
+  margin-bottom: var(--sp-2);
+}
+
+.lat-card__meta { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--etichetta-2); margin-bottom: var(--sp-1); }
+.lat-video { display: flex; align-items: center; gap: var(--sp-1); margin-bottom: var(--sp-1); text-decoration: none; color: var(--blu); min-height: var(--tocco); }
+.lat-video img { width: 72px; height: 41px; object-fit: cover; border-radius: 8px; flex: 0 0 auto; }
+.lat-video span { font-size: 15px; }
+.lat-card__q { font-size: 17px; margin-bottom: var(--sp-05); }
+.lat-card__why { font-size: 13px; color: var(--etichetta-2); line-height: 1.4; margin-bottom: var(--sp-2); }
+
+.choose { display: flex; gap: var(--sp-1); flex-wrap: wrap; }
+
+.btn-side {
+  flex: 1 1 0;
+  min-width: 96px;
+  min-height: var(--tocco);
+  padding: 10px var(--sp-1);
+  border: 0.5px solid var(--separatore);
+  border-radius: var(--raggio-s);
+  background: var(--sfondo-2);
+  color: var(--etichetta);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-side.is-active { background: var(--blu); border-color: var(--blu); color: #fff; font-weight: 600; }
+
+.target-card { padding: var(--sp-2); border-radius: var(--raggio); background: var(--sfondo-2); border: 0.5px solid var(--separatore); margin-bottom: var(--sp-2); }
+.target-card h3 { font-size: 17px; font-weight: 600; margin: 0 0 2px; }
+.target-sub { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--etichetta-2); margin-bottom: var(--sp-2); }
+
+.photo-row { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-1); }
+.photo-thumb { width: 56px; height: 56px; border-radius: var(--raggio-s); background: var(--riempimento); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--etichetta-2); flex: 0 0 auto; }
+.photo-input-label { font-size: 17px; color: var(--blu); cursor: pointer; min-height: var(--tocco); display: flex; align-items: center; }
+.photo-input-label input { display: none; }
+
+.settings-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
+.view-placeholder { color: var(--etichetta-2); font-size: 15px; line-height: 1.45; }
+
+/* chip di scelta della sessione */
+.chip-scelta {
+  min-height: var(--tocco);
+  padding: 10px 16px;
+  border: 0.5px solid var(--separatore);
+  border-radius: 999px;
+  background: var(--sfondo-2);
+  color: var(--etichetta);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.chip-scelta.is-active { background: var(--blu); border-color: var(--blu); color: #fff; font-weight: 600; }
+
+/* piano del programma nel tempo */
+.piano { list-style: none; margin: 0; padding: 0; }
+
+.piano-riga {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: 10px 0;
+  border-top: 0.5px solid var(--separatore);
+  font-size: 15px;
+}
+
+.piano-riga:first-child { border-top: none; }
+.piano-quando { flex: 0 0 92px; font-size: 13px; font-weight: 600; color: var(--etichetta-2); }
+.piano-cosa { flex: 1; min-width: 0; color: var(--etichetta-2); }
+.piano-riga.is-ora .piano-cosa, .piano-riga.is-ora .piano-quando { color: var(--etichetta); }
+.piano-riga.is-passata { opacity: 0.5; }
+
+/* ============================ ANIMAZIONI SVG ============================ */
+
+.anim-wrap { width: 100%; }
+.anim { margin: 0; }
+
+.anim__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  color: var(--etichetta);
+}
+
+/* Il corpo: tratto spesso e arrotondato, cosi' legge come un arto e non
+   come un filo. Il lato lontano e' piu' tenue: da' profondita' senza 3D. */
+.fig__arto { fill: none; stroke: currentColor; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+.fig__tronco { stroke-width: 13; }
+.fig__lontano { opacity: 0.42; }
+.fig__testa { fill: currentColor; stroke: none; }
+
+/* Flipbook: due pose complete che si alternano. Nessun pezzo si muove da
+   solo — cambia tutta la figura, come in un'illustrazione di esercizio. */
+@keyframes fase-a { 0%, 38% { opacity: 1 } 50%, 88% { opacity: 0 } 100% { opacity: 1 } }
+@keyframes fase-b { 0%, 38% { opacity: 0 } 50%, 88% { opacity: 1 } 100% { opacity: 0 } }
+
+.anim--doppia .fig--fase0 { animation: fase-a 3.4s ease-in-out infinite; }
+.anim--doppia .fig--fase1 { animation: fase-b 3.4s ease-in-out infinite; }
+
+.amb { stroke: var(--etichetta-3); stroke-width: 3; stroke-linecap: round; fill: none; }
+
+.acc__freccia { stroke: var(--blu); stroke-width: 3.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.acc__punto { fill: var(--blu); stroke: none; }
+.acc__fisso { stroke: var(--arancio); stroke-width: 3; fill: none; stroke-linecap: round; }
+.acc__attrezzo { fill: var(--riempimento); stroke: var(--etichetta-3); stroke-width: 2.5; }
+.acc__attrezzo-linea { stroke: var(--etichetta-2); stroke-width: 4; stroke-linecap: round; }
+
+.anim__cap { font-size: 13px; color: var(--etichetta-2); text-align: center; margin-top: 8px; line-height: 1.35; }
+
+/* contact sheet di anteprima */
+.griglia-anim { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.griglia-anim > div { background: var(--sfondo-2); border: 0.5px solid var(--separatore); border-radius: var(--raggio); padding: 12px; }
+.griglia-anim h3 { font-size: 13px; margin: 0 0 8px; color: var(--blu); font-family: ui-monospace, monospace; }
+
+/* ====================== SESSIONE: comandi sempre in cima ====================== */
+
+/* La sessione non scorre come una pagina: animazione/video, cronometro e
+   pulsante restano fissi, mentre passi e dettagli scorrono dietro. */
+#view-sessione .overlay-body { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+
+.sess-layout { display: flex; flex-direction: column; height: 100%; max-width: var(--colonna); margin-inline: auto; width: 100%; }
+
+.sess-testa {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  padding: var(--sp-2) var(--sp-3) var(--sp-1);
+  background: var(--vetro-barra);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--separatore);
+}
+
+.sess-media { border-radius: var(--raggio); overflow: hidden; background: var(--sfondo-2); border: 0.5px solid var(--separatore); }
+.sess-media iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; display: block; }
+.sess-media .anim-wrap { padding: var(--sp-1) var(--sp-2) var(--sp-2); }
+
+.sess-scorre { flex: 1 1 auto; overflow-y: auto; padding: var(--sp-2) var(--sp-3) var(--sp-3); -webkit-overflow-scrolling: touch; }
+
+.sess-piede {
+  flex: 0 0 auto;
+  padding: var(--sp-1) var(--sp-3) calc(var(--sp-2) + var(--sicura-basso));
+  background: var(--vetro-barra);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 0.5px solid var(--separatore);
+}
+
+.sess-riga-timer { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); margin-top: var(--sp-1); }
+.sess-countdown-compatto { font-family: "SF Pro Display", -apple-system, sans-serif; font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; line-height: 1; }
+.is-prep .sess-countdown-compatto { color: var(--etichetta-2); }
+.is-lavoro .sess-countdown-compatto { color: var(--blu); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

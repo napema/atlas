@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Mobilità — from 0 to hero</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+<!-- iOS home screen -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mobilità">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+
+<link rel="stylesheet" href="css/style.css">
+<script src="config.js"></script>
+</head>
+<body>
+
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header__interno">
+      <span class="app-header__title">Mobilità</span>
+      <span style="display:flex;align-items:center;gap:10px">
+        <span class="app-header__streak" id="streak-indicator" title="Giorni consecutivi"></span>
+        <span class="sync-dot is-off" id="sync-dot" title="Sync non configurato"></span>
+      </span>
+    </div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- ============ VISTA: OGGI ============ -->
+    <section class="view" id="view-oggi" data-view="oggi">
+      <div id="oggi-body"></div>
+    </section>
+
+    <!-- ============ VISTA: PROGRESSI ============ -->
+    <section class="view" id="view-progressi" data-view="progressi" hidden>
+      <div id="progressi-body"></div>
+    </section>
+
+    <!-- ============ VISTA: IMPOSTAZIONI ============ -->
+    <section class="view" id="view-impostazioni" data-view="impostazioni" hidden>
+      <div class="vista-intestazione">
+        <h1 class="titolo-grande">Impostazioni</h1>
+      </div>
+      <ul class="settings-list">
+        <li><button class="btn btn-secondary" id="btn-rifai-assessment">Rifai assessment</button></li>
+      </ul>
+
+      <div class="vetro scheda" style="margin-top:16px">
+        <div class="scheda__testa">
+          <span class="occhiello">Sincronizzazione</span>
+          <span class="sync-dot is-off" id="sync-dot-settings" style="margin-left:auto"></span>
+        </div>
+        <p class="didascalia" id="sync-stato" style="margin-bottom:12px"></p>
+        <button class="btn btn-secondary" id="btn-sync-ora">Sincronizza adesso</button>
+        <button class="btn btn-secondary" id="btn-svuota-cache" style="margin-top:8px">Svuota cache e ricarica</button>
+        <p class="didascalia" style="margin-top:12px">
+          I dati stanno in un repo privato su GitHub: è quello che li fa comparire anche sugli altri dispositivi.
+          Se una versione vecchia resta incastrata, "svuota cache" è la via d'uscita.
+        </p>
+      </div>
+
+      <div class="vetro scheda">
+        <div class="scheda__testa"><span class="occhiello">Promemoria</span></div>
+        <p class="didascalia" id="notifiche-stato" style="margin-bottom:12px"></p>
+        <button class="btn btn-secondary" id="btn-attiva-notifiche">Attiva le notifiche</button>
+        <button class="btn btn-secondary" id="btn-prova-notifica" style="margin-top:8px" hidden>Notifica di prova</button>
+        <button class="btn btn-secondary" id="btn-reimposta-iscrizione" style="margin-top:8px" hidden>Rigenera l'iscrizione push</button>
+
+        <div class="orari" id="orari-notifiche">
+          <div class="riga-orario">
+            <div>
+              <div class="riga-orario__nome">Promemoria serale</div>
+              <div class="riga-orario__nota">"Hai corso oggi?" — apre la sessione giusta</div>
+            </div>
+            <input type="time" id="ora-principale" class="campo-ora">
+          </div>
+          <div class="riga-orario">
+            <div>
+              <div class="riga-orario__nome">Recupero</div>
+              <div class="riga-orario__nota">Solo se non l'hai fatta. Propone i 2 minuti</div>
+            </div>
+            <div class="riga-orario__controlli">
+              <input type="time" id="ora-recupero" class="campo-ora">
+              <label class="interruttore"><input type="checkbox" id="attiva-recupero"><span></span></label>
+            </div>
+          </div>
+          <div class="riga-orario">
+            <div>
+              <div class="riga-orario__nome">Giorno di palestra</div>
+              <div class="riga-orario__nota">Ricorda la loaded mobility</div>
+            </div>
+            <div class="riga-orario__controlli">
+              <input type="time" id="ora-palestra" class="campo-ora">
+              <label class="interruttore"><input type="checkbox" id="attiva-palestra"><span></span></label>
+            </div>
+          </div>
+          <div class="riga-orario">
+            <div>
+              <div class="riga-orario__nome">Riepilogo domenicale</div>
+              <div class="riga-orario__nota">Gruppi sotto soglia e streak</div>
+            </div>
+            <div class="riga-orario__controlli">
+              <input type="time" id="ora-settimanale" class="campo-ora">
+              <label class="interruttore"><input type="checkbox" id="attiva-settimanale"><span></span></label>
+            </div>
+          </div>
+          <p class="didascalia" style="margin-top:8px">
+            Gli orari valgono entro un quarto d'ora: il controllo gira ogni 15 minuti.
+            Massimo 2 notifiche al giorno — oltre, si disattivano e si perde tutto il sistema.
+          </p>
+        </div>
+        <div id="sub-blocco" hidden style="margin-top:12px">
+          <p class="didascalia" style="margin-bottom:8px">
+            Copia questo testo e incollalo nel secret <strong>PUSH_SUBSCRIPTION</strong> del repo. Una volta sola.
+          </p>
+          <textarea id="subOut" rows="5" readonly class="campo-testo"></textarea>
+          <button class="btn btn-secondary" id="btn-copia-sub" style="margin-top:8px">Copia negli appunti</button>
+        </div>
+        <p class="didascalia" id="notifiche-nota" style="margin-top:12px"></p>
+      </div>
+
+      <div class="vetro scheda">
+        <div class="scheda__testa"><span class="occhiello">Programma</span></div>
+        <p class="didascalia" id="impostazioni-stato"></p>
+      </div>
+
+      <!-- Reset: due passaggi distinti e una conferma scritta, perché
+           premuto per sbaglio cancellerebbe assessment e storico. -->
+      <div class="vetro scheda zona-pericolo">
+        <div class="scheda__testa">
+          <span class="occhiello" style="color:var(--rosso)">Azzeramento</span>
+        </div>
+        <p class="didascalia" style="margin-bottom:12px">
+          Durante le prove l'app registra sessioni vere. Qui le togli.
+        </p>
+
+        <button class="btn btn-secondary" id="btn-reset-storico">Cancella solo lo storico delle sessioni</button>
+        <p class="didascalia" style="margin:8px 0 16px">Tiene assessment, foto e impostazioni.</p>
+
+        <button class="btn btn-secondary btn-pericolo" id="btn-reset-tutto">Azzera tutto</button>
+        <div id="reset-conferma" hidden style="margin-top:12px">
+          <p class="didascalia" style="margin-bottom:8px">
+            Cancella <strong>assessment, foto, storico e impostazioni</strong>. Non è reversibile.
+            Scrivi <strong>AZZERA</strong> per confermare.
+          </p>
+          <div class="field">
+            <input type="text" id="reset-parola" placeholder="AZZERA" autocapitalize="characters" autocomplete="off">
+          </div>
+          <button class="btn btn-pericolo" id="btn-reset-conferma" disabled>Azzera definitivamente</button>
+          <button class="btn btn-secondary" id="btn-reset-annulla" style="margin-top:8px">Annulla</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ OVERLAY: SESSIONE ============ -->
+    <section class="view view-overlay" id="view-sessione" data-view="sessione" hidden>
+      <header class="overlay-header">
+        <button class="btn-icon" id="btn-chiudi-sessione" aria-label="Chiudi sessione"></button>
+        <span id="sessione-progress"></span>
+        <button class="btn-icon" id="btn-pausa-sessione" aria-label="Pausa" hidden></button>
+      </header>
+      <div class="overlay-body" id="sessione-body"></div>
+    </section>
+
+    <!-- ============ OVERLAY: ASSESSMENT ============ -->
+    <section class="view view-overlay" id="view-assessment" data-view="assessment" hidden>
+      <header class="overlay-header">
+        <button class="btn-icon" id="btn-chiudi-assessment" aria-label="Chiudi assessment"></button>
+        <span>Assessment</span>
+        <span style="width:44px;flex:0 0 auto"></span>
+      </header>
+      <div class="overlay-body" id="assessment-body"></div>
+    </section>
+
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="bottom-nav__item is-active" data-nav-target="oggi">
+      <span class="bottom-nav__icon" data-icona="casa"></span>
+      <span class="bottom-nav__label">Oggi</span>
+    </button>
+    <button class="bottom-nav__item" data-nav-target="progressi">
+      <span class="bottom-nav__icon" data-icona="grafico"></span>
+      <span class="bottom-nav__label">Progressi</span>
+    </button>
+    <button class="bottom-nav__item" data-nav-target="impostazioni">
+      <span class="bottom-nav__icon" data-icona="ingranaggio"></span>
+      <span class="bottom-nav__label">Impostazioni</span>
+    </button>
+  </nav>
+
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
