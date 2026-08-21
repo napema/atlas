@@ -29,10 +29,10 @@ window.ATLAS_CFG = {
   branch: "main",
   cartella: "",           // "" = i file stanno nella radice del repo
 
-  // base64 del token, spezzato in tre parti consecutive
-  t1: "",
-  t2: "",
-  t3: "",
+  // base64 del token, spezzato in tre parti consecutive		
+  t1: "Z2l0aHViX3BhdF8xMUFYQkRXN1kwbThTOUNVeXVnVT",
+  t2: "Z2X3B2TlV4UGZLcjBjZjNyUDFkRzRBWTNNZW5zSHEz",
+  t3: "Um5palVmNDA1dXZNVVNKV1ZPRzVBU3FsaDJZVW5w",
 
   // Chiave PUBBLICA VAPID per le notifiche. È pubblica per definizione:
   // sta nel client ed è giusto così. La privata vive nei secret del repo.
