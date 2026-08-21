@@ -25,7 +25,7 @@ mobilità, l'abitudine corrispondente si spunta da sé.
 
 ## Stato
 
-Tutto e tre i moduli sono dentro, con i dati veri migrati. Le notifiche sono
+Tutti e tre i moduli sono dentro, con i dati veri migrati. Le notifiche sono
 unificate: una coppia VAPID e un workflow al posto di due.
 
 Resta un passo che può fare solo l'utente: installare ATLAS sull'iPhone e

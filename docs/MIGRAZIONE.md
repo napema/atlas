@@ -120,6 +120,37 @@ gh api repos/napema/atlas-dati/contents/<nuovo>.json -X PUT \
 Poi si apre ATLAS sui **due** dispositivi e si controlla che entrambi
 vedano gli stessi numeri prima di andare avanti.
 
+#### Due trappole prese in pieno durante la migrazione vera
+
+**La codifica.** PowerShell, se legge un file senza BOM, non presume UTF-8:
+usa la codepage ANSI di Windows. Ogni byte di un'emoji viene reinterpretato
+e riscritto, e `🧠` diventa `ðŸ§ `. Il file resta JSON valido, il sync lo
+trasporta senza lamentarsi, e il difetto si vede solo guardando lo schermo.
+
+```powershell
+# NO — legge in ANSI e rovina tutto ciò che non è ASCII
+$d = Get-Content file.json -Raw | ConvertFrom-Json
+
+# SÌ — codifica dichiarata in lettura e in scrittura
+$txt = [System.IO.File]::ReadAllText($f, [System.Text.Encoding]::UTF8)
+[System.IO.File]::WriteAllText($f, $out, (New-Object System.Text.UTF8Encoding($false)))
+```
+
+E se un file **non ha bisogno di trasformazioni, non trasformarlo**: si
+copiano i byte così come sono. `registro.json` di Finanze andava bene tale
+e quale, e passarlo comunque per un round-trip JSON è stato un rischio preso
+per niente.
+
+**L'ordine dei passi.** Caricare i dati corretti mentre ATLAS è aperta non
+serve a niente: al giro dopo l'app fonde il remoto con quello che ha in
+locale e, **a parità di `up`, vince il locale**. La copia sbagliata torna su
+e cancella la migrazione. Successo davvero, due volte di fila.
+
+La sequenza giusta è: **prima si svuota il dispositivo, poi si carica.** E
+lo svuotamento va fatto da una pagina dello stesso dominio che *non* sia
+l'app — `manifest.webmanifest` va benissimo — altrimenti i canali di sync
+sono già partiti e rispediscono tutto prima che si faccia in tempo.
+
 ### 7. Solo adesso, spegnere
 
 L'app di partenza si mette in sola lettura (un avviso in cima che manda ad
