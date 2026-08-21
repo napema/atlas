@@ -221,7 +221,42 @@ e che quindi va per ultima.
 
 ---
 
-## 6. Note per chi scrive il codice
+## 6. Si lavora a quattro chat
+
+Una chat per il guscio e una per modulo, **tutte sulla stessa cartella**. Il
+filesystem è condiviso, il contesto no: ogni chat ha in memoria solo i file
+che ha letto lei. Da qui la divisione, che non è burocrazia ma l'unica cosa
+che impedisce a due chat di sovrascriversi senza accorgersene.
+
+| chat | possiede | prefisso dei commit |
+|---|---|---|
+| **ATLAS** | `core/` `styles/` `index.html` `sw.js` `manifest` `config.js` `docs/` `.github/` `moduli/oggi/` `moduli/impostazioni/` | `core:` |
+| **Finanze** | `moduli/finanze/` | `finanze:` |
+| **Mobilità** | `moduli/mobilita/` | `mobilita:` |
+| **Abitudini** | `moduli/abitudini/` | `abitudini:` |
+
+Fuori dal proprio perimetro non si tocca niente. `core/registro.js` in
+particolare **lo modifica solo ATLAS**: un modulo che ha bisogno di un evento
+nuovo o di un accento diverso lo chiede in `docs/CANTIERE.md`.
+
+**Chi apre una chat comincia da `git log --oneline -20` e da
+`docs/CANTIERE.md`.** Chi finisce un pezzo aggiorna `docs/CANTIERE.md` prima
+di chiudere. È così che la chat ATLAS viene a sapere cosa è successo nelle
+altre tre.
+
+Ogni cartella di modulo ha il suo `CLAUDE.md` con il briefing specifico: si
+carica da solo quando quella chat lavora lì dentro.
+
+### I documenti condivisi
+
+| file | a cosa serve |
+|---|---|
+| `docs/SCHEMI.md` | i tre schemi letti dai dati veri, con le trappole. **Da leggere prima di scrivere codice** |
+| `docs/CANTIERE.md` | chi sta facendo cosa, richieste a core, decisioni aperte |
+| `docs/MIGRAZIONE.md` | la procedura di porting e la lista di controllo |
+| `docs/SYNC.md` | come è configurato il sync e i guasti da cui nascono le sue regole |
+
+## 7. Note per chi scrive il codice
 
 - **Italiano** per nomi di dominio e commenti, come nelle app di partenza.
   I termini tecnici consolidati (`sync`, `push`, `blob`, `sha`) restano.
