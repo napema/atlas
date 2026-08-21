@@ -1,30 +1,35 @@
 // registro.js — l'elenco dei moduli e il contratto che devono rispettare.
 //
-// Questo file è il ponte fra la shell e i moduli. È l'UNICO posto da
-// toccare per aggiungere un modulo nuovo: si aggiunge una riga qui, e la
-// barra, il router, il sync e la schermata Oggi lo prendono da soli.
+// È il ponte fra la shell e i moduli, e l'UNICO file da toccare per
+// aggiungerne uno: si aggiunge una voce qui, e barra, router, sync e
+// schermata Oggi lo prendono da soli.
 //
 // ---------------------------------------------------------------------
-// IL CONTRATTO — ogni moduli/<id>/modulo.js esporta di default un oggetto:
+// IL CONTRATTO — ogni moduli/<id>/modulo.js esporta di default:
 //
 //   {
-//     id:      "finanze",          // uguale alla cartella e alla casella
-//     nome:    "Finanze",          // come appare nella barra
-//     icona:   "portafoglio",      // chiave in core/icone.js
-//     accento: "var(--verde)",     // il colore del modulo, uno solo
-//
-//     async monta(contenitore) {}  // disegna la vista dentro il contenitore
-//     smonta() {}                  // opzionale: timer da fermare, listener da togliere
-//
-//     oggi() { return { ... } }    // opzionale: la scheda per la home. Vedi sotto.
-//     avviaSync() {}               // opzionale: apre il proprio canale
+//     async monta(contenitore, posizione) {}   // disegna. `posizione` dice
+//                                              // dove si trova: vedi router.js
+//     smonta() {}                              // stacca ascoltatori, ferma timer
+//     oggi() { return {...} | null }           // la scheda per la home
+//     avviaSync() {}                           // apre il proprio canale
 //   }
 //
-// `oggi()` restituisce, in modo sincrono e senza effetti collaterali:
+// `id`, `nome`, `icona` e `accento` NON li dichiara il modulo: stanno qui.
+// Un modulo non può spostarsi nella barra o cambiarsi colore da solo.
+//
+// `oggi()` è SINCRONA e SENZA EFFETTI COLLATERALI. Restituisce
 //   { titolo, valore, dettaglio, urgente, azione: { etichetta, rotta } }
-// È la riga che il modulo mostra nella schermata Oggi. Se il modulo non ha
-// niente da dire per la giornata, restituisce null e sparisce dalla home.
+// oppure null. La home la chiama a ogni apertura: se legge dalla rete o
+// scrive da qualche parte, la home diventa lenta e imprevedibile.
+//
+// `pubblica` e `ascolta` non sono codice: sono la mappa di chi parla con
+// chi (vedi bus.js). Tenerla aggiornata è ciò che permette di rinominare un
+// evento senza rompere in silenzio un altro modulo.
 // ---------------------------------------------------------------------
+
+
+import { avviaSync as sincronizzaContesto } from "./contesto.js";
 
 /**
  * L'ordine di questa lista è l'ordine della barra in basso.
@@ -38,6 +43,8 @@ export const MODULI = [
     icona: "sole",
     accento: "var(--blu)",
     carica: () => import("../moduli/oggi/modulo.js"),
+    pubblica: [],
+    ascolta: ["giorno:cambiato", "fatto:scritto", "dati:arrivati"],
   },
   {
     id: "finanze",
@@ -45,6 +52,10 @@ export const MODULI = [
     icona: "portafoglio",
     accento: "var(--verde)",
     carica: () => import("../moduli/finanze/modulo.js"),
+    // Previsti: "finanze:movimento-registrato" — permetterà ad Abitudini di
+    // spuntare da sé un'eventuale abitudine "segnare le spese".
+    pubblica: [],
+    ascolta: [],
   },
   {
     id: "mobilita",
@@ -52,6 +63,10 @@ export const MODULI = [
     icona: "corpo",
     accento: "var(--blu)",
     carica: () => import("../moduli/mobilita/modulo.js"),
+    // Previsti: "mobilita:sessione-completata" — è l'annuncio che evita
+    // all'utente di spuntare a mano un'abitudine che ha appena fatto.
+    pubblica: [],
+    ascolta: [],
   },
   {
     id: "abitudini",
@@ -59,6 +74,9 @@ export const MODULI = [
     icona: "spunta",
     accento: "var(--viola)",
     carica: () => import("../moduli/abitudini/modulo.js"),
+    pubblica: [],
+    // Previsto: ascolterà "mobilita:sessione-completata".
+    ascolta: [],
   },
   {
     id: "impostazioni",
@@ -66,11 +84,16 @@ export const MODULI = [
     icona: "ingranaggio",
     accento: "var(--etichetta-2)",
     carica: () => import("../moduli/impostazioni/modulo.js"),
+    pubblica: [],
+    ascolta: [],
   },
 ];
 
-/** I moduli che compaiono nella barra in basso. Gli altri restano raggiungibili per rotta. */
+/** I moduli con una scheda nella barra. Impostazioni si raggiunge da Oggi. */
 export const MODULI_IN_BARRA = MODULI.filter((m) => m.id !== "impostazioni");
+
+/** I tre moduli veri: quelli che hanno dati propri e una scheda nella home. */
+export const MODULI_DATI = MODULI.filter((m) => !["oggi", "impostazioni"].includes(m.id));
 
 const caricati = new Map();
 
@@ -80,9 +103,11 @@ export async function prendiModulo(id) {
   const voce = MODULI.find((m) => m.id === id);
   if (!voce) return null;
   const mod = (await voce.carica()).default;
-  // La voce del registro è la verità su nome/icona/accento: un modulo non
-  // può cambiarli da solo, altrimenti la barra si muove sotto le dita.
-  const completo = { ...mod, id: voce.id, nome: voce.nome, icona: voce.icona, accento: voce.accento };
+  const completo = {
+    ...mod,
+    id: voce.id, nome: voce.nome, icona: voce.icona, accento: voce.accento,
+    pubblica: voce.pubblica || [], ascolta: voce.ascolta || [],
+  };
   caricati.set(id, completo);
   return completo;
 }
@@ -91,15 +116,37 @@ export async function prendiModulo(id) {
 export const moduliCaricati = () => [...caricati.values()];
 
 /**
- * Carica tutti i moduli e apre i loro canali di sync.
- * Va fatto una volta all'avvio, in sottofondo: i dati di Finanze devono
- * arrivare anche se stai guardando Mobilità, altrimenti la home mente.
+ * Apre tutti i canali di sincronizzazione, compreso quello della lavagna
+ * del giorno.
+ *
+ * Va fatto una volta all'avvio, in sottofondo, e per TUTTI i moduli — non
+ * solo per quello aperto. I dati di Finanze devono arrivare anche mentre
+ * guardi Mobilità, altrimenti la home mostra numeri vecchi e non si capisce
+ * perché.
  */
 export async function avviaTuttiISync() {
+  // La lavagna per prima: è il pezzo che gli altri leggono.
+  try {
+    sincronizzaContesto();
+  } catch (e) { console.error("[registro] sync della lavagna non avviato", e); }
+
   const esiti = await Promise.allSettled(MODULI.map((m) => prendiModulo(m.id)));
   for (const e of esiti) {
     if (e.status !== "fulfilled" || !e.value?.avviaSync) continue;
     try { e.value.avviaSync(); }
     catch (err) { console.error(`[registro] sync di "${e.value.id}" non avviato`, err); }
   }
+}
+
+/** La mappa di chi annuncia cosa e chi ascolta. Per la diagnostica. */
+export function mappaEventi() {
+  const parlano = {}, sentono = {};
+  for (const m of MODULI) {
+    for (const e of m.pubblica || []) (parlano[e] ||= []).push(m.id);
+    for (const e of m.ascolta || []) (sentono[e] ||= []).push(m.id);
+  }
+  // Un evento ascoltato che nessuno annuncia è quasi sempre un refuso.
+  const orfani = Object.keys(sentono).filter((e) => !parlano[e] && !e.startsWith("giorno:")
+    && !e.startsWith("fatto:") && !e.startsWith("dati:") && !e.startsWith("modulo:"));
+  return { parlano, sentono, orfani };
 }

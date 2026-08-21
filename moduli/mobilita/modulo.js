@@ -29,6 +29,8 @@ export default {
     ],
   }),
 
-  // Diventerà: sessione di oggi, streak, e l'urgenza quando la serale manca.
-  oggi: () => null,
+  // `oggi()` volutamente non c'è ancora: vedi la nota in moduli/finanze.
+  // Quando ci sarà: la sessione del giorno, la serie in corso, e l'urgenza
+  // quando la serale manca. E scriverà "mobilita:sessione-completata" sulla
+  // lavagna, perché Abitudini possa spuntarla senza che l'utente lo rifaccia.
 };

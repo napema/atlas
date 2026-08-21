@@ -12,7 +12,7 @@
  * appiccicato. È l'errore che costa più tempo a diagnosticare.
  */
 
-const VERSIONE = "atlas-v1";
+const VERSIONE = "atlas-v2";
 const GUSCIO = `guscio-${VERSIONE}`;
 
 const DA_PRECARICARE = [
@@ -28,6 +28,8 @@ const DA_PRECARICARE = [
   "./core/storage.js",
   "./core/sync.js",
   "./core/blobs.js",
+  "./core/bus.js",
+  "./core/contesto.js",
   "./core/ui.js",
   "./core/icone.js",
   "./assets/icons/icon-192.png",

@@ -327,3 +327,79 @@ code {
 .cantiere-passi li { margin-bottom: var(--s2); }
 
 .icona { display: inline-flex; color: var(--etichetta-2); }
+
+/* --------------------------------------------------- i riquadri di Oggi --- */
+
+.striscia { margin: calc(var(--s5) * -1 + 0px) 0 var(--s5); }
+
+/* Due colonne sul telefono, tre da 560px in su. I riquadri restano nello
+   stesso posto a ogni apertura: è ciò che permette di leggerli senza
+   fermarsi a cercarli. Il terzo, su due colonne, occupa la riga intera. */
+.riquadri {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s3);
+}
+.riquadri > :nth-child(3):last-child { grid-column: 1 / -1; }
+@media (min-width: 560px) {
+  .riquadri { grid-template-columns: repeat(3, 1fr); }
+  .riquadri > :nth-child(3):last-child { grid-column: auto; }
+}
+
+.riquadro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-height: 116px;
+  padding: var(--s4);
+  border-radius: var(--r-scheda);
+  background: var(--sfondo-2);
+  box-shadow: var(--ombra);
+  color: inherit;
+  border-top: 3px solid var(--accento);
+}
+.riquadro:active { background: var(--sfondo-3); }
+
+.riquadro-testa { display: flex; align-items: center; gap: var(--s2); }
+.riquadro-icona { color: var(--accento); display: flex; }
+.riquadro-nome  { font-size: var(--t-nota); font-weight: 600; letter-spacing: 0.01em; }
+.riquadro-corpo { margin-top: auto; }
+.riquadro-valore { font-size: var(--t-titolo2); font-weight: 700; line-height: 1.1; }
+.riquadro-nota  { font-size: var(--t-minuscolo); color: var(--etichetta-2); margin-top: 2px; }
+
+/* Lo stato quieto non è un errore: è il modulo che dice "oggi niente".
+   Deve leggersi come silenzio, non come guasto. */
+.riquadro-quieto { font-size: var(--t-nota); color: var(--etichetta-3); }
+.riquadro.stato-assente { border-top-color: var(--etichetta-3); }
+.riquadro.stato-assente .riquadro-icona { color: var(--etichetta-3); }
+
+.bollo {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accento);
+  margin-left: auto;
+}
+
+.bottone-icona {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tocco);
+  height: var(--tocco);
+  margin: calc(var(--s3) * -1);
+  border-radius: 50%;
+  color: var(--etichetta-2);
+}
+.bottone-icona:active { background: var(--riempimento); }
+
+/* ---------------------------------------------------------- diagnostica --- */
+
+.diagnostica {
+  font-family: var(--font-mono);
+  font-size: var(--t-minuscolo);
+  line-height: 1.7;
+  color: var(--etichetta-2);
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0;
+}
+.diagnostica b { color: var(--etichetta); font-weight: 600; }

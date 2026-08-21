@@ -24,6 +24,8 @@ export default {
     ],
   }),
 
-  // Diventerà: le abitudini di oggi non ancora spuntate, con la serie in corso.
-  oggi: () => null,
+  // `oggi()` volutamente non c'è ancora: vedi la nota in moduli/finanze.
+  // Quando ci sarà: le abitudini del giorno non ancora spuntate e la serie
+  // più lunga in corso. E leggerà dalla lavagna quello che gli altri moduli
+  // hanno già fatto, invece di chiederlo di nuovo all'utente.
 };

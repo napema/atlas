@@ -5,8 +5,11 @@
 
 import { el, intestazione, scheda, riga, avviso } from "../../core/ui.js";
 import { canaliAperti, configurato, sincronizzaTutto } from "../../core/sync.js";
-import { esportaTutto } from "../../core/storage.js";
+import { esportaTutto, caselleAperte } from "../../core/storage.js";
 import { spazio, chiediPersistenza } from "../../core/blobs.js";
+import { ultimiEventi, chiAscolta } from "../../core/bus.js";
+import { mappaEventi } from "../../core/registro.js";
+import { fattiDelGiorno, giornoCorrente } from "../../core/contesto.js";
 
 const ETICHETTE_STATO = {
   ok: "sincronizzato",
@@ -114,17 +117,90 @@ function bloccoBackup() {
   ]);
 }
 
+/**
+ * La lavagna del giorno, in chiaro.
+ *
+ * Non è un vezzo da sviluppatore: quando un modulo "non si accorge" di
+ * quello che ha fatto un altro, la domanda è sempre la stessa — il fatto è
+ * stato scritto? Qui si vede in due secondi, senza aprire la console.
+ */
+function bloccoLavagna() {
+  const fatti = fattiDelGiorno();
+  const righe = [];
+  for (const [modulo, chiavi] of Object.entries(fatti)) {
+    for (const [k, v] of Object.entries(chiavi)) {
+      righe.push(el("div", { html: `<b>${modulo}</b> · ${k} = ${JSON.stringify(v)}` }));
+    }
+  }
+  return scheda(`Lavagna di ${giornoCorrente()}`, [
+    righe.length
+      ? el("div", { class: "diagnostica" }, righe)
+      : el("p", { class: "nota", testo: "Niente scritto oggi." }),
+    el("p", {
+      class: "nota",
+      testo: "È qui che i moduli si dicono cosa è già successo, senza conoscersi. " +
+             "Quando Mobilità segnerà la sessione serale, Abitudini la leggerà da qui.",
+    }),
+  ]);
+}
+
+/** Chi parla, chi ascolta, e cosa si sono detti. */
+function bloccoEventi() {
+  const { orfani } = mappaEventi();
+  const ascoltati = chiAscolta();
+  const eventi = ultimiEventi().slice(0, 12);
+
+  return scheda("Comunicazione fra moduli", [
+    el("div", { class: "diagnostica" }, [
+      el("div", { html: `<b>in ascolto</b> · ${Object.entries(ascoltati).map(([e, n]) => `${e} (${n})`).join(", ") || "nessuno"}` }),
+      ...eventi.map((v) => el("div", {
+        testo: `${new Date(v.quando).toLocaleTimeString("it-IT")} — ${v.evento}`,
+      })),
+      !eventi.length && el("div", { testo: "nessun annuncio finora" }),
+    ]),
+    orfani.length && el("p", {
+      class: "nota errore",
+      testo: `Eventi ascoltati che nessuno annuncia: ${orfani.join(", ")}. Quasi sempre è un refuso in registro.js.`,
+    }),
+  ]);
+}
+
+function bloccoCaselle() {
+  const lista = el("ul", { class: "lista" });
+  for (const id of caselleAperte()) {
+    const byte = (localStorage.getItem(`atlas.${id}.v1`) || "").length;
+    lista.append(riga({ etichetta: id, valore: `${(byte / 1024).toFixed(1)} kB` }));
+  }
+  return scheda("Archivi locali", [
+    lista,
+    el("p", { class: "nota", testo: "Una casella per modulo, isolate fra loro: azzerarne una non tocca le altre." }),
+  ]);
+}
+
 export default {
-  async monta(contenitore) {
-    contenitore.append(intestazione("Impostazioni"));
+  async monta(contenitore, posizione) {
+    const testa = intestazione("Impostazioni");
+    testa.querySelector(".sync-pallino")?.remove();
+    contenitore.append(testa);
+
     contenitore.append(scheda("Aspetto", [bloccoTema()]));
     contenitore.append(bloccoSync());
+    contenitore.append(bloccoLavagna());
+    contenitore.append(bloccoEventi());
+    contenitore.append(bloccoCaselle());
     contenitore.append(await bloccoSpazio());
     contenitore.append(bloccoBackup());
+
+    contenitore.append(el("a", {
+      class: "btn secondario pieno",
+      href: posizione.linkA("oggi"),
+      testo: "Torna a Oggi",
+      style: "margin-top:var(--s5)",
+    }));
     contenitore.append(el("p", {
       class: "nota",
-      style: "text-align:center;margin-top:var(--s8)",
-      testo: `ATLAS · guscio v1`,
+      style: "text-align:center;margin-top:var(--s6)",
+      testo: "ATLAS · guscio v1",
     }));
   },
 };

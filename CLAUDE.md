@@ -56,9 +56,11 @@ core/
   app.js            avvio: barra → router → sync → service worker
   registro.js       ELENCO DEI MODULI e contratto. Unico file da toccare
                     per aggiungerne uno
-  router.js         navigazione a hash, caricamento pigro dei moduli
+  router.js         navigazione a hash, caricamento pigro, `posizione`
   storage.js        una casella localStorage per modulo, isolate fra loro
   sync.js           IL motore di sincronizzazione. Uno solo, mai copiato
+  bus.js            annunci fra moduli. Nessun modulo importa un altro
+  contesto.js       la lavagna del giorno + chi decide che giorno è
   blobs.js          IndexedDB per foto e allegati
   ui.js             mattoni condivisi + formati italiani
   icone.js          SVG inline
@@ -77,19 +79,68 @@ legacy/             sorgenti di partenza, da leggere
 
 ```js
 export default {
-  async monta(contenitore, resto) {},  // disegna dentro il contenitore
-  smonta() {},                          // opzionale: timer, listener
-  oggi() { return null; },              // opzionale: la scheda per la home
-  avviaSync() {},                       // opzionale: apre il proprio canale
+  async monta(contenitore, posizione) {},  // disegna dentro il contenitore
+  smonta() {},                              // stacca ascoltatori, ferma timer
+  oggi() { return null; },                  // la scheda per la home
+  avviaSync() {},                           // apre il proprio canale
 };
 ```
 
 `id`, `nome`, `icona` e `accento` **non** li dichiara il modulo: stanno in
 `core/registro.js`. Un modulo non può spostarsi nella barra da solo.
 
-`oggi()` è **sincrona e senza effetti collaterali**. Restituisce
-`{ titolo, valore, dettaglio, urgente, azione: { rotta } }`, oppure `null`
-se oggi non ha niente da dire — e allora sparisce dalla home.
+**`posizione`** è come un modulo sa dove si trova. Contiene `resto` (i pezzi
+di rotta dopo il suo nome), `link(...)` per stare in casa propria,
+`linkA(altro, ...)` per uscire, `vaiA`, `indietro`, `inRadice`. Un modulo non
+scrive mai un URL a mano: così rinominarlo non rompe i suoi collegamenti.
+
+**`oggi()`** è sincrona e senza effetti collaterali. Restituisce
+`{ titolo, valore, dettaglio, urgente, azione: { rotta } }` oppure `null`.
+
+Attenzione alla differenza, perché la home la mostra:
+
+| | significato | come appare |
+|---|---|---|
+| `oggi()` assente | il modulo non c'è ancora | riquadro *in migrazione* |
+| `oggi()` → `null` | c'è, e oggi non ha niente da dire | riquadro *tutto a posto* |
+| `oggi()` → oggetto | ha qualcosa da mostrare | il numero |
+
+I tre riquadri della home **ci sono sempre**, anche vuoti. Una home che
+nasconde ciò che non ha dati cambia forma ogni giorno, e una cosa che cambia
+forma non si impara a leggere con la coda dell'occhio.
+
+### Come i moduli si parlano
+
+Un modulo **non importa mai** un altro modulo. Ci sono due canali, e bastano.
+
+**`core/bus.js` — gli annunci.** Chi fa qualcosa lo annuncia, chi è
+interessato ascolta, nessuno dei due sa se l'altro esiste.
+
+```js
+annuncia("mobilita:sessione-completata", { durataMin: 22 });
+const stacca = ascolta("mobilita:sessione-completata", (d) => { … });
+```
+
+I nomi sono sempre `<modulo>:<fatto>`, **al passato**: l'evento racconta
+qualcosa che è successo, non chiede un'azione. Chiedere a un altro modulo di
+fare qualcosa è esattamente l'accoppiamento che stiamo evitando. Chi ascolta
+**deve** staccarsi in `smonta()`.
+
+**`core/contesto.js` — la lavagna del giorno.** Risolve il problema che nasce
+nel momento in cui tre app diventano una: *la stessa cosa raccontata due
+volte*. La sessione serale di mobilità è anche un'abitudine da spuntare.
+
+```js
+scriviFatto("mobilita", "sessione-serale", true);   // solo Mobilità può
+leggiFatto("mobilita", "sessione-serale");          // chiunque può
+```
+
+Ognuno è proprietario della sua area: nessuno può scrivere i fatti di un
+altro, quindi nessuno può romperli. La lavagna si sincronizza da sé e si
+pota dopo 14 giorni — non è un archivio, quelli stanno nei moduli.
+
+Cosa c'è sulla lavagna e chi si è annunciato si vede in `#/impostazioni`,
+senza aprire la console.
 
 ---
 
@@ -122,6 +173,12 @@ Queste non si discutono senza una ragione scritta.
 10. **`VERSIONE` in `sw.js` va alzata a ogni rilascio.** Altrimenti il
     guscio vecchio resta appiccicato sui dispositivi.
 11. **I binari non stanno in `localStorage`.** Vanno in `core/blobs.js`.
+12. **Nessun modulo importa un altro modulo.** Solo bus e lavagna. Un import
+    diretto li salda insieme: niente più caricamento pigro, niente più
+    portarne uno senza toccare l'altro.
+13. **Chi ascolta si stacca in `smonta()`.** Senza, ogni visita alla
+    schermata lascia dietro una copia dell'ascoltatore: un ridisegno, poi
+    due, poi quattro.
 
 ---
 
@@ -142,14 +199,25 @@ Queste non si discutono senza una ragione scritta.
 ## 5. Ordine di costruzione
 
 1. ~~Guscio: shell, router, registro, storage, sync, token, PWA~~ ✅
-2. **Repo dati `atlas-dati` + `config.js` compilato** — senza, non si può
+2. ~~Home con i tre riquadri fissi, impostazioni, bus, lavagna del giorno~~ ✅
+3. **Repo dati `atlas-dati` + `config.js` compilato** — senza, non si può
    verificare niente di quello che viene dopo
-3. **Abitudini** — il modulo più piccolo, e porta con sé le notifiche, che
-   servono a tutti
-4. **Mobilità** — già modulare, è quasi solo un innesto
-5. **Finanze** — il più grosso, e il solo che vada davvero riscritto
-6. Notifiche unificate: una coppia VAPID, un workflow
-7. Spegnimento delle tre app di partenza, una alla volta
+4. **I tre moduli insieme.** Non uno alla volta: si portano gli schemi di
+   tutti e tre *prima* di scrivere le viste, perché è lì che si scopre cosa
+   deve finire sulla lavagna e cosa resta privato di un modulo. Portarne uno
+   e poi accorgersene significa rifare il primo.
+5. Notifiche unificate: una coppia VAPID, un workflow
+6. Spegnimento delle tre app di partenza, una alla volta
+
+### Sull'ordine del punto 4
+
+L'ordine dentro il punto 4 è: **schemi → lavagna → calcolo → viste**.
+
+Gli schemi dei tre `.json` si leggono tutti e tre insieme e si scrivono
+fianco a fianco. Da lì si decide cosa è un fatto condiviso (`sessione-serale`,
+`spese-registrate`) e cosa resta dentro il modulo. Solo dopo si scrive il
+calcolo, e solo dopo ancora le viste — che sono la parte che si rifà volentieri
+e che quindi va per ultima.
 
 ---
 

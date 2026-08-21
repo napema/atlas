@@ -23,7 +23,10 @@ export default {
     ],
   }),
 
-  // Quando il modulo sarà vivo, questa restituirà il saldo del mese e
-  // l'eventuale sforamento. Per ora tace, e la home non lo mostra.
-  oggi: () => null,
+  // `oggi()` volutamente NON c'è ancora. Un modulo che risponde `null` sta
+  // dicendo "oggi niente da segnalare"; uno che non risponde affatto sta
+  // dicendo "non ci sono ancora". La home mostra le due cose in modo
+  // diverso, ed è giusto che lo faccia.
+  //
+  // Quando ci sarà: saldo del mese e sforamento sulle categorie.
 };
