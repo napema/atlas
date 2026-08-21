@@ -27,10 +27,26 @@ import { apriCanale } from "./sync.js";
 
 const GIORNI_TENUTI = 14;   // quanto indietro va la lavagna
 
-const casella = apriCasella("contesto", {
-  giorni: {},   // "2026-08-21" → { mobilita: { "sessione-serale": true }, … }
-  up: 0,
-});
+// Forma di quel che c'è dentro. Ogni fatto porta il proprio timestamp, e
+// una cancellazione è una LAPIDE, non una chiave che sparisce:
+//
+//   giorni: {
+//     "2026-08-21": {
+//       mobilita: {
+//         "sessione-serale": { v: true,     up: 1787314484149 },
+//         "corsa":           { del: true,   up: 1787314491002 }
+//       }
+//     }
+//   }
+//
+// Il timestamp per fatto è ciò che permette a due dispositivi di scrivere
+// fatti diversi dello stesso modulo nello stesso giorno senza perderne uno.
+// La lapide è ciò che permette a una cancellazione di viaggiare: senza,
+// l'altro dispositivo rimanda indietro il fatto e la cancellazione si
+// annulla da sola — provato, succede al primo giro di sync.
+//
+// Le lapidi non si potano a parte: sparisce il giorno intero dopo 14 giorni.
+const casella = apriCasella("contesto", { giorni: {} });
 
 // ------------------------------------------------------------- il giorno --
 
@@ -86,29 +102,47 @@ document.addEventListener("visibilitychange", () => {
  * @param {string} [giorno]
  */
 export function scriviFatto(modulo, chiave, valore, giorno = giornoCorrente()) {
-  casella.aggiorna((s) => {
-    if (!s.giorni[giorno]) s.giorni[giorno] = {};
-    if (!s.giorni[giorno][modulo]) s.giorni[giorno][modulo] = {};
-    s.giorni[giorno][modulo][chiave] = valore;
-  });
+  scrivi(modulo, chiave, { v: valore, up: Date.now() }, giorno);
   annuncia(EVENTI.FATTO_SCRITTO, { modulo, chiave, valore, giorno });
   return valore;
 }
 
+/**
+ * Cancella un fatto. Vale come "non è più vero", non come "non è mai
+ * successo": resta una lapide, che è ciò che fa arrivare la cancellazione
+ * anche all'altro dispositivo.
+ */
+export function togliFatto(modulo, chiave, giorno = giornoCorrente()) {
+  scrivi(modulo, chiave, { del: true, up: Date.now() }, giorno);
+  annuncia(EVENTI.FATTO_SCRITTO, { modulo, chiave, valore: undefined, giorno });
+}
+
+function scrivi(modulo, chiave, record, giorno) {
+  casella.aggiorna((s) => {
+    ((s.giorni[giorno] ||= {})[modulo] ||= {})[chiave] = record;
+  });
+}
+
 /** Legge un fatto scritto da chiunque. Leggere è libero; scrivere no. */
 export function leggiFatto(modulo, chiave, giorno = giornoCorrente()) {
-  return casella.leggi().giorni?.[giorno]?.[modulo]?.[chiave];
+  const r = casella.leggi().giorni?.[giorno]?.[modulo]?.[chiave];
+  return r && !r.del ? r.v : undefined;
 }
 
-/** Tutti i fatti di un giorno: `{ mobilita: {...}, abitudini: {...} }`. */
+/**
+ * Tutti i fatti vivi di un giorno, già scartati: `{ mobilita: { chiave: valore } }`.
+ * Chi legge non vede mai né le lapidi né i timestamp — sono contabilità
+ * del sync, non roba che un modulo debba maneggiare.
+ */
 export function fattiDelGiorno(giorno = giornoCorrente()) {
-  return casella.leggi().giorni?.[giorno] || {};
-}
-
-/** Cancella un fatto. Vale come "non è più vero", non come "non è mai successo". */
-export function togliFatto(modulo, chiave, giorno = giornoCorrente()) {
-  casella.aggiorna((s) => { delete s.giorni?.[giorno]?.[modulo]?.[chiave]; });
-  annuncia(EVENTI.FATTO_SCRITTO, { modulo, chiave, valore: undefined, giorno });
+  const grezzi = casella.leggi().giorni?.[giorno] || {};
+  const out = {};
+  for (const [modulo, chiavi] of Object.entries(grezzi)) {
+    const vivi = {};
+    for (const [k, r] of Object.entries(chiavi)) if (r && !r.del) vivi[k] = r.v;
+    if (Object.keys(vivi).length) out[modulo] = vivi;
+  }
+  return out;
 }
 
 /**
@@ -139,27 +173,32 @@ function pota() {
 
 /**
  * La lavagna si sincronizza da sé, senza appartenere a nessun modulo.
- * La fusione è per giorno e per modulo: se l'iPhone ha scritto un fatto di
- * Mobilità e il PC uno di Abitudini nello stesso giorno, restano entrambi.
- * A collidere davvero — stesso giorno, stesso modulo, stessa chiave — vince
- * chi ha scritto per ultimo, che per una lavagna del giorno è la regola giusta.
+ *
+ * La fusione è FATTO PER FATTO, confrontando gli `up`. Vale la pena dire
+ * perché, perché la versione semplice sembra funzionare e non funziona:
+ * fondere con uno spread (`{...remoto, ...locale}`) può solo AGGIUNGERE
+ * chiavi. Una cancellazione locale sparisce al primo giro, perché il remoto
+ * la chiave ce l'ha ancora e lo spread la rimette. La lapide con timestamp
+ * è ciò che rende la cancellazione un fatto come gli altri — e quindi
+ * qualcosa che può vincere il confronto.
  */
 export function avviaSync() {
   const canale = apriCanale({
     id: "contesto",
     file: "contesto.json",
-    impacchetta: () => ({ giorni: casella.leggi().giorni, up: casella.leggi().up || 0 }),
+    impacchetta: () => ({ giorni: casella.leggi().giorni }),
     applica: (remoto) => {
       casella.aggiorna((s) => {
         for (const [giorno, moduli] of Object.entries(remoto.giorni || {})) {
-          if (!s.giorni[giorno]) s.giorni[giorno] = {};
+          const mieiDelGiorno = (s.giorni[giorno] ||= {});
           for (const [modulo, fatti] of Object.entries(moduli)) {
-            // Il locale ha l'ultima parola solo se ha scritto dopo. Senza
-            // timestamp per fatto, il confronto è a livello di casella: è
-            // grossolano, ma la lavagna è piccola e i conflitti veri rari.
-            s.giorni[giorno][modulo] = (remoto.up || 0) > (s.up || 0)
-              ? { ...s.giorni[giorno][modulo], ...fatti }
-              : { ...fatti, ...s.giorni[giorno][modulo] };
+            const miei = (mieiDelGiorno[modulo] ||= {});
+            for (const [chiave, suo] of Object.entries(fatti)) {
+              const mio = miei[chiave];
+              // A parità di `up` vince il locale: è l'unico dei due di cui
+              // sappiamo con certezza che l'utente l'ha appena visto.
+              if (!mio || (suo?.up || 0) > (mio.up || 0)) miei[chiave] = suo;
+            }
           }
         }
       }, { origine: "sync", tocca: false });
