@@ -89,14 +89,21 @@ _(nessuna, per ora)_
 
 ---
 
+## Decisioni chiuse
+
+- **`sched` delle abitudini** (21 ago) — tre tipi, non uno ambiguo.
+  `"daily"` = ogni giorno, `days` e `times` ignorati. `"days"` = solo nei giorni
+  elencati in `days`. `"weekly"` = `times` volte **a settimana**, giorno libero.
+  Cadeva il dubbio sul "3 volte al giorno": non esiste, `times` è settimanale.
+  Dettagli e conseguenze sul calcolo in `docs/SCHEMI.md`.
+
+---
+
 ## Decisioni aperte
 
 Cose che vanno decise una volta per tutte e valgono per tutti. Chi ne apre una,
 la scrive qui invece di risolverla dentro il suo modulo.
 
-- **`sched.times` delle abitudini** — "3 volte al giorno" è dichiarato ma i log
-  non lo contano. Implementarlo o toglierlo? Lasciarlo a metà è la scelta
-  peggiore, perché l'interfaccia promette qualcosa che i dati non sanno.
 - **Il tema** — Mobilità nasce chiara in stile Apple, Finanze e Abitudini scure.
   I token reggono entrambi e la scelta è in Impostazioni. Da verificare a
   occhio, sui tre moduli portati, che nessuno dei due estremi sia illeggibile.

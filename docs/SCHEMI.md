@@ -77,6 +77,9 @@ Resta da fare la parte di forma, non quella di sostanza.
     "id": "msnpry7ugxqqg4q",
     "name": "Meditazione", "emoji": "🧠", "tint": "purple",
     "sched": { "type": "daily", "days": [1,2,3,4,5,6,0], "times": 3 },
+    //  type "daily"  → ogni giorno; `days` e `times` ignorati
+    //  type "days"   → solo nei giorni di `days` (0 = domenica)
+    //  type "weekly" → `times` VOLTE A SETTIMANA, giorno libero
     "remind": "09:24",          // "" = nessun promemoria
     "archived": false,
     "created": 1786395532026,
@@ -102,9 +105,14 @@ Resta da fare la parte di forma, non quella di sostanza.
 - **`sched.days` usa la convenzione JavaScript**: 0 = domenica. `core/contesto.js`
   usa 0 = lunedì, perché è così che si conta in italiano. **Vanno convertiti.**
   È lo scambio che produce il bug più insidioso: funziona sei giorni su sette.
-- **`sched.times: 3` non è tracciato dai log.** C'è un log per abitudine per
-  giorno, senza contatore: il "3 volte al giorno" è dichiarato e mai verificato.
-  Da decidere: implementarlo o toglierlo. Non lasciarlo a metà.
+- **`times` è a SETTIMANA, e solo con `type: "weekly"`.** Nel record qui sopra
+  `type` è `"daily"`, quindi quel `times: 3` non vuol dire niente: è residuo di
+  quando l'abitudine era di un altro tipo. Leggerlo come "3 volte al giorno"
+  è l'errore facile, e produce una schermata che chiede tre spunte quando ne
+  serve una.
+  Conseguenza per il calcolo: con `"weekly"` la domanda "è attesa oggi?" non
+  ha risposta — si contano i log della settimana e si guarda se sono meno di
+  `times`. È l'unico dei tre tipi che non si risolve guardando il solo giorno.
 - **L'id del log è deterministico** (`habitId|data`), quindi due dispositivi
   che spuntano la stessa abitudine lo stesso giorno producono lo stesso record
   e non si duplicano. È fatto bene: conservarlo.

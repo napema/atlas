@@ -25,10 +25,14 @@ Committa con il prefisso `abitudini:`.
    `core/contesto.js` usa 0 = lunedì, perché è così che si conta in italiano.
    **Vanno convertiti.** È lo scambio che produce il bug più insidioso di tutti:
    funziona sei giorni su sette e sbaglia la domenica.
-2. **`sched.times: 3` è dichiarato ma non tracciato.** C'è un log per abitudine
-   per giorno, senza contatore. È una decisione aperta in `docs/CANTIERE.md`:
-   implementarlo o toglierlo. Non lasciarlo a metà — l'interfaccia
-   prometterebbe qualcosa che i dati non sanno.
+2. **`times` è a SETTIMANA, non al giorno**, e conta solo con
+   `type: "weekly"`. Con `"daily"` un `times: 3` è residuo e va ignorato:
+   leggerlo come "tre volte al giorno" produce una schermata che chiede tre
+   spunte quando ne serve una.
+   Conseguenza per `calcolo.js`: con `"weekly"` la domanda "è attesa oggi?"
+   non si risolve guardando il giorno — si contano i log della settimana e si
+   confrontano con `times`. È l'unico dei tre tipi che ha bisogno di una
+   finestra, e va progettato così dall'inizio.
 3. **`metaUp` è `0` mentre `meta` ha contenuto.** Alla migrazione va
    inizializzato, altrimenti il primo sync considera `meta` più vecchio di
    qualunque cosa e lo sovrascrive.
