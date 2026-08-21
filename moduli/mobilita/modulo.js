@@ -8,7 +8,7 @@
 // precauzione teorica: nell'app di partenza uno stato locale vuoto ha
 // sovrascritto il repo e cancellato un assessment intero. Non toglierla.
 
-import { el, aggiungi, intestazione, avviso, oggiISO, durata as fmtDurata } from "../../core/ui.js";
+import { el, aggiungi, intestazione, avviso, oggiISO, plurale, durata as fmtDurata } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
@@ -157,7 +157,7 @@ export default {
       return {
         titolo: "Mobilità",
         valore: fmtDurata(fatta.durataSec),
-        dettaglio: n > 1 ? `${TIPI_SESSIONE[fatta.tipo]?.nome} · ${n} giorni di fila` : TIPI_SESSIONE[fatta.tipo]?.nome,
+        dettaglio: n > 1 ? `${TIPI_SESSIONE[fatta.tipo]?.nome} · ${plurale(n, "giorno", "giorni")} di fila` : TIPI_SESSIONE[fatta.tipo]?.nome,
         urgente: false,
         azione: { rotta: "#/mobilita" },
       };
@@ -172,7 +172,7 @@ export default {
       titolo: "Mobilità",
       valore: `${minuti} min`,
       dettaglio: n > 0
-        ? `${TIPI_SESSIONE[tipo]?.nome} · ${n} giorni di fila da non perdere`
+        ? `${TIPI_SESSIONE[tipo]?.nome} · ${plurale(n, "giorno", "giorni")} di fila da non perdere`
         : TIPI_SESSIONE[tipo]?.nome,
       // Urgente di sera: è l'ora in cui la sessione salta davvero.
       urgente: new Date().getHours() >= 21,

@@ -391,6 +391,13 @@ export function dataUmana(iso) {
 
 export const dataBreve = (iso) => `${daISO(iso).getDate()} ${MESI_BREVI[daISO(iso).getMonth()]}`;
 
+/**
+ * Concorda il numero con la parola: `plurale(1, "giorno", "giorni")`.
+ * Sembra una pignoleria e non lo è — "1 giorni di fila" in una schermata
+ * che si guarda ogni sera si nota tutte le sere.
+ */
+export const plurale = (n, singolare, plur) => `${n} ${n === 1 ? singolare : plur}`;
+
 /** Da secondi a "14 min" o "1 h 05". */
 export function durata(secondi) {
   const m = Math.round((Number(secondi) || 0) / 60);

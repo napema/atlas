@@ -5,7 +5,7 @@
 // parte pensata bene. Sono spariti il suo storage, il suo sync e le sue
 // notifiche: ora sono di core, e valgono per tutti i moduli.
 
-import { el, aggiungi, intestazione, avviso, oggiISO, piuGiorni } from "../../core/ui.js";
+import { el, aggiungi, intestazione, avviso, oggiISO, piuGiorni, plurale } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
@@ -164,7 +164,7 @@ export default {
       titolo: "Abitudini",
       valore: `${p.fatte} / ${p.attese}`,
       dettaglio: !mancano.length
-        ? (migliore > 1 ? `Tutto fatto · ${migliore} giorni di fila` : "Tutto fatto.")
+        ? (migliore > 1 ? `Tutto fatto · ${plurale(migliore, "giorno", "giorni")} di fila` : "Tutto fatto.")
         : mancano.length === 1 ? `Manca: ${mancano[0].name}`
         : `Mancano ${mancano.length}: ${mancano.slice(0, 2).map((h) => h.name).join(", ")}${mancano.length > 2 ? "…" : ""}`,
       // Urgente solo di sera: prima è solo una giornata in corso.

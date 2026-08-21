@@ -200,24 +200,26 @@ Queste non si discutono senza una ragione scritta.
 
 1. ~~Guscio: shell, router, registro, storage, sync, token, PWA~~ ✅
 2. ~~Home con i tre riquadri fissi, impostazioni, bus, lavagna del giorno~~ ✅
-3. **Repo dati `atlas-dati` + `config.js` compilato** — senza, non si può
-   verificare niente di quello che viene dopo
-4. **I tre moduli insieme.** Non uno alla volta: si portano gli schemi di
-   tutti e tre *prima* di scrivere le viste, perché è lì che si scopre cosa
-   deve finire sulla lavagna e cosa resta privato di un modulo. Portarne uno
-   e poi accorgersene significa rifare il primo.
-5. Notifiche unificate: una coppia VAPID, un workflow
-6. Spegnimento delle tre app di partenza, una alla volta
+3. ~~Repo dati `atlas-dati` + `config.js` compilato~~ ✅
+4. ~~I tre moduli insieme, con i dati veri migrati~~ ✅
+5. ~~Notifiche unificate: una coppia VAPID, un workflow~~ ✅
+6. **Spegnimento delle tre app di partenza**, una alla volta — vedi
+   `docs/CANTIERE.md`
 
-### Sull'ordine del punto 4
+L'ordine dentro il punto 4 era: **schemi → lavagna → calcolo → viste**, e ha
+retto. Leggere i tre `.json` fianco a fianco *prima* di scrivere qualsiasi
+vista è ciò che ha fatto emergere subito le tre trappole che avrebbero
+mangiato una giornata a testa se scoperte dopo (centesimi, `data` contro
+`ts`, la convenzione dei giorni della settimana). Sono in `docs/SCHEMI.md`.
 
-L'ordine dentro il punto 4 è: **schemi → lavagna → calcolo → viste**.
+### Cosa è cambiato rispetto al piano
 
-Gli schemi dei tre `.json` si leggono tutti e tre insieme e si scrivono
-fianco a fianco. Da lì si decide cosa è un fatto condiviso (`sessione-serale`,
-`spese-registrate`) e cosa resta dentro il modulo. Solo dopo si scrive il
-calcolo, e solo dopo ancora le viste — che sono la parte che si rifà volentieri
-e che quindi va per ultima.
+- **Le iscrizioni push sono salite in `core/`.** Stavano dentro
+  `abitudini.json`. Lasciarle lì avrebbe riportato esattamente la
+  duplicazione che ATLAS esiste per eliminare.
+- **Le PUT del sync passano da una coda.** I file sono indipendenti, il
+  branch no: quattro canali che partivano insieme facevano 409 tre volte su
+  quattro. Le GET restano parallele — leggere non crea commit.
 
 ---
 
