@@ -1,0 +1,180 @@
+/* moduli/oggi — la home.
+   Gerarchia, non griglia: il saluto domina, quello che manca è grande,
+   quello che è a posto si stringe in una riga sola. */
+
+/* ------------------------------------------------------------ testata -- */
+
+.og-testata {
+  padding: var(--s6) 0 var(--s8);
+}
+.og-data {
+  font-size: var(--t-13);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--etichetta-3);
+  margin-bottom: var(--s2);
+}
+/* Il saluto è la cosa più grande della schermata, e deve esserlo: è
+   l'unico elemento che non trasmette un dato ma dice che l'app sa chi sei
+   e che ore sono. Tutto il resto è servizio. */
+.og-saluto {
+  font-size: clamp(38px, 11vw, 52px);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  margin-bottom: var(--s3);
+}
+.og-sommario {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0;
+  font-size: var(--t-17);
+  color: var(--etichetta-2);
+}
+.og-sommario.urgente { color: var(--etichetta); font-weight: 500; }
+
+/* ------------------------------------------------ quello che manca ----- */
+
+.og-grande {
+  display: block;
+  position: relative;
+  padding: var(--s5);
+  margin-bottom: var(--s3);
+  border-radius: var(--r-scheda);
+  background: var(--sfondo-2);
+  color: inherit;
+  /* Il colore del modulo entra come alone tenue, non come riempimento: una
+     scheda dipinta di verde su una di viola è un semaforo, non un'interfaccia. */
+  box-shadow: inset 0 0 0 1.5px var(--accento-tenue);
+  transition: transform var(--veloce) var(--curva);
+}
+.og-grande:active { transform: scale(0.99); }
+
+.og-grande-testa { display: flex; align-items: center; gap: var(--s2); }
+.og-icona { color: var(--accento); display: inline-flex; flex: none; }
+.og-nome {
+  font-size: var(--t-15);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.og-freccia { margin-left: auto; color: var(--etichetta-4); display: flex; }
+
+.og-valore {
+  font-size: clamp(34px, 9vw, 44px);
+  line-height: 1.05;
+  margin-top: var(--s3);
+  color: var(--accento);
+}
+.og-dettaglio {
+  font-size: var(--t-15);
+  color: var(--etichetta-2);
+  margin-top: var(--s1);
+}
+
+/* ------------------------------------------------ quello che è a posto -- */
+
+.og-riga {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--s2);
+}
+.og-piccola {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s4) var(--s3);
+  border-radius: var(--r-scheda);
+  background: var(--sfondo-2);
+  color: inherit;
+  min-width: 0;
+}
+.og-piccola:active { background: var(--sfondo-3); }
+.og-piccola-valore {
+  font-size: var(--t-22);
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.og-piccola-nome {
+  font-size: var(--t-12);
+  color: var(--etichetta-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Se sono tre o meno stanno in riga; da quattro in su vanno a capo, perché
+   sotto i 100px di larghezza una cifra non si legge più. */
+@media (max-width: 360px) {
+  .og-riga { grid-auto-flow: row; grid-auto-columns: auto; }
+}
+
+/* ------------------------------------------------------- niente da fare -- */
+
+.og-vuoto { text-align: center; padding: var(--s6) 0 var(--s4); }
+.og-vuoto-anello { display: grid; place-items: center; margin-bottom: var(--s4); }
+.og-vuoto-anello .anello { grid-area: 1 / 1; }
+.og-vuoto-spunta { grid-area: 1 / 1; color: var(--verde); display: flex; }
+.og-vuoto-titolo {
+  font-family: var(--font-titolo);
+  font-size: var(--t-22);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--s1);
+}
+
+.og-scorciatoie {
+  display: flex;
+  justify-content: center;
+  gap: var(--s2);
+  margin-top: var(--s6);
+  flex-wrap: wrap;
+}
+.og-scorciatoia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  min-width: 84px;
+  padding: var(--s3);
+  border-radius: var(--r-scheda);
+  background: var(--sfondo-2);
+  color: var(--etichetta-2);
+  font-size: var(--t-12);
+  font-weight: 500;
+}
+.og-scorciatoia:active { background: var(--sfondo-3); }
+
+/* --------------------------------------------- la forma normale --------- */
+
+.og-media {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s4);
+  margin-bottom: var(--s2);
+  border-radius: var(--r-scheda);
+  background: var(--sfondo-2);
+  color: inherit;
+  transition: transform var(--veloce) var(--curva);
+}
+.og-media:active { transform: scale(0.99); background: var(--sfondo-3); }
+.og-media-testo { flex: 1; min-width: 0; }
+.og-media-alto {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+.og-media-valore {
+  font-size: var(--t-22);
+  line-height: 1.1;
+  color: var(--accento);
+  white-space: nowrap;
+}
+.og-media .og-dettaglio { font-size: var(--t-13); margin-top: 2px; }
+.og-media .og-freccia { margin-left: 0; }

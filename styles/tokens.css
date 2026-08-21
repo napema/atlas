@@ -90,9 +90,15 @@
 
   /* ------------------------------------------------------------ tipografia --
      Scala HIG. Corpo 17 sul tocco, 13 sul denso da scrivania. */
-  --font-testo:  "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-titolo: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-mono:   "SF Mono", ui-monospace, Menlo, "Cascadia Mono", monospace;
+  /* SF Pro NATIVA per prima.
+     Su iPhone e Mac `-apple-system` è la San Francisco vera di sistema: ha
+     l'ottica variabile, il crenaggio giusto a ogni corpo e tutti i glifi.
+     I woff2 self-hosted qui sotto sono istanze statiche, e servono solo dove
+     la nativa non c'è — cioè su Windows. Metterli davanti significherebbe
+     usare la copia peggiore proprio sul dispositivo per cui l'app è fatta. */
+  --font-testo:  -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-titolo: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-mono:   ui-monospace, "SF Mono", Menlo, "Cascadia Mono", monospace;
 
   --t-56: 56px;  --t-44: 44px;  --t-34: 34px;  --t-28: 28px;
   --t-22: 22px;  --t-17: 17px;  --t-15: 15px;  --t-13: 13px;

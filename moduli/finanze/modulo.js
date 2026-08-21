@@ -1,12 +1,14 @@
 // moduli/finanze — il registro di entrate e uscite.
 //
-// Portato da napema/budget-tracker-webpage: 118 KB di index.html monolitico,
-// spezzati in dati / calcolo / viste. Il motore di calcolo è passato quasi
-// intatto — è la parte pensata bene — mentre il suo sync è stato buttato:
-// core/sync.js fa già tutto quello che faceva, e in più le cose che le altre
-// due app avevano imparato per conto loro.
+// Portato da napema/budget-tracker-webpage. Il primo tentativo l'aveva
+// riscritto e gli aveva tolto metà delle funzioni: Analisi ridotta a due
+// pannelli su nove, niente import dell'estratto conto, niente drill-down
+// sulle sottocategorie, niente giroconti. Questa versione è quella vera,
+// funzione per funzione — cambiano solo lo stile e il font.
+//
+// Quattro schermate, come prima: Riepilogo, Movimenti, Analisi, Setup.
 
-import { el, aggiungi, intestazione, oggiISO, euro } from "../../core/ui.js";
+import { el, aggiungi, intestazione, oggiISO, euro, plurale } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
@@ -17,16 +19,18 @@ import {
   nomeMese, importoEffettivo, proiezione,
 } from "./calcolo.js";
 import {
-  vistaHome, vistaMovimenti, vistaAnalisi, apriMovimento, apriImpostazioni,
+  vistaHome, vistaMovimenti, vistaAnalisi, vistaSetup,
+  apriMovimento, apriCategoria, apriSottocategoria, apriDettaglio,
 } from "./viste.js";
 
 let contenitore = null;
 const staccatori = [];
 
-// Lo stato della schermata. Non va nella casella: è come stai guardando i
-// dati, non un dato. Sincronizzarlo farebbe cambiare vista al PC perché
-// l'hai cambiata sull'iPhone.
+// Come stai guardando i dati, non un dato: non va nella casella e non si
+// sincronizza. Altrimenti cambiare scheda sull'iPhone la cambierebbe sul PC.
 const vista = { scheda: "home", mese: meseDi(), grafico: "settimana", filtro: "tutti" };
+
+const SCHEDE = [["home", "Riepilogo"], ["movimenti", "Movimenti"], ["analisi", "Analisi"], ["setup", "Setup"]];
 
 /* --------------------------------------------------------------- vista -- */
 
@@ -35,49 +39,42 @@ function ridisegna(patch = {}) {
   disegna();
 }
 
+// I fogli hanno bisogno di riaprirsi a vicenda (categoria → sottocategoria →
+// dettaglio) senza che le viste conoscano il modulo: si passano queste.
+const aperture = {
+  cat: (id) => apriCategoria(vista.mese, id, disegna, aperture.sub, aperture.dett),
+  sub: (cid, s) => apriSottocategoria(vista.mese, cid, s, disegna, aperture.dett),
+  dett: (id) => apriDettaglio(id, disegna, aperture.dett),
+};
+
 function disegna() {
   if (!contenitore) return;
   const scorrimento = globalThis.scrollY;
   contenitore.replaceChildren();
 
   aggiungi(contenitore, [
-    intestazione("Finanze", nomeMese(vista.mese), el("div", { class: "fi-azioni" }, [
-      el("button", {
-        class: "btn-icona", type: "button", "aria-label": "Budget",
-        html: icona("ingranaggio", 22),
-        onClick: () => apriImpostazioni(vista.mese, disegna),
-      }),
-      el("button", {
-        class: "btn-icona", type: "button", "aria-label": "Nuovo movimento",
-        html: icona("piu", 26),
-        onClick: () => apriMovimento({ ridisegna: disegna }),
-      }),
-    ])),
+    intestazione("Finanze", nomeMese(vista.mese), el("button", {
+      class: "btn-icona", type: "button", "aria-label": "Nuovo movimento",
+      html: icona("piu", 26),
+      onClick: () => apriMovimento({ ridisegna: disegna }),
+    })),
 
     navigatoreMese(),
 
-    el("div", { class: "fi-schede" }, [
-      pillolaScheda("home", "Riepilogo"),
-      pillolaScheda("movimenti", "Movimenti"),
-      pillolaScheda("analisi", "Analisi"),
-    ]),
+    el("div", { class: "fi-schede" }, SCHEDE.map(([id, testo]) => el("button", {
+      class: "fi-scheda" + (vista.scheda === id ? " attiva" : ""),
+      type: "button", testo, "aria-pressed": String(vista.scheda === id),
+      onClick: () => ridisegna({ scheda: id }),
+    }))),
 
-    vista.scheda === "home" ? vistaHome(vista.mese, vista.grafico, (p) => ridisegna({ grafico: p.vista ?? vista.grafico }))
-      : vista.scheda === "movimenti" ? vistaMovimenti(vista.mese, vista.filtro, (p) => ridisegna(p))
-      : vistaAnalisi(vista.mese, disegna),
+    vista.scheda === "home"      ? vistaHome(vista.mese, vista.grafico, ridisegna, aperture.cat)
+    : vista.scheda === "movimenti" ? vistaMovimenti(vista.mese, vista.filtro, ridisegna, aperture.dett)
+    : vista.scheda === "analisi"   ? vistaAnalisi(vista.mese, aperture.cat, aperture.sub)
+    : vistaSetup(vista.mese, ridisegna),
   ]);
 
   pubblicaSullaLavagna();
   globalThis.scrollTo(0, scorrimento);
-}
-
-function pillolaScheda(id, testo) {
-  return el("button", {
-    class: "fi-scheda" + (vista.scheda === id ? " attiva" : ""),
-    type: "button", testo,
-    "aria-pressed": String(vista.scheda === id),
-    onClick: () => ridisegna({ scheda: id }),
-  });
 }
 
 function navigatoreMese() {
@@ -90,8 +87,8 @@ function navigatoreMese() {
     }),
     el("button", {
       class: "fi-mese-nome", type: "button", testo: nomeMese(vista.mese),
-      onClick: () => ridisegna({ mese: corrente }),
       title: "Torna al mese corrente",
+      onClick: () => ridisegna({ mese: corrente }),
     }),
     el("button", {
       class: "btn-icona", type: "button", "aria-label": "Mese successivo",
@@ -104,11 +101,6 @@ function navigatoreMese() {
 
 /* ------------------------------------------------------------- lavagna -- */
 
-/**
- * Cosa gli altri moduli possono sapere di Finanze: quanti movimenti oggi e
- * quanto è uscito. Serve perché un'abitudine "segnare le spese" possa
- * spuntarsi da sé. L'archivio resta qui.
- */
 function pubblicaSullaLavagna() {
   const oggi = giornoCorrente();
   const diOggi = movimentiVivi().filter((m) => m.data === oggi && m.tipo === "out");
@@ -134,12 +126,14 @@ export function avviaSync() {
     applica: (remoto) => {
       casella.aggiorna((s) => {
         s.movs = potaLapidi(fondiRecord(s.movs, remoto.movs));
-        // `meta` non ha record con id: un solo timestamp, vince il più recente.
         const rm = remoto.meta;
         if (rm && (rm.up || 0) > (s.metaUp || 0)) {
           if (rm.cats?.length) s.cats = rm.cats;
           if (rm.profili) s.profili = rm.profili;
-          if (rm.rules) s.rules = rm.rules;
+          // Il vocabolario appreso si SOMMA invece di essere sostituito:
+          // quello che insegni su un dispositivo deve saperlo anche l'altro,
+          // e vince chi ha scritto per ultimo solo sulle chiavi in comune.
+          if (rm.rules) s.rules = { ...s.rules, ...rm.rules };
           if (rm.config) s.config = { ...s.config, ...rm.config };
           s.metaUp = rm.up;
         }
@@ -166,10 +160,12 @@ export default {
     vista.mese = meseDi();
 
     const resto = posizione?.resto || [];
-    if (resto[0] === "nuovo") queueMicrotask(() => apriMovimento({ ridisegna: disegna }));
-    else if (resto[0] === "movimenti" || resto[0] === "analisi") vista.scheda = resto[0];
+    if (SCHEDE.some(([id]) => id === resto[0])) vista.scheda = resto[0];
+    else vista.scheda = "home";
 
     disegna();
+
+    if (resto[0] === "nuovo") queueMicrotask(() => apriMovimento({ ridisegna: disegna }));
     staccatori.push(ascolta("giorno:cambiato", () => { vista.mese = meseDi(); disegna(); }));
   },
 
@@ -194,7 +190,7 @@ export default {
         valore: euro(cassa.resta),
         dettaglio: cassa.resta < 0
           ? `Cassa sforata di ${euro(-cassa.resta)}`
-          : `In cassa · ${cassa.giorniRimasti} ${cassa.giorniRimasti === 1 ? "giorno" : "giorni"} alla ricarica`,
+          : `In cassa · ${plurale(cassa.giorniRimasti, "giorno", "giorni")} alla ricarica`,
         urgente: cassa.resta <= 0,
         azione: { rotta: "#/finanze" },
       };
@@ -205,7 +201,9 @@ export default {
     return {
       titolo: "Finanze",
       valore: euro(st.ordinaria, { tondo: true }),
-      dettaglio: bt ? `${Math.round((st.ordinaria / bt) * 100)}% del budget${proj ? ` · proiezione ${euro(proj, { tondo: true })}` : ""}` : v.testo,
+      dettaglio: bt
+        ? `${Math.round((st.ordinaria / bt) * 100)}% del budget${proj ? ` · proiezione ${euro(proj, { tondo: true })}` : ""}`
+        : v.testo,
       urgente: v.livello === "rosso",
       azione: { rotta: "#/finanze" },
     };

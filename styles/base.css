@@ -634,26 +634,3 @@ hr {
 #barra-alta::after { bottom: 0; }
 .foglio::before { top: 0; }
 
-/* ------------------------------------------------------- interruttore --- */
-
-.interruttore {
-  width: 51px; height: 31px;
-  flex: none;
-  border: 0;
-  border-radius: var(--r-pillola);
-  background: var(--riempimento-2);
-  padding: 2px;
-  cursor: pointer;
-  transition: background var(--veloce) var(--curva);
-  display: block;
-}
-.interruttore-pallina {
-  display: block;
-  width: 27px; height: 27px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
-  transition: transform var(--veloce) var(--curva);
-}
-.interruttore.acceso { background: var(--verde); }
-.interruttore.acceso .interruttore-pallina { transform: translateX(20px); }

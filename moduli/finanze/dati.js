@@ -18,13 +18,23 @@
 
 import { apriCasella } from "../../core/storage.js";
 
-/** I tipi di movimento. `rimb` e `reso` puntano a un'uscita con `rif`. */
+/**
+ * I sei tipi di movimento.
+ *
+ * NON tutto quello che si muove è una spesa, ed è la distinzione che rende
+ * leggibile il totale: i rimborsi degli amici gonfiavano sia le entrate sia
+ * le uscite, e la spesa vera non si capiva più. Solo `out` e `in` toccano il
+ * budget; `giro`, `rimb` e `reso` restano registrati ma non contano.
+ *
+ * `rimb` e `reso` puntano all'uscita che riducono, tramite `rif`.
+ */
 export const TIPI = {
-  out:   { nome: "Uscita",        segno: -1 },
-  in:    { nome: "Entrata",       segno: +1 },
-  rimb:  { nome: "Rimborso",      segno: +1 },
-  reso:  { nome: "Reso",          segno: +1 },
-  extra: { nome: "Sforamento",    segno: -1 },   // ricarica presa da fuori budget
+  out:   { nome: "Uscita",         segno: -1, budget: true },
+  in:    { nome: "Entrata",        segno: +1, budget: true },
+  rimb:  { nome: "Rimborso",       segno: +1, budget: false },
+  reso:  { nome: "Reso",           segno: +1, budget: false },
+  giro:  { nome: "Giroconto",      segno:  0, budget: false },   // fra pocket: neutro
+  extra: { nome: "Ricarica extra", segno: -1, budget: false },   // sforamento, non spesa
 };
 
 export function categorieIniziali() {

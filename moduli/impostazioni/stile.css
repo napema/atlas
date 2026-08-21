@@ -1,0 +1,25 @@
+/* moduli/impostazioni — stile specifico.
+   L'interruttore vive qui e non in base.css: lo usa solo questa schermata,
+   e la regola è che in base.css sale ciò che serve a più di un modulo. */
+
+.interruttore {
+  width: 51px; height: 31px;
+  flex: none;
+  display: block;
+  border: 0;
+  border-radius: var(--r-pillola);
+  background: var(--riempimento-2);
+  padding: 2px;
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva);
+}
+.interruttore-pallina {
+  display: block;
+  width: 27px; height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: transform var(--veloce) var(--curva);
+}
+.interruttore.acceso { background: var(--verde); }
+.interruttore.acceso .interruttore-pallina { transform: translateX(20px); }

@@ -12,7 +12,7 @@
  * appiccicato. È l'errore che costa più tempo a diagnosticare.
  */
 
-const VERSIONE = "atlas-v6";
+const VERSIONE = "atlas-v7";
 const GUSCIO = `guscio-${VERSIONE}`;
 
 const DA_PRECARICARE = [
@@ -38,11 +38,15 @@ const DA_PRECARICARE = [
   // lo stesso: la prima volta che apri Finanze offline è proprio il caso in
   // cui servono, e "arrivano quando c'è rete" lì vuol dire non averli.
   "./moduli/oggi/modulo.js",
+  "./moduli/oggi/stile.css",
   "./moduli/impostazioni/modulo.js",
+  "./moduli/impostazioni/stile.css",
   "./moduli/finanze/modulo.js",
   "./moduli/finanze/dati.js",
   "./moduli/finanze/calcolo.js",
   "./moduli/finanze/viste.js",
+  "./moduli/finanze/grafici.js",
+  "./moduli/finanze/importa.js",
   "./moduli/finanze/stile.css",
   "./moduli/mobilita/modulo.js",
   "./moduli/mobilita/dati.js",

@@ -17,7 +17,7 @@
 // la proiezione impazzisce, e dopo due mesi non guardi più i numeri.
 
 import { movimentiVivi, stato, profiloDi, CATEGORIE_CASSA } from "./dati.js";
-import { isoDi, daISO, oggiISO } from "../../core/ui.js";
+import { isoDi, daISO, oggiISO, MESI_BREVI } from "../../core/ui.js";
 
 export const meseDi = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 export const meseDiISO = (iso) => iso.slice(0, 7);
@@ -401,4 +401,160 @@ export function autoCategoria(nota, { normalizza, categoriaPerId }) {
   }
 
   return migliore;
+}
+
+/* ===================================================================
+   STATISTICHE DELL'ANALISI
+   Portate dall'app di partenza. Sono le domande che uno si fa davvero
+   guardando un mese, e ognuna ha una ragione per esistere.
+   =================================================================== */
+
+/**
+ * Il confronto con lo stesso GIORNO del mese scorso, non col mese intero.
+ *
+ * È l'unico paragone onesto a metà mese: al giorno 12 confrontarsi con un
+ * mese chiuso dice solo che manca ancora da spendere, e non serve a niente.
+ */
+export function stessoGiornoMesePrima(mese) {
+  const oggi = oggiISO();
+  const eCorrente = oggi.slice(0, 7) === mese;
+  const giorno = eCorrente ? Number(oggi.slice(8, 10)) : giorniDelMese(mese);
+  const mesePrima = spostaMese(mese, -1);
+  const taglio = Math.min(giorno, giorniDelMese(mesePrima));
+
+  const alloraSpeso = movimentiVivi()
+    .filter((m) => m.tipo === "out" && !m.ecc && m.data.slice(0, 7) === mesePrima
+      && Number(m.data.slice(8, 10)) <= taglio)
+    .reduce((s, m) => s + importoEffettivo(m), 0);
+
+  const adesso = statistiche(mese).ordinaria;
+  return { mesePrima, taglio, giorno, alloraSpeso, adesso, scarto: adesso - alloraSpeso };
+}
+
+/** La spesa giorno per giorno del mese, non cumulata. */
+export function perGiorno(mese) {
+  const giorni = giorniDelMese(mese);
+  const out = Array(giorni).fill(0);
+  for (const m of movimentiDelMese(mese)) {
+    if (m.tipo !== "out" || m.ecc) continue;
+    out[Number(m.data.slice(8, 10)) - 1] += importoEffettivo(m);
+  }
+  return out;
+}
+
+/** I sei numeri del riquadro "Statistiche del mese". */
+export function statisticheDelMese(mese) {
+  const st = statistiche(mese);
+  const oggi = oggiISO();
+  const eCorrente = oggi.slice(0, 7) === mese;
+  const giorni = giorniDelMese(mese);
+  const giorno = eCorrente ? Number(oggi.slice(8, 10)) : giorni;
+  const uscite = movimentiDelMese(mese).filter((m) => m.tipo === "out");
+  const giornaliero = perGiorno(mese);
+
+  let piuCaro = null;
+  giornaliero.forEach((v, i) => { if (v > 0 && (!piuCaro || v > piuCaro.valore)) piuCaro = { giorno: i + 1, valore: v }; });
+
+  const prima = statistiche(spostaMese(mese, -1));
+  const delta = prima.ordinaria > 0
+    ? Math.round(((st.ordinaria - prima.ordinaria) / prima.ordinaria) * 100)
+    : null;
+
+  return {
+    mediaGiorno: giorno ? Math.round(st.ordinaria / giorno) : 0,
+    scontrinoMedio: uscite.length
+      ? Math.round(uscite.reduce((s, m) => s + importoEffettivo(m), 0) / uscite.length) : 0,
+    piuCaro,
+    delta,
+    nUscite: uscite.length,
+    // Quanto è tornato indietro: rimborsi agganciati più quelli orfani.
+    recuperato: uscite.reduce((s, m) => s + (m.imp - importoEffettivo(m)), 0) + st.orfani,
+  };
+}
+
+/** La media per giorno della settimana. Dice dove si concentra il ritmo. */
+export function mediaPerGiornoSettimana(mese) {
+  const oggi = oggiISO();
+  const eCorrente = oggi.slice(0, 7) === mese;
+  const fino = eCorrente ? Number(oggi.slice(8, 10)) : giorniDelMese(mese);
+  const giornaliero = perGiorno(mese);
+  const totali = Array(7).fill(0), quanti = Array(7).fill(0);
+
+  for (let i = 0; i < fino; i++) {
+    const d = daISO(`${mese}-${String(i + 1).padStart(2, "0")}`);
+    const w = (d.getDay() + 6) % 7;          // 0 = lunedì
+    totali[w] += giornaliero[i];
+    quanti[w]++;
+  }
+  return totali.map((v, i) => (quanti[i] ? Math.round(v / quanti[i]) : 0));
+}
+
+/** Gli ultimi sei mesi, per le barre di confronto. */
+export function ultimiSeiMesi(mese) {
+  const mesi = [];
+  for (let i = 5; i >= 0; i--) mesi.push(spostaMese(mese, -i));
+  const st = mesi.map((m) => statistiche(m));
+  return {
+    mesi,
+    etichette: mesi.map((m) => MESI_BREVI[Number(m.split("-")[1]) - 1]),
+    usciteNette: st.map((s) => s.usciteNette),
+    sforamenti: st.map((s) => s.sforamentiTot),
+  };
+}
+
+/** Le sottocategorie di tutto il mese, ordinate per spesa. */
+export function sottocategorieDelMese(mese) {
+  const st = statistiche(mese);
+  const out = [];
+  for (const c of stato().cats) {
+    for (const [nome, v] of Object.entries(st.perCat[c.id]?.sub || {})) {
+      out.push({ categoria: c.nome, catId: c.id, sub: nome, totale: v.tot, volte: v.n });
+    }
+  }
+  return out.sort((a, b) => b.totale - a.totale);
+}
+
+/** La spesa di una categoria negli ultimi sei mesi. Per il grafico nel foglio. */
+export function categoriaSuSeiMesi(mese, catId) {
+  const mesi = [];
+  for (let i = 5; i >= 0; i--) mesi.push(spostaMese(mese, -i));
+  return {
+    etichette: mesi.map((m) => MESI_BREVI[Number(m.split("-")[1]) - 1]),
+    valori: mesi.map((m) => statistiche(m).perCat[catId]?.tot || 0),
+  };
+}
+
+/** Tutti i movimenti di una sottocategoria, di sempre. Per il drill-down. */
+export function movimentiSottocategoria(catId, sub) {
+  return movimentiVivi()
+    .filter((m) => m.tipo === "out" && m.cat === catId && (m.sub || "Altro") === sub)
+    .sort((a, b) => b.data.localeCompare(a.data));
+}
+
+/**
+ * Il contesto di un singolo movimento: quanto costa di solito una cosa così.
+ * È ciò che trasforma "8,50 €" in "8,50 €, il 40% più del solito".
+ */
+export function contestoMovimento(m) {
+  const simili = movimentiVivi().filter((x) => x.tipo === "out" && x.cat === m.cat && x.sub === m.sub && !x.ecc);
+  const effettivo = importoEffettivo(m);
+  const media = simili.length
+    ? Math.round(simili.reduce((s, x) => s + importoEffettivo(x), 0) / simili.length) : 0;
+  const mese = statistiche(m.data.slice(0, 7));
+  return {
+    simili: simili.length,
+    media,
+    scostamento: media ? Math.round(((effettivo - media) / media) * 100) : null,
+    quotaSulMese: mese.ordinaria > 0 && m.tipo === "out" && !m.ecc
+      ? Math.round((effettivo / mese.ordinaria) * 100) : null,
+    rimborsi: movimentiVivi().filter((x) => (x.tipo === "rimb" || x.tipo === "reso") && x.rif === m.id),
+  };
+}
+
+/** Il "quadra": budget allocato contro entrate attese. */
+export function quadratura(mese) {
+  const p = profiloDi(mese);
+  const allocato = Object.values(p.b).reduce((s, v) => s + (Number(v) || 0), 0);
+  const entrate = Number(stato().config.entrate) || 0;
+  return { allocato, entrate, differenza: entrate - allocato };
 }
