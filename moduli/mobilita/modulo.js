@@ -15,7 +15,7 @@ import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js"
 import { annuncia, ascolta } from "../../core/bus.js";
 import { casella, stato, sessioniVive, TIPI_SESSIONE } from "./dati.js";
 import { costruisciSessione, tipoDelGiorno, serie, settimanaEffettiva } from "./calcolo.js";
-import { vistaOggi, vistaProgressi, apriPlayer } from "./viste.js";
+import { vistaOggi, vistaProgressi, apriPlayer, vistaImpostazioni } from "./viste.js";
 
 let contenitore = null;
 const staccatori = [];
@@ -113,8 +113,13 @@ export function avviaSync() {
         }
       }, { origine: "sync", tocca: false });
     },
-    ridisegna: () => { if (contenitore) disegna(); },
+    ridisegna: () => { pubblicaSullaLavagna(); if (contenitore) disegna(); },
   });
+
+  // La lavagna si aggiorna anche a modulo chiuso: la home la legge, e se si
+  // scrivesse solo al montaggio mostrerebbe i numeri dell'ultima volta che
+  // sei passato di qui.
+  pubblicaSullaLavagna();
 
   casella.osserva((_, origine) => { if (origine !== "sync") canale.segnalaModifica(); });
   canale.avvia();
@@ -146,6 +151,11 @@ export default {
     contenitore = null;
   },
 
+  /** La sezione "Mobilità" di Impostazioni: programma, palestra, aggancio. */
+  impostazioni() {
+    return vistaImpostazioni(() => { if (contenitore) disegna(); });
+  },
+
   oggi() {
     const s = stato();
     const sessioni = sessioniVive();
@@ -153,11 +163,17 @@ export default {
     const fatta = sessioni.find((x) => x.data === giorno);
     const n = serie(sessioni);
 
+    // La differenza fra fatta e da fare deve essere la PRIMA cosa che si
+    // legge. Prima entrambi i casi mostravano una durata e per capire quale
+    // fosse quale bisognava leggere la riga sotto: sbagliato.
     if (fatta) {
+      const dettagli = [TIPI_SESSIONE[fatta.tipo]?.nome, fmtDurata(fatta.durataSec)];
+      if (n > 1) dettagli.push(`${plurale(n, "giorno", "giorni")} di fila`);
       return {
         titolo: "Mobilità",
-        valore: fmtDurata(fatta.durataSec),
-        dettaglio: n > 1 ? `${TIPI_SESSIONE[fatta.tipo]?.nome} · ${plurale(n, "giorno", "giorni")} di fila` : TIPI_SESSIONE[fatta.tipo]?.nome,
+        valore: "Fatta",
+        dettaglio: dettagli.join(" · "),
+        fatto: true,
         urgente: false,
         azione: { rotta: "#/mobilita" },
       };
@@ -170,13 +186,14 @@ export default {
 
     return {
       titolo: "Mobilità",
-      valore: `${minuti} min`,
+      valore: "Da fare",
       dettaglio: n > 0
-        ? `${TIPI_SESSIONE[tipo]?.nome} · ${plurale(n, "giorno", "giorni")} di fila da non perdere`
-        : TIPI_SESSIONE[tipo]?.nome,
+        ? `${TIPI_SESSIONE[tipo]?.nome} · ${minuti} min · non spezzare ${plurale(n, "giorno", "giorni")} di fila`
+        : `${TIPI_SESSIONE[tipo]?.nome} · ${minuti} min`,
+      fatto: false,
       // Urgente di sera: è l'ora in cui la sessione salta davvero.
       urgente: new Date().getHours() >= 21,
-      azione: { rotta: "#/mobilita" },
+      azione: { rotta: "#/mobilita/inizia", etichetta: "Inizia" },
     };
   },
 

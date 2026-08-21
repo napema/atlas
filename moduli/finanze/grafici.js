@@ -11,18 +11,30 @@ import { el, euro } from "../../core/ui.js";
 
 const NS = "http://www.w3.org/2000/svg";
 
-function tag(nome, attr = {}, dentro = []) {
+/**
+ * Crea un nodo SVG.
+ *
+ * `attr` sono attributi normali; `stile` sono PROPRIETÀ CSS, ed è una
+ * distinzione che qui non è pedanteria: `var(--blu)` dentro un attributo di
+ * presentazione SVG (`fill`, `stroke`, `font-family`) NON si risolve — resta
+ * la stringa letterale e il browser la butta. Come proprietà CSS invece
+ * funziona. È il motivo per cui tutti i colori e i font di questi grafici
+ * passano da `stile` e non da `attr`.
+ */
+function tag(nome, attr = {}, dentro = [], stile = {}) {
   const n = document.createElementNS(NS, nome);
   for (const [k, v] of Object.entries(attr)) if (v != null) n.setAttribute(k, v);
+  for (const [k, v] of Object.entries(stile)) if (v != null) n.style.setProperty(k, v);
   for (const f of [].concat(dentro)) if (f) n.append(f);
   return n;
 }
 
+/** Le etichette dei grafici. Il font arriva dal CSS (`.fi-svg text`). */
 function testo(x, y, contenuto, { misura = 13, peso = 600, colore = "var(--etichetta-3)", ancora = "middle" } = {}) {
-  const t = tag("text", {
-    x, y, "text-anchor": ancora, "font-size": misura, "font-weight": peso, fill: colore,
-    "font-family": "var(--font-testo)",
-  });
+  const t = tag("text",
+    { x, y, "text-anchor": ancora },
+    [],
+    { "font-size": `${misura}px`, "font-weight": peso, fill: colore });
   t.textContent = contenuto;
   return t;
 }
@@ -49,27 +61,30 @@ export function graficoCumulato(cum, budget, giornoOggi, giorniMese) {
   const svg = tag("svg", { viewBox: `0 0 ${L} ${A + 22}`, role: "img",
     "aria-label": "Andamento della spesa nel mese", class: "fi-svg" });
 
+  // Anche `stop-color` è un attributo di presentazione: il token va passato
+  // come proprietà CSS, o il gradiente esce nero.
+  const fermata = (offset, opacita) =>
+    tag("stop", { offset }, [], { "stop-color": colore, "stop-opacity": opacita });
+
   svg.append(tag("defs", {}, [
     tag("linearGradient", { id: `${idg}l`, x1: 0, y1: 0, x2: 1, y2: 0 }, [
-      tag("stop", { offset: "0%", "stop-color": colore, "stop-opacity": ".35" }),
-      tag("stop", { offset: "100%", "stop-color": colore, "stop-opacity": "1" }),
+      fermata("0%", ".35"), fermata("100%", "1"),
     ]),
     tag("linearGradient", { id: `${idg}a`, x1: 0, y1: 0, x2: 0, y2: 1 }, [
-      tag("stop", { offset: "0%", "stop-color": colore, "stop-opacity": ".22" }),
-      tag("stop", { offset: "100%", "stop-color": colore, "stop-opacity": "0" }),
+      fermata("0%", ".22"), fermata("100%", "0"),
     ]),
   ]));
 
   // Griglia orizzontale appena percettibile. Verticale nessuna: aggiungerebbe
   // reticolo senza aggiungere informazione.
   for (const f of [0.25, 0.5, 0.75, 1]) {
-    svg.append(tag("line", { x1: bordo, y1: A - f * A, x2: L - bordo, y2: A - f * A,
-      stroke: "var(--etichetta-3)", "stroke-width": 1, opacity: ".07" }));
+    svg.append(tag("line", { x1: bordo, y1: A - f * A, x2: L - bordo, y2: A - f * A, "stroke-width": 1, opacity: ".07" },
+      [], { stroke: "var(--etichetta-3)" }));
   }
 
   if (budget > 0) {
     svg.append(tag("line", { x1: x(0), y1: y(0), x2: x(giorniMese - 1), y2: y(budget),
-      stroke: "var(--etichetta-3)", "stroke-width": 1.5, "stroke-dasharray": "5 5", opacity: ".45" }));
+      "stroke-width": 1.5, "stroke-dasharray": "5 5", opacity: ".45" }, [], { stroke: "var(--etichetta-3)" }));
   }
 
   const punti = [];
@@ -83,7 +98,7 @@ export function graficoCumulato(cum, budget, giornoOggi, giorniMese) {
       points: `${x(0)},${y(0)} ${punti.join(" ")}`, fill: "none",
       stroke: `url(#${idg}l)`, "stroke-width": 3, "stroke-linejoin": "round", "stroke-linecap": "round",
     }));
-    svg.append(tag("circle", { cx: x(fino - 1), cy: y(cum[fino - 1]), r: 4.5, fill: colore }));
+    svg.append(tag("circle", { cx: x(fino - 1), cy: y(cum[fino - 1]), r: 4.5 }, [], { fill: colore }));
   }
 
   for (const g of [1, 10, 20, giorniMese]) svg.append(testo(x(g - 1), A + 15, String(g)));
@@ -96,7 +111,7 @@ export function graficoCiambella(voci, totale) {
   const svg = tag("svg", { width: S, height: S, viewBox: `0 0 ${S} ${S}`, "aria-hidden": "true" });
 
   if (voci.length === 1) {
-    svg.append(tag("circle", { cx: C, cy: C, r: R, fill: "none", stroke: voci[0].colore, "stroke-width": SP }));
+    svg.append(tag("circle", { cx: C, cy: C, r: R, "stroke-width": SP }, [], { fill: "none", stroke: voci[0].colore }));
   } else {
     let a0 = -Math.PI / 2;
     for (const v of voci) {
@@ -105,10 +120,12 @@ export function graficoCiambella(voci, totale) {
       const b0 = a0 + stacco / 2;
       const b1 = Math.max(b0 + 0.01, a1 - stacco / 2);
       const grande = b1 - b0 > Math.PI ? 1 : 0;
+      const [x0, y0] = [C + R * Math.cos(b0), C + R * Math.sin(b0)];
+      const [x1, y1] = [C + R * Math.cos(b1), C + R * Math.sin(b1)];
       svg.append(tag("path", {
-        d: `M ${C + R * Math.cos(b0)} ${C + R * Math.sin(b0)} A ${R} ${R} 0 ${grande} 1 ${C + R * Math.cos(b1)} ${C + R * Math.sin(b1)}`,
-        fill: "none", stroke: v.colore, "stroke-width": SP, "stroke-linecap": "butt",
-      }));
+        d: `M ${x0} ${y0} A ${R} ${R} 0 ${grande} 1 ${x1} ${y1}`,
+        "stroke-width": SP, "stroke-linecap": "butt",
+      }, [], { fill: "none", stroke: v.colore }));
       a0 = a1;
     }
   }
@@ -140,7 +157,7 @@ export function graficoBarre(valori, etichette, evidenzia, retta = null, colore 
   if (retta) {
     const ry = A - (retta / massimo) * A;
     svg.append(tag("line", { x1: bordo, y1: ry, x2: L - bordo, y2: ry,
-      stroke: "var(--etichetta-3)", "stroke-width": 1.5, "stroke-dasharray": "5 5", opacity: ".6" }));
+      "stroke-width": 1.5, "stroke-dasharray": "5 5", opacity: ".6" }, [], { stroke: "var(--etichetta-3)" }));
   }
 
   valori.forEach((v, i) => {
@@ -148,9 +165,8 @@ export function graficoBarre(valori, etichette, evidenzia, retta = null, colore 
     svg.append(tag("rect", {
       x: bordo + i * larghezza + larghezza * 0.15, y: A - h,
       width: larghezza * 0.7, height: h, rx: 7,
-      fill: i === evidenzia ? colore : "var(--etichetta-3)",
       opacity: i === evidenzia ? 1 : 0.18,
-    }));
+    }, [], { fill: i === evidenzia ? colore : "var(--etichetta-3)" }));
     svg.append(testo(bordo + i * larghezza + larghezza / 2, A + 15, String(etichette[i]).toUpperCase(), { misura: 12 }));
   });
 

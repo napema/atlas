@@ -12,7 +12,7 @@ import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js"
 import { annuncia, ascolta } from "../../core/bus.js";
 import { casella, stato, abitudiniVive, eFatta, alterna, idLog } from "./dati.js";
 import { progressoGiorno, mancantiOggi, serie, eAttesa } from "./calcolo.js";
-import { strisciaSettimana, riepilogo, elenco, apriModifica } from "./viste.js";
+import { strisciaSettimana, riepilogo, elenco, apriModifica, vistaImpostazioni } from "./viste.js";
 
 let contenitore = null;
 let giornoScelto = oggiISO();
@@ -119,8 +119,13 @@ export function avviaSync() {
                                                // i due dispositivi si rimbalzano
                                                // PUT a vicenda per sempre
     },
-    ridisegna: () => { if (contenitore) disegna(); },
+    ridisegna: () => { pubblicaSullaLavagna(); if (contenitore) disegna(); },
   });
+
+  // La lavagna si aggiorna anche a modulo chiuso: la home la legge, e se si
+  // scrivesse solo al montaggio mostrerebbe i numeri dell'ultima volta che
+  // sei passato di qui.
+  pubblicaSullaLavagna();
 
   casella.osserva((_, origine) => { if (origine !== "sync") canale.segnalaModifica(); });
   canale.avvia();
@@ -153,6 +158,11 @@ export default {
     contenitore = null;
   },
 
+  /** La sezione "Abitudini" di Impostazioni: elenco, archiviate, settimana. */
+  impostazioni() {
+    return vistaImpostazioni(() => { if (contenitore) disegna(); });
+  },
+
   /** La scheda per la home. Sincrona, senza effetti collaterali. */
   oggi() {
     const p = progressoGiorno(giornoCorrente());
@@ -160,15 +170,17 @@ export default {
     const mancano = mancantiOggi();
     const migliore = abitudiniVive().reduce((m, h) => Math.max(m, serie(h)), 0);
 
+    const tutte = !mancano.length;
     return {
       titolo: "Abitudini",
       valore: `${p.fatte} / ${p.attese}`,
-      dettaglio: !mancano.length
-        ? (migliore > 1 ? `Tutto fatto · ${plurale(migliore, "giorno", "giorni")} di fila` : "Tutto fatto.")
+      dettaglio: tutte
+        ? (migliore > 1 ? `Tutte spuntate · ${plurale(migliore, "giorno", "giorni")} di fila` : "Tutte spuntate")
         : mancano.length === 1 ? `Manca: ${mancano[0].name}`
         : `Mancano ${mancano.length}: ${mancano.slice(0, 2).map((h) => h.name).join(", ")}${mancano.length > 2 ? "…" : ""}`,
+      fatto: tutte,
       // Urgente solo di sera: prima è solo una giornata in corso.
-      urgente: mancano.length > 0 && new Date().getHours() >= 20,
+      urgente: !tutte && new Date().getHours() >= 20,
       azione: { rotta: "#/abitudini" },
     };
   },

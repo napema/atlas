@@ -10,7 +10,7 @@ import {
 } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
 import {
-  abitudiniVive, abitudinePerId, eFatta, alterna,
+  abitudiniVive, abitudinePerId, eFatta, alterna, stato, scriviMeta,
   salvaAbitudine, eliminaAbitudine, coloreTinta, TINTE,
 } from "./dati.js";
 import {
@@ -331,5 +331,52 @@ export function apriModifica(id, ridisegna) {
         ridisegna();
       },
     }),
+  ]);
+}
+
+/* =========================================================== IMPOSTAZIONI
+   La sezione "Abitudini" della schermata Impostazioni: le abitudini in
+   elenco (comprese le archiviate) e l'inizio settimana. */
+
+export function vistaImpostazioni(ridisegna) {
+  const s = stato();
+  const vive = abitudiniVive();
+  const archiviate = abitudiniVive({ conArchiviate: true }).filter((h) => h.archived);
+
+  return el("div", {}, [
+    el("section", { class: "scheda" }, [
+      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "La settimana comincia" })]),
+      segmenti([["1", "Lunedì"], ["0", "Domenica"]], String(s.meta.weekStart ?? 1), (v) => {
+        scriviMeta({ weekStart: Number(v) });
+        avviso("Salvato.");
+        ridisegna();
+      }),
+      el("p", { class: "nota", testo:
+        "Conta per le serie delle abitudini settimanali: cambia quando si azzera il conteggio delle volte." }),
+    ]),
+
+    el("div", { class: "gruppo-titolo", testo: `Le tue abitudini (${vive.length})` }),
+    vive.length
+      ? lista(vive.map((h) => riga({
+          etichetta: `${h.emoji || "⭐️"}  ${h.name}`,
+          valore: etichettaPiano(h),
+          azione: () => apriModifica(h.id, ridisegna),
+        })))
+      : el("p", { class: "nota", testo: "Nessuna abitudine. Si aggiungono dal + nella schermata Abitudini." }),
+
+    el("button", {
+      class: "btn tenue pieno", type: "button", testo: "Aggiungi un'abitudine",
+      onClick: () => apriModifica(null, ridisegna),
+    }),
+
+    archiviate.length > 0 && el("div", { class: "gruppo-titolo", testo: `Archiviate (${archiviate.length})` }),
+    archiviate.length > 0 && lista(archiviate.map((h) => riga({
+      etichetta: `${h.emoji || "⭐️"}  ${h.name}`,
+      valore: "archiviata",
+      azione: () => apriModifica(h.id, ridisegna),
+    }))),
+
+    el("p", { class: "nota", style: "margin-top:var(--s5)", testo:
+      "Archiviare un'abitudine la toglie dal giorno senza cancellare lo storico: le serie passate restano, e riattivandola riparte da dove era." }),
   ]);
 }

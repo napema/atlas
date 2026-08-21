@@ -449,3 +449,13 @@
 .fi-suggerita { color: var(--verde); font-weight: 400; }
 .fi-verdetto-conta { border: 0; cursor: pointer; font-family: inherit; }
 .fi-verdetto-conta.aperto { background: var(--accento); color: #fff; }
+
+/* Il testo dentro gli SVG. Non si eredita dal body: gli elementi SVG hanno
+   il loro font di default, e senza questa regola le etichette dei grafici
+   escono in Times mentre tutto il resto è SF Pro. */
+.fi-svg text,
+.fi-ciambella text {
+  font-family: var(--font-testo);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}

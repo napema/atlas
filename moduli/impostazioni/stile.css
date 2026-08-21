@@ -23,3 +23,40 @@
 }
 .interruttore.acceso { background: var(--verde); }
 .interruttore.acceso .interruttore-pallina { transform: translateX(20px); }
+
+/* --------------------------------------------------------- le sezioni --- */
+
+.im-sezioni {
+  display: flex;
+  gap: var(--s1);
+  margin-bottom: var(--s5);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* Il margine negativo fa arrivare le pillole al bordo dello schermo
+     mentre scorrono: tagliate a metà da un padding sembrano un errore. */
+  margin-inline: calc(-1 * var(--s4));
+  padding-inline: var(--s4);
+}
+.im-sezioni::-webkit-scrollbar { display: none; }
+
+.im-sezione {
+  flex: none;
+  min-height: 34px;
+  padding: 6px var(--s4);
+  border: 0;
+  border-radius: var(--r-pillola);
+  background: var(--riempimento);
+  color: var(--etichetta-2);
+  font-family: var(--font-testo);
+  font-size: var(--t-15);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
+}
+.im-sezione.attiva { background: var(--accento); color: #fff; font-weight: 600; }
+
+@media (min-width: 900px) {
+  .im-sezioni { margin-inline: 0; padding-inline: 0; flex-wrap: wrap; overflow: visible; }
+}

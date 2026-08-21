@@ -59,13 +59,26 @@ export function categorieIniziali() {
  */
 export const CATEGORIE_CASSA = ["spesa", "cibo", "personale"];
 
-/** I colori delle categorie. Non sono tinte di sistema: sono etichette. */
+/**
+ * I colori delle categorie: tinte di SISTEMA, non esadecimali inventati.
+ *
+ * Sono l'unica eccezione alla regola "una tinta per schermata": qui il
+ * colore non è un accento ma un'etichetta, e servono nove valori distinti
+ * per leggere una ciambella. Ma restano token, così in scuro schiariscono
+ * insieme a tutto il resto invece di restare i colori pensati per il chiaro.
+ */
 export const COLORI_CAT = {
-  fisse: "#8A8F98", casa: "#5B9BD5", auto: "#E0A63A", spesa: "#7FB069",
-  trasporti: "#9B7EDE", cibo: "#E2725B", personale: "#D96BA0",
-  acc: "#4FB3A9", risp: "#0A9B72",
+  fisse:     "var(--grigio)",
+  casa:      "var(--blu)",
+  auto:      "var(--arancio)",
+  spesa:     "var(--verde)",
+  trasporti: "var(--indaco)",
+  cibo:      "var(--rosso)",
+  personale: "var(--rosa)",
+  acc:       "var(--menta)",
+  risp:      "var(--teal)",
 };
-export const coloreCat = (id) => COLORI_CAT[id] || "#8A8F98";
+export const coloreCat = (id) => COLORI_CAT[id] || "var(--grigio)";
 
 export function profiliIniziali() {
   return {

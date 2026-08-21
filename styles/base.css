@@ -115,32 +115,11 @@ small { font-size: var(--t-13); }
 .intestazione h1 { font-size: var(--t-34); }
 .intestazione .occhiello { margin-bottom: var(--s1); }
 
-/* Barra in alto: compare solo quando il titolo grande è uscito di scena. */
-#barra-alta {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--s2);
-  height: calc(env(safe-area-inset-top) + 44px);
-  padding: env(safe-area-inset-top) var(--s4) 0;
-  background: var(--materiale-sottile);
-  backdrop-filter: var(--sfocatura);
-  -webkit-backdrop-filter: var(--sfocatura);
-  border-bottom: 0.5px solid var(--separatore);
-  font-size: var(--t-17);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
-  transition: opacity var(--veloce) var(--curva), transform var(--veloce) var(--curva);
-}
-#barra-alta.visibile { opacity: 1; transform: none; }
 
 /* ------------------------------------------------------- barra moduli -- */
+
+/* Il marchio esiste solo nella colonna da scrivania. */
+#barra .marchio { display: none; }
 
 #barra {
   position: fixed;
@@ -238,7 +217,7 @@ small { font-size: var(--t-13); }
 /* Dove il backdrop-filter non c'è, il vetro diventa una superficie normale:
    translucido senza sfocatura sotto è illeggibile. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .vetro, #barra, #barra-alta, .foglio, .avviso { background: var(--sfondo-2); }
+  .vetro, #barra, .foglio, .avviso { background: var(--sfondo-2); }
 }
 /* In chiaro lo sfondo pagina è bianco come la scheda: serve un fondo
    raggruppato dietro, altrimenti le schede spariscono. */
@@ -614,15 +593,10 @@ hr {
   clip-path: inset(50%); white-space: nowrap;
 }
 
-/* Da scrivania il tocco non serve: le righe si stringono. */
-@media (min-width: 900px) and (pointer: fine) {
-  .riga { min-height: var(--tocco-denso); padding-block: var(--s2); }
-  #vista { padding-top: calc(var(--s6)); }
-}
 
 /* Il filo di luce anche sulla cromatura. Sulla barra in basso solo in alto,
    sui fogli solo sul bordo superiore: è da lì che si vede il taglio. */
-#barra::before, #barra-alta::after, .foglio::before {
+#barra::before, .foglio::before {
   content: "";
   position: absolute;
   left: 0; right: 0;
@@ -631,6 +605,132 @@ hr {
   pointer-events: none;
 }
 #barra::before  { top: 0; }
-#barra-alta::after { bottom: 0; }
 .foglio::before { top: 0; }
 
+
+/* =========================================================================
+   DA SCRIVANIA
+   ATLAS nasce per l'iPhone e quella resta la forma principale: tutto quello
+   che c'è sopra è mobile-first e non va toccato. Qui sotto, e SOLO da 900px
+   in su, la stessa app si riorganizza per uno schermo largo.
+
+   Il cambio non è "la stessa cosa più grande": la barra scende dal fondo e
+   diventa una colonna a sinistra, perché in fondo a un monitor da 27 pollici
+   non ci arriva il pollice di nessuno; e il contenuto si allarga invece di
+   restare una colonna da telefono in mezzo a due deserti grigi.
+   ========================================================================= */
+
+@media (min-width: 900px) {
+  #app {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+
+  /* --- la barra diventa colonna --- */
+  /* Le colonne vanno assegnate a mano: nell'HTML la vista viene PRIMA della
+     barra (giusto: da telefono il contenuto conta più della cromatura, e
+     l'ordine del DOM è quello che legge chi naviga da tastiera). Senza
+     queste due righe la griglia le mette nell'ordine del sorgente e la
+     barra finisce a destra larga 1200px. */
+  #barra {
+    grid-column: 1;
+    position: sticky;
+    top: 0;
+    left: auto; right: auto; bottom: auto;
+    height: 100dvh;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 2px;
+    padding: var(--s5) var(--s3);
+    border-top: 0;
+    border-right: 0.5px solid var(--separatore);
+  }
+  #barra::before { display: none; }
+  /* Il filo di luce passa dal bordo alto a quello destro. */
+  #barra::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; right: 0;
+    width: 1px;
+    background: linear-gradient(var(--vetro-alto), transparent 60%);
+    pointer-events: none;
+  }
+
+  .scheda-barra {
+    flex: none;
+    max-width: none;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--s3);
+    min-height: 40px;
+    padding: var(--s2) var(--s3);
+    border-radius: var(--r-btn);
+    font-size: var(--t-15);
+    font-weight: 500;
+  }
+  .scheda-barra svg { width: 22px; height: 22px; }
+  .scheda-barra:hover { background: var(--riempimento); }
+  .scheda-barra[aria-current="page"] { background: var(--accento-tenue); font-weight: 600; }
+
+  /* Il marchio in cima alla colonna: da telefono non serve (c'è l'icona
+     sulla home), da scrivania una finestra senza nome è disorientante. */
+  #barra .marchio {
+    display: block;
+    font-family: var(--font-titolo);
+    font-size: var(--t-22);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 0 var(--s3) var(--s5);
+    color: var(--etichetta);
+  }
+
+  /* --- il contenuto respira --- */
+  #vista {
+    grid-column: 2;
+    max-width: 1080px;
+    padding: var(--s8) var(--s8) var(--s12);
+    margin: 0;
+  }
+
+  .intestazione { margin-bottom: var(--s6); }
+  .intestazione h1 { font-size: 40px; }
+
+  /* Le griglie usano lo spazio invece di allungarsi in colonna. */
+  .griglia-2 { grid-template-columns: repeat(4, 1fr); }
+  .griglia   { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+
+  /* I fogli non salgono dal basso: da scrivania è un gesto che non esiste.
+     Diventano finestre centrate, come le sheet di macOS. */
+  .foglio {
+    top: 50%; left: 50%; right: auto; bottom: auto;
+    width: min(560px, calc(100vw - var(--s12)));
+    max-height: 84dvh;
+    border-radius: var(--r-foglio);
+    transform: translate(-50%, -46%) scale(0.98);
+    opacity: 0;
+    transition: transform var(--normale) var(--curva), opacity var(--veloce) var(--curva);
+    padding-bottom: var(--s2);
+  }
+  .foglio.aperto { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  .foglio.mezzo  { max-height: 84dvh; }
+  .foglio-maniglia { display: none; }
+  .foglio-testa { padding-top: var(--s4); }
+
+  #avvisi { bottom: var(--s6); left: calc(232px + 50%); }
+}
+
+/* Schermi molto larghi: il contenuto smette di crescere e si centra. Una
+   riga di testo lunga 1600px non si legge, e allargare all'infinito è il
+   modo più veloce per rendere illeggibile una tabella di movimenti. */
+@media (min-width: 1400px) {
+  #vista { margin: 0 auto; }
+}
+
+/* Col puntatore fine le righe si stringono: 44px sono per il pollice, e da
+   mouse diventano una lista che scorre per niente. */
+@media (min-width: 900px) and (pointer: fine) {
+  .riga { min-height: var(--tocco-denso); padding-block: var(--s2); }
+  .lista { max-width: none; }
+}

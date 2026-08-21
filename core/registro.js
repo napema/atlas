@@ -12,8 +12,13 @@
 //                                              // dove si trova: vedi router.js
 //     smonta() {}                              // stacca ascoltatori, ferma timer
 //     oggi() { return {...} | null }           // la scheda per la home
+//     impostazioni() { return nodo | null }    // la sua sezione in Impostazioni
 //     avviaSync() {}                           // apre il proprio canale
 //   }
+//
+// `impostazioni()` restituisce un nodo DOM, o null se il modulo non ha
+// niente da configurare. Le impostazioni di TUTTI i moduli stanno in una
+// schermata sola: sparse dentro i moduli non le trovava nessuno.
 //
 // `id`, `nome`, `icona` e `accento` NON li dichiara il modulo: stanno qui.
 // Un modulo non può spostarsi nella barra o cambiarsi colore da solo.
@@ -93,8 +98,15 @@ export const MODULI = [
   },
 ];
 
-/** I moduli con una scheda nella barra. Impostazioni si raggiunge da Oggi. */
-export const MODULI_IN_BARRA = MODULI.filter((m) => m.id !== "impostazioni");
+/**
+ * I moduli con una scheda nella barra: TUTTI, Impostazioni compresa.
+ *
+ * Prima Impostazioni si raggiungeva solo da un pulsante dentro Oggi, e il
+ * risultato era che le impostazioni dei moduli non le trovava nessuno —
+ * Finanze aveva il suo Setup dentro di sé, Mobilità non ne aveva affatto.
+ * Un posto solo, sempre a portata di pollice.
+ */
+export const MODULI_IN_BARRA = MODULI;
 
 /** I tre moduli veri: quelli che hanno dati propri e una scheda nella home. */
 export const MODULI_DATI = MODULI.filter((m) => !["oggi", "impostazioni"].includes(m.id));

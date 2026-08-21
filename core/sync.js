@@ -12,6 +12,8 @@
 // Un file per modulo, non uno unico: gli sha restano indipendenti, e due
 // moduli che salvano nello stesso istante non si annullano a vicenda.
 
+import { annuncia as annunciaSulBus } from "./bus.js";
+
 const CFG = (() => {
   const c = globalThis.ATLAS_CFG || {};
   let token = "";
@@ -234,7 +236,14 @@ export function apriCanale({ id, file, impacchetta, applica, ridisegna = () => {
     segnala("corso");
     try {
       const remoto = await scarica();
-      if (remoto) applica(remoto);
+      if (remoto) {
+        applica(remoto);
+        // L'annuncio lo fa il canale, non i moduli: così nessuno può
+        // dimenticarselo. Senza, la schermata Oggi disegnava una volta sola
+        // all'avvio e restava ferma sui numeri di prima anche dopo che il
+        // sync aveva portato i dati veri.
+        annunciaSulBus("dati:arrivati", { modulo: id });
+      }
       canale.letturaFatta = true;
 
       const mio = impacchetta();

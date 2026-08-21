@@ -41,6 +41,8 @@
   --menta:   #00c7be;
   --indaco:  #5856d6;
   --grigio:  #8e8e93;
+  --teal:    #30b0c7;
+  --marrone: #a2845e;
 
   /* Il modulo attivo riscrive --accento su :root; questo è il ripiego. */
   --accento: var(--blu);
@@ -148,6 +150,8 @@
     --menta:   #63e6e2;
     --indaco:  #7d7aff;
     --grigio:  #98989d;
+    --teal:    #40c8e0;
+    --marrone: #ac8e68;
 
     --accento-tenue: rgba(10, 132, 255, 0.22);
     --accento-alone: rgba(10, 132, 255, 0.28);
@@ -187,6 +191,8 @@
   --menta:   #63e6e2;
   --indaco:  #7d7aff;
   --grigio:  #98989d;
+  --teal:    #40c8e0;
+  --marrone: #ac8e68;
 
   --accento-tenue: rgba(10, 132, 255, 0.22);
   --accento-alone: rgba(10, 132, 255, 0.28);

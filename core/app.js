@@ -16,6 +16,11 @@ import { el } from "./ui.js";
 function costruisciBarra() {
   const barra = document.getElementById("barra");
   barra.innerHTML = "";
+
+  // Il marchio si vede solo da scrivania (il CSS lo nasconde sotto i 900px):
+  // su iPhone c'e gia l'icona sulla schermata Home, in una colonna laterale
+  // invece una finestra senza nome e disorientante.
+  barra.append(el("div", { class: "marchio", testo: "ATLAS" }));
   for (const m of MODULI_IN_BARRA) {
     barra.append(el("a", {
       class: "scheda-barra",

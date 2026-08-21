@@ -6,7 +6,8 @@
 // sulle sottocategorie, niente giroconti. Questa versione è quella vera,
 // funzione per funzione — cambiano solo lo stile e il font.
 //
-// Quattro schermate, come prima: Riepilogo, Movimenti, Analisi, Setup.
+// Tre schermate: Riepilogo, Movimenti, Analisi. Il Setup è la sezione
+// "Finanze" di Impostazioni — tutte le impostazioni in un posto solo.
 
 import { el, aggiungi, intestazione, oggiISO, euro, plurale } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
@@ -30,7 +31,10 @@ const staccatori = [];
 // sincronizza. Altrimenti cambiare scheda sull'iPhone la cambierebbe sul PC.
 const vista = { scheda: "home", mese: meseDi(), grafico: "settimana", filtro: "tutti" };
 
-const SCHEDE = [["home", "Riepilogo"], ["movimenti", "Movimenti"], ["analisi", "Analisi"], ["setup", "Setup"]];
+// Il Setup non è più una scheda qui dentro: è la sezione "Finanze" della
+// schermata Impostazioni, insieme a quelle degli altri moduli. Sparso nei
+// moduli non lo trovava nessuno.
+const SCHEDE = [["home", "Riepilogo"], ["movimenti", "Movimenti"], ["analisi", "Analisi"]];
 
 /* --------------------------------------------------------------- vista -- */
 
@@ -69,8 +73,7 @@ function disegna() {
 
     vista.scheda === "home"      ? vistaHome(vista.mese, vista.grafico, ridisegna, aperture.cat)
     : vista.scheda === "movimenti" ? vistaMovimenti(vista.mese, vista.filtro, ridisegna, aperture.dett)
-    : vista.scheda === "analisi"   ? vistaAnalisi(vista.mese, aperture.cat, aperture.sub)
-    : vistaSetup(vista.mese, ridisegna),
+    : vistaAnalisi(vista.mese, aperture.cat, aperture.sub),
   ]);
 
   pubblicaSullaLavagna();
@@ -139,8 +142,13 @@ export function avviaSync() {
         }
       }, { origine: "sync", tocca: false });
     },
-    ridisegna: () => { if (contenitore) disegna(); },
+    ridisegna: () => { pubblicaSullaLavagna(); if (contenitore) disegna(); },
   });
+
+  // La lavagna si aggiorna anche a modulo chiuso: la home la legge, e se si
+  // scrivesse solo al montaggio mostrerebbe i numeri dell'ultima volta che
+  // sei passato di qui.
+  pubblicaSullaLavagna();
 
   casella.osserva((_, origine) => {
     if (origine === "sync") return;
@@ -172,6 +180,11 @@ export default {
   smonta() {
     while (staccatori.length) staccatori.pop()();
     contenitore = null;
+  },
+
+  /** La sezione "Finanze" di Impostazioni: budget, cassa, casa, import. */
+  impostazioni() {
+    return vistaSetup(meseDi(), () => { if (contenitore) disegna(); });
   },
 
   oggi() {

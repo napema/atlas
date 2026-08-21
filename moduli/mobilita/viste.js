@@ -2,7 +2,7 @@
 
 import {
   el, aggiungi, apriFoglio, chiudiFoglio, avviso, tocco, anello, traccia,
-  lista, riga, vuoto, segmenti, durata as fmtDurata, dataUmana, oggiISO,
+  lista, riga, vuoto, segmenti, pillole, durata as fmtDurata, dataUmana, oggiISO,
   GIORNI_INIZIALI, piuGiorni,
 } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
@@ -266,5 +266,95 @@ export function vistaProgressi() {
         valore: fmtDurata(s.durataSec),
         dettaglio: `${dataUmana(s.data)} · ${(s.esercizi || []).length} esercizi`,
       }))),
+  ]);
+}
+
+/* =========================================================== IMPOSTAZIONI
+   Nell'app di partenza il setup era sparso fra la schermata Oggi e i
+   sottomenu; nel primo porting era sparito del tutto. Qui è la sezione
+   "Mobilità" di Impostazioni. */
+
+export function vistaImpostazioni(ridisegna) {
+  const s = stato();
+  const p = s.meta.programma;
+  const a = s.meta.assessment;
+  const sessioni = sessioniVive();
+
+  const NOMI_GIORNI = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"];
+
+  return el("div", {}, [
+    // --- il programma
+    el("section", { class: "scheda" }, [
+      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "Il programma" })]),
+      el("div", { class: "griglia-2" }, [
+        el("div", { class: "riquadro" }, [
+          el("div", { class: "etichetta-riga", testo: "Settimana" }),
+          el("div", { class: "cifra", testo: String(settimanaEffettiva(s.meta, sessioni)) }),
+          el("div", { class: "nota", testo: "effettiva" }),
+        ]),
+        el("div", { class: "riquadro" }, [
+          el("div", { class: "etichetta-riga", testo: "Sessioni" }),
+          el("div", { class: "cifra", testo: String(sessioni.length) }),
+          el("div", { class: "nota", testo: "in totale" }),
+        ]),
+      ]),
+      el("p", { class: "nota", testo:
+        "La settimana effettiva non è quella del calendario: sale solo se il blocco precedente è stato fatto almeno al 70% dei giorni. " +
+        "È il controllo che impedisce di ritrovarsi venti minuti sullo schermo con la stessa sensazione del primo giorno." }),
+      p.inizioProgramma
+        ? el("p", { class: "nota", testo: `Iniziato il ${dataUmana(p.inizioProgramma)}.` })
+        : el("button", {
+            class: "btn tenue pieno", type: "button", testo: "Fai partire il programma da oggi",
+            onClick: () => { scriviMeta((m) => { m.programma.inizioProgramma = oggiISO(); }); avviso("Programma avviato."); ridisegna(); },
+          }),
+    ]),
+
+    // --- il giorno di palestra
+    el("section", { class: "scheda" }, [
+      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "Giorno di palestra" })]),
+      pillole(NOMI_GIORNI.map((n, i) => [String(i), n.slice(0, 3)]), String(p.giornoPalestra ?? 2),
+        (v) => { scriviMeta((m) => { m.programma.giornoPalestra = Number(v); }); avviso("Salvato."); ridisegna(); }),
+      el("p", { class: "nota", testo:
+        "In quel giorno l'app propone la sessione sotto carico invece del quotidiano. Non il giorno dopo le gambe: è allenamento vero, non mobilità." }),
+    ]),
+
+    // --- l'aggancio
+    el("section", { class: "scheda" }, [
+      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "L'aggancio" })]),
+      el("input", { class: "campo", type: "text", value: p.aggancio || "",
+        placeholder: "Subito dopo la doccia serale",
+        onChange: (e) => { scriviMeta((m) => { m.programma.aggancio = e.target.value; }); avviso("Salvato."); } }),
+      el("p", { class: "nota", testo:
+        "Un'abitudine attaccata a una cosa che fai già regge molto più di una attaccata a un orario. Uno solo, e sempre lo stesso." }),
+    ]),
+
+    // --- l'assessment
+    el("section", { class: "scheda" }, [
+      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "Assessment" })]),
+      lista([
+        riga({ etichetta: "Completato", valore: a.completato ? "sì" : "no", tono: a.completato ? "positivo" : "" }),
+        riga({ etichetta: "Lato lateralizzato", valore: a.esitoTest2?.latoLateralizzato?.toUpperCase() || "non rilevato" }),
+        riga({ etichetta: "Baseline fotografica", valore: a.baselineTest3?.completatoIl ? dataUmana(a.baselineTest3.completatoIl) : "mai fatta" }),
+      ]),
+      el("p", { class: "nota", testo:
+        "L'assessment risulta completato con la sola lateralizzazione: è uno stato reale, non un dato rotto. " +
+        "Il programma parte lo stesso, e i test mancanti si possono fare dopo senza ricominciare." }),
+    ]),
+
+    // --- la sessione di oggi, forzata
+    el("section", { class: "scheda" }, [
+      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "Oggi" })]),
+      el("p", { class: "nota", testo: "Di norma è l'app a decidere che sessione fare. Da qui puoi forzarla per oggi." }),
+      pillole(
+        Object.entries(TIPI_SESSIONE).map(([k, v]) => [k, v.nome]),
+        s.giornoCorrente?.data === oggiISO() ? s.giornoCorrente.forza : null,
+        (v) => { segnaGiorno({ data: oggiISO(), forza: v }); avviso(`Oggi: ${TIPI_SESSIONE[v].nome}.`); ridisegna(); },
+        { unaRiga: true }
+      ),
+      el("button", {
+        class: "btn nudo pieno", type: "button", testo: "Lascia decidere all'app",
+        onClick: () => { segnaGiorno({ data: oggiISO(), forza: null }); avviso("Scelta automatica."); ridisegna(); },
+      }),
+    ]),
   ]);
 }

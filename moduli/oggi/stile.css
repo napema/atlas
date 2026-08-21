@@ -178,3 +178,78 @@
 }
 .og-media .og-dettaglio { font-size: var(--t-13); margin-top: 2px; }
 .og-media .og-freccia { margin-left: 0; }
+
+/* --------------------------------------------------- la riga del giorno -- */
+
+.og-giorno {
+  display: flex;
+  gap: var(--s2);
+  margin-bottom: var(--s5);
+}
+.og-giorno-voce {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: var(--s3);
+  border-radius: var(--r-campo);
+  background: var(--sfondo-3);
+}
+.og-giorno-icona { color: var(--etichetta-3); display: flex; }
+.og-giorno-valore { font-size: var(--t-17); font-weight: 700; letter-spacing: -0.02em; }
+.og-giorno-etichetta {
+  font-size: var(--t-11);
+  color: var(--etichetta-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
+}
+
+/* ------------------------------------------------------- la settimana -- */
+
+.og-settimana {
+  margin-top: var(--s6);
+  padding: var(--s4);
+  border-radius: var(--r-scheda);
+  background: var(--sfondo-2);
+}
+.og-settimana-testa {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--s3);
+}
+.og-sett-riga { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s1); }
+.og-sett-giorno { display: flex; flex-direction: column; align-items: center; gap: var(--s2); }
+.og-sett-lettera { font-size: var(--t-11); font-weight: 600; color: var(--etichetta-3); }
+.og-sett-punto {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--sfondo-4);
+  transition: background var(--normale) var(--curva);
+}
+.og-sett-giorno.pieno .og-sett-punto { background: var(--verde); }
+.og-sett-giorno.oggi .og-sett-lettera { color: var(--accento); font-weight: 700; }
+.og-sett-giorno.oggi .og-sett-punto { box-shadow: 0 0 0 3px var(--accento-tenue); }
+
+/* ------------------------------------------------------ stato "fatto" -- */
+
+.og-spunta {
+  display: inline-flex;
+  color: var(--verde);
+  margin-right: 5px;
+  vertical-align: -2px;
+}
+.og-media.fatto .og-media-valore { color: var(--verde); }
+.og-piccola.fatto .og-piccola-valore { color: var(--verde); }
+
+.og-invito {
+  display: inline-block;
+  margin-top: var(--s3);
+  padding: 5px 14px;
+  border-radius: var(--r-pillola);
+  background: var(--accento);
+  color: #fff;
+  font-size: var(--t-13);
+  font-weight: 600;
+}
