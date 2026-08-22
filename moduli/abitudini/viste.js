@@ -6,7 +6,7 @@
 import {
   el, aggiungi, anello, apriFoglio, chiudiFoglio, avviso, tocco,
   campo, segmenti, pillole, lista, riga, vuoto, nuovoId,
-  oggiISO, piuGiorni, daISO, GIORNI_INIZIALI, dataUmana,
+  oggiISO, piuGiorni, daISO, GIORNI_INIZIALI, dataUmana, plurale,
 } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
 import {
@@ -51,25 +51,35 @@ export function strisciaSettimana(giornoScelto, alCambio) {
   return barra;
 }
 
-/* ------------------------------------------------------------ riepilogo -- */
+/* -------------------------------------------------------------- l'eroe -- */
+/* «Quante ne restano» è la domanda, e la risposta è una cifra sola. L'anello
+   c'era anche prima ma stava di fianco a un testo della stessa dimensione:
+   due cose che pesano uguale non fanno gerarchia. */
 
 export function riepilogo(giorno) {
   const p = progressoGiorno(giorno);
-  const tutto = p.attese > 0 && p.fatte === p.attese;
-  return el("section", { class: "scheda ab-riepilogo" }, [
-    el("div", { class: "ab-riepilogo-anello" }, [
-      anello(p.frazione, { misura: 72, spessore: 6 }),
-      el("span", { class: "ab-riepilogo-pct", testo: `${Math.round(p.frazione * 100)}%` }),
-    ]),
-    el("div", {}, [
-      el("div", { class: "ab-riepilogo-cifra cifra", testo: p.attese ? `${p.fatte} di ${p.attese}` : "—" }),
-      el("div", {
-        class: "nota",
-        testo: !p.attese ? "Nessuna abitudine prevista per questo giorno."
-          : tutto ? "Giornata completa." : `Ne restano ${p.attese - p.fatte}.`,
-      }),
+  const restano = Math.max(0, p.attese - p.fatte);
+  const tutto = p.attese > 0 && restano === 0;
+
+  const s = el("section", { class: "ab-eroe" + (tutto ? " completa" : "") }, [
+    el("div", { class: `micro ${tutto ? "ok" : ""}`,
+      testo: !p.attese ? "Giornata libera" : tutto ? "Tutto fatto" : "Ancora da fare" }),
+
+    el("div", { class: "ab-eroe-corpo" }, [
+      el("div", { class: "ab-eroe-numeri" }, [
+        el("div", { class: "cifra cifra-xl", testo: !p.attese ? "—" : tutto ? String(p.fatte) : String(restano) }),
+        el("p", { class: "ab-eroe-nota", testo: !p.attese
+          ? "Nessuna abitudine prevista per questo giorno."
+          : tutto ? plurale(p.fatte, "abitudine spuntata", "abitudini spuntate")
+          : `${plurale(restano, "abitudine", "abitudini")} · ${p.fatte} di ${p.attese} già fatte` }),
+      ]),
+      el("div", { class: "ab-eroe-anello" }, [
+        anello(p.frazione, { misura: 82, spessore: 7 }),
+        el("span", { class: "ab-eroe-pct", testo: `${Math.round(p.frazione * 100)}%` }),
+      ]),
     ]),
   ]);
+  return s;
 }
 
 /* -------------------------------------------------------- elenco e righe -- */
@@ -99,19 +109,20 @@ function rigaAbitudine(h, giorno, ridisegna, { spenta = false } = {}) {
   const colore = coloreTinta(h.tint);
   const n = serie(h);
 
+  // Il cerchio disegnato è da 30px, il bersaglio da 44: il pollice ha
+  // bisogno del secondo, l'occhio del primo. Da qui il figlio.
   const spunta = el("button", {
     class: "ab-spunta" + (fatta ? " fatta" : ""),
     type: "button",
     "aria-pressed": String(fatta),
     "aria-label": fatta ? `Togli ${h.name}` : `Segna ${h.name}`,
-    html: icona("spunta", 18, 2.6),
     onClick: (e) => {
       e.stopPropagation();
       alterna(h.id, giorno);
       tocco(fatta ? 6 : 12);
       ridisegna();
     },
-  });
+  }, [el("span", { class: "ab-spunta-cerchio", html: icona("spunta", 18, 2.6) })]);
   spunta.style.setProperty("--accento", colore);
 
   const corpo = el("button", {
@@ -167,27 +178,27 @@ export function apriDettaglio(id, ridisegna) {
       ]),
     ]),
 
-    el("div", { class: "griglia-2" }, [
+    el("div", { class: "riquadri" }, [
       el("div", { class: "riquadro" }, [
-        el("div", { class: "etichetta-riga", testo: "Serie attuale" }),
+        el("div", { class: "micro", testo: "Serie attuale" }),
         el("div", { class: "cifra", testo: `${attuale}` }),
         el("div", { class: "nota", testo: p.type === "weekly" ? "settimane di fila" : "giorni di fila" }),
       ]),
       el("div", { class: "riquadro" }, [
-        el("div", { class: "etichetta-riga", testo: "Record" }),
+        el("div", { class: "micro", testo: "Record" }),
         el("div", { class: "cifra", testo: `${migliore}` }),
         el("div", { class: "nota", testo: migliore > attuale ? "da battere" : "sei al massimo" }),
       ]),
     ]),
 
     el("section", { class: "scheda" }, [
-      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "Ultimi 30 giorni" })]),
+      el("div", { class: "scheda-titolo" }, [el("span", { testo: "Ultimi 30 giorni" })]),
       grigliaTrenta(h),
       el("div", { class: "nota", testo: `${costanza(h, 30)}% dei giorni previsti.` }),
     ]),
 
     p.type === "weekly" && el("section", { class: "scheda" }, [
-      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "Questa settimana" })]),
+      el("div", { class: "scheda-titolo" }, [el("span", { testo: "Questa settimana" })]),
       el("div", { class: "cifra", testo: `${conteggioSettimana(h, oggiISO())} di ${p.times || 1}` }),
     ]),
 
@@ -345,7 +356,7 @@ export function vistaImpostazioni(ridisegna) {
 
   return el("div", {}, [
     el("section", { class: "scheda" }, [
-      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "La settimana comincia" })]),
+      el("div", { class: "scheda-titolo" }, [el("span", { testo: "La settimana comincia" })]),
       segmenti([["1", "Lunedì"], ["0", "Domenica"]], String(s.meta.weekStart ?? 1), (v) => {
         scriviMeta({ weekStart: Number(v) });
         avviso("Salvato.");

@@ -1,8 +1,8 @@
-/* moduli/abitudini — stile specifico.
-   Tutto ciò che serve solo qui. I componenti condivisi stanno in
-   styles/base.css e non vanno duplicati. */
+/* moduli/abitudini — stile specifico. */
 
-/* ------------------------------------------------------ striscia giorni -- */
+/* ============================================================ settimana == */
+/* Sette colonne, ognuna un anello con dentro il giorno del mese. Si tocca
+   per cambiare giorno, e i giorni futuri sono spenti e non toccabili. */
 
 .ab-settimana {
   display: grid;
@@ -14,129 +14,191 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--s1);
+  gap: 6px;
   padding: var(--s2) 0;
   border: 0;
-  border-radius: var(--r-btn);
+  border-radius: var(--r-interno);
   background: none;
-  color: var(--etichetta-2);
-  font-family: var(--font-testo);
+  color: var(--testo-3);
+  font-family: var(--font);
   cursor: pointer;
   transition: background var(--veloce) var(--curva);
 }
-.ab-giorno.scelto { background: var(--riempimento); }
-.ab-giorno.futuro { opacity: 0.35; pointer-events: none; }
-.ab-giorno-lettera { font-size: var(--t-11); font-weight: 600; letter-spacing: 0.02em; }
+.ab-giorno:active { background: var(--scheda); }
+.ab-giorno.futuro { opacity: 0.32; pointer-events: none; }
+.ab-giorno.scelto { background: var(--scheda); }
+.ab-giorno-lettera { font-size: var(--t-10); font-weight: 700; letter-spacing: 0.06em; }
+.ab-giorno.scelto .ab-giorno-lettera,
+.ab-giorno.oggi .ab-giorno-lettera { color: var(--testo); }
 
 .ab-giorno-anello { position: relative; display: grid; place-items: center; }
-.ab-giorno-anello .anello { grid-area: 1 / 1; }
+.ab-giorno-anello svg { display: block; }
 .ab-giorno-numero {
-  grid-area: 1 / 1;
+  position: absolute;
   font-size: var(--t-13);
   font-weight: 600;
-  color: var(--etichetta);
+  color: var(--testo-2);
   font-variant-numeric: tabular-nums;
 }
-/* Il giorno corrente si riconosce dal numero pieno nella tinta, non da un
-   bordo: un bordo in più su sette caselle è rumore. */
-.ab-giorno.oggi .ab-giorno-numero { color: var(--accento-testo); font-weight: 700; }
+.ab-giorno.scelto .ab-giorno-numero { color: var(--testo); font-weight: 700; }
+/* Oggi è cerchiato anche quando stai guardando un altro giorno: senza,
+   scorrendo la settimana si perde il punto di riferimento. */
+.ab-giorno.oggi .ab-giorno-anello::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--accento);
+}
 
-/* ------------------------------------------------------------ riepilogo -- */
+/* ================================================================= eroe == */
 
-.ab-riepilogo { display: flex; align-items: center; gap: var(--s4); }
-.ab-riepilogo-anello { position: relative; display: grid; place-items: center; flex: none; }
-.ab-riepilogo-anello .anello { grid-area: 1 / 1; }
-.ab-riepilogo-pct {
-  grid-area: 1 / 1;
-  font-size: var(--t-15);
+.ab-eroe {
+  position: relative;
+  padding: var(--s5);
+  border-radius: var(--r-scheda);
+  background: var(--scheda);
+  overflow: hidden;
+  margin-bottom: var(--s5);
+}
+.ab-eroe::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 170px;
+  background: linear-gradient(180deg, var(--accento-tenue), transparent);
+  pointer-events: none;
+}
+.ab-eroe.completa::before { background: linear-gradient(180deg, color-mix(in srgb, var(--ok) 15%, transparent), transparent); }
+.ab-eroe > * { position: relative; }
+
+.ab-eroe-corpo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  margin-top: var(--s3);
+}
+.ab-eroe-numeri { min-width: 0; }
+.ab-eroe-numeri .cifra-xl { font-size: clamp(48px, 15vw, 66px); line-height: 0.95; }
+.ab-eroe-nota { margin: var(--s2) 0 0; font-size: var(--t-13); color: var(--testo-2); }
+.ab-eroe-anello { position: relative; display: grid; place-items: center; flex: none; }
+.ab-eroe-anello svg { display: block; }
+.ab-eroe-pct {
+  position: absolute;
+  font-family: var(--font-d);
+  font-size: var(--t-17);
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
-.ab-riepilogo-cifra { font-size: var(--t-28); line-height: 1.1; }
 
-/* ------------------------------------------------------------- l'elenco -- */
+/* =============================================================== righe === */
 
-.ab-li.spenta { opacity: 0.5; }
-.ab-riga-fuori { display: flex; align-items: stretch; }
+.ab-li { padding: 0; }
+.ab-li.spenta { opacity: 0.42; }
+.ab-riga-fuori { display: flex; align-items: center; gap: var(--s1); }
 
-/* La spunta è fuori dalla riga cliccabile: toccarla non deve aprire il
-   dettaglio, e viceversa. Due bersagli distinti, entrambi da 44pt. */
+/* La spunta è a sinistra e larga: è il gesto che fai dieci volte al giorno,
+   e deve essere raggiungibile senza guardare. */
 .ab-spunta {
+  width: 44px; height: 44px;
   flex: none;
-  width: var(--tocco);
-  display: grid;
-  place-items: center;
+  margin-left: 6px;
+  display: grid; place-items: center;
   border: 0;
   background: none;
-  padding: 0 0 0 var(--s3);
+  padding: 0;
   cursor: pointer;
-  color: transparent;
 }
-.ab-spunta::before {
-  content: "";
-  grid-area: 1 / 1;
-  width: 27px; height: 27px;
+.ab-spunta-cerchio {
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1.8px var(--etichetta-4);
-  transition: background var(--veloce) var(--curva), box-shadow var(--veloce) var(--curva);
+  background: var(--scheda-viva);
+  color: transparent;
+  box-shadow: inset 0 0 0 2px var(--traccia);
+  transition: background var(--veloce) var(--curva),
+              box-shadow var(--veloce) var(--curva),
+              transform var(--veloce) var(--molla);
 }
-.ab-spunta svg { grid-area: 1 / 1; position: relative; }
-.ab-spunta.fatta { color: #fff; }
-.ab-spunta.fatta::before { background: var(--accento); box-shadow: inset 0 0 0 1.8px var(--accento); }
-.ab-spunta:active::before { transform: scale(0.9); }
+.ab-spunta:active .ab-spunta-cerchio { transform: scale(0.86); }
+.ab-spunta.fatta .ab-spunta-cerchio {
+  background: var(--accento);
+  box-shadow: none;
+  color: var(--fondo);
+}
+.ab-spunta svg { display: block; }
 
-.ab-riga { padding-left: var(--s2); }
-.ab-emoji { font-size: 22px; line-height: 1; flex: none; width: 26px; text-align: center; }
-.ab-testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.ab-nome { font-size: var(--t-17); letter-spacing: -0.01em; }
-.ab-nome.fatta { color: var(--etichetta-3); text-decoration: line-through; text-decoration-thickness: 1px; }
+.ab-riga { flex: 1; min-width: 0; gap: var(--s3); }
+.ab-emoji { font-size: 21px; line-height: 1; flex: none; }
+.ab-testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.ab-nome {
+  font-size: var(--t-15);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ab-nome.fatta { color: var(--testo-3); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.ab-testo .nota { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .ab-serie {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
+  display: inline-flex; align-items: center; gap: 3px;
+  flex: none;
   padding: 3px 9px;
   border-radius: var(--r-pillola);
-  background: var(--riempimento);
-  color: var(--arancio-testo);
-  font-size: var(--t-12);
-  font-weight: 600;
+  background: color-mix(in srgb, var(--arancio) 18%, transparent);
+  color: var(--arancio);
+  font-size: var(--t-11);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+.ab-serie svg { display: block; }
+
+/* ============================================================ dettaglio == */
+
+.ab-dett-testa { display: flex; align-items: center; gap: var(--s4); margin-bottom: var(--s5); }
+.ab-dett-emoji {
+  width: 56px; height: 56px;
   flex: none;
+  display: grid; place-items: center;
+  border-radius: 18px;
+  background: var(--accento-tenue);
+  font-size: 28px;
+}
+.ab-dett-nome {
+  font-family: var(--font-d);
+  font-size: var(--t-28);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
 }
 
-/* ------------------------------------------------------------- dettaglio -- */
-
-.ab-dett-testa { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s4); }
-.ab-dett-emoji { font-size: 40px; line-height: 1; }
-.ab-dett-nome { font-family: var(--font-titolo); font-size: var(--t-22); font-weight: 700; letter-spacing: -0.02em; }
-
+/* I trenta giorni: una griglia di caselle, piene quando fatta. Non ha assi
+   né numeri, e non serve: il disegno dei buchi si legge da solo. */
 .ab-griglia30 {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   gap: 5px;
-  margin-bottom: var(--s3);
+  margin-top: var(--s3);
 }
 .ab-cella {
   aspect-ratio: 1;
-  border-radius: 4px;
-  background: var(--sfondo-4);
+  border-radius: 6px;
+  background: var(--scheda-viva);
 }
 .ab-cella.piena { background: var(--accento); }
 
-/* --------------------------------------------------------------- tinte -- */
+/* ================================================================ tinte == */
 
 .ab-tinte { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .ab-tinta {
-  width: 32px; height: 32px;
+  width: 38px; height: 38px;
   border: 0;
   border-radius: 50%;
   cursor: pointer;
-  transition: transform var(--veloce) var(--curva), box-shadow var(--veloce) var(--curva);
+  transition: transform var(--veloce) var(--molla), box-shadow var(--veloce) var(--curva);
 }
-.ab-tinta.scelta {
-  transform: scale(1.12);
-  box-shadow: 0 0 0 2.5px var(--sfondo-2), 0 0 0 4.5px currentColor;
-}
+.ab-tinta:active { transform: scale(0.9); }
+.ab-tinta.scelta { box-shadow: 0 0 0 2px var(--fondo), 0 0 0 4px var(--testo); }
