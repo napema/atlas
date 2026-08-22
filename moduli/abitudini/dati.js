@@ -174,3 +174,22 @@ export function fasciaAdesso(ora = new Date().getHours()) {
     .map(([id]) => id);
   return dentro.length ? dentro : ["qualsiasi"];
 }
+
+/**
+ * A che punto è una fascia rispetto a ORA.
+ *
+ * `"presto"` non è ancora il momento · `"adesso"` è il momento ·
+ * `"tardi"` il momento è passato e la cosa non è stata fatta.
+ *
+ * La distinzione serve perché la prima versione faceva sparire i promemoria
+ * quando la fascia finiva: alle due del pomeriggio la vitamina D dimenticata
+ * la mattina non compariva più da nessuna parte, e il promemoria che serviva
+ * di più era proprio quello.
+ */
+export function statoFascia(fascia, ora = new Date().getHours()) {
+  const f = FASCE[fascia] || FASCE.qualsiasi;
+  if (fascia === "qualsiasi") return "adesso";
+  if (ora < f.da) return "presto";
+  if (ora < f.a) return "adesso";
+  return "tardi";
+}

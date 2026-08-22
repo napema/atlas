@@ -48,7 +48,7 @@ function disegna() {
   const corpoProgressi = el("div", { id: "progressi-body" });
 
   aggiungi(contenitore, [
-    intestazione("Mobilità", dataLunga()),
+    intestazione("Mobilità"),
     el("div", { class: "mo-schede" }, [
       pillolaScheda("oggi", "Oggi"),
       pillolaScheda("progressi", "Progressi"),
@@ -285,6 +285,7 @@ export default {
         fatto: true,
         urgente: false,
         avanzamento: 1,
+        serie: n,
         azione: { rotta: "#/mobilita" },
       };
     }
@@ -301,6 +302,8 @@ export default {
         ? `${TIPI_SESSIONE[tipo]?.nome} · ${minuti} min · non spezzare ${plurale(n, "giorno", "giorni")} di fila`
         : `${TIPI_SESSIONE[tipo]?.nome} · ${minuti} min`,
       fatto: false,
+      mancaTesto: `la sessione di mobilità`,
+      serie: n,
       // Urgente di sera: è l'ora in cui la sessione salta davvero.
       urgente: new Date().getHours() >= 21,
       avanzamento: 0,

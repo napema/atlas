@@ -19,9 +19,15 @@ const TRATTI = {
     '<path d="M3.6 8.6A2.6 2.6 0 0 1 6.2 6h11.2A2.6 2.6 0 0 1 20 8.6v8.8a2.6 2.6 0 0 1-2.6 2.6H6.2A2.6 2.6 0 0 1 3.6 17.4z"/>' +
     '<path d="M3.6 9.3V6.5a2 2 0 0 1 1.7-2l9.9-1.9"/>' +
     '<path d="M20 12.1h-3.3a1.95 1.95 0 0 0 0 3.9H20"/>',
+  // Non più l'omino stilizzato: a 21px il tronco, le braccia e le gambe
+  // diventavano quattro trattini che si toccano, e sembrava un ragno. Questa
+  // è una figura in allungo — testa, schiena inarcata, gamba distesa — che
+  // alla stessa misura resta una silhouette riconoscibile.
   corpo:
-    '<circle cx="12" cy="4.4" r="2.1"/>' +
-    '<path d="M12 6.9v6.2M12 13.1l-3.1 7.4M12 13.1l3.1 7.4M6.6 9.1L12 10.4l5.4-1.3"/>',
+    '<circle cx="8.2" cy="5.1" r="2.2"/>' +
+    '<path d="M6.3 9.4c2.6-1.1 5-0.6 6.4 1.2l2.1 2.7 3.6 1.1"/>' +
+    '<path d="M12.7 10.6 10.9 15l4.3 1.1-1.1 4.2"/>' +
+    '<path d="M10.9 15 6.4 16.9l-2.6-2.4"/>',
   spunta:    '<path d="M4.4 12.5l4.5 4.5L19.6 6.4"/>',
   // Tre cursori, non un ingranaggio. La ruota dentata era un poligono a
   // mano libera: a 21px i denti si impastavano e sembrava un glifo rotto.

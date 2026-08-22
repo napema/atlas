@@ -92,6 +92,12 @@
   --font:   -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   --font-d: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   --font-m: ui-monospace, "SF Mono", Menlo, "Cascadia Mono", monospace;
+  /* Le emoji le disegna il sistema: su iPhone Apple Color Emoji, su Windows
+     Segoe UI Emoji. Le Apple su Windows non si possono avere — il disegno
+     sta in un font proprietario che non si ridistribuisce — ma dichiarare
+     la pila evita il caso peggiore, cioè il glifo monocromatico preso da un
+     font di testo. */
+  --font-e: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
 
   --t-64: 64px; --t-48: 48px; --t-40: 40px; --t-34: 34px; --t-28: 28px;
   --t-22: 22px; --t-19: 19px; --t-17: 17px; --t-15: 15px; --t-13: 13px;
@@ -147,23 +153,23 @@
     --testo-3:  #64646f;
     --testo-4:  #828290;
 
-    --rosa:     #d4185f;
-    --blu:      #0a6fd8;
-    --giallo:   #856400;
-    --arancio:  #bd4f16;
+    --rosa:     #c31657;
+    --blu:      #0964c2;
+    --giallo:   #806000;
+    --arancio:  #aa4714;
     --viola:    #8639cc;
-    --verde:    #157a37;
+    --verde:    #147535;
     --menta:    #077362;
-    --rosso:    #cc1526;
+    --rosso:    #c81525;
     --indaco:   #4646d0;
-    --pesca:    #a9631b;
-    --ciano:    #01738a;
-    --lime:     #587510;
-    --grigio:   #67676f;
+    --pesca:    #915517;
+    --ciano:    #016e84;
+    --lime:     #536e0f;
+    --grigio:   #65656d;
 
-    --ok:       #157a37;
-    --avviso:   #856400;
-    --male:     #cc1526;
+    --ok:       #147535;
+    --avviso:   #806000;
+    --male:     #c81525;
   }
 }
 
@@ -180,24 +186,41 @@
   --testo-2:  #57575f;
   --testo-3:  #64646f;
   --testo-4:  #828290;
-  --rosa:     #d4185f;
-  --blu:      #0a6fd8;
-  --giallo:   #856400;
-  --arancio:  #bd4f16;
+  --rosa:     #c31657;
+  --blu:      #0964c2;
+  --giallo:   #806000;
+  --arancio:  #aa4714;
   --viola:    #8639cc;
-  --verde:    #157a37;
+  --verde:    #147535;
   --menta:    #077362;
-  --rosso:    #cc1526;
+  --rosso:    #c81525;
   --indaco:   #4646d0;
-  --pesca:    #a9631b;
-  --ciano:    #01738a;
-  --lime:     #587510;
-  --grigio:   #67676f;
-  --ok:       #157a37;
-  --avviso:   #856400;
-  --male:     #cc1526;
+  --pesca:    #915517;
+  --ciano:    #016e84;
+  --lime:     #536e0f;
+  --grigio:   #65656d;
+  --ok:       #147535;
+  --avviso:   #806000;
+  --male:     #c81525;
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root { --veloce: 0ms; --normale: 0ms; --lento: 0ms; }
 }
+
+/* ------------------------------------------------- la pillola colorata --
+   Il fondo di una targhetta tinta — «3 giorni di fila», «GOWOD», «Sera».
+
+   Nel tema scuro è la tinta al 18% su nero: SCURISCE il fondo, quindi il
+   testo colorato sopra guadagna contrasto. Nel chiaro la stessa formula fa
+   il contrario, schiarisce verso il bianco, e ogni targhetta scendeva sotto
+   4,5:1 — il caso peggiore misurato era 3,08.
+
+   Da qui due valori diversi: nel chiaro la pillola non è tinta, è la
+   superficie grigia di sempre, e il colore lo porta solo il testo. Si perde
+   un filo di allegria e si guadagna che si legge. */
+:root { --pillola-tinta: color-mix(in srgb, currentColor 18%, transparent); }
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="scuro"]) { --pillola-tinta: var(--scheda-alta); }
+}
+:root[data-tema="chiaro"] { --pillola-tinta: var(--scheda-alta); }

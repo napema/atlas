@@ -15,7 +15,7 @@ import {
   FASCE, partiDi, parteFatta, alternaParte,
 } from "./dati.js";
 import {
-  progressoGiorno, eAttesa, serie, serieMigliore, costanza,
+  progressoGiorno, eAttesa, serie, serieMigliore, costanza, fattaIl, ePrevista,
   etichettaPiano, giorniSettimana, pianoDi, conteggioSettimana,
 } from "./calcolo.js";
 
@@ -110,9 +110,7 @@ function rigaAbitudine(h, giorno, ridisegna, { spenta = false } = {}) {
   // Con le parti la spunta del genitore non si tocca a mano: è vera quando
   // sono vere tutte le parti. Spuntare «integratori» in blocco alle undici
   // di sera è esattamente quello che le parti servono a impedire.
-  const fatta = parti.length
-    ? parti.every((p) => parteFatta(h.id, p.id, giorno))
-    : eFatta(h.id, giorno);
+  const fatta = fattaIl(h, giorno);
   const colore = coloreTinta(h.tint);
   const n = serie(h);
 
@@ -236,7 +234,7 @@ function grigliaTrenta(h) {
   const oggi = oggiISO();
   for (let i = 29; i >= 0; i--) {
     const d = piuGiorni(oggi, -i);
-    const cls = eFatta(h.id, d) ? " piena" : "";
+    const cls = fattaIl(h, d) ? " piena" : "";
     g.append(el("span", { class: `ab-cella${cls}`, title: dataUmana(d) }));
   }
   return g;
@@ -351,10 +349,7 @@ export function apriModifica(id, ridisegna) {
       alCambio: (v) => { bozza.name = v; },
     }),
 
-    el("div", { class: "campo-gruppo" }, [
-      el("label", { class: "campo-etichetta", testo: "Simbolo" }),
-      pillole(EMOJI_SUGGERITE.map((e) => [e, e]), bozza.emoji, (v) => { bozza.emoji = v; }),
-    ]),
+    sceglieEmoji(bozza),
 
     el("div", { class: "campo-gruppo" }, [
       el("label", { class: "campo-etichetta", testo: "Colore" }),
@@ -458,5 +453,201 @@ export function vistaImpostazioni(ridisegna) {
 
     el("p", { class: "nota", style: "margin-top:var(--s5)", testo:
       "Archiviare un'abitudine la toglie dal giorno senza cancellare lo storico: le serie passate restano, e riattivandola riparte da dove era." }),
+  ]);
+}
+
+/* ================================================================= SERIE
+   La vista dedicata alle strisce.
+
+   Perché una vista e non un numero in più nell'elenco: una serie diventa
+   una leva solo quando la vedi crescere e vedi cosa rischi di perdere. Nel
+   listino di oggi il fuoco accanto al nome è un dettaglio; qui è il punto.
+
+   Le tre cose che rendono una striscia motivante e non colpevolizzante,
+   nell'ordine in cui contano:
+
+     1. il numero corrente, grande;
+     2. il RECORD, perché è l'unica cifra che dà un bersaglio;
+     3. il rischio di oggi — «se salti stasera perdi 12 giorni» — che è
+        l'informazione azionabile, e va detta solo quando è vera.
+
+   Quello che NON c'è, deliberatamente: punteggi, livelli, medaglie. Una
+   serie è già un punteggio, e sovrapporne un secondo lo svaluta. */
+
+export function vistaSerie(ridisegna) {
+  const oggi = oggiISO();
+  const tutte = abitudiniVive();
+  const fuori = el("div", {});
+
+  if (!tutte.length) {
+    fuori.append(vuoto("Nessuna abitudine", "Le serie compaiono appena ne aggiungi una."));
+    return fuori;
+  }
+
+  const righe = tutte.map((h) => ({
+    h,
+    n: serie(h, oggi),
+    record: serieMigliore(h, oggi),
+    cost: costanza(h, 30, oggi),
+    fatta: fattaIl(h, oggi),
+    attesa: eAttesa(h, oggi),
+  })).sort((a, b) => b.n - a.n || b.record - a.record);
+
+  /* --- l'eroe: la serie che regge tutte le altre --------------------- */
+  const migliore = righe[0];
+  const aRischio = righe.filter((r) => r.n > 0 && r.attesa && !r.fatta);
+
+  aggiungi(fuori, [el("section", { class: "ab-serie-eroe" }, [
+    el("div", { class: "micro", testo: "La più lunga in corso" }),
+    el("div", { class: "ab-serie-cifra" }, [
+      el("span", { class: "cifra cifra-xl", testo: String(migliore.n) }),
+      el("span", { class: "ab-serie-unita", testo: migliore.n === 1 ? "giorno" : "giorni" }),
+    ]),
+    el("p", { class: "ab-serie-chi", testo: migliore.n > 0
+      ? migliore.h.name
+      : "Nessuna serie aperta. Se spunti qualcosa oggi ne parte una." }),
+
+    // Il rischio si dice una volta sola e in fondo, non su ogni riga: è la
+    // frase che fa alzare dal divano, e ripetuta cinque volte non la fa più.
+    aRischio.length > 0 && el("p", { class: "ab-serie-rischio", testo: aRischio.length === 1
+      ? `Se stasera salti ${aRischio[0].h.name.toLowerCase()} perdi ${plurale(aRischio[0].n, "giorno", "giorni")}.`
+      : `${plurale(aRischio.length, "serie aperta", "serie aperte")} da difendere oggi.` }),
+  ])]);
+
+  /* --- una riga per abitudine ---------------------------------------- */
+  aggiungi(fuori, [
+    el("div", { class: "sezione-titolo" }, [
+      el("h3", { testo: "Tutte le serie" }),
+      el("span", { class: "nota", testo: "corrente · record" }),
+    ]),
+    el("ul", { class: "ab-serie-lista" }, righe.map((r) => {
+      // La barra confronta la serie in corso col RECORD, non con un numero
+      // tondo: il bersaglio giusto è quello che hai già fatto una volta.
+      const f = r.record > 0 ? Math.min(1, r.n / r.record) : 0;
+      const li = el("li", {}, [el("button", {
+        class: "ab-serie-riga" + (r.n > 0 && r.attesa && !r.fatta ? " rischio" : ""),
+        type: "button",
+        onClick: () => apriDettaglio(r.h.id, ridisegna),
+      }, [
+        el("span", { class: "ab-serie-emoji", testo: r.h.emoji || EMOJI_PREDEFINITA }),
+        el("span", { class: "ab-serie-nome" }, [
+          el("span", { testo: r.h.name }),
+          el("span", { class: "nota-2", testo: `${r.cost}% negli ultimi 30 giorni` }),
+        ]),
+        el("span", { class: "ab-serie-numeri" }, [
+          el("span", { class: "ab-serie-corrente" + (r.n > 0 ? " viva" : ""), testo: String(r.n) }),
+          el("span", { class: "ab-serie-record", testo: `/ ${r.record}` }),
+        ]),
+        el("span", { class: "ab-serie-barra" }, [
+          el("i", { stile: { width: `${Math.round(f * 100)}%` } }),
+        ]),
+      ])]);
+      li.querySelector(".ab-serie-riga").style.setProperty("--accento", coloreTinta(r.h.tint));
+      return li;
+    })),
+  ]);
+
+  /* --- il calendario delle ultime quattro settimane ------------------ */
+  aggiungi(fuori, [el("section", { class: "scheda" }, [
+    el("div", { class: "scheda-titolo", testo: "Ultime quattro settimane" }),
+    el("p", { class: "nota", testo:
+      "Una riga per abitudine, una casella per giorno. Serve a vedere DOVE si rompono: quasi sempre è sempre lo stesso giorno della settimana." }),
+    el("div", { class: "ab-mappa" }, righe.map((r) => el("div", { class: "ab-mappa-riga" }, [
+      el("span", { class: "ab-mappa-emoji", testo: r.h.emoji || EMOJI_PREDEFINITA }),
+      el("div", { class: "ab-mappa-celle" }, Array.from({ length: 28 }, (_, i) => {
+        const d = piuGiorni(oggi, -(27 - i));
+        const prevista = ePrevista(r.h, d);
+        const c = el("span", {
+          class: "ab-mappa-cella" + (!prevista ? " spenta" : fattaIl(r.h, d) ? " piena" : ""),
+          title: `${dataUmana(d)} · ${r.h.name}`,
+        });
+        if (prevista && fattaIl(r.h, d)) c.style.background = coloreTinta(r.h.tint);
+        return c;
+      })),
+    ]))),
+  ])]);
+
+  return fuori;
+}
+
+/* ============================================================== EMOJI ====
+   Il selettore del simbolo.
+
+   Sedici emoji in una riga non bastavano: sono le sedici che ho scelto io,
+   e la diciassettesima abitudine finiva sempre con la stella. Qui ce ne sono
+   un centinaio raggruppate per argomento, con una casella per scriverne una
+   qualsiasi — su iPhone quella casella apre la tastiera emoji di sistema,
+   che resta il modo migliore di sceglierne una.
+
+   SUL DISEGNO DELLE EMOJI, e vale la pena essere chiari perché è stato
+   chiesto esplicitamente: le emoji Apple non si possono avere su Windows.
+   Non è una scelta, è che il disegno sta dentro `Apple Color Emoji`, un font
+   proprietario che è installato solo su macOS e iOS e che non si può
+   ridistribuire. Le alternative sarebbero due, e nessuna delle due va bene
+   qui: imbarcare un font emoji libero (Noto Color Emoji pesa dodici mega, e
+   la regola è niente dipendenze pesanti) oppure sostituire ogni emoji con
+   un'immagine da un CDN, che offline non c'è.
+
+   Quello che si può fare, ed è fatto: dichiarare la pila giusta, così su
+   iPhone escono le Apple e su Windows le Segoe invece di un quadratino o di
+   un disegno preso a caso da un font di testo. Le emoji sono comunque gli
+   stessi caratteri: sincronizzate fra i due dispositivi restano identiche,
+   cambia solo come le disegna il sistema. */
+
+const EMOJI = {
+  "Salute": ["💊", "🩺", "🦷", "🧘", "😴", "🛌", "💧", "🥤", "🧴", "🧼", "🌡️", "🫀", "🧠", "👁️", "🦴"],
+  "Movimento": ["🏃", "🚴", "🏋️", "🤸", "🧗", "🏊", "⚽", "🎾", "🥊", "⛹️", "🚶", "🧎", "🤾", "🏸", "🛹"],
+  "Cibo": ["🥗", "🍎", "🥦", "🍳", "🥑", "🐟", "🍚", "🥜", "☕", "🍵", "🚫", "🍺", "🍫", "🧂", "🥛"],
+  "Mente": ["📖", "✍️", "📝", "🎧", "🎸", "🎹", "🎨", "🧩", "♟️", "🗣️", "🌍", "💭", "📚", "🔬", "💡"],
+  "Lavoro": ["💻", "📊", "📅", "✅", "📈", "🧾", "📮", "🗂️", "⏰", "🎯", "🚀", "🛠️", "🔑", "📌", "💼"],
+  "Casa": ["🧹", "🧺", "🪴", "🐕", "🐈", "🍽️", "🛒", "🔧", "🚗", "🗑️", "🛏️", "🚿", "🪟", "🧽", "📦"],
+  "Umore": ["⭐️", "🔥", "❤️", "🙏", "😌", "🌙", "☀️", "🌱", "🏆", "💎", "🎉", "🤝", "🕯️", "🧿", "✨"],
+};
+
+function sceglieEmoji(bozza) {
+  const anteprima = el("span", { class: "ab-emoji-scelta emoji", testo: bozza.emoji || EMOJI_PREDEFINITA });
+  const griglia = el("div", { class: "ab-emoji-griglia" });
+
+  const scegli = (e) => {
+    bozza.emoji = e;
+    anteprima.textContent = e;
+    for (const b of griglia.querySelectorAll(".ab-emoji-tasto")) {
+      b.classList.toggle("scelta", b.textContent === e);
+    }
+    libero.value = "";
+  };
+
+  for (const [gruppo, elenco] of Object.entries(EMOJI)) {
+    griglia.append(el("div", { class: "ab-emoji-gruppo", testo: gruppo }));
+    griglia.append(el("div", { class: "ab-emoji-riga" }, elenco.map((e) => el("button", {
+      class: "ab-emoji-tasto emoji" + (e === bozza.emoji ? " scelta" : ""),
+      type: "button", testo: e, "aria-label": e,
+      onClick: () => { scegli(e); tocco(6); },
+    }))));
+  }
+
+  // La casella libera: su iPhone apre la tastiera emoji di sistema, che è il
+  // selettore migliore che esista e che non ha senso reimplementare.
+  const libero = el("input", {
+    class: "campo ab-emoji-libera emoji",
+    type: "text", maxlength: "4",
+    placeholder: "o incollane una",
+    "aria-label": "Emoji personalizzata",
+  });
+  libero.addEventListener("input", () => {
+    const v = [...libero.value].slice(0, 2).join("");
+    if (!v) return;
+    bozza.emoji = v;
+    anteprima.textContent = v;
+    for (const b of griglia.querySelectorAll(".ab-emoji-tasto")) b.classList.remove("scelta");
+  });
+
+  return el("div", { class: "campo-gruppo" }, [
+    el("div", { class: "ab-emoji-testa" }, [
+      el("label", { class: "campo-etichetta", testo: "Simbolo" }),
+      anteprima,
+    ]),
+    griglia,
+    libero,
   ]);
 }

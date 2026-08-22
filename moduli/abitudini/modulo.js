@@ -12,10 +12,11 @@ import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js"
 import { annuncia, ascolta } from "../../core/bus.js";
 import { casella, stato, abitudiniVive, eFatta, alterna, idLog, alternaParte } from "./dati.js";
 import { progressoGiorno, mancantiOggi, serie, eAttesa, promemoriaAdesso } from "./calcolo.js";
-import { strisciaSettimana, riepilogo, elenco, apriModifica, vistaImpostazioni } from "./viste.js";
+import { strisciaSettimana, riepilogo, elenco, apriModifica, vistaImpostazioni, vistaSerie } from "./viste.js";
 
 let contenitore = null;
 let giornoScelto = oggiISO();
+let vista = "oggi";
 const staccatori = [];
 
 /* --------------------------------------------------------------- vista -- */
@@ -26,18 +27,33 @@ function disegna() {
   contenitore.replaceChildren();
 
   aggiungi(contenitore, [
-    intestazione("Abitudini", etichettaGiorno(), el("button", {
+    intestazione("Abitudini", "", el("button", {
       class: "btn-icona", type: "button", "aria-label": "Nuova abitudine",
       html: icona("piu", 26),
       onClick: () => apriModifica(null, disegna),
     })),
-    strisciaSettimana(giornoScelto, (g) => { giornoScelto = g; disegna(); }),
-    riepilogo(giornoScelto),
-    elenco(giornoScelto, disegna),
+    el("div", { class: "ab-schede" }, [
+      pillolaScheda("oggi", "Oggi"),
+      pillolaScheda("serie", "Serie"),
+    ]),
+    ...(vista === "serie" ? [vistaSerie(disegna)] : [
+      strisciaSettimana(giornoScelto, (g) => { giornoScelto = g; disegna(); }),
+      riepilogo(giornoScelto),
+      elenco(giornoScelto, disegna),
+    ]),
   ]);
 
   pubblicaSullaLavagna();
   globalThis.scrollTo(0, scorrimento);
+}
+
+function pillolaScheda(id, testo) {
+  return el("button", {
+    class: "ab-scheda" + (vista === id ? " attiva" : ""),
+    type: "button", testo,
+    "aria-pressed": String(vista === id),
+    onClick: () => { vista = id; disegna(); },
+  });
 }
 
 function etichettaGiorno() {
@@ -191,6 +207,13 @@ export default {
         : mancano.length === 1 ? `Manca: ${mancano[0].name}`
         : `Mancano ${mancano.length}: ${mancano.slice(0, 2).map((h) => h.name).join(", ")}${mancano.length > 2 ? "…" : ""}`,
       fatto: tutte,
+      // Come la home lo dice DENTRO una frase: «ti manca meditazione», non
+      // «ti mancano abitudini», che è il nome di una schermata e non dice
+      // niente su cosa devi fare.
+      mancaTesto: tutte ? null
+        : mancano.length === 1 ? mancano[0].name.toLowerCase()
+        : `${mancano.length} abitudini`,
+      serie: migliore,
       // La barra della tessera dice a che punto sei, non è decorativa.
       avanzamento: p.attese ? p.fatte / p.attese : 0,
       // I promemoria della fascia in corso: la home non deve dire «ti

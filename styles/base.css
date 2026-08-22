@@ -756,3 +756,10 @@ body::before {
     var(--fondo);
   transition: background var(--lento) var(--curva);
 }
+
+/* Le emoji prendono il font di sistema che le disegna a colori. Va messo
+   dove le emoji stanno da sole: dentro una riga di testo la pila di `--font`
+   ci arriva comunque per fallback. */
+.emoji, .ab-emoji, .tessera-emoji, .fi-catriga-emoji, .ab-parte-nome, .ab-mappa-emoji, .ab-serie-emoji {
+  font-family: var(--font-e), var(--font);
+}

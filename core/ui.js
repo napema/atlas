@@ -49,18 +49,26 @@ export const svuota = (n) => { while (n.firstChild) n.removeChild(n.firstChild);
  * Il titolo in cima a una vista: occhiello piccolo sopra, titolo grande
  * sotto, e le azioni a destra. `azione` può essere un nodo solo o un elenco.
  */
+/**
+ * Il titolo di una schermata. Titolo e, se serve, le azioni. Nient'altro.
+ *
+ * NIENTE PALLINO DEL SYNC e NIENTE DATA, e sono due scelte:
+ *
+ * · il pallino cambiava colore da solo mentre guardavi la schermata, e stava
+ *   in un punto diverso in ogni modulo. Un indicatore che lampeggia in un
+ *   posto imprevedibile non informa, distrae. Ora vive in un posto solo,
+ *   #/impostazioni, dove lo vai a cercare quando ti serve davvero.
+ * · la data la dice la home, sotto il saluto. Ripeterla in cima a ogni
+ *   modulo era una riga di testo in più che nessuno legge due volte.
+ *
+ * L'occhiello resta per chi ha davvero un sopratitolo da dire — non per la
+ * data, che infatti è sparita da tutti e tre i moduli.
+ */
 export function intestazione(titolo, occhiello = "", azione = null) {
   const azioni = [].concat(azione || []).filter(Boolean);
-  // Senza azioni il pallino del sync va ACCANTO all'occhiello, non spinto
-  // all'estremo destro: da scrivania restava un punto solo in mezzo a mezzo
-  // schermo vuoto e sembrava un pulsante rotto.
-  const pallino = el("span", { class: "sync-pallino", "data-ruolo": "sync" });
   return el("header", { class: "testa" }, [
     el("div", { class: "testa-testo" }, [
-      (occhiello || !azioni.length) && el("div", { class: "micro testa-occhiello" }, [
-        !azioni.length && pallino,
-        occhiello && el("span", { testo: occhiello }),
-      ]),
+      occhiello && el("div", { class: "micro", testo: occhiello }),
       el("h1", { testo: titolo }),
     ]),
     azioni.length > 0 && el("div", { class: "testa-azioni" }, azioni),

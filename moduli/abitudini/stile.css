@@ -148,8 +148,8 @@
   flex: none;
   padding: 3px 9px;
   border-radius: var(--r-pillola);
-  background: color-mix(in srgb, var(--arancio) 18%, transparent);
   color: var(--arancio);
+  background: var(--pillola-tinta);
   font-size: var(--t-11);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -275,3 +275,161 @@
   margin-bottom: var(--s2);
 }
 .ab-editor-parte .btn { align-self: flex-start; }
+
+/* ================================================================ schede == */
+
+.ab-schede { display: flex; gap: var(--s1); margin-bottom: var(--s4); }
+.ab-scheda {
+  flex: 1;
+  min-height: 40px;
+  border: 0;
+  border-radius: var(--r-pillola);
+  background: var(--scheda);
+  color: var(--testo-2);
+  font-family: var(--font);
+  font-size: var(--t-13);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
+}
+.ab-scheda.attiva { background: var(--testo); color: var(--fondo); }
+
+/* ================================================================= serie == */
+
+.ab-serie-eroe {
+  position: relative;
+  padding: var(--s5);
+  border-radius: var(--r-scheda);
+  background: var(--scheda);
+  overflow: hidden;
+  margin-bottom: var(--s3);
+}
+.ab-serie-eroe::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 180px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--arancio) 14%, transparent), transparent);
+  pointer-events: none;
+}
+.ab-serie-eroe > * { position: relative; }
+.ab-serie-cifra { display: flex; align-items: baseline; gap: var(--s2); margin-top: var(--s2); }
+.ab-serie-cifra .cifra-xl { font-size: clamp(48px, 15vw, 68px); color: var(--arancio); }
+.ab-serie-unita { font-size: var(--t-19); font-weight: 600; color: var(--testo-3); }
+.ab-serie-chi { margin: var(--s2) 0 0; font-size: var(--t-17); font-weight: 600; }
+.ab-serie-rischio {
+  margin: var(--s4) 0 0;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-interno);
+  color: var(--avviso);
+  background: var(--pillola-tinta);
+  font-size: var(--t-13);
+  font-weight: 600;
+}
+
+.ab-serie-lista { list-style: none; display: flex; flex-direction: column; gap: var(--s2); }
+.ab-serie-riga {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "emoji nome numeri" "barra barra barra";
+  align-items: center;
+  gap: var(--s2) var(--s3);
+  width: 100%;
+  padding: var(--s4);
+  border: 0;
+  border-radius: var(--r-interno);
+  background: var(--scheda);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ab-serie-riga:active { background: var(--scheda-alta); }
+.ab-serie-riga.rischio { box-shadow: inset 3px 0 0 var(--avviso); }
+.ab-serie-emoji { grid-area: emoji; font-size: 21px; line-height: 1; }
+.ab-serie-nome { grid-area: nome; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ab-serie-nome > span:first-child {
+  font-size: var(--t-15); font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ab-serie-numeri { grid-area: numeri; display: flex; align-items: baseline; gap: 4px; }
+.ab-serie-corrente {
+  font-family: var(--font-d);
+  font-size: var(--t-22);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--testo-3);
+}
+.ab-serie-corrente.viva { color: var(--arancio); }
+.ab-serie-record { font-size: var(--t-13); color: var(--testo-3); font-variant-numeric: tabular-nums; }
+.ab-serie-barra {
+  grid-area: barra;
+  height: 5px;
+  border-radius: var(--r-pillola);
+  background: var(--traccia);
+  overflow: hidden;
+}
+.ab-serie-barra > i {
+  display: block; height: 100%;
+  border-radius: var(--r-pillola);
+  background: var(--accento);
+  transition: width var(--lento) var(--curva);
+}
+
+/* La mappa delle quattro settimane: una riga per abitudine, ventotto
+   caselle. Serve a vedere DOVE si rompe, non quante volte. */
+.ab-mappa { display: flex; flex-direction: column; gap: var(--s2); margin-top: var(--s3); }
+.ab-mappa-riga { display: flex; align-items: center; gap: var(--s3); }
+.ab-mappa-emoji { font-size: 15px; line-height: 1; width: 20px; flex: none; text-align: center; }
+.ab-mappa-celle { display: grid; grid-template-columns: repeat(28, 1fr); gap: 2px; flex: 1; min-width: 0; }
+.ab-mappa-cella {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: var(--scheda-viva);
+}
+.ab-mappa-cella.spenta { background: transparent; }
+
+/* ================================================================= emoji == */
+
+.ab-emoji-testa { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.ab-emoji-scelta {
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  border-radius: var(--r-interno);
+  background: var(--scheda-alta);
+  font-size: 24px;
+  line-height: 1;
+}
+.ab-emoji-griglia {
+  max-height: 240px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: var(--s3) 0;
+  padding-right: 4px;
+}
+.ab-emoji-gruppo {
+  font-size: var(--t-11);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--testo-3);
+  margin: var(--s3) 0 var(--s2);
+}
+.ab-emoji-gruppo:first-child { margin-top: 0; }
+.ab-emoji-riga { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 4px; }
+.ab-emoji-tasto {
+  aspect-ratio: 1;
+  min-height: 44px;
+  display: grid; place-items: center;
+  border: 0;
+  border-radius: var(--r-interno);
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva), transform var(--veloce) var(--molla);
+}
+.ab-emoji-tasto:active { transform: scale(0.9); }
+.ab-emoji-tasto.scelta { background: var(--accento-tenue); box-shadow: inset 0 0 0 2px var(--accento); }
+.ab-emoji-libera { text-align: center; font-size: var(--t-17); }

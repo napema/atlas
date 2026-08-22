@@ -277,6 +277,10 @@ export default {
       titolo: "Finanze",
       valore: euro(s.resta),
       dettaglio: pezzi.join(" · "),
+      // La home lo mette in una frase: «ti manca segnare le spese» non ha
+      // senso — Finanze non è una cosa da fare, è una cosa da guardare. Solo
+      // quando la settimana è finita c'è davvero qualcosa da decidere.
+      mancaTesto: s.finita ? "una decisione sui soldi" : null,
       urgente: s.finita || av.some((a) => a.livello === "critico"),
       avanzamento: s.frazione,
       // Il testo per la carta larga della home, quando Finanze è la cosa

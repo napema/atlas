@@ -301,14 +301,39 @@
 
 /* --------------------------------------------------------- inserimento -- */
 
+/* Adesso è un `input` vero: su iPhone si compila col tastierino disegnato,
+   da scrivania si scrive con la tastiera. Deve però continuare a sembrare
+   una cifra e non un campo — niente cornice, niente sfondo. */
 .fi-importo {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--testo);
+  font-family: var(--font-d);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
   font-size: clamp(48px, 15vw, 64px);
   text-align: center;
   padding: var(--s4) 0 var(--s3);
   letter-spacing: -0.045em;
 }
-.fi-importo.vuoto { color: var(--testo-4); }
-.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; color: var(--testo-3); }
+.fi-importo:focus { outline: none; }
+.fi-importo::placeholder { color: var(--testo-4); }
+/* Il simbolo non può stare in un `::after` di un input: è un elemento
+   sostituito e gli pseudo non ci vanno. Sta nella riga sotto. */
+.fi-importo-riga { position: relative; }
+.fi-importo-riga::after {
+  content: "€";
+  position: absolute;
+  right: var(--s4);
+  top: 50%;
+  transform: translateY(-30%);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--testo-3);
+  pointer-events: none;
+}
 
 .fi-tastierino { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); margin-bottom: var(--s5); }
 .fi-tasto {
@@ -352,7 +377,28 @@
    pari. I due colori sono quelli che il resto dell'app usa già per il segno
    dell'importo: rosso esce, verde entra. */
 
-.fi-azioni { display: flex; gap: var(--s2); margin-bottom: var(--s5); }
+/* Fissa in basso, sopra la barra dei moduli: registrare un'uscita è il gesto
+   che fai dieci volte a settimana e deve stare sotto il pollice, non in cima
+   allo schermo dopo uno scorrimento.
+
+   Le due cose da non rompere, e sono il motivo di ogni riga qui sotto:
+   1. il contenuto che scorre non deve finirci sotto — ci pensa il
+      `padding-bottom` di #vista, calcolato sull'altezza vera della barra;
+   2. la barra non deve intercettare i tocchi ai lati, dove non c'è niente:
+      il contenitore è trasparente ai puntatori, i bottoni no. */
+.fi-azioni {
+  position: fixed;
+  left: 0; right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 74px);
+  z-index: 55;
+  display: flex;
+  gap: var(--s2);
+  width: min(680px, calc(100vw - var(--s8)));
+  margin: 0 auto;
+  padding: 0;
+  pointer-events: none;
+}
+.fi-azioni > * { pointer-events: auto; }
 .fi-azioni .btn { min-height: 46px; }
 .fi-uscita, .fi-entrata { flex: 1; font-weight: 600; }
 .fi-uscita  { background: color-mix(in srgb, var(--male) 20%, var(--scheda)); color: var(--male); }
@@ -557,3 +603,35 @@
 .fi-sospesa-azioni { grid-area: azioni; display: flex; gap: var(--s2); justify-content: flex-end; }
 
 .fi-ric-range { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+
+/* I due fogli minori — ricarica e saldo ING — usano ancora un `div` per
+   l'importo, non un campo: lì il tastierino basta. Serve la classe che
+   l'input non ha più. */
+.fi-importo.vuoto { color: var(--testo-4); }
+div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; color: var(--testo-3); }
+
+/* I bottoni hanno bisogno di un fondo pieno perché ci scorre sotto il
+   contenuto: senza, il testo delle righe passa attraverso. */
+.fi-uscita, .fi-entrata, .fi-altro {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+/* Lo spazio in fondo alla vista di Finanze: la barra dei moduli (61) più la
+   barra delle azioni (46) più i respiri. Se cambia l'altezza dei bottoni va
+   cambiato anche questo, ed è per quello che il numero sta scritto qui e non
+   sparso. */
+#vista[data-modulo="finanze"] {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 190px);
+}
+
+@media (min-width: 900px) {
+  /* Da scrivania la barra dei moduli è a sinistra: le azioni si allineano
+     alla colonna dei contenuti e stanno più in basso, perché sotto non c'è
+     più niente da scavalcare. */
+  .fi-azioni {
+    bottom: var(--s6);
+    left: 244px;
+    width: min(680px, calc(100vw - 244px - var(--s8)));
+  }
+  #vista[data-modulo="finanze"] { padding-bottom: 140px; }
+}

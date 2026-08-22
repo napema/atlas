@@ -251,6 +251,8 @@ async function disegna() {
   contenitore.replaceChildren();
 
   const testa = intestazione("Impostazioni");
+  // Il pallino del sync viveva in cima a ogni schermata e cambiava colore
+  // da solo mentre guardavi: ora sta qui e basta, nella scheda dello stato.
   testa.querySelector(".sync-pallino")?.remove();
   contenitore.append(testa);
 

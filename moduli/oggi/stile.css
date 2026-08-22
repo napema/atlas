@@ -1,83 +1,169 @@
 /* moduli/oggi — la home.
-   Gerarchia netta: il saluto domina, la frase spiega, le carte invitano,
-   le tessere riepilogano. Ogni livello ha un peso tipografico diverso e
-   nessuno dei quattro compete con quello sopra. */
+   =========================================================================
+   Quattro livelli e non di più, e ognuno pesa visibilmente meno di quello
+   sopra: saluto, verdetto, cose da fare adesso, il fondo che si guarda solo
+   se si vuole.
+
+   La regola che tiene in piedi la gerarchia: il corpo scende a ogni livello
+   (46 → 28 → 17 → 15 → 12) e il colore si spegne insieme. Se due livelli
+   hanno lo stesso peso, non sono due livelli.
+   ========================================================================= */
 
 /* ------------------------------------------------------------- il saluto -- */
 
-.og-saluto-blocco { padding: var(--s4) 0 var(--s6); }
+.og-saluto-blocco { padding: var(--s4) 0 var(--s5); }
 
-/* Minuscolo e enorme. Il punto fermo alla fine è quello che lo fa suonare
-   come una frase detta invece che come un'etichetta. */
+/* Minuscolo e grande. Il punto fermo alla fine è quello che lo fa suonare
+   come una frase detta invece che come un'insegna. */
 .og-saluto {
   font-family: var(--font-d);
-  font-size: clamp(40px, 12vw, 56px);
+  font-size: clamp(34px, 10vw, 46px);
   font-weight: 700;
-  letter-spacing: -0.045em;
-  line-height: 0.98;
-  text-transform: lowercase;
+  letter-spacing: -0.04em;
+  line-height: 1;
 }
+.og-saluto-parola { text-transform: lowercase; }
 .og-punto { color: var(--accento); }
-
 .og-data {
-  display: flex;
-  align-items: center;
-  gap: var(--s2);
   margin: var(--s3) 0 0;
   font-size: var(--t-15);
   color: var(--testo-2);
   text-transform: capitalize;
 }
 
-/* ----------------------------------------------------------- il briefing -- */
+/* ----------------------------------------------------------- il verdetto -- */
+/* L'unica cosa della schermata che si legge sempre, quindi l'unica che ha il
+   diritto di essere grande. Non sta in una scheda: sta sul fondo nudo, come
+   il titolo di quello che stai per leggere. */
 
-.og-briefing {
+.og-verdetto { padding: var(--s2) 0 var(--s6); }
+.og-verdetto-titolo {
+  font-size: var(--t-28);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  margin: 0;
+}
+.og-verdetto-sotto {
+  margin: var(--s3) 0 0;
+  font-size: var(--t-17);
+  line-height: 1.45;
+  color: var(--testo-2);
+}
+/* Il tono si dice con un filo di colore a sinistra, mai colorando la frase:
+   una frase rossa si legge come un errore dell'app, non come una notizia. */
+.og-verdetto.male,
+.og-verdetto.avviso,
+.og-verdetto.ok {
+  padding-left: var(--s4);
+  border-left: 3px solid var(--traccia);
+}
+.og-verdetto.male   { border-left-color: var(--male); }
+.og-verdetto.avviso { border-left-color: var(--avviso); }
+.og-verdetto.ok     { border-left-color: var(--ok); }
+
+/* La riga della serie: piccola, calda, e presente solo quando c'è davvero
+   qualcosa da difendere. */
+.og-serie {
+  display: inline-block;
+  margin: var(--s4) 0 0;
+  padding: 6px 12px;
+  border-radius: var(--r-pillola);
+  color: var(--arancio);
+  background: var(--pillola-tinta);
+  font-size: var(--t-13);
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------- adesso -- */
+/* L'unica parte su cui si tocca per FARE invece che per andare. */
+
+.og-adesso {
   padding: var(--s5);
   border-radius: var(--r-scheda);
   background: var(--scheda);
-  margin-bottom: var(--s4);
+  margin-bottom: var(--s3);
 }
-/* Testo, non Display: è una frase, e Display accanto al saluto in Display
-   dava due disegni di lettera nella stessa colonna a dieci pixel di
-   distanza. La regola per tutta l'app è: Display SOLO per i titoli e per i
-   numeri, tutto il resto Text. */
-.og-frase {
-  margin: 0;
-  font-size: var(--t-22);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.3;
+.og-adesso-gruppo + .og-adesso-gruppo { margin-top: var(--s5); }
+.og-adesso-testa {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s3); margin-bottom: var(--s3);
 }
-/* Quando c'è qualcosa da chiudere e si è fatto tardi, la frase prende un
-   filo di colore a sinistra. Non tutta colorata: solo il bordo, perché la
-   frase deve restare una frase e non diventare un allarme. */
-.og-briefing.sveglia { box-shadow: inset 3px 0 0 var(--avviso); }
-.og-briefing.sereno .og-frase { color: var(--testo); }
+.og-adesso-conta {
+  min-width: 22px; height: 22px;
+  display: grid; place-items: center;
+  padding: 0 6px;
+  border-radius: var(--r-pillola);
+  background: var(--scheda-viva);
+  color: var(--testo-2);
+  font-size: var(--t-11);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.og-adesso-gruppo.tardi .og-adesso-conta {
+  color: var(--avviso);
+  background: var(--pillola-tinta);
+}
+.og-adesso-lista { list-style: none; display: flex; flex-direction: column; gap: var(--s2); }
 
-.og-numeri {
+/* Una voce è un bersaglio unico da 54px: si spunta col pollice senza
+   guardare, che è tutto quello che deve saper fare. */
+.og-adesso-voce {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--s5);
-  margin-top: var(--s4);
-  padding-top: var(--s4);
-  border-top: 1px solid var(--filo);
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 54px;
+  padding: 0 var(--s4) 0 var(--s3);
+  border: 0;
+  border-radius: var(--r-interno);
+  background: var(--scheda-alta);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva), transform var(--veloce) var(--molla);
 }
-.og-numero { display: flex; flex-direction: column; gap: 1px; }
-.og-numero-cifra { font-size: var(--t-22); }
+.og-adesso-voce:active { transform: scale(0.985); background: var(--scheda-viva); }
 
-/* -------------------------------------------------------- le cose da fare -- */
+.og-adesso-cerchio {
+  width: 26px; height: 26px;
+  flex: none;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: transparent;
+  box-shadow: inset 0 0 0 2px var(--tinta, var(--accento));
+  transition: background var(--veloce) var(--curva);
+}
+.og-adesso-voce:active .og-adesso-cerchio { background: color-mix(in srgb, var(--tinta) 35%, transparent); }
+.og-adesso-cerchio svg { display: block; }
 
-.og-azioni { display: flex; flex-direction: column; gap: var(--s3); margin-bottom: var(--s4); }
+.og-adesso-nome {
+  flex: 1; min-width: 0;
+  font-size: var(--t-17);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.og-adesso-quando {
+  flex: none;
+  font-size: var(--t-11);
+  color: var(--testo-3);
+  max-width: 40%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* -------------------------------------------------------- la prossima --- */
 
 .og-carta {
   display: block;
-  margin-bottom: var(--s3);
   position: relative;
   padding: var(--s5);
   border-radius: var(--r-scheda);
   background: var(--scheda);
   color: inherit;
   overflow: hidden;
+  margin-bottom: var(--s3);
   transition: transform var(--veloce) var(--curva), background var(--veloce) var(--curva);
 }
 .og-carta::before {
@@ -102,10 +188,7 @@
   text-transform: uppercase;
   color: var(--tinta);
 }
-.og-carta-valore {
-  font-size: clamp(34px, 10vw, 44px);
-  margin-top: var(--s3);
-}
+.og-carta-valore { font-size: clamp(30px, 9vw, 40px); margin-top: var(--s3); }
 .og-carta-nota { margin: var(--s2) 0 0; font-size: var(--t-15); color: var(--testo-2); }
 
 .og-carta-invito {
@@ -122,7 +205,11 @@
 }
 .og-carta-invito svg { width: 15px; height: 15px; }
 
-/* -------------------------------------------------------- la settimana --- */
+/* ------------------------------------------------------------- il fondo -- */
+/* Le tessere e la costanza: si guardano solo se si vuole, quindi partono
+   dopo uno stacco che le separa da tutto quello che sta sopra. */
+
+.og-glance { margin-top: var(--s5); }
 
 .og-settimana { padding: var(--s4) var(--s5) var(--s5); }
 .og-settimana-testa {
@@ -136,9 +223,8 @@
 .og-sett-riga { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s1); }
 .og-sett-giorno { display: flex; flex-direction: column; align-items: center; gap: var(--s2); }
 .og-sett-lettera { font-size: var(--t-10); font-weight: 700; letter-spacing: 0.06em; color: var(--testo-3); }
-/* Sette barrette basse, non sette blocchi. A 32px di altezza e verde pieno
-   sembravano pulsanti da premere, e prendevano più spazio della cosa da fare
-   oggi: questa striscia è uno sguardo all'indietro, non un comando. */
+/* Barrette basse, non blocchi: questa striscia è uno sguardo all'indietro,
+   non un comando. A 32px e verde pieno sembravano pulsanti da premere. */
 .og-sett-punto {
   width: 100%; height: 14px;
   border-radius: 5px;
@@ -152,96 +238,12 @@
 /* --------------------------------------------------------- da scrivania -- */
 
 @media (min-width: 900px) {
-  .og-saluto-blocco { padding: var(--s2) 0 var(--s8); }
-  .og-frase { font-size: var(--t-28); }
-  .og-azioni { flex-direction: row; }
-  .og-azioni > * { flex: 1; }
+  .og-saluto-blocco { padding: var(--s2) 0 var(--s6); }
+  .og-verdetto-titolo { font-size: var(--t-34); }
 }
 
-/* ------------------------------------------------------- i promemoria --- */
-/* La card delle cose che scadono ADESSO. È l'unico elemento della home che
-   può apparire e sparire, perché non è un dato: è una sveglia. Quando è
-   vuota non lascia un buco, semplicemente non c'è.
-
-   Il ritmo verticale: 20px di respiro attorno, 12 fra i gruppi, 8 fra le
-   voci. Tre passi e basta — con cinque, gli elementi smettono di dire a
-   quale livello appartengono. */
-
-.og-promemoria {
-  position: relative;
-  padding: var(--s5);
-  border-radius: var(--r-scheda);
-  background: var(--scheda);
-  margin-bottom: var(--s3);
-  overflow: hidden;
-}
-.og-promemoria::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 3px;
-  background: var(--accento);
-}
-
-.og-prom-testa { display: flex; align-items: center; gap: 7px; margin-bottom: var(--s4); }
-.og-prom-icona { display: flex; color: var(--accento); }
-
-.og-prom-gruppo + .og-prom-gruppo { margin-top: var(--s4); }
-.og-prom-fascia {
-  font-size: var(--t-11);
-  font-weight: 600;
-  color: var(--testo-3);
-  margin-bottom: var(--s2);
-}
-.og-prom-lista { list-style: none; display: flex; flex-direction: column; gap: var(--s2); }
-
-/* Una voce è un bersaglio unico da 52px: si spunta col pollice senza
-   guardare, che è tutto quello che deve saper fare. */
-.og-prom-voce {
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
-  width: 100%;
-  min-height: 52px;
-  padding: 0 var(--s4) 0 var(--s3);
-  border: 0;
-  border-radius: var(--r-interno);
-  background: var(--scheda-alta);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background var(--veloce) var(--curva), transform var(--veloce) var(--molla);
-}
-.og-prom-voce:active { transform: scale(0.985); background: var(--scheda-viva); }
-
-.og-prom-cerchio {
-  width: 26px; height: 26px;
-  flex: none;
-  display: grid; place-items: center;
-  border-radius: 50%;
-  background: transparent;
-  color: transparent;
-  box-shadow: inset 0 0 0 2px var(--tinta, var(--accento));
-  transition: background var(--veloce) var(--curva);
-}
-.og-prom-voce:active .og-prom-cerchio { background: color-mix(in srgb, var(--tinta) 30%, transparent); }
-.og-prom-cerchio svg { display: block; }
-
-.og-prom-nome {
-  flex: 1;
-  min-width: 0;
-  font-size: var(--t-17);
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-/* Da quale abitudine viene: serve la prima volta e poi non si legge più,
-   quindi sta a destra, piccola e tenue. */
-.og-prom-da {
-  flex: none;
-  font-size: var(--t-11);
-  color: var(--testo-3);
-  max-width: 40%;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+@media (min-width: 1120px) {
+  /* Verdetto e cose da fare restano stretti — sono testo, e una riga lunga
+     1100px non si legge — mentre le tessere prendono tutta la larghezza. */
+  .og-verdetto, .og-adesso, .og-carta { max-width: 760px; }
 }

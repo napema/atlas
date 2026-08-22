@@ -16,7 +16,7 @@
 // `weekly` è l'unico che non si risolve guardando il solo giorno: per
 // sapere se è attesa oggi bisogna contare i log della settimana.
 
-import { abitudiniVive, eFatta, stato, partiDi, parteFatta, FASCE, fasciaAdesso } from "./dati.js";
+import { abitudiniVive, eFatta, stato, partiDi, parteFatta, FASCE, statoFascia } from "./dati.js";
 import { isoDi, daISO, piuGiorni, oggiISO } from "../../core/ui.js";
 
 const PREDEFINITA = { type: "daily", days: [1, 2, 3, 4, 5, 6, 0], times: 3 };
@@ -41,7 +41,7 @@ export function giorniSettimana(iso) {
 
 /** Quante volte è stata fatta nella settimana di `iso`. */
 export const conteggioSettimana = (h, iso) =>
-  giorniSettimana(iso).filter((g) => eFatta(h.id, g)).length;
+  giorniSettimana(iso).filter((g) => fattaIl(h, g)).length;
 
 /**
  * L'abitudine esiste in quel giorno? Un'abitudine creata ieri non è
@@ -77,7 +77,7 @@ export function settimanaleObbligatoria(h, iso) {
 /** È attesa oggi? Per le settimanali: solo se obbligatoria o già fatta. */
 export function eAttesa(h, iso) {
   if (!ePrevista(h, iso)) return false;
-  if (pianoDi(h).type === "weekly") return settimanaleObbligatoria(h, iso) || eFatta(h.id, iso);
+  if (pianoDi(h).type === "weekly") return settimanaleObbligatoria(h, iso) || fattaIl(h, iso);
   return true;
 }
 
@@ -91,7 +91,7 @@ export function progressoGiorno(iso = oggiISO()) {
       // Una settimanale entra nel conteggio del giorno solo se è già stata
       // fatta o se oggi è diventata obbligatoria. Altrimenti gonfierebbe il
       // denominatore ogni giorno per una cosa che è in pari.
-      if (eFatta(h.id, iso)) { attese++; fatte++; }
+      if (fattaIl(h, iso)) { attese++; fatte++; }
       else if (settimanaleObbligatoria(h, iso)) attese++;
       continue;
     }
@@ -100,8 +100,12 @@ export function progressoGiorno(iso = oggiISO()) {
     // faceva sembrare completa una giornata in cui ne avevi presi due.
     const parti = partiDi(h);
     if (parti.length) {
-      attese += parti.length;
-      fatte += parti.filter((p) => parteFatta(h.id, p.id, iso)).length;
+      // Vale UNA, non quante sono le parti: «integratori» è un'abitudine
+      // sola anche se dentro ci sono quattro pastiglie. Contarle a una a una
+      // gonfiava il denominatore e faceva sembrare la giornata piena di cose
+      // da fare quando la cosa da fare era una.
+      attese++;
+      if (parti.every((p) => parteFatta(h.id, p.id, iso))) fatte++;
       continue;
     }
     attese++;
@@ -110,9 +114,23 @@ export function progressoGiorno(iso = oggiISO()) {
   return { attese, fatte, frazione: attese ? fatte / attese : 1 };
 }
 
+/**
+ * È fatta quel giorno?
+ *
+ * UNICO punto in cui si risponde a questa domanda. Un'abitudine con parti
+ * non ha un log proprio — ha quelli delle parti — quindi `eFatta(h.id, d)`
+ * su di lei è sempre falso: serie, costanza e conteggi la davano per saltata
+ * ogni singolo giorno. Tutto il modulo passa di qui.
+ */
+export function fattaIl(h, iso) {
+  const parti = partiDi(h);
+  if (parti.length) return parti.every((p) => parteFatta(h.id, p.id, iso));
+  return eFatta(h.id, iso);
+}
+
 /** Le abitudini ancora da spuntare oggi. */
 export const mancantiOggi = (iso = oggiISO()) =>
-  abitudiniVive().filter((h) => eAttesa(h, iso) && !eFatta(h.id, iso));
+  abitudiniVive().filter((h) => eAttesa(h, iso) && !fattaIl(h, iso));
 
 /**
  * La serie in corso.
@@ -141,11 +159,11 @@ export function serie(h, oggi = oggiISO()) {
   }
 
   let d = oggi, n = 0;
-  if (ePrevista(h, d) && !eFatta(h.id, d)) d = piuGiorni(d, -1);
+  if (ePrevista(h, d) && !fattaIl(h, d)) d = piuGiorni(d, -1);
   for (let i = 0; i < 730; i++) {
     if (h.created && d < isoDi(new Date(h.created))) break;
     if (!ePrevista(h, d)) { d = piuGiorni(d, -1); continue; }
-    if (!eFatta(h.id, d)) break;
+    if (!fattaIl(h, d)) break;
     n++;
     d = piuGiorni(d, -1);
   }
@@ -172,7 +190,7 @@ export function serieMigliore(h, oggi = oggiISO()) {
   let d = partenza, guardia = 0;
   while (d <= oggi && guardia++ < 1500) {
     if (ePrevista(h, d)) {
-      if (eFatta(h.id, d)) migliore = Math.max(migliore, ++corrente);
+      if (fattaIl(h, d)) migliore = Math.max(migliore, ++corrente);
       else corrente = 0;
     }
     d = piuGiorni(d, 1);
@@ -184,7 +202,7 @@ export function serieMigliore(h, oggi = oggiISO()) {
 export function costanza(h, giorni = 30, oggi = oggiISO()) {
   let previsti = 0, fatti = 0, d = oggi;
   for (let i = 0; i < giorni; i++) {
-    if (ePrevista(h, d)) { previsti++; if (eFatta(h.id, d)) fatti++; }
+    if (ePrevista(h, d)) { previsti++; if (fattaIl(h, d)) fatti++; }
     d = piuGiorni(d, -1);
   }
   return previsti ? Math.round((fatti * 100) / previsti) : 0;
@@ -213,23 +231,33 @@ export function etichettaPiano(h) {
 */
 
 export function promemoriaAdesso(iso = oggiISO(), ora = new Date().getHours()) {
-  const fasce = fasciaAdesso(ora);
   const out = [];
   for (const h of abitudiniVive()) {
     if (!ePrevista(h, iso)) continue;
     for (const p of partiDi(h)) {
       const f = p.fascia || "qualsiasi";
-      if (!fasce.includes(f)) continue;
+      const quando = statoFascia(f, ora);
+      // «presto» no: ricordare alle otto del mattino il magnesio della sera
+      // è rumore. «tardi» sì, ed è il caso che conta di più — la prima
+      // versione faceva sparire il promemoria quando la fascia finiva, così
+      // alle due la vitamina dimenticata la mattina non la vedeva più
+      // nessuno. Proprio quella andava ricordata.
+      if (quando === "presto") continue;
       if (parteFatta(h.id, p.id, iso)) continue;
       out.push({
         habitId: h.id, parteId: p.id,
         abitudine: h.name, nome: p.nome,
         emoji: h.emoji, tint: h.tint,
-        fascia: f, nomeFascia: FASCE[f]?.nome || "",
+        fascia: f, nomeFascia: FASCE[f]?.nome || "", quando,
       });
     }
   }
-  return out.sort((a, b) => (FASCE[a.fascia]?.ordine || 9) - (FASCE[b.fascia]?.ordine || 9));
+  // Prima i ritardi, poi quello che tocca adesso; a parità, l'ordine naturale
+  // della giornata.
+  const peso = { tardi: 0, adesso: 1 };
+  return out.sort((a, b) =>
+    (peso[a.quando] - peso[b.quando]) ||
+    ((FASCE[a.fascia]?.ordine || 9) - (FASCE[b.fascia]?.ordine || 9)));
 }
 
 /** Tutte le parti di oggi, spuntate o no. Serve al conteggio della home. */

@@ -86,9 +86,9 @@
   font-weight: 600;
   white-space: nowrap;
 }
-.mo-chip.is-verde   { background: color-mix(in srgb, var(--ok) 18%, transparent);      color: var(--ok); }
-.mo-chip.is-blu     { background: color-mix(in srgb, var(--ciano) 18%, transparent);   color: var(--ciano); }
-.mo-chip.is-arancio { background: color-mix(in srgb, var(--arancio) 18%, transparent); color: var(--arancio); }
+.mo-chip.is-verde   { color: var(--ok);      background: var(--pillola-tinta); }
+.mo-chip.is-blu     { color: var(--ciano);   background: var(--pillola-tinta); }
+.mo-chip.is-arancio { color: var(--arancio); background: var(--pillola-tinta); }
 
 .sess-chip-riga { display: flex; flex-wrap: wrap; gap: 6px; }
 
@@ -340,8 +340,8 @@
   gap: var(--s2);
   padding: var(--s3) var(--s4);
   border-radius: var(--r-interno);
-  background: color-mix(in srgb, var(--arancio) 16%, transparent);
   color: var(--arancio);
+  background: var(--pillola-tinta);
   font-size: var(--t-15);
   font-weight: 600;
   margin-bottom: var(--s4);

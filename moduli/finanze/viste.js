@@ -818,17 +818,57 @@ export function apriMovimento({ movimento = null, ridisegna, tipo = "out" } = {}
     alChiudi: ridisegna,
   });
 
-  const schermo = el("div", { class: "fi-importo cifra" });
+  /*
+     L'IMPORTO SI SCRIVE IN DUE MODI, ed è un `input` vero, non un `div`.
+     Su iPhone il tastierino a schermo è più veloce della tastiera di
+     sistema e non fa saltare la vista; su una tastiera fisica il tastierino
+     è la cosa più lenta possibile — si scrive «46,50» in mezzo secondo e
+     invece bisognava cliccare cinque bottoni.
+
+     `inputmode="decimal"` fa comparire il tastierino numerico di iOS quando
+     il campo prende il fuoco, e `readOnly` su touch impedisce che si apra
+     sopra al nostro. Il tastierino disegnato resta, e i due modi scrivono
+     nella stessa variabile.
+  */
+  const daTastiera = matchMedia("(hover: hover) and (pointer: fine)").matches;
+  const schermo = el("input", {
+    class: "fi-importo cifra",
+    type: "text",
+    inputmode: "decimal",
+    "aria-label": "Importo",
+    placeholder: "0,00",
+    readonly: !daTastiera,
+  });
   const zonaCat = el("div", { class: "campo-gruppo" });
   const zonaSub = el("div", { class: "campo-gruppo" });
   const zonaRif = el("div", { class: "campo-gruppo" });
   const zonaSalva = el("div", {});
 
   const aggiornaImporto = () => {
-    schermo.textContent = testoImporto || "0,00";
+    if (schermo.value !== testoImporto) schermo.value = testoImporto;
     schermo.classList.toggle("vuoto", !testoImporto);
     disegnaSalva();
   };
+
+  // Da tastiera si accettano solo cifre e una virgola sola, e il punto del
+  // tastierino numerico diventa virgola: è la sequenza che le dita fanno da
+  // sole su un numero decimale.
+  schermo.addEventListener("input", () => {
+    const pulito = schermo.value
+      .replace(/\./g, ",")
+      .replace(/[^\d,]/g, "")
+      .replace(/,(?=.*,)/g, "")
+      .replace(/^(\d*,\d{0,2}).*$/, "$1");
+    testoImporto = pulito;
+    schermo.value = pulito;
+    schermo.classList.toggle("vuoto", !pulito);
+    disegnaSalva();
+  });
+  // Invio salva, se c'è abbastanza per salvare: su desktop è il gesto che ci
+  // si aspetta dopo aver digitato una cifra.
+  schermo.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && valido()) { e.preventDefault(); salva(false); }
+  });
 
   const disegnaSub = () => {
     zonaSub.replaceChildren();
@@ -976,8 +1016,10 @@ export function apriMovimento({ movimento = null, ridisegna, tipo = "out" } = {}
       pillole(Object.entries(TIPI).map(([k, t]) => [k, t.nome]), b.tipo, cambiaTipo, { unaRiga: true }),
     ]),
 
-    schermo,
-    tastierino((tasto) => {
+    el("div", { class: "fi-importo-riga" }, [schermo]),
+    // Il tastierino resta, ma da scrivania si fa da parte: è più lento della
+    // tastiera che hai già sotto le dita.
+    !daTastiera && tastierino((tasto) => {
       if (tasto === "←") testoImporto = testoImporto.slice(0, -1);
       else if (tasto === ",") { if (!testoImporto.includes(",")) testoImporto += testoImporto ? "," : "0,"; }
       else {

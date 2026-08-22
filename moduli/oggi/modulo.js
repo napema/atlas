@@ -1,18 +1,33 @@
 // moduli/oggi — la home.
 //
-// Non è un cruscotto. È quello che ti direbbe qualcuno che ha già guardato
-// i numeri al posto tuo: una frase che riassume la giornata, la cosa da fare
-// adesso, e sotto i tre numeri per chi vuole controllare.
+// NON È UN CRUSCOTTO, ed è la terza volta che viene rifatta per non esserlo.
 //
-// La differenza pratica: un cruscotto ti dà sei dati e ti lascia il lavoro
-// di capire quale conta. Qui il lavoro è già fatto — la frase in cima dice
-// se puoi stare tranquillo, e se non puoi dice esattamente cosa manca.
+// Le due versioni precedenti mettevano in fila i moduli e lasciavano a chi
+// guarda il lavoro di capire cosa volessero dire. «Ti mancano finanze,
+// mobilità e abitudini» è il punto più basso: tre nomi di schermate messi in
+// un elenco non dicono niente su come sta andando la giornata, e non
+// suggeriscono niente da fare.
 //
-// Non ha dati propri: interroga gli altri moduli con `oggi()`.
+// La domanda a cui questa schermata deve rispondere, in tre secondi, è una
+// sola: SONO IN CARREGGIATA O NO. E se non lo sono, qual è la prima cosa da
+// fare adesso.
+//
+// Da qui la gerarchia, che è di quattro livelli e non di più:
+//
+//   1. IL VERDETTO   una frase sola. Grande. Dice come sta andando.
+//   2. ADESSO        le cose che si spuntano in un tocco, senza cambiare
+//                    schermata. Solo quelle che scadono ora.
+//   3. LA PROSSIMA   una cosa da fare, quella che conta di più, con il posto
+//                    dove farla.
+//   4. IL FONDO      i tre moduli a colpo d'occhio e la costanza. Si guarda
+//                    solo se si vuole.
+//
+// Niente di quello che sta sotto il primo livello ha il diritto di essere
+// letto per capire se la giornata è a posto.
 
 import { MODULI_DATI, prendiModulo } from "../../core/registro.js";
 import {
-  el, aggiungi, plurale, euroGrande, tessera, gettone, tocco,
+  el, aggiungi, plurale, euroGrande, euro, tessera, tocco,
   GIORNI_INIZIALI, dataUmana, oggiISO,
 } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
@@ -28,6 +43,7 @@ const staccatori = [];
 // l'ultimo disegno partito ha il diritto di scrivere.
 let gettoneDisegno = 0;
 
+const NOME = "Ema";
 const SALUTI = [[5, "buonanotte"], [13, "buongiorno"], [18, "buon pomeriggio"], [22, "buonasera"], [24, "buonanotte"]];
 const saluto = () => SALUTI.find(([h]) => new Date().getHours() < h)?.[1] || "ciao";
 
@@ -49,105 +65,222 @@ async function disegna() {
   if (mio !== gettoneDisegno || !contenitore) return;
 
   const schede = esiti.filter((e) => e.status === "fulfilled").map((e) => e.value);
-  const conDati = schede.filter((s) => s.dati);
-  const daFare = conDati.filter((s) => s.dati.urgente || s.dati.fatto === false);
-  const fatti = conDati.filter((s) => s.dati.fatto === true);
-
-  // Una cosa da fare alla volta, e la più urgente. Prima la carta larga
-  // mostrava TUTTE le cose da fare e sotto la griglia le rimostrava una per
-  // una: la stessa frase due volte nella stessa schermata, che è il modo più
-  // veloce per far smettere di leggere.
-  const principale = daFare
-    .slice()
-    .sort((a, b) => Number(Boolean(b.dati.urgente)) - Number(Boolean(a.dati.urgente)))[0] || null;
-  // I tre riquadri ci sono sempre, anche vuoti: quello promosso a carta
-  // larga esce dalla griglia, gli altri restano. Una home che cambia forma
-  // ogni giorno non si impara a leggere con la coda dell'occhio.
-  const resto = schede.filter((s) => s !== principale);
+  const q = quadro(schede);
 
   contenitore.replaceChildren();
-
   aggiungi(contenitore, [
     saluto_(),
-    briefing(conDati, daFare, fatti),
-    // I promemoria stanno SOPRA la carta: sono cose che scadono adesso e si
-    // spuntano in un tocco, mentre la carta è un posto dove andare.
-    cartaPromemoria(conDati, () => { disegna(); }),
-    principale && cartaDaFare(principale.mod, principale.dati),
-    resto.length > 0 && el("div", { class: "griglia-tessere" }, resto.map((s) => tesseraModulo(s.mod, s.dati))),
+    verdetto(q),
+    adesso(q, () => disegna()),
+    prossima(q),
+    // Il modulo promosso a carta esce dalla griglia: mostrarlo due volte
+    // nella stessa schermata, con le stesse parole, è il difetto che
+    // rendeva la home un elenco.
+    el("div", { class: "griglia-tessere og-glance" },
+      schede.filter((s) => s !== q.principale).map((s) => tesseraModulo(s.mod, s.dati))),
     strisciaSettimana(),
   ]);
 }
 
-/** Il saluto. Minuscolo e grande: è una persona che parla, non un'insegna. */
+/**
+ * Tutto quello che serve a decidere cosa dire, calcolato una volta sola.
+ *
+ * Sta qui e non sparso nelle funzioni di disegno perché il verdetto e la
+ * carta della prossima cosa devono per forza essere d'accordo fra loro: se
+ * il titolo dice «tutto a posto» e sotto c'è una carta rossa, la schermata
+ * ha appena perso la fiducia di chi la legge.
+ */
+function quadro(schede) {
+  const conDati = schede.filter((s) => s.dati);
+  const daFare = conDati.filter((s) => s.dati.fatto === false || s.dati.urgente);
+  const fatti = conDati.filter((s) => s.dati.fatto === true);
+
+  // I promemoria delle parti — integratori e simili — sono la cosa più
+  // azionabile che la home abbia: si spuntano senza cambiare schermata.
+  const promemoria = [];
+  for (const s of conDati) for (const p of s.dati.promemoria || []) promemoria.push({ ...p, mod: s.mod });
+  const inRitardo = promemoria.filter((p) => p.quando === "tardi");
+
+  // La cosa più urgente: prima chi ha un allarme vero, poi chi è urgente,
+  // poi chi è semplicemente da fare.
+  const ordinate = daFare.slice().sort((a, b) =>
+    (b.dati.allarme ? 2 : 0) + (b.dati.urgente ? 1 : 0) -
+    ((a.dati.allarme ? 2 : 0) + (a.dati.urgente ? 1 : 0)));
+
+  return {
+    schede, conDati, daFare, fatti, promemoria, inRitardo,
+    principale: ordinate[0] || null,
+    allarme: conDati.map((s) => s.dati.allarme).find(Boolean) || null,
+    serie: Math.max(0, ...conDati.map((s) => s.dati.serie || 0)),
+    ora: new Date().getHours(),
+  };
+}
+
+/* --------------------------------------------------------- 0. il saluto -- */
+
 function saluto_() {
   return el("header", { class: "og-saluto-blocco" }, [
     el("h1", { class: "og-saluto" }, [
-      el("span", { testo: saluto() }),
+      // Il minuscolo vale per il saluto, non per il nome: `text-transform`
+      // sull'intera riga trasformava «Ema» in «ema».
+      el("span", { class: "og-saluto-parola", testo: `${saluto()}, ` }),
+      el("span", { testo: NOME }),
       el("span", { class: "og-punto", testo: "." }),
     ]),
-    el("p", { class: "og-data" }, [
-      el("span", { class: "sync-pallino", "data-ruolo": "sync" }),
-      el("span", { testo: dataLunga() }),
-    ]),
+    el("p", { class: "og-data", testo: dataLunga() }),
   ]);
 }
 
-/**
- * La frase che riassume la giornata.
- *
- * È la parte che fa la differenza fra un cruscotto e un'assistente: invece
- * di tre numeri messi in fila, una riga che dice cosa vuol dire averli.
- */
-function briefing(conDati, daFare, fatti) {
-  const f = fattiDelGiorno();
-  let frase;
+/* ------------------------------------------------------- 1. IL VERDETTO -- */
+/*
+   Una frase sola, e deve bastare. È l'unica cosa della schermata che si
+   legge sempre, quindi è l'unica che ha il diritto di essere grande.
+
+   Le regole, in ordine — vince la prima che si applica:
+
+     · c'è un allarme vero (le Spese fisse non coprono un addebito) → quello,
+       perché è l'unica cosa che può costare soldi oggi;
+     · sei in ritardo su qualcosa che andava fatto in una fascia già passata;
+     · non hai ancora finito, e si sta facendo tardi;
+     · non hai ancora finito, ma c'è tempo;
+     · hai finito tutto.
+
+   Il tono non colpevolizza mai. «Ti mancano due cose» è un fatto, «non hai
+   fatto niente» è un giudizio, e un'app che giudica si smette di aprirla.
+*/
+
+function verdetto(q) {
+  const { daFare, fatti, conDati, inRitardo, allarme, ora, serie } = q;
+  let titolo;
+  let sotto = "";
   let tono = "";
 
   if (!conDati.length) {
-    frase = "Non c'è ancora niente da segnalare. Buona giornata.";
+    titolo = "Non c'è ancora niente da guardare.";
+    sotto = "I moduli iniziano a parlare appena ci metti dentro qualcosa.";
+  } else if (allarme) {
+    titolo = "Serve la tua attenzione.";
+    sotto = allarme;
+    tono = "male";
+  } else if (inRitardo.length) {
+    const nomi = elencoNomi(inRitardo.map((p) => p.nome.toLowerCase()));
+    titolo = inRitardo.length === 1 ? `Ti è sfuggito ${nomi}.` : `Ti sono sfuggiti ${nomi}.`;
+    sotto = "Se lo prendi adesso la giornata resta intera.";
+    tono = "avviso";
   } else if (!daFare.length) {
-    frase = fatti.length
-      ? `Tutto chiuso per oggi — ${plurale(fatti.length, "cosa fatta", "cose fatte")}. Puoi staccare.`
-      : "Niente di urgente in programma.";
-    tono = "sereno";
+    titolo = "Sei a posto per oggi.";
+    sotto = fatti.length
+      ? `${plurale(fatti.length, "cosa chiusa", "cose chiuse")}${serie > 1 ? ` · ${plurale(serie, "giorno", "giorni")} di fila` : ""}. Puoi staccare.`
+      : "Niente in scadenza.";
+    tono = "ok";
+  } else if (ora >= 21) {
+    titolo = `Manca poco alla fine della giornata.`;
+    sotto = `${cosaManca(daFare)} — dieci minuti e chiudi.`;
+    tono = "avviso";
   } else {
-    const nomi = daFare.map((s) => (s.dati.titolo || s.mod.nome).toLowerCase());
-    const elenco = nomi.length === 1 ? nomi[0]
-      : `${nomi.slice(0, -1).join(", ")} e ${nomi[nomi.length - 1]}`;
-    const ora = new Date().getHours();
-    // Il verbo concorda in tutti e due i rami: quello serale diceva "Ti manca
-    // mobilità e abitudini".
-    const verbo = nomi.length === 1 ? "manca" : "mancano";
-    frase = ora >= 21
-      ? `Ti ${verbo} ${elenco}. Si sta facendo tardi.`
-      : `Ti ${verbo} ${elenco}.`;
-    tono = ora >= 21 ? "sveglia" : "";
+    titolo = "Sei in carreggiata.";
+    sotto = `${cosaManca(daFare)}, e hai tutto il tempo.`;
   }
 
-  // Sotto la frase, i pochi numeri del giorno presi dalla lavagna: vengono
-  // da lì e non dai moduli perché la lavagna è l'unico posto dove si legge
-  // "cosa è successo oggi" senza sapere quali moduli esistono.
-  const numeri = [];
-  if (f.mobilita?.["durata-min"] != null) numeri.push([`${f.mobilita["durata-min"]}′`, "di mobilità"]);
-  if (f.abitudini?.attese != null) numeri.push([`${f.abitudini.spuntate ?? 0}/${f.abitudini.attese}`, "abitudini"]);
-  if (f.finanze?.speso != null) numeri.push([euroGrande(f.finanze.speso, { centesimi: false }), "spesi"]);
-
-  return el("section", { class: `og-briefing ${tono}`.trim() }, [
-    el("p", { class: "og-frase", testo: frase }),
-    numeri.length > 0 && el("div", { class: "og-numeri" }, numeri.map(([v, e]) => el("div", { class: "og-numero" }, [
-      el("span", { class: "cifra og-numero-cifra", html: v }),
-      el("span", { class: "nota-2", testo: e }),
-    ]))),
+  return el("section", { class: `og-verdetto ${tono}`.trim() }, [
+    el("h2", { class: "og-verdetto-titolo", testo: titolo }),
+    sotto && el("p", { class: "og-verdetto-sotto", testo: sotto }),
+    // La riga della serie è l'unica concessione motivazionale, e compare
+    // solo quando c'è davvero qualcosa da difendere. Sotto i tre giorni non
+    // è una serie, è un caso.
+    serie >= 3 && el("p", { class: "og-serie", testo: fraseSerie(serie, daFare.length === 0) }),
   ]);
 }
 
+const elencoNomi = (n) => n.length === 1 ? n[0]
+  : `${n.slice(0, -1).join(", ")} e ${n[n.length - 1]}`;
+
+/** Cosa manca, detto in cose e non in nomi di schermate. */
+function cosaManca(daFare) {
+  const pezzi = daFare.map((s) => s.dati.mancaTesto || (s.dati.titolo || s.mod.nome).toLowerCase());
+  return `Ti ${pezzi.length === 1 ? "manca" : "mancano"} ${elencoNomi(pezzi)}`;
+}
+
 /**
- * La carta di una cosa da fare: larga, con l'invito esplicito.
- * È l'unico elemento della home su cui si tocca per AGIRE invece che per
- * andare a guardare, e per questo è l'unico con un pulsante dentro.
+ * La frase sulla serie.
+ *
+ * Cambia con la lunghezza perché una formula ripetuta identica ogni giorno
+ * smette di significare qualcosa dopo tre giorni: è il difetto di tutte le
+ * app che gamificano con una stringa sola.
  */
-function cartaDaFare(mod, dati) {
+function fraseSerie(n, chiusa) {
+  if (chiusa) return `${n} giorni di fila. Continua così.`;
+  if (n >= 30) return `${n} giorni di fila. Non è più una prova, è come vivi.`;
+  if (n >= 14) return `${n} giorni di fila. Sarebbe un peccato spezzarla stasera.`;
+  if (n >= 7) return `${n} giorni di fila: una settimana piena. Tienila.`;
+  return `${n} giorni di fila. Non mollare adesso.`;
+}
+
+/* ---------------------------------------------------------- 2. ADESSO --- */
+/*
+   Le cose che si spuntano da qui, senza cambiare schermata. È l'unica parte
+   della home su cui si TOCCA per fare, non per andare.
+
+   Compare solo se c'è qualcosa, e sparisce appena è vuota: non è un dato, è
+   una sveglia, e una sveglia che suona a vuoto si impara a ignorare.
+*/
+
+function adesso(q, ridisegna) {
+  if (!q.promemoria.length) return null;
+
+  // Il ritardo si dice una volta sola, in cima, e non su ogni riga: ripetuto
+  // quattro volte diventa un colore, non un'informazione.
+  const gruppi = [
+    ["In ritardo", q.promemoria.filter((p) => p.quando === "tardi"), true],
+    ["Adesso", q.promemoria.filter((p) => p.quando !== "tardi"), false],
+  ].filter(([, v]) => v.length);
+
+  return el("section", { class: "og-adesso" }, gruppi.map(([nome, voci, tardi]) =>
+    el("div", { class: "og-adesso-gruppo" + (tardi ? " tardi" : "") }, [
+      el("div", { class: "og-adesso-testa" }, [
+        el("span", { class: `micro ${tardi ? "avviso" : ""}`.trim(), testo: nome }),
+        el("span", { class: "og-adesso-conta", testo: String(voci.length) }),
+      ]),
+      el("ul", { class: "og-adesso-lista" }, voci.map((v) => {
+        const b = el("button", {
+          class: "og-adesso-voce", type: "button",
+          "aria-label": `Segna ${v.nome}`,
+          onClick: async () => {
+            const mod = await prendiModulo(v.mod.id);
+            mod?.spuntaParte?.(v.habitId, v.parteId);
+            tocco(12);
+            ridisegna();
+          },
+        }, [
+          el("span", { class: "og-adesso-cerchio", html: icona("spunta", 13, 3) }),
+          el("span", { class: "og-adesso-nome", testo: v.nome }),
+          el("span", { class: "og-adesso-quando", testo: v.nomeFascia }),
+        ]);
+        b.style.setProperty("--tinta", tintaDi(v.tint));
+        return el("li", {}, [b]);
+      })),
+    ])));
+}
+
+// Le tinte delle abitudini hanno nomi inglesi nei dati di partenza. La
+// tabella sta qui perché la home non importa Abitudini: legge `oggi()`.
+const TINTA_CSS = {
+  blue: "blu", green: "verde", red: "rosso", orange: "arancio", purple: "viola",
+  pink: "rosa", yellow: "giallo", mint: "menta", indigo: "indaco",
+};
+const tintaDi = (t) => `var(--${TINTA_CSS[t] || "blu"})`;
+
+/* ------------------------------------------------------ 3. LA PROSSIMA -- */
+/*
+   Una cosa da fare, non tre. Se ce ne sono tre, le altre due stanno nelle
+   tessere in fondo: mostrarle tutte e tre con lo stesso peso è quello che
+   rendeva la schermata un elenco.
+*/
+
+function prossima(q) {
+  if (!q.principale) return null;
+  const { mod, dati } = q.principale;
+
   const c = el("a", { class: "og-carta", href: dati.azione?.rotta || `#/${mod.id}` }, [
     el("div", { class: "og-carta-testa" }, [
       el("span", { class: "og-carta-icona", html: icona(mod.icona, 18) }),
@@ -164,13 +297,8 @@ function cartaDaFare(mod, dati) {
   return c;
 }
 
-/**
- * La tessera compatta di un modulo, nella griglia in basso.
- *
- * Regge i tre stati che la home deve saper distinguere: il modulo che non
- * c'è ancora (niente `oggi()`), quello che c'è e oggi non ha niente da dire
- * (`oggi()` torna null), e quello che ha un numero.
- */
+/* ---------------------------------------------------------- 4. IL FONDO - */
+
 function tesseraModulo(mod, dati) {
   if (!dati) {
     const inMigrazione = typeof mod.oggi !== "function";
@@ -183,7 +311,7 @@ function tesseraModulo(mod, dati) {
       coda: inMigrazione ? "non ancora dentro ATLAS" : "niente da segnalare oggi",
       frazione: inMigrazione ? 0 : 1,
       tinta: inMigrazione ? "var(--testo-4)" : mod.accento,
-      azione: inMigrazione ? null : () => { location.hash = `#/`; },
+      azione: inMigrazione ? null : () => { location.hash = `#/${mod.id}`; },
     });
   }
 
@@ -194,19 +322,15 @@ function tesseraModulo(mod, dati) {
     tonoMicro: dati.fatto === true ? "ok" : dati.fatto === false ? "avviso" : "",
     cifra: String(dati.valore ?? "—"),
     coda: dati.dettaglio,
-    // Niente riempimento finto: se il modulo non sa dire a che punto sei, la
-    // barra resta vuota. Un 8% messo lì per "far vedere qualcosa" è un dato
-    // inventato, e su una barra non si distingue da uno vero.
     frazione: typeof dati.avanzamento === "number" ? dati.avanzamento : (dati.fatto === true ? 1 : 0),
     tinta: mod.accento,
-    azione: () => { location.hash = dati.azione?.rotta || `#/`; },
+    azione: () => { location.hash = dati.azione?.rotta || `#/${mod.id}`; },
   });
 }
 
 /**
  * Gli ultimi sette giorni. Non dice COSA hai fatto — per quello ci sono i
- * moduli — dice se ci sei stato, che è la domanda a cui un tracker deve
- * rispondere per prima.
+ * moduli — dice se ci sei stato.
  */
 function strisciaSettimana() {
   const giorni = ultimiGiorni(7).reverse();
@@ -217,8 +341,6 @@ function strisciaSettimana() {
     el("div", { class: "og-settimana-testa" }, [
       el("div", {}, [
         el("span", { class: "micro", testo: "Costanza" }),
-        // «Ultimi sette giorni · 2 su 7» non diceva 2 su 7 DI COSA. Sette
-        // barrette senza legenda si guardano e si lasciano perdere.
         el("p", { class: "nota og-settimana-nota", testo: attivi === 0
           ? "Negli ultimi sette giorni non hai segnato niente."
           : `Hai segnato qualcosa in ${plurale(attivi, "giorno", "giorni")} su 7.` }),
@@ -257,83 +379,4 @@ export default {
     while (staccatori.length) staccatori.pop()();
     contenitore = null;
   },
-
 };
-
-/* ------------------------------------------------------- i promemoria ---
-   Le cose piccole che scadono ADESSO, non oggi.
-
-   Nasce dagli integratori: quattro pastiglie in tre momenti diversi della
-   giornata. «Ti mancano 4 integratori» alle dieci di sera è inutile — tre
-   di quelle quattro erano da prendere stamattina e ormai è andata. Quello
-   che serve è «prendi il magnesio», e solo quello.
-
-   La card compare solo se c'è qualcosa da prendere adesso, e sparisce
-   appena è spuntato: è l'unico elemento della home che ha il permesso di
-   apparire e sparire, perché non è un dato, è una sveglia.
-*/
-
-function cartaPromemoria(schede, ridisegna) {
-  const voci = [];
-  for (const s of schede) {
-    for (const p of s.dati?.promemoria || []) voci.push({ ...p, mod: s.mod });
-  }
-  if (!voci.length) return null;
-
-  // Le fasce si nominano una volta sola anche quando ne contengono tre: la
-  // riga «Sera» sopra tre pastiglie si legge, ripetuta tre volte no.
-  const perFascia = new Map();
-  for (const v of voci) {
-    if (!perFascia.has(v.nomeFascia)) perFascia.set(v.nomeFascia, []);
-    perFascia.get(v.nomeFascia).push(v);
-  }
-
-  const c = el("section", { class: "og-promemoria" }, [
-    el("div", { class: "og-prom-testa" }, [
-      el("span", { class: "og-prom-icona", html: icona("campanella", 16) }),
-      el("span", { class: "micro", testo: voci.length === 1 ? "Adesso" : `Adesso · ${voci.length}` }),
-    ]),
-
-    ...[...perFascia].map(([fascia, elenco]) => el("div", { class: "og-prom-gruppo" }, [
-      el("div", { class: "og-prom-fascia", testo: fascia }),
-      el("ul", { class: "og-prom-lista" }, elenco.map((v) => {
-        const b = el("button", {
-          class: "og-prom-voce", type: "button",
-          "aria-label": `Segna ${v.nome}`,
-          onClick: () => {
-            alternaParteDiAbitudine(v.habitId, v.parteId);
-            tocco(12);
-            ridisegna();
-          },
-        }, [
-          el("span", { class: "og-prom-cerchio", html: icona("spunta", 13, 3) }),
-          el("span", { class: "og-prom-nome", testo: v.nome }),
-          el("span", { class: "og-prom-da", testo: v.abitudine }),
-        ]);
-        b.style.setProperty("--tinta", v.tint ? `var(--${TINTA_CSS[v.tint] || "blu"})` : "var(--accento)");
-        return el("li", {}, [b]);
-      })),
-    ])),
-  ]);
-  return c;
-}
-
-// Le tinte delle abitudini hanno nomi inglesi nei dati di partenza. La
-// tabella sta qui e non in Abitudini perché la home non importa i moduli:
-// legge `oggi()` e nient'altro.
-const TINTA_CSS = {
-  blue: "blu", green: "verde", red: "rosso", orange: "arancio", purple: "viola",
-  pink: "rosa", yellow: "giallo", mint: "menta", indigo: "indaco",
-};
-
-/**
- * Spuntare una parte dalla home.
- *
- * È l'unico punto in cui la home SCRIVE in un modulo, e passa comunque dal
- * registro invece che da un import: `moduli/oggi` non conosce Abitudini, e
- * saldarli renderebbe impossibile caricarli pigramente.
- */
-async function alternaParteDiAbitudine(habitId, parteId) {
-  const mod = await prendiModulo("abitudini");
-  mod?.spuntaParte?.(habitId, parteId);
-}
