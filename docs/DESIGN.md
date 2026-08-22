@@ -109,23 +109,23 @@ Stanno in `styles/base.css` e si costruiscono con le funzioni di `core/ui.js`.
 | `.cifra-xl/l/m/s` | — | la scala delle cifre |
 | `.val` `.cts` | `euroGrande(cent)` | l'euro piccolo e i centesimi piccoli attorno alla cifra grande |
 | `.micro` | — | l'etichetta maiuscoletta sopra un numero, con `.ok/.avviso/.male` |
-| `.azione-tonda` | `azionePrincipale()` | il tondo bianco fisso in basso a destra |
 
-### Il tasto tondo
+### Le azioni stanno dove le cerchi, non in un tondo
 
-Ogni modulo dichiara la sua azione con `azionePrincipale()`:
+Per un giro le tre azioni principali — nuova spesa, inizia sessione, nuova
+abitudine — sono finite in un unico pulsante tondo fisso in basso a destra.
+È stato un errore, ed è stato rimosso.
 
-```js
-azionePrincipale: () => ({ icona: "piu", etichetta: "Nuovo movimento", fai: () => … }),
-```
+Il motivo: un tondo solo non può rappresentare due gesti diversi. In Finanze
+«uscita» la registri dieci volte a settimana e «entrata» due volte al mese;
+metterle dietro lo stesso simbolo, per giunta senza dire quale delle due
+parte, costa un tocco e un dubbio ogni volta. E in Mobilità il tondo
+duplicava il tasto «Inizia» che stava già a mezzo schermo di distanza.
 
-Registrare una spesa, iniziare la sessione, aggiungere un'abitudine: sono le
-tre cose per cui apri l'app, e stanno tutte sotto lo stesso pollice. **Un
-modulo senza un'azione ovvia restituisce `null`** e il tondo non compare — un
-pulsante generico che non sai cosa fa è peggio di nessun pulsante.
-
-Da quando c'è, il «+» nell'intestazione è sparito da Finanze e Abitudini: era
-lo stesso gesto in cima allo schermo, dove il pollice non arriva.
+Quindi: **Finanze ha i suoi tre tasti** (Uscita · Entrata · ⋯) sotto il
+navigatore del mese, come nell'app di partenza; **Abitudini ha il «+»**
+nell'intestazione; **Mobilità ha «Inizia»** dentro la scheda della sessione.
+Ogni azione sta accanto alla cosa su cui agisce.
 
 ---
 

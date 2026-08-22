@@ -113,9 +113,12 @@ function briefing(conDati, daFare, fatti) {
     const elenco = nomi.length === 1 ? nomi[0]
       : `${nomi.slice(0, -1).join(", ")} e ${nomi[nomi.length - 1]}`;
     const ora = new Date().getHours();
+    // Il verbo concorda in tutti e due i rami: quello serale diceva "Ti manca
+    // mobilità e abitudini".
+    const verbo = nomi.length === 1 ? "manca" : "mancano";
     frase = ora >= 21
-      ? `Ti manca ${elenco}. Si sta facendo tardi.`
-      : `Ti ${nomi.length === 1 ? "manca" : "mancano"} ${elenco}.`;
+      ? `Ti ${verbo} ${elenco}. Si sta facendo tardi.`
+      : `Ti ${verbo} ${elenco}.`;
     tono = ora >= 21 ? "sveglia" : "";
   }
 
@@ -209,8 +212,15 @@ function strisciaSettimana() {
 
   return el("section", { class: "scheda og-settimana" }, [
     el("div", { class: "og-settimana-testa" }, [
-      el("span", { class: "micro", testo: "Ultimi sette giorni" }),
-      el("span", { class: "nota num", testo: `${attivi} su 7` }),
+      el("div", {}, [
+        el("span", { class: "micro", testo: "Costanza" }),
+        // «Ultimi sette giorni · 2 su 7» non diceva 2 su 7 DI COSA. Sette
+        // barrette senza legenda si guardano e si lasciano perdere.
+        el("p", { class: "nota og-settimana-nota", testo: attivi === 0
+          ? "Negli ultimi sette giorni non hai segnato niente."
+          : `Hai segnato qualcosa in ${plurale(attivi, "giorno", "giorni")} su 7.` }),
+      ]),
+      el("span", { class: "cifra cifra-s", testo: `${attivi}/7` }),
     ]),
     el("div", { class: "og-sett-riga" }, giorni.map(({ giorno, fatti }) => {
       const quanti = Object.values(fatti).reduce((n, m) => n + Object.keys(m).length, 0);
@@ -245,7 +255,4 @@ export default {
     contenitore = null;
   },
 
-  // Nessun tasto tondo: dalla home l'azione dipende da cosa manca, e ce
-  // l'hanno già le carte. Un pulsante generico qui non saprebbe cosa fare.
-  azionePrincipale: () => null,
 };

@@ -15,3 +15,7 @@ old_finance_tracker_to_consider/
 # La configurazione del server di anteprima locale: dipende da cosa ha
 # installato la macchina su cui si sviluppa, non dal progetto.
 .claude/
+
+# La copia di riferimento di mobility-blueprint, caricata per rifare il porting
+# fedelmente. Come old_finance_tracker_to_consider: si legge, non si pubblica.
+mobility_to_consider/

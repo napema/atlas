@@ -236,7 +236,7 @@ export function vistaMovimenti(mese, filtro, cambia, apriDett) {
   ]);
 
   if (!ms.length) {
-    fuori.append(vuoto("Nessun movimento", "Con il + in alto ne registri uno."));
+    fuori.append(vuoto("Nessun movimento", "Con Uscita, Entrata o ⋯ qui sopra ne registri uno."));
     return fuori;
   }
 
@@ -246,18 +246,25 @@ export function vistaMovimenti(mese, filtro, cambia, apriDett) {
     perGiorno.get(m.data).push(m);
   }
 
+  // Ogni giorno è un blocco chiuso — intestazione più righe. Serve perché da
+  // scrivania l'elenco va su due colonne, e con intestazione e righe come
+  // fratelli sciolti il taglio della colonna capitava in mezzo a un giorno.
+  const colonne = el("div", { class: "fi-mov-colonne" });
   for (const [data, movs] of perGiorno) {
     // Il totale del giorno è il NETTO: entrate meno uscite ordinarie. Gli
     // straordinari non ci sono dentro, per lo stesso motivo per cui stanno
     // fuori dal budget.
     const netto = movs.reduce((s, m) =>
       s + (m.tipo === "in" ? m.imp : (m.tipo === "out" && !m.ecc) ? -importoEffettivo(m) : 0), 0);
-    fuori.append(el("div", { class: "fi-giorno-testa" }, [
-      el("span", { testo: dataUmana(data) }),
-      netto !== 0 && el("span", { class: `num ${netto < 0 ? "" : "positivo"}`, testo: euro(netto, { segno: true }) }),
+    colonne.append(el("div", { class: "fi-giorno-blocco" }, [
+      el("div", { class: "fi-giorno-testa" }, [
+        el("span", { testo: dataUmana(data) }),
+        netto !== 0 && el("span", { class: `num ${netto < 0 ? "" : "positivo"}`, testo: euro(netto, { segno: true }) }),
+      ]),
+      lista(movs.map((m) => rigaMovimento(m, apriDett))),
     ]));
-    fuori.append(lista(movs.map((m) => rigaMovimento(m, apriDett))));
   }
+  fuori.append(colonne);
   return fuori;
 }
 

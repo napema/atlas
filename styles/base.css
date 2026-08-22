@@ -126,6 +126,7 @@ b, strong { font-weight: 600; }
 .testa-testo { min-width: 0; }
 .testa h1 { font-size: var(--t-34); }
 .testa .micro { margin-bottom: var(--s2); }
+.testa-occhiello { display: flex; align-items: center; gap: 7px; }
 .testa-azioni { display: flex; gap: var(--s1); flex: none; }
 
 /* ============================================================ barra tab == */
@@ -167,27 +168,6 @@ b, strong { font-weight: 600; }
 .tab svg { width: 24px; height: 24px; display: block; }
 .tab[aria-current="page"] { color: var(--accento); }
 .tab:active { transform: scale(0.92); }
-
-/* Il tasto tondo. Non è una scheda della barra: è L'AZIONE, e per questo è
-   l'unica cosa bianca piena di tutta l'interfaccia. */
-.azione-tonda {
-  position: fixed;
-  right: calc(env(safe-area-inset-right) + var(--s4));
-  bottom: calc(env(safe-area-inset-bottom) + 92px);
-  z-index: 61;
-  width: 56px; height: 56px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: var(--testo);
-  color: var(--fondo);
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  transition: transform var(--veloce) var(--molla);
-}
-.azione-tonda:active { transform: scale(0.9); }
-.azione-tonda svg { width: 26px; height: 26px; }
 
 /* ================================================================ schede == */
 
@@ -698,18 +678,21 @@ hr { border: 0; height: 1px; background: var(--filo); margin: var(--s4) 0; }
     font-size: var(--t-15);
     font-weight: 500;
   }
-  .tab svg { width: 21px; height: 21px; }
+  /* Il glifo non si stringe mai, l'etichetta sì: senza questi due, con la
+     colonna stretta il testo scavalcava l'icona. */
+  .tab svg { width: 21px; height: 21px; flex: none; }
+  .tab > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tab:hover { background: var(--scheda); }
   .tab[aria-current="page"] { background: var(--scheda); color: var(--testo); font-weight: 600; }
   .tab[aria-current="page"] svg { color: var(--accento); }
 
   #vista { max-width: 860px; padding: var(--s10) var(--s8) var(--s16); }
   .testa h1 { font-size: var(--t-48); }
+  .testa { margin-bottom: var(--s6); }
 
   /* Il centro dell'area dei contenuti, non della finestra. */
   #avvisi { left: calc(50% + 122px); bottom: var(--s8); max-width: calc(100vw - 244px - var(--s8)); }
 
-  .griglia-tessere { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
   .foglio {
     top: 50%; left: calc(50% + 122px); right: auto; bottom: auto;
@@ -729,3 +712,25 @@ hr { border: 0; height: 1px; background: var(--filo); margin: var(--s4) 0; }
 
 #barra .marchio { display: none; }
 @media (min-width: 900px) { #barra .marchio { display: block; } }
+
+/* ------------------------------------------------------- schermi larghi --
+   Da 1120px in su la colonna si allarga davvero. Restava a 860px su uno
+   schermo da 1920: due terzi di nero a destra e il contenuto impaginato
+   come su un telefono, che è esattamente il difetto che una versione da
+   scrivania dovrebbe togliere.
+
+   Le liste però NON si allargano con lei: una riga di testo lunga 1100px
+   non si legge, si insegue. Sopra i 900px di riga il testo va spezzato in
+   colonne o fermato, mai steso. */
+@media (min-width: 1120px) {
+  #vista { max-width: 1180px; }
+
+  /* Le griglie si riempiono da sole: più larghezza, più colonne. */
+  .griglia-tessere { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }
+  .riquadri { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }
+
+  /* Una lista sola resta larga quanto si legge, e non stirata al contenitore. */
+  .lista, .gruppo-titolo { max-width: 760px; }
+
+  #avvisi { max-width: calc(100vw - 244px - var(--s16)); }
+}

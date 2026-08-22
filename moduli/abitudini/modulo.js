@@ -26,7 +26,11 @@ function disegna() {
   contenitore.replaceChildren();
 
   aggiungi(contenitore, [
-    intestazione("Abitudini", etichettaGiorno()),
+    intestazione("Abitudini", etichettaGiorno(), el("button", {
+      class: "btn-icona", type: "button", "aria-label": "Nuova abitudine",
+      html: icona("piu", 26),
+      onClick: () => apriModifica(null, disegna),
+    })),
     strisciaSettimana(giornoScelto, (g) => { giornoScelto = g; disegna(); }),
     riepilogo(giornoScelto),
     elenco(giornoScelto, disegna),
@@ -153,13 +157,6 @@ export default {
     while (staccatori.length) staccatori.pop()();
     contenitore = null;
   },
-
-  /** Il tasto tondo: aggiungere un'abitudine. */
-  azionePrincipale: () => ({
-    icona: "piu",
-    etichetta: "Nuova abitudine",
-    fai: () => apriModifica(null, disegna),
-  }),
 
   /** La sezione "Abitudini" di Impostazioni: elenco, archiviate, settimana. */
   impostazioni() {

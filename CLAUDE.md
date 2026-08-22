@@ -83,7 +83,7 @@ export default {
   smonta() {},                              // stacca ascoltatori, ferma timer
   oggi() { return null; },                  // la scheda per la home
   impostazioni() { return null; },          // la propria sezione in #/impostazioni
-  azionePrincipale() { return null; },      // il tasto tondo in basso a destra
+
   avviaSync() {},                           // apre il proprio canale
 };
 ```

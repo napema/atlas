@@ -41,28 +41,6 @@ function evidenziaBarra({ id }) {
   }
 }
 
-/**
- * Il tasto tondo: una sola azione, quella del modulo che stai guardando.
- *
- * Non è una scorciatoia in più — è L'azione. Registrare una spesa, iniziare
- * la sessione, aggiungere un'abitudine: sono le tre cose per cui apri l'app,
- * e devono stare tutte sotto lo stesso pollice. Un modulo che non ha
- * un'azione ovvia non lo mostra affatto, invece di mostrarne una debole.
- */
-let bottoneAzione = null;
-
-function aggiornaAzione(mod) {
-  const a = mod?.azionePrincipale?.();
-  if (!a) { bottoneAzione?.remove(); bottoneAzione = null; return; }
-
-  if (!bottoneAzione) {
-    bottoneAzione = el("button", { class: "azione-tonda", type: "button" });
-    document.body.append(bottoneAzione);
-  }
-  bottoneAzione.innerHTML = icona(a.icona || "piu", 26);
-  bottoneAzione.setAttribute("aria-label", a.etichetta || "Azione");
-  bottoneAzione.onclick = a.fai;
-}
 
 // ------------------------------------------------------------------- tema --
 
@@ -114,7 +92,6 @@ async function avvia() {
 
   osservaRotta((r) => {
     evidenziaBarra(r);
-    aggiornaAzione(r.modulo);
     allineaBarraDiStato();
     aggiornaPallini();
   });
@@ -123,7 +100,6 @@ async function avvia() {
   await avviaRouter(document.getElementById("vista"));
   const r = rottaCorrente();
   evidenziaBarra(r);
-  aggiornaAzione(await prendiModulo(r.id));
   allineaBarraDiStato();
 
   // In sottofondo: i dati di tutti i moduli devono arrivare anche se stai

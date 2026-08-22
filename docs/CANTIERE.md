@@ -109,10 +109,14 @@ _(nessuna)_
   tutte e due blu. Ora Oggi è pesca, Finanze lime, Mobilità ciano, Abitudini
   viola. Finanze ha lasciato il verde perché il verde vuol dire "fatto" e un
   colore che significa due cose non ne significa nessuna.
-- **Il tasto tondo al posto del "+" in intestazione** (22 ago) — stesso gesto,
-  ma in cima allo schermo il pollice non ci arriva. Ogni modulo dichiara la
-  sua azione con `azionePrincipale()`, e chi non ne ha una ovvia restituisce
-  `null` invece di mostrarne una debole.
+- **Il tasto tondo unico: provato e ritirato** (22 ago) — le tre azioni
+  principali in un solo pulsante fisso in basso a destra. Non funziona: un
+  tondo solo non può rappresentare due gesti diversi. In Finanze "uscita" la
+  registri dieci volte a settimana e "entrata" due volte al mese, e dietro lo
+  stesso simbolo costano un tocco e un dubbio ogni volta; in Mobilità il tondo
+  duplicava il tasto "Inizia" già presente nella scheda. Tornate le tre azioni
+  dell'app di partenza (Uscita · Entrata · ⋯), il "+" in intestazione ad
+  Abitudini, e "Inizia" dentro la scheda di Mobilità.
 
 ---
 

@@ -37,13 +37,16 @@
   background: var(--scheda);
   margin-bottom: var(--s4);
 }
+/* Testo, non Display: è una frase, e Display accanto al saluto in Display
+   dava due disegni di lettera nella stessa colonna a dieci pixel di
+   distanza. La regola per tutta l'app è: Display SOLO per i titoli e per i
+   numeri, tutto il resto Text. */
 .og-frase {
   margin: 0;
-  font-family: var(--font-d);
   font-size: var(--t-22);
   font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.25;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
 }
 /* Quando c'è qualcosa da chiudere e si è fatto tardi, la frase prende un
    filo di colore a sinistra. Non tutta colorata: solo il bordo, perché la
@@ -68,6 +71,7 @@
 
 .og-carta {
   display: block;
+  margin-bottom: var(--s3);
   position: relative;
   padding: var(--s5);
   border-radius: var(--r-scheda);
@@ -123,10 +127,12 @@
 .og-settimana { padding: var(--s4) var(--s5) var(--s5); }
 .og-settimana-testa {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: var(--s4);
   margin-bottom: var(--s4);
 }
+.og-settimana-nota { margin: 5px 0 0; }
 .og-sett-riga { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s1); }
 .og-sett-giorno { display: flex; flex-direction: column; align-items: center; gap: var(--s2); }
 .og-sett-lettera { font-size: var(--t-10); font-weight: 700; letter-spacing: 0.06em; color: var(--testo-3); }

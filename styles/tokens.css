@@ -92,7 +92,11 @@
 
   --t-64: 64px; --t-48: 48px; --t-40: 40px; --t-34: 34px; --t-28: 28px;
   --t-22: 22px; --t-19: 19px; --t-17: 17px; --t-15: 15px; --t-13: 13px;
-  --t-11: 11px; --t-10: 10px;
+  /* I due gradini in fondo valgono più di quanto dice il nome: erano 11 e
+     10 veri, e a quei corpi le etichette maiuscoletto e le didascalie non si
+     leggevano — passavano il contrasto ed erano comunque illeggibili, che è
+     la prova che il contrasto da solo non basta a dire "si legge". */
+  --t-11: 12.5px; --t-10: 11.5px;
 
   /* ---------------------------------------------------------- spaziatura -- */
   --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px; --s5: 20px;

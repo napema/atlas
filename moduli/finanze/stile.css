@@ -78,12 +78,16 @@
   display: flex;
   align-items: flex-end;
   border-radius: 8px;
-  background: var(--traccia);
+  /* Il binario è un accenno, non un blocco. Prima era --traccia pieno: le
+     sette caselle si leggevano come sette rettangoli grigi tutti uguali e
+     la barretta colorata in fondo sembrava un bordo sbagliato, non un dato. */
+  background: color-mix(in srgb, var(--traccia) 45%, transparent);
   overflow: hidden;
 }
 .fi-colonna > i {
   display: block;
   width: 100%;
+  min-height: 3px;
   border-radius: 8px;
   background: var(--accento);
   transition: height var(--lento) var(--curva);
@@ -96,7 +100,9 @@
   color: var(--testo-3);
 }
 .fi-giorno.oggi .fi-giorno-lettera { color: var(--testo); }
-.fi-giorno.oggi .fi-colonna > i { background: var(--testo); }
+/* Oggi non è "pieno": è cerchiato. Riempirlo di bianco lo faceva sembrare
+   il giorno con la spesa più alta, che è un'altra informazione. */
+.fi-giorno.oggi .fi-colonna { box-shadow: inset 0 0 0 1.5px var(--testo-3); }
 
 /* ================================================================ avvisi == */
 
@@ -328,3 +334,27 @@
 .fi-doppio-salva .btn small { font-size: var(--t-10); font-weight: 500; opacity: 0.7; }
 
 .fi-suggerita { color: var(--ok); font-weight: 500; text-transform: none; letter-spacing: 0; }
+
+@media (min-width: 1120px) {
+  /* Nove pannelli in due colonne su uno schermo largo lasciavano metà
+     riga vuota sotto quelli bassi. Con tre, le altezze si compensano. */
+  .fi-analisi { grid-template-columns: repeat(3, 1fr); }
+  /* I movimenti di un mese sono cinquanta righe: in colonna unica su uno
+     schermo largo è un nastro. Due colonne, e i giorni non si spezzano. */
+  .fi-mov-colonne { column-count: 2; column-gap: var(--s5); }
+  .fi-mov-colonne > .fi-giorno-blocco { break-inside: avoid; }
+  .fi-mov-colonne .lista { max-width: none; }
+}
+
+/* ------------------------------------------------------- le tre azioni -- */
+/* Uscita e Entrata pesano uguale e stanno affiancate; il "⋯" è stretto
+   perché è il ripostiglio dei movimenti rari, non una terza scelta alla
+   pari. I due colori sono quelli che il resto dell'app usa già per il segno
+   dell'importo: rosso esce, verde entra. */
+
+.fi-azioni { display: flex; gap: var(--s2); margin-bottom: var(--s5); }
+.fi-azioni .btn { min-height: 46px; }
+.fi-uscita, .fi-entrata { flex: 1; font-weight: 600; }
+.fi-uscita  { background: color-mix(in srgb, var(--male) 20%, var(--scheda)); color: var(--male); }
+.fi-entrata { background: color-mix(in srgb, var(--ok) 20%, var(--scheda));  color: var(--ok); }
+.fi-altro   { flex: none; width: 52px; padding: 0; font-size: var(--t-19); letter-spacing: 0.06em; }

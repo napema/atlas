@@ -51,14 +51,19 @@ export const svuota = (n) => { while (n.firstChild) n.removeChild(n.firstChild);
  */
 export function intestazione(titolo, occhiello = "", azione = null) {
   const azioni = [].concat(azione || []).filter(Boolean);
+  // Senza azioni il pallino del sync va ACCANTO all'occhiello, non spinto
+  // all'estremo destro: da scrivania restava un punto solo in mezzo a mezzo
+  // schermo vuoto e sembrava un pulsante rotto.
+  const pallino = el("span", { class: "sync-pallino", "data-ruolo": "sync" });
   return el("header", { class: "testa" }, [
     el("div", { class: "testa-testo" }, [
-      occhiello && el("div", { class: "micro", testo: occhiello }),
+      (occhiello || !azioni.length) && el("div", { class: "micro testa-occhiello" }, [
+        !azioni.length && pallino,
+        occhiello && el("span", { testo: occhiello }),
+      ]),
       el("h1", { testo: titolo }),
     ]),
-    el("div", { class: "testa-azioni" }, azioni.length
-      ? azioni
-      : [el("span", { class: "sync-pallino", "data-ruolo": "sync" })]),
+    azioni.length > 0 && el("div", { class: "testa-azioni" }, azioni),
   ]);
 }
 

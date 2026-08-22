@@ -57,13 +57,12 @@ function disegna() {
   contenitore.replaceChildren();
 
   aggiungi(contenitore, [
-    // Il "+" non sta più qui: sta nel tondo fisso in basso, dove il pollice
-    // lo raggiunge senza attraversare lo schermo.
     // Il mese non va nel sottotitolo: lo dice già il navigatore qui sotto,
     // e scritto due volte a due centimetri di distanza sembra un errore.
     intestazione("Finanze"),
 
     navigatoreMese(),
+    barraAzioni(),
 
     el("div", { class: "fi-schede" }, SCHEDE.map(([id, testo]) => el("button", {
       class: "fi-scheda" + (vista.scheda === id ? " attiva" : ""),
@@ -78,6 +77,33 @@ function disegna() {
 
   pubblicaSullaLavagna();
   globalThis.scrollTo(0, scorrimento);
+}
+
+/**
+ * Uscita · Entrata · ⋯ — le tre azioni dell'app di partenza, e sono tornate
+ * com'erano.
+ *
+ * Le avevo sostituite con un "+" tondo unico: un pulsante solo per due gesti
+ * che non sono lo stesso gesto. Registrare un'uscita è la cosa che fai dieci
+ * volte a settimana, registrare un'entrata due volte al mese: nasconderle
+ * dietro lo stesso tondo, e per giunta senza dire quale delle due parte,
+ * costa un tocco e un dubbio ogni volta.
+ *
+ * Il "⋯" apre lo stesso foglio sul tipo "ricarica extra", e da lì le pillole
+ * dei tipi arrivano a giroconto, rimborso e reso: sono i movimenti rari, e
+ * stare un livello sotto è giusto.
+ */
+function barraAzioni() {
+  const apri = (tipo) => apriMovimento({ ridisegna: disegna, tipo });
+  return el("div", { class: "fi-azioni" }, [
+    el("button", { class: "btn fi-uscita", type: "button", testo: "Uscita", onClick: () => apri("out") }),
+    el("button", { class: "btn fi-entrata", type: "button", testo: "Entrata", onClick: () => apri("in") }),
+    el("button", {
+      class: "btn morbido fi-altro", type: "button", testo: "⋯",
+      "aria-label": "Altri movimenti", title: "Giroconto, rimborso, reso, ricarica extra",
+      onClick: () => apri("extra"),
+    }),
+  ]);
 }
 
 function navigatoreMese() {
@@ -181,13 +207,6 @@ export default {
     while (staccatori.length) staccatori.pop()();
     contenitore = null;
   },
-
-  /** Il tasto tondo: registrare una spesa è il gesto per cui apri Finanze. */
-  azionePrincipale: () => ({
-    icona: "piu",
-    etichetta: "Nuovo movimento",
-    fai: () => apriMovimento({ ridisegna: disegna }),
-  }),
 
   /** La sezione "Finanze" di Impostazioni: budget, cassa, casa, import. */
   impostazioni() {
