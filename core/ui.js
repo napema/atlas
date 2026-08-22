@@ -344,8 +344,13 @@ export function euro(centesimi, { segno = false, tondo = false } = {}) {
   const c = Math.round(Number(centesimi) || 0);
   const n = Math.abs(c) / 100;
   const s = tondo ? `${NUM.format(Math.round(n))} €` : `${NUM2.format(n)} €`;
-  if (!segno) return s;
-  return (c < 0 ? "−" : "+") + s;
+  if (segno) return (c < 0 ? "−" : "+") + s;
+  // Il meno resta anche senza `segno`. Con `segno` si sceglie di mostrare
+  // ANCHE il più — è la differenza fra un movimento, dove il verso conta, e
+  // un saldo, dove conta solo se sei sotto zero. Prima `segno: false`
+  // buttava via il meno insieme al più, e un pocket a −3.949 € si leggeva
+  // «3.949,51 €»: il numero più sbagliato che l'app potesse mostrare.
+  return c < 0 ? `−${s}` : s;
 }
 
 /**

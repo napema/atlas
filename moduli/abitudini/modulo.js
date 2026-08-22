@@ -10,8 +10,8 @@ import { icona } from "../../core/icone.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { annuncia, ascolta } from "../../core/bus.js";
-import { casella, stato, abitudiniVive, eFatta, alterna, idLog } from "./dati.js";
-import { progressoGiorno, mancantiOggi, serie, eAttesa } from "./calcolo.js";
+import { casella, stato, abitudiniVive, eFatta, alterna, idLog, alternaParte } from "./dati.js";
+import { progressoGiorno, mancantiOggi, serie, eAttesa, promemoriaAdesso } from "./calcolo.js";
 import { strisciaSettimana, riepilogo, elenco, apriModifica, vistaImpostazioni } from "./viste.js";
 
 let contenitore = null;
@@ -158,6 +158,18 @@ export default {
     contenitore = null;
   },
 
+  /**
+   * Spuntare una parte dalla home, senza passare per la schermata.
+   *
+   * Sta nel contratto e non in un import perché `moduli/oggi` non conosce
+   * Abitudini: chiede il modulo al registro e chiama questo.
+   */
+  spuntaParte(habitId, parteId) {
+    alternaParte(habitId, parteId, giornoCorrente());
+    pubblicaSullaLavagna();
+    if (contenitore) disegna();
+  },
+
   /** La sezione "Abitudini" di Impostazioni: elenco, archiviate, settimana. */
   impostazioni() {
     return vistaImpostazioni(() => { if (contenitore) disegna(); });
@@ -181,6 +193,9 @@ export default {
       fatto: tutte,
       // La barra della tessera dice a che punto sei, non è decorativa.
       avanzamento: p.attese ? p.fatte / p.attese : 0,
+      // I promemoria della fascia in corso: la home non deve dire «ti
+      // mancano 4 integratori», deve dire «prendi il magnesio».
+      promemoria: promemoriaAdesso(giornoCorrente()),
       // Urgente solo di sera: prima è solo una giornata in corso.
       urgente: !tutte && new Date().getHours() >= 20,
       azione: { rotta: "#/abitudini" },

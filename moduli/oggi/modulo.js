@@ -12,7 +12,7 @@
 
 import { MODULI_DATI, prendiModulo } from "../../core/registro.js";
 import {
-  el, aggiungi, plurale, euroGrande, tessera, gettone,
+  el, aggiungi, plurale, euroGrande, tessera, gettone, tocco,
   GIORNI_INIZIALI, dataUmana, oggiISO,
 } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
@@ -70,6 +70,9 @@ async function disegna() {
   aggiungi(contenitore, [
     saluto_(),
     briefing(conDati, daFare, fatti),
+    // I promemoria stanno SOPRA la carta: sono cose che scadono adesso e si
+    // spuntano in un tocco, mentre la carta è un posto dove andare.
+    cartaPromemoria(conDati, () => { disegna(); }),
     principale && cartaDaFare(principale.mod, principale.dati),
     resto.length > 0 && el("div", { class: "griglia-tessere" }, resto.map((s) => tesseraModulo(s.mod, s.dati))),
     strisciaSettimana(),
@@ -256,3 +259,81 @@ export default {
   },
 
 };
+
+/* ------------------------------------------------------- i promemoria ---
+   Le cose piccole che scadono ADESSO, non oggi.
+
+   Nasce dagli integratori: quattro pastiglie in tre momenti diversi della
+   giornata. «Ti mancano 4 integratori» alle dieci di sera è inutile — tre
+   di quelle quattro erano da prendere stamattina e ormai è andata. Quello
+   che serve è «prendi il magnesio», e solo quello.
+
+   La card compare solo se c'è qualcosa da prendere adesso, e sparisce
+   appena è spuntato: è l'unico elemento della home che ha il permesso di
+   apparire e sparire, perché non è un dato, è una sveglia.
+*/
+
+function cartaPromemoria(schede, ridisegna) {
+  const voci = [];
+  for (const s of schede) {
+    for (const p of s.dati?.promemoria || []) voci.push({ ...p, mod: s.mod });
+  }
+  if (!voci.length) return null;
+
+  // Le fasce si nominano una volta sola anche quando ne contengono tre: la
+  // riga «Sera» sopra tre pastiglie si legge, ripetuta tre volte no.
+  const perFascia = new Map();
+  for (const v of voci) {
+    if (!perFascia.has(v.nomeFascia)) perFascia.set(v.nomeFascia, []);
+    perFascia.get(v.nomeFascia).push(v);
+  }
+
+  const c = el("section", { class: "og-promemoria" }, [
+    el("div", { class: "og-prom-testa" }, [
+      el("span", { class: "og-prom-icona", html: icona("campanella", 16) }),
+      el("span", { class: "micro", testo: voci.length === 1 ? "Adesso" : `Adesso · ${voci.length}` }),
+    ]),
+
+    ...[...perFascia].map(([fascia, elenco]) => el("div", { class: "og-prom-gruppo" }, [
+      el("div", { class: "og-prom-fascia", testo: fascia }),
+      el("ul", { class: "og-prom-lista" }, elenco.map((v) => {
+        const b = el("button", {
+          class: "og-prom-voce", type: "button",
+          "aria-label": `Segna ${v.nome}`,
+          onClick: () => {
+            alternaParteDiAbitudine(v.habitId, v.parteId);
+            tocco(12);
+            ridisegna();
+          },
+        }, [
+          el("span", { class: "og-prom-cerchio", html: icona("spunta", 13, 3) }),
+          el("span", { class: "og-prom-nome", testo: v.nome }),
+          el("span", { class: "og-prom-da", testo: v.abitudine }),
+        ]);
+        b.style.setProperty("--tinta", v.tint ? `var(--${TINTA_CSS[v.tint] || "blu"})` : "var(--accento)");
+        return el("li", {}, [b]);
+      })),
+    ])),
+  ]);
+  return c;
+}
+
+// Le tinte delle abitudini hanno nomi inglesi nei dati di partenza. La
+// tabella sta qui e non in Abitudini perché la home non importa i moduli:
+// legge `oggi()` e nient'altro.
+const TINTA_CSS = {
+  blue: "blu", green: "verde", red: "rosso", orange: "arancio", purple: "viola",
+  pink: "rosa", yellow: "giallo", mint: "menta", indigo: "indaco",
+};
+
+/**
+ * Spuntare una parte dalla home.
+ *
+ * È l'unico punto in cui la home SCRIVE in un modulo, e passa comunque dal
+ * registro invece che da un import: `moduli/oggi` non conosce Abitudini, e
+ * saldarli renderebbe impossibile caricarli pigramente.
+ */
+async function alternaParteDiAbitudine(habitId, parteId) {
+  const mod = await prendiModulo("abitudini");
+  mod?.spuntaParte?.(habitId, parteId);
+}

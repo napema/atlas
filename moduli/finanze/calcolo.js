@@ -16,7 +16,10 @@
 // Senza questa separazione ogni mese con un imprevisto sembra un disastro,
 // la proiezione impazzisce, e dopo due mesi non guardi più i numeri.
 
-import { movimentiVivi, stato, profiloDi, CATEGORIE_CASSA } from "./dati.js";
+import {
+  movimentiVivi, stato, profiloDi, CATEGORIE_CASSA,
+  classeDi, SOGLIE_PREDEFINITE,
+} from "./dati.js";
 import { isoDi, daISO, oggiISO, MESI_BREVI } from "../../core/ui.js";
 
 export const meseDi = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -557,4 +560,335 @@ export function quadratura(mese) {
   const allocato = Object.values(p.b).reduce((s, v) => s + (Number(v) || 0), 0);
   const entrate = Number(stato().config.entrate) || 0;
   return { allocato, entrate, differenza: entrate - allocato };
+}
+
+/* =========================================================================
+   REGISTRO v2 — il ciclo dello stipendio, i pocket, i ricorrenti.
+
+   Il criterio è uno solo: aprendo l'app in tre secondi devo sapere se posso
+   spendere oggi e quanto. Tutto quello che segue esiste per rispondere a
+   quella domanda, e niente altro.
+   ========================================================================= */
+
+/* ------------------------------------------------------------- il ciclo -- */
+/*
+   IL MESE FINANZIARIO NON PARTE IL PRIMO. Lo stipendio arriva il 21, quindi
+   il ciclo va dal 21 al 20. È la correzione che vale più di tutte le altre
+   messe insieme: col mese solare, «quanto manca alla fine del mese» era
+   sbagliato di venti giorni tutti i mesi, ed è per quello che i numeri non
+   tornavano mai.
+*/
+
+export const giornoStipendio = () => Number(stato().config?.giornoStipendio) || 21;
+
+/** Il ciclo che contiene `iso`: `{ da, a, giorni, indice }`, estremi inclusi. */
+export function cicloDi(iso = oggiISO()) {
+  const g = giornoStipendio();
+  const d = daISO(iso);
+  // Prima del giorno di stipendio si è ancora dentro il ciclo aperto il mese
+  // scorso: il 5 ottobre appartiene al ciclo di settembre.
+  const inizio = new Date(d.getFullYear(), d.getMonth(), g);
+  if (d.getDate() < g) inizio.setMonth(inizio.getMonth() - 1);
+  const fine = new Date(inizio.getFullYear(), inizio.getMonth() + 1, g - 1);
+  return {
+    da: isoDi(inizio),
+    a: isoDi(fine),
+    giorni: Math.round((fine - inizio) / 86400000) + 1,
+    // L'etichetta è il mese in cui il ciclo è INIZIATO.
+    indice: `${inizio.getFullYear()}-${String(inizio.getMonth() + 1).padStart(2, "0")}`,
+  };
+}
+
+export function spostaCiclo(indice, delta) {
+  const [y, m] = indice.split("-").map(Number);
+  return cicloDi(isoDi(new Date(y, m - 1 + delta, giornoStipendio())));
+}
+
+/** A che giorno del ciclo siamo, 1-based. */
+export function giornoDelCiclo(ciclo, iso = oggiISO()) {
+  if (iso < ciclo.da) return 0;
+  if (iso > ciclo.a) return ciclo.giorni;
+  return Math.round((daISO(iso) - daISO(ciclo.da)) / 86400000) + 1;
+}
+
+export const nomeCiclo = (ciclo) => {
+  const a = daISO(ciclo.da);
+  const b = daISO(ciclo.a);
+  return `${a.getDate()} ${MESI_BREVI[a.getMonth()]} – ${b.getDate()} ${MESI_BREVI[b.getMonth()]}`;
+};
+
+export const movimentiDelCiclo = (ciclo) =>
+  movimentiVivi()
+    .filter((m) => m.data >= ciclo.da && m.data <= ciclo.a)
+    .sort((a, b) => b.data.localeCompare(a.data) || ((b.ts || 0) - (a.ts || 0)));
+
+/* ------------------------------------------------------------- i pocket -- */
+/*
+   Il saldo di un pocket è il saldo iniziale scritto in Impostazioni più i
+   movimenti che lo hanno toccato. Non è «quanto potresti spendere»: è
+   quanto c'è.
+
+   ING è `external`: il saldo lo scrivi a mano e i movimenti non lo muovono,
+   perché è un conto che vive fuori dall'app e l'unica fonte di verità è
+   l'estratto conto vero.
+*/
+
+export function saldoPocket(id) {
+  const p = (stato().pockets || []).find((x) => x.id === id);
+  if (!p) return 0;
+  if (p.external) return p.saldo || 0;
+
+  // LA DATA SPARTIACQUE. I pocket sono nati dopo: i 161 movimenti già in
+  // archivio non li hanno mai attraversati, e sommarli darebbe al Principale
+  // il netto di tutta la storia — meno quattromila euro, che non è un saldo,
+  // è un totale. Da `pocketDa` in avanti i movimenti muovono i saldi; prima
+  // di quella data sono storico e basta.
+  const da = stato().config?.pocketDa || "9999-12-31";
+
+  let s = p.saldo || 0;
+  for (const m of movimentiVivi()) {
+    if (m.data < da) continue;
+    if (m.tipo === "giro") {
+      if (m.pocket === id) s -= m.imp;
+      if (m.pocketTo === id) s += m.imp;
+      continue;
+    }
+    if ((m.pocket || "principale") !== id) continue;
+    if (m.tipo === "out") s -= importoEffettivo(m);
+    else s += m.imp;                       // in, extra, rimb, reso
+  }
+  return s;
+}
+
+export const pocketConSaldi = () =>
+  (stato().pockets || []).map((p) => ({ ...p, saldoVero: saldoPocket(p.id) }));
+
+/* --------------------------------------------------------- la settimana -- */
+/*
+   IL NUMERO. È il saldo del pocket Principale, non un calcolo di budget:
+   quello che c'è, non quello che dovrebbe esserci.
+*/
+
+export function settimana(iso = oggiISO()) {
+  const d = daISO(iso);
+  const dow = (d.getDay() + 6) % 7;                 // 0 = lunedì
+  const lunedi = new Date(d);
+  lunedi.setDate(d.getDate() - dow);
+  const domenica = new Date(lunedi);
+  domenica.setDate(lunedi.getDate() + 6);
+
+  const resta = saldoPocket("principale");
+  const budget = Number(stato().config?.cassaSettimanale) || 0;
+  const speso = Math.max(0, budget - resta);
+  const giorniRimasti = 7 - dow;                    // oggi compreso
+
+  return {
+    da: isoDi(lunedi), a: isoDi(domenica),
+    resta, budget, speso,
+    frazione: budget > 0 ? Math.min(1, Math.max(0, speso / budget)) : 0,
+    giorniRimasti,
+    alGiorno: giorniRimasti > 0 ? Math.floor(Math.max(0, resta) / giorniRimasti) : 0,
+    finita: resta <= 0,
+    // Il ritmo lineare atteso a questo punto della settimana: serve
+    // all'avviso «a questo ritmo la settimana finisce prima di domenica».
+    atteso: budget > 0 ? Math.round(budget * ((8 - giorniRimasti) / 7)) : 0,
+  };
+}
+
+/** Quanto è uscito oggi. Il confronto col ritmo lo fa chi la mostra. */
+export function spesoOggi(iso = oggiISO()) {
+  return movimentiVivi()
+    .filter((m) => m.tipo === "out" && !m.ecc && m.data === iso)
+    .reduce((s, m) => s + importoEffettivo(m), 0);
+}
+
+/* ---------------------------------------------------------- i ricorrenti -- */
+
+const MESI_CADENZA = { mensile: 1, bimestrale: 2, trimestrale: 3, annuale: 12 };
+
+/** La prossima scadenza di un ricorrente, da `iso` in avanti. */
+export function prossimaScadenza(r, iso = oggiISO()) {
+  const passo = MESI_CADENZA[r.cadenza] || 1;
+  const d = daISO(iso);
+  // Le cadenze non mensili sono ANCORATE a un mese: senza l'ancora, un
+  // annuale cadeva ogni anno nel mese in cui lo stavi guardando, e il bollo
+  // di dicembre compariva ad agosto. `mese` è 1-12; se manca, l'ancora è
+  // gennaio, che almeno è stabile.
+  const ancora = passo === 1 ? null : ((r.mese || 1) - 1);
+  for (let k = 0; k <= 36; k++) {
+    const mese = d.getMonth() + k;
+    // Con l'ancora si accettano solo i mesi che distano un multiplo del
+    // passo dall'ancora stessa: bimestrale ancorato a gennaio = gen, mar,
+    // mag…, annuale ancorato a dicembre = solo dicembre.
+    if (ancora !== null && (((mese - ancora) % passo) + passo) % passo !== 0) continue;
+    // Il giorno si taglia sulla lunghezza del mese: un ricorrente al 31 cade
+    // il 30 a novembre, non il 1° dicembre.
+    const ultimo = new Date(d.getFullYear(), mese + 1, 0).getDate();
+    const cand = isoDi(new Date(d.getFullYear(), mese, Math.min(r.giorno, ultimo)));
+    if (cand >= iso) return cand;
+  }
+  return null;
+}
+
+export const importoRicorrente = (r) =>
+  r.tipo === "variabile" ? (r.stimaMax || r.stimaMin || 0) : (r.imp || 0);
+
+/**
+ * Cosa esce nei prossimi `giorni`.
+ *
+ * Risponde a «posso permettermi questa cena, o fra tre giorni mi arriva una
+ * bolletta?», che è la domanda per cui si apre l'app la sera.
+ */
+export function inArrivo(giorni = 14, iso = oggiISO()) {
+  const limite = isoDi(new Date(daISO(iso).getTime() + giorni * 86400000));
+  const voci = [];
+  for (const r of stato().ricorrenti || []) {
+    if (!r.attivo) continue;
+    const quando = prossimaScadenza(r, iso);
+    if (!quando || quando > limite) continue;
+    voci.push({
+      ...r, quando,
+      importo: importoRicorrente(r),
+      // Le variabili vanno marcate: l'importo è una stima, e trattarla come
+      // certa è il modo di scoprire troppo tardi che non bastava.
+      stimato: r.tipo === "variabile",
+      fra: Math.round((daISO(quando) - daISO(iso)) / 86400000),
+    });
+  }
+  voci.sort((a, b) => a.quando.localeCompare(b.quando));
+
+  const totale = voci.reduce((s, v) => s + v.importo, 0);
+  const daFisse = voci.filter((v) => v.pocket === "fisse").reduce((s, v) => s + v.importo, 0);
+  const saldoFisse = saldoPocket("fisse");
+
+  return {
+    voci, totale, daFisse, saldoFisse,
+    // È l'errore che ha spaccato luglio: abbonamenti da 55 in un pocket da
+    // 20, che ogni mese sbordavano sul settimanale.
+    scoperto: Math.max(0, daFisse - saldoFisse),
+    coperte: daFisse <= saldoFisse,
+  };
+}
+
+/** I ricorrenti che scadono proprio oggi: la home li dice per nome. */
+export const ricorrentiDiOggi = (iso = oggiISO()) =>
+  inArrivo(0, iso).voci.filter((v) => v.quando === iso);
+
+/* -------------------------------------------- discrezionale vs necessario */
+
+export function comeSpendi(ciclo) {
+  const per = { automatico: 0, necessario: 0, discrezionale: 0 };
+  for (const m of movimentiDelCiclo(ciclo)) {
+    if (m.tipo !== "out" || m.ecc) continue;
+    per[classeDi(m.cat, m.sub)] += importoEffettivo(m);
+  }
+  const totale = per.automatico + per.necessario + per.discrezionale;
+  return {
+    ...per, totale,
+    // Nella card «necessario» somma automatico e necessario: dal punto di
+    // vista di una decisione sono la stessa cosa, soldi che escono comunque.
+    necessarioTotale: per.automatico + per.necessario,
+    pctDiscrezionale: totale > 0 ? per.discrezionale / totale : 0,
+  };
+}
+
+/* -------------------------------------------------------- gli sforamenti -- */
+
+export function sforamenti(ciclo) {
+  const tutti = movimentiVivi().filter((m) => m.tipo === "extra");
+  const delCiclo = tutti.filter((m) => m.data >= ciclo.da && m.data <= ciclo.a);
+  const ultimo = tutti.slice().sort((a, b) => b.data.localeCompare(a.data))[0] || null;
+  return {
+    n: delCiclo.length,
+    totale: delCiclo.reduce((s, m) => s + m.imp, 0),
+    ultimo,
+    perche: delCiclo.map((m) => ({ data: m.data, imp: m.imp, perche: m.nota })),
+  };
+}
+
+/* ------------------------------------------------------------- gli alert -- */
+/*
+   Un alert compare SOLO se azionabile, e al massimo due alla volta: se ce ne
+   sono di più si mostrano i due più gravi. Una lista di dieci avvisi non si
+   legge, e il decimo rende invisibile il primo.
+
+   Il tono è quello di un cruscotto: dice cosa succede, non giudica.
+*/
+
+const PESO = { critico: 3, warn: 2, info: 1 };
+
+/** Un euro piano: gli alert sono testo, non markup. */
+const eu = (c) => `${Math.round((c || 0) / 100).toLocaleString("it-IT")} €`;
+
+export function alert(iso = oggiISO()) {
+  const ciclo = cicloDi(iso);
+  const s = settimana(iso);
+  const arrivo = inArrivo(14, iso);
+  const soglie = { ...SOGLIE_PREDEFINITE, ...(stato().soglie || {}) };
+  const out = [];
+
+  if (arrivo.scoperto > 0) {
+    const daFisse = arrivo.voci.filter((v) => v.pocket === "fisse");
+    // Con una voce sola si dice quella, che è più utile di un totale; con
+    // più voci si dice il totale, perché nominarne una e poi dare il buco di
+    // tutte insieme fa sembrare che i conti non tornino.
+    out.push({
+      id: "fisse_scoperte", livello: "critico",
+      testo: daFisse.length === 1
+        ? `Il ${daISO(daFisse[0].quando).getDate()} esce ${daFisse[0].nome.toLowerCase()} da ${eu(daFisse[0].importo)} e nel pocket Fisse ce ne sono ${eu(arrivo.saldoFisse)}. Mancano ${eu(arrivo.scoperto)}.`
+        : `Nei prossimi 14 giorni dalle Spese fisse escono ${eu(arrivo.daFisse)} e nel pocket ce ne sono ${eu(arrivo.saldoFisse)}. Mancano ${eu(arrivo.scoperto)}.`,
+    });
+  }
+
+  if (s.finita && s.giorniRimasti >= 1) {
+    out.push({
+      id: "settimana_finita", livello: "warn",
+      testo: `Settimana finita. ${s.giorniRimasti === 1 ? "1 giorno" : `${s.giorniRimasti} giorni`} a lunedì.`,
+    });
+  } else if (s.budget > 0 && s.speso > s.atteso * 1.25) {
+    out.push({
+      id: "settimana_ritmo", livello: "info",
+      testo: `A questo ritmo la settimana finisce prima di domenica. Restano ${eu(s.resta)} per ${s.giorniRimasti === 1 ? "1 giorno" : `${s.giorniRimasti} giorni`}.`,
+    });
+  }
+
+  const ing = (stato().pockets || []).find((p) => p.id === "ing");
+  if (ing && (ing.saldo || 0) > 0 && (ing.saldo || 0) < soglie.ingMinimo) {
+    out.push({ id: "ing_sotto_minimo", livello: "warn", testo: "Riserva sotto il minimo di sicurezza." });
+  }
+
+  for (const c of categorieDelCiclo(ciclo)) {
+    if (!c.budget) continue;
+    if (c.speso > c.budget) {
+      out.push({ id: `cat_sforata:${c.id}`, livello: "warn",
+        testo: `${c.nome} ha superato il budget di ${eu(c.speso - c.budget)}.` });
+    } else if (c.speso >= c.budget * soglie.catAvviso) {
+      out.push({ id: `cat_soglia:${c.id}`, livello: "info",
+        testo: `${c.nome}: ${eu(c.speso)} su ${eu(c.budget)}. Restano ${eu(c.budget - c.speso)}.` });
+    }
+  }
+
+  for (const v of arrivo.voci) {
+    if (!v.stimato || v.fra > 10) continue;
+    out.push({ id: `bimestrale_vicina:${v.id}`, livello: "info",
+      testo: `${v.nome} fra ${v.fra === 0 ? "oggi" : v.fra === 1 ? "1 giorno" : `${v.fra} giorni`}: ${eu(v.stimaMin)}–${eu(v.stimaMax)}.` });
+  }
+
+  out.sort((a, b) => PESO[b.livello] - PESO[a.livello]);
+  return out.slice(0, 2);
+}
+
+/** Le categorie del ciclo con speso e budget, dal profilo del mese d'inizio. */
+export function categorieDelCiclo(ciclo) {
+  const p = profiloDi(ciclo.indice);
+  const speso = {};
+  for (const m of movimentiDelCiclo(ciclo)) {
+    if (m.tipo !== "out" || m.ecc) continue;
+    speso[m.cat] = (speso[m.cat] || 0) + importoEffettivo(m);
+  }
+  return stato().cats.map((c) => ({
+    id: c.id, nome: c.nome,
+    speso: speso[c.id] || 0,
+    budget: Math.round((p.b[c.id] || 0) * 100),
+  }));
 }

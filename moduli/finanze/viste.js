@@ -17,6 +17,8 @@ import { icona } from "../../core/icone.js";
 import {
   stato, movimentiVivi, categoriaPerId, profiloDi, chiaveProfilo, coloreCat, emojiCat, TIPI,
   salvaMovimento, eliminaMovimento, impara, normalizza, scriviMeta, casella,
+  CATEGORIE_CASSA, TIPI_POCKET, SOGLIE_PREDEFINITE, pocketPerId, scriviPocket,
+  salvaRicorrente, eliminaRicorrente, pendenti, metteInSospeso, togliDaSospeso,
 } from "./dati.js";
 import {
   statistiche, budgetTotale, cassaSettimana, avvisi, verdetto, proiezione,
@@ -24,6 +26,9 @@ import {
   nomeMese, autoCategoria, spostaMese, stessoGiornoMesePrima, statisticheDelMese,
   mediaPerGiornoSettimana, ultimiSeiMesi, sottocategorieDelMese, categoriaSuSeiMesi,
   movimentiSottocategoria, contestoMovimento, quadratura,
+  cicloDi, spostaCiclo, nomeCiclo, movimentiDelCiclo, categorieDelCiclo,
+  settimana, saldoPocket, pocketConSaldi, inArrivo, comeSpendi, sforamenti,
+  alert, spesoOggi, importoRicorrente, prossimaScadenza,
 } from "./calcolo.js";
 import { graficoCumulato, graficoCiambella, graficoBarre } from "./grafici.js";
 import { preparaImport, eseguiImport } from "./importa.js";
@@ -31,189 +36,305 @@ import { preparaImport, eseguiImport } from "./importa.js";
 const ETICHETTA_TIPO = Object.fromEntries(Object.entries(TIPI).map(([k, v]) => [k, v.nome]));
 
 /* ==================================================================== HOME
-   Risponde a "come sto andando". In cima la cifra che decide la giornata —
-   quanto resta in cassa — e sotto una tessera per categoria: simbolo, quanto
-   resta, e la barra col cursore che dice quanto è già andato.
+   Una domanda sola: posso spendere oggi, e quanto.
 
-   La griglia di tessere ha preso il posto dell'elenco con le barrette: nove
-   righe di testo si leggono una per una, nove tessere colorate si scorrono
-   con l'occhio e ci si ferma su quella messa peggio. */
+   L'ordine dei blocchi è quello della spec, e non è arbitrario. Prima il
+   numero — il saldo vero del Principale, non un budget calcolato. Poi le
+   due azioni. Poi cosa sta per uscire, che è la cosa che ribalta la
+   risposta al numero: 67 € restano tanti finché non scopri che dopodomani
+   esce l'affitto.
 
-export function vistaHome(mese, grafico, cambia, apriCat) {
-  const st = statistiche(mese);
-  const p = profiloDi(mese);
-  const bt = budgetTotale(mese);
+   Il tono è quello di un cruscotto: riporta, non sgrida. */
+
+export function vistaHome(mese, grafico, cambia, apriCat, azioni = {}) {
   const oggi = oggiISO();
-  const eCorrente = oggi.slice(0, 7) === mese;
-  const giorni = giorniDelMese(mese);
-  const giorno = eCorrente ? Number(oggi.slice(8, 10)) : giorni;
-  const av = avvisi(mese);
-  const cassa = eCorrente ? cassaSettimana(mese, oggi) : { attiva: false };
+  const ciclo = cicloDi(oggi);
+  const set = settimana(oggi);
+  const arrivo = inArrivo(14, oggi);
+  const av = alert(oggi);
 
   const fuori = el("div", {});
 
-  /* --- 1. la cifra che decide la giornata ------------------------------ */
-  aggiungi(fuori, [eroe({ st, bt, cassa, giorno, giorni, mese, grafico, cambia, eCorrente })]);
-
-  /* --- 2. gli avvisi, se ce ne sono ------------------------------------ */
-  if (av.length) {
-    aggiungi(fuori, [el("div", { class: "fi-avvisi" }, av.map((a) => {
-      const riga = el("div", { class: "fi-avviso" }, [
-        el("span", { class: "fi-avviso-punto" }),
-        el("div", {}, [
-          el("b", { testo: a.titolo }),
-          el("span", { class: "nota", testo: a.testo }),
-        ]),
-      ]);
-      riga.style.setProperty("--tinta", a.livello === "rosso" ? "var(--male)" : "var(--avviso)");
-      return riga;
-    }))]);
-  }
-
-  /* --- 3. le categorie, a tessere -------------------------------------- */
-  const cats = stato().cats
-    .map((c) => ({
-      c,
-      speso: st.perCat[c.id]?.ord || 0,
-      budget: Math.round((p.b[c.id] || 0) * 100),
-      n: st.perCat[c.id]?.movs.length || 0,
-    }))
-    .filter((r) => r.speso > 0 || r.budget > 0)
-    // Prima quelle messe peggio: la griglia si legge dall'alto, e in alto
-    // deve esserci quello su cui puoi ancora fare qualcosa.
-    .sort((a, b) => {
-      const fa = a.budget ? a.speso / a.budget : (a.speso ? 2 : 0);
-      const fb = b.budget ? b.speso / b.budget : (b.speso ? 2 : 0);
-      return fb - fa;
-    });
-
-  if (cats.length) {
-    aggiungi(fuori, [
-      el("div", { class: "sezione-titolo" }, [
-        el("h3", { testo: "Le tue buste" }),
-        el("span", { class: "nota", testo: `${cats.length} categorie` }),
-      ]),
-      el("div", { class: "griglia-tessere" }, cats.map((r) => tesseraCategoria(r, apriCat))),
-    ]);
-  }
-
-  /* --- 4. i due numeri che stanno fuori dal budget --------------------- */
-  aggiungi(fuori, [el("div", { class: "riquadri" }, [
-    el("div", { class: "riquadro" }, [
-      el("div", { class: `micro ${st.sforamentiN ? "male" : "ok"}`, testo: "Sforamenti" }),
-      el("div", { class: `cifra cifra-m ${st.sforamentiN ? "negativo" : ""}`,
-        html: st.sforamentiN === 0 ? "0" : euroGrande(st.sforamentiTot, { centesimi: false }) }),
-      el("div", { class: "nota-2", testo: st.sforamentiN === 0
-        ? "target rispettato"
-        : `${plurale(st.sforamentiN, "ricarica", "ricariche")} da fuori` }),
-    ]),
-    el("div", { class: "riquadro" }, [
-      el("div", { class: "micro", testo: "Straordinari" }),
-      el("div", { class: "cifra cifra-m", html: euroGrande(st.eccezionale, { centesimi: false }) }),
-      el("div", { class: "nota-2", testo: st.eccezionale > 0
-        ? `${st.movEccezionali.length} una tantum, fuori budget` : "nessuna una tantum" }),
-    ]),
-  ])]);
-
-  /* --- 5. il numero che guarda al mese prossimo ------------------------ */
-  const risp = risparmioReale(mese);
-  aggiungi(fuori, [el("section", { class: "scheda fi-risparmio" }, [
-    el("div", {}, [
-      el("div", { class: "micro", testo: "Risparmio reale" }),
-      el("div", { class: "nota", stile: { marginTop: "6px" },
-        testo: `${euro(risp.base, { tondo: true })} − affitto ${euro(risp.affitto, { tondo: true })} − utenze ${euro(risp.utenze, { tondo: true })}` }),
-    ]),
-    el("span", { class: `cifra cifra-l ${risp.valore < 0 ? "negativo" : "positivo"}`,
-      html: euroGrande(risp.valore, { centesimi: false }) }),
-  ])]);
+  aggiungi(fuori, [
+    ilNumero(set, azioni),
+    av.length > 0 && blocchoAlert(av),
+    blocchoSospese(() => cambia({})),
+    inArrivoBlocco(arrivo),
+    dovSonoISoldi(azioni),
+    categorieDelCicloBlocco(ciclo, apriCat),
+    comeSpendiBlocco(ciclo),
+    sforamentiBlocco(ciclo),
+  ]);
 
   return fuori;
 }
 
-/**
- * L'eroe: la cifra grande in cima.
- *
- * In settimana mostra quanto resta in cassa, perché è la cifra su cui si
- * decide se uscire a cena stasera. A mese chiuso, o se la cassa non è
- * attiva, mostra la spesa ordinaria contro il budget.
- */
-function eroe({ st, bt, cassa, giorno, giorni, mese, grafico, cambia, eCorrente }) {
-  const settimana = grafico === "settimana" && cassa.attiva;
-  const s = el("section", { class: "fi-eroe" });
+/* ------------------------------------------------------- 1. IL NUMERO --- */
+/*
+   Il saldo del pocket Principale. Denaro reale, non budget residuo.
 
-  if (settimana) {
-    const alGiorno = cassa.resta > 0 ? Math.floor(cassa.resta / cassa.giorniRimasti) : 0;
-    const massimo = Math.max(cassa.tetto / 5, ...cassa.perGiorno.map((d) => d.speso));
-    const frazione = cassa.tetto ? Math.min(1, cassa.speso / cassa.tetto) : 0;
+   Il colore resta neutro fino al 70% consumato: rosso al primo giorno solo
+   perché hai fatto la spesa grossa il lunedì è un allarme che insegna a
+   ignorare gli allarmi.
+*/
 
-    aggiungi(s, [
-      el("div", { class: "fi-eroe-testa" }, [
-        el("div", { class: `micro ${cassa.resta < 0 ? "male" : "ok"}`,
-          testo: `${Math.round(frazione * 100)}% della cassa` }),
-        segmenti([["settimana", "Settimana"], ["mese", "Mese"]], grafico, (x) => cambia({ grafico: x })),
-      ]),
-      el("div", { class: `cifra cifra-xl ${cassa.resta < 0 ? "negativo" : ""}`, html: euroGrande(cassa.resta) }),
-      el("p", { class: "fi-eroe-nota", testo: cassa.resta < 0
-        ? `Cassa esaurita · ${plurale(cassa.giorniRimasti, "giorno", "giorni")} alla ricarica`
-        : `restano in cassa · ${euro(alGiorno)} al giorno per ${plurale(cassa.giorniRimasti, "giorno", "giorni")}` }),
+function ilNumero(s, azioni) {
+  const tono = s.finita ? "male" : s.frazione >= 0.9 ? "male" : s.frazione >= 0.7 ? "avviso" : "";
+  const box = el("section", { class: `fi-numero ${tono}`.trim() });
 
-      el("div", { class: "fi-settimana" }, cassa.perGiorno.map((d, i) => el("div", {
-        class: "fi-giorno" + (d.iso === oggiISO() ? " oggi" : ""),
-        title: `${dataUmana(d.iso)} · ${euro(d.speso)}`,
-      }, [
-        el("div", { class: "fi-colonna" }, [
-          el("i", { stile: { height: `${massimo > 0 ? Math.max(4, Math.min(100, (d.speso / massimo) * 100)) : 4}%` } }),
-        ]),
-        el("span", { class: "fi-giorno-lettera", testo: GIORNI_INIZIALI[i] }),
-      ]))),
-      el("p", { class: "nota-2", testo: `${euro(cassa.speso)} di ${euro(cassa.tetto)} · copre spesa, cibo fuori e personale` }),
+  // PRIMA DI TUTTO: zero perché non è configurato non è zero perché hai
+  // finito i soldi. Sono due stati diversi e vanno detti in due modi
+  // diversi, altrimenti al primo avvio l'app annuncia un disastro che non
+  // c'è e non si capisce cosa fare.
+  if (!pocketConSaldi().some((p) => p.saldo)) {
+    aggiungi(box, [
+      el("div", { class: "micro", testo: "Questa settimana" }),
+      el("div", { class: "cifra cifra-xl", testo: "—" }),
+      el("p", { class: "fi-numero-nota", testo:
+        "I pocket non hanno ancora un saldo, quindi il conto della settimana non può partire." }),
+      el("button", {
+        class: "btn pieno grande", type: "button", testo: "Imposta i saldi",
+        stile: { marginTop: "var(--s5)" },
+        onClick: () => azioni.pocketSetup?.(),
+      }),
+      el("p", { class: "nota-2", stile: { marginTop: "var(--s3)" }, testo:
+        "Si copiano da Revolut e da ING una volta sola. Da lì in poi li muovono i movimenti." }),
     ]);
-  } else {
-    const proj = proiezione(mese);
-    const frazione = bt ? Math.min(1, st.ordinaria / bt) : 0;
-    aggiungi(s, [
-      el("div", { class: "fi-eroe-testa" }, [
-        el("div", { class: `micro ${frazione >= 1 ? "male" : frazione >= 0.9 ? "avviso" : "ok"}`,
-          testo: `${Math.round(frazione * 100)}% del budget` }),
-        eCorrente && segmenti([["settimana", "Settimana"], ["mese", "Mese"]], grafico, (x) => cambia({ grafico: x })),
+    return box;
+  }
+
+  if (s.finita) {
+    aggiungi(box, [
+      el("div", { class: "micro male", testo: "Questa settimana" }),
+      el("div", { class: "cifra cifra-xl negativo", html: euroGrande(0) }),
+      el("p", { class: "fi-numero-nota", testo:
+        `La settimana è finita · ${plurale(s.giorniRimasti, "giorno", "giorni")} a lunedì` }),
+      el("div", { class: "fi-numero-scelta" }, [
+        el("button", { class: "btn morbido", type: "button", testo: "Non ricaricare",
+          onClick: () => avviso("Va bene così. Lunedì si riparte.") }),
+        el("button", { class: "btn", type: "button", testo: "Devo ricaricare",
+          onClick: () => azioni.ricarica?.() }),
       ]),
-      el("div", { class: "cifra cifra-xl", html: euroGrande(st.ordinaria) }),
-      el("p", { class: "fi-eroe-nota",
-        testo: `di ${euro(bt, { tondo: true })} · giorno ${giorno} di ${giorni}${proj != null ? ` · proiezione ${euro(proj, { tondo: true })}` : ""}` }),
-      graficoCumulato(cumulata(mese), bt, eCorrente ? giorno : null, giorni),
+    ]);
+    return box;
+  }
+
+  aggiungi(box, [
+    el("div", { class: "fi-numero-testa" }, [
+      el("div", { class: "micro", testo: "Questa settimana" }),
+      s.budget > 0 && el("div", { class: `micro ${tono}`,
+        testo: `${Math.round(s.frazione * 100)}% consumato` }),
+    ]),
+    el("div", { class: "cifra cifra-xl", html: euroGrande(s.resta) }),
+    el("p", { class: "fi-numero-nota", testo:
+      `restano · ${plurale(s.giorniRimasti, "giorno", "giorni")} a lunedì` }),
+    s.budget > 0 && el("div", { class: "fi-consumo" }, [
+      el("i", { stile: { width: `${Math.round(s.frazione * 100)}%` } }),
+    ]),
+    el("p", { class: "fi-numero-ritmo", testo: s.alGiorno > 0
+      ? `${euro(s.alGiorno)} al giorno fino a domenica`
+      : "Meglio non spendere altro fino a lunedì" }),
+  ]);
+  return box;
+}
+
+/* ---------------------------------------------------------- 2. ALERT ---- */
+
+function blocchoAlert(lista) {
+  return el("div", { class: "fi-avvisi" }, lista.map((a) => {
+    const r = el("div", { class: "fi-avviso" }, [
+      el("span", { class: "fi-avviso-punto" }),
+      el("div", {}, [el("span", { class: "fi-avviso-testo", testo: a.testo })]),
+    ]);
+    r.style.setProperty("--tinta",
+      a.livello === "critico" ? "var(--male)" : a.livello === "warn" ? "var(--avviso)" : "var(--accento)");
+    return r;
+  }));
+}
+
+/* ------------------------------------------------------- 3. IN ARRIVO --- */
+/*
+   Risponde a «posso permettermi questa cena, o fra tre giorni mi arriva una
+   bolletta?». Ogni voce dice da quale pocket uscirà, e in fondo c'è la riga
+   di verifica: se il pocket Fisse non copre i ricorrenti dei prossimi
+   quattordici giorni, si vede subito. È l'errore che ha spaccato luglio.
+*/
+
+function inArrivoBlocco(a) {
+  if (!a.voci.length) {
+    return el("section", { class: "scheda" }, [
+      el("div", { class: "micro", testo: "In arrivo · prossimi 14 giorni" }),
+      el("p", { class: "nota", stile: { marginTop: "8px", marginBottom: "0" },
+        testo: "Niente in scadenza. I ricorrenti si configurano in Impostazioni." }),
     ]);
   }
-  return s;
+
+  return el("section", { class: "scheda fi-arrivo" }, [
+    el("div", { class: "fi-arrivo-testa" }, [
+      el("span", { class: "micro", testo: "In arrivo · prossimi 14 giorni" }),
+      el("span", { class: "cifra cifra-s negativo", html: euroGrande(a.totale, { centesimi: false }) }),
+    ]),
+
+    el("ul", { class: "fi-arrivo-lista" }, a.voci.map((v) => el("li", {
+      class: "fi-arrivo-riga" + (v.fra <= 2 ? " vicina" : ""),
+    }, [
+      el("span", { class: "fi-arrivo-quando", testo: dataBreve(v.quando) }),
+      el("span", { class: "fi-arrivo-nome" }, [
+        el("span", { testo: v.nome }),
+        v.stimato && el("span", { class: "fi-tag ambra", testo: "stima" }),
+      ]),
+      el("span", { class: "fi-arrivo-importo num", testo: v.stimato
+        ? `${euro(v.stimaMin, { tondo: true })}–${euro(v.stimaMax, { tondo: true })}`
+        : euro(v.importo) }),
+      el("span", { class: "fi-arrivo-pocket", testo: nomePocket(v.pocket) }),
+    ]))),
+
+    el("div", { class: `fi-arrivo-verifica ${a.coperte ? "ok" : "male"}` }, [
+      el("span", { testo: a.coperte
+        ? "Coperto da Spese fisse"
+        : "Le Spese fisse non bastano" }),
+      el("span", { class: "num", testo: a.coperte
+        ? `${euro(a.daFisse, { tondo: true })} / ${euro(a.saldoFisse, { tondo: true })}`
+        : `mancano ${euro(a.scoperto, { tondo: true })}` }),
+    ]),
+  ]);
 }
 
-/** Una categoria come tessera: simbolo, quanto resta, barra col cursore. */
-function tesseraCategoria({ c, speso, budget, n }, apriCat) {
-  const frazione = budget > 0 ? speso / budget : (speso > 0 ? 1 : 0);
-  const resta = budget - speso;
-  const oltre = budget > 0 && speso > budget;
-  // Arrotondare verso lo zero nasconde lo sforamento: 100,3% diventava
-  // «100% speso» con la tessera rossa di fianco, e sembrava un errore.
-  const pct = frazione > 1 ? Math.ceil(frazione * 100) : Math.round(frazione * 100);
-  // E sotto il mezzo euro non si dice né «restano» né «oltre»: si dice che il
-  // budget è finito, perché «€0 oltre il budget» non vuol dire niente.
-  const inPari = budget > 0 && Math.abs(resta) < 100;
+const NOMI_POCKET = { principale: "Principale", cassa: "Cassa", fisse: "Fisse", ing: "ING" };
+const nomePocket = (id) => NOMI_POCKET[id] || id;
 
-  return tessera({
-    nome: c.nome,
-    emoji: emojiCat(c.id),
-    sotto: budget > 0 ? `di ${euro(budget, { tondo: true })}` : "senza budget",
-    micro: budget > 0 ? `${pct}% speso` : plurale(n, "movimento", "movimenti"),
-    tonoMicro: !budget ? "" : oltre ? "male" : frazione >= 0.9 ? "avviso" : "ok",
-    cifra: inPari ? "0" : euroGrande(budget > 0 ? Math.abs(resta) : speso, { centesimi: false }),
-    coda: !budget ? "speso finora"
-      : inPari ? "budget esaurito"
-      : oltre ? "oltre il budget" : "restano questo mese",
-    frazione: Math.min(1, frazione),
-    tinta: coloreCat(c.id),
-    azione: () => apriCat(c.id),
-  });
+/* --------------------------------------------------- 4. DOVE SONO I SOLDI */
+
+function dovSonoISoldi(azioni) {
+  const pk = pocketConSaldi();
+  if (!pk.length) return null;
+  const soglie = { ...SOGLIE_PREDEFINITE, ...(stato().soglie || {}) };
+  const totale = pk.reduce((s, p) => s + p.saldoVero, 0);
+
+  const nota = {
+    principale: "spendibile",
+    cassa: "parcheggio · non spendere",
+    fisse: "addebiti automatici",
+    ing: "riserva · non toccare",
+  };
+
+  return el("section", { class: "scheda fi-pocket" }, [
+    el("div", { class: "micro", testo: "Dove sono i soldi" }),
+    el("ul", { class: "fi-pocket-lista" }, pk.map((p) => {
+      const sotto = p.id === "ing" && p.saldoVero > 0 && p.saldoVero < soglie.ingMinimo;
+      const riga = el("li", { class: "fi-pocket-riga" + (sotto ? " sotto" : "") }, [
+        el("span", { class: "fi-pocket-nome", testo: p.nome }),
+        el("span", { class: "fi-pocket-saldo num", testo: euro(p.saldoVero) }),
+        el("span", { class: "fi-pocket-nota", testo: sotto
+          ? "sotto il minimo di sicurezza"
+          : (nota[p.id] || TIPI_POCKET[p.tipo]?.nome || "") }),
+      ]);
+      // ING lo si aggiorna a mano: è l'unico saldo che l'app non può sapere.
+      if (p.external) {
+        riga.classList.add("tocca");
+        riga.addEventListener("click", () => azioni.saldoING?.());
+      }
+      return riga;
+    })),
+    el("div", { class: "fi-pocket-totale" }, [
+      el("span", { class: "micro", testo: "Totale" }),
+      el("span", { class: "cifra cifra-s", html: euroGrande(totale, { centesimi: false }) }),
+    ]),
+  ]);
 }
 
+/* -------------------------------------------------- 5. LE CATEGORIE ----- */
+/*
+   Solo quelle della cassa settimanale più le due che sforano di più: nove
+   barre non si leggono, e le sei che vanno bene rendono invisibili le tre
+   che non vanno.
+*/
+
+function categorieDelCicloBlocco(ciclo, apriCat) {
+  const tutte = categorieDelCiclo(ciclo).filter((c) => c.budget > 0 || c.speso > 0);
+  const dellaCassa = tutte.filter((c) => CATEGORIE_CASSA.includes(c.id));
+  const altre = tutte
+    .filter((c) => !CATEGORIE_CASSA.includes(c.id) && c.budget > 0)
+    .sort((a, b) => (b.speso / b.budget) - (a.speso / a.budget))
+    .slice(0, 2);
+  const mostrate = [...dellaCassa, ...altre];
+  if (!mostrate.length) return null;
+
+  return el("section", { class: "scheda fi-cat-ciclo" }, [
+    el("div", { class: "fi-arrivo-testa" }, [
+      el("span", { class: "micro", testo: "Questo mese" }),
+      el("span", { class: "nota", testo: nomeCiclo(ciclo) }),
+    ]),
+    el("ul", { class: "fi-catlista" }, mostrate.map((c) => {
+      const f = c.budget > 0 ? c.speso / c.budget : 0;
+      const oltre = c.budget > 0 && c.speso > c.budget;
+      const b = el("li", {}, [el("button", { class: "fi-catriga", type: "button",
+        onClick: () => apriCat(c.id) }, [
+        el("span", { class: "fi-catriga-nome" }, [
+          el("span", { class: "fi-catriga-emoji", testo: emojiCat(c.id) }),
+          el("span", { testo: c.nome }),
+        ]),
+        el("span", { class: `fi-catriga-cifra num ${oltre ? "negativo" : ""}`,
+          testo: `${euro(c.speso, { tondo: true })} / ${euro(c.budget, { tondo: true })}` }),
+        el("span", { class: "fi-catriga-barra" }, [
+          el("i", { stile: { width: `${Math.min(100, Math.round(f * 100))}%` } }),
+        ]),
+      ])]);
+      b.querySelector(".fi-catriga").style.setProperty("--tinta",
+        oltre ? "var(--male)" : f >= 0.85 ? "var(--avviso)" : coloreCat(c.id));
+      return b;
+    })),
+  ]);
+}
+
+/* ------------------------------------------------------- 6. COME SPENDI - */
+
+function comeSpendiBlocco(ciclo) {
+  const c = comeSpendi(ciclo);
+  if (!c.totale) return null;
+  const pct = Math.round(c.pctDiscrezionale * 100);
+
+  return el("section", { class: "scheda fi-come" }, [
+    el("div", { class: "micro", testo: "Come spendi · questo ciclo" }),
+    el("div", { class: "fi-come-barra" }, [
+      el("i", { class: "necessario", stile: { width: `${100 - pct}%` } }),
+      el("i", { class: "discrezionale", stile: { width: `${pct}%` } }),
+    ]),
+    el("div", { class: "fi-come-legenda" }, [
+      el("span", {}, [
+        el("i", { class: "necessario" }),
+        el("span", { testo: `Necessario ${euro(c.necessarioTotale, { tondo: true })}` }),
+      ]),
+      el("span", {}, [
+        el("i", { class: "discrezionale" }),
+        el("span", { testo: `Discrezionale ${euro(c.discrezionale, { tondo: true })} (${pct}%)` }),
+      ]),
+    ]),
+  ]);
+}
+
+/* ------------------------------------------------------ 7. SFORAMENTI --- */
+/*
+   Sempre visibile, e soprattutto quando è a zero: è l'unica abitudine che è
+   cambiata davvero — giugno 440, luglio 619, agosto 0 — e uno zero che si
+   vede è quello che la protegge.
+*/
+
+function sforamentiBlocco(ciclo) {
+  const s = sforamenti(ciclo);
+  return el("section", { class: `scheda fi-sfor ${s.n ? "male" : "ok"}` }, [
+    el("div", { class: "fi-arrivo-testa" }, [
+      el("span", { class: `micro ${s.n ? "avviso" : "ok"}`, testo: "Sforamenti" }),
+      el("span", { class: `cifra cifra-s ${s.n ? "attenzione" : "positivo"}`,
+        testo: String(s.n) }),
+    ]),
+    el("p", { class: "nota", stile: { margin: "6px 0 0" }, testo: s.n === 0
+      ? "Questo ciclo · nessuna ricarica fuori dal budget."
+      : `Questo ciclo · ${euro(s.totale, { tondo: true })} in ${plurale(s.n, "ricarica", "ricariche")}.` }),
+    s.ultimo && el("p", { class: "nota-2", stile: { margin: "4px 0 0" },
+      testo: `Ultimo: ${dataBreve(s.ultimo.data)} · ${euro(s.ultimo.imp, { tondo: true })}${s.ultimo.nota ? ` — ${s.ultimo.nota}` : ""}` }),
+  ]);
+}
 
 /* ============================================================== MOVIMENTI */
 
@@ -681,7 +802,11 @@ export function apriMovimento({ movimento = null, ridisegna, tipo = "out" } = {}
   const nuovo = !movimento;
   const b = movimento
     ? { ...movimento }
-    : { id: nuovoId("m"), tipo, imp: 0, nota: "", cat: null, sub: null, rif: null, ecc: false, data: oggiISO() };
+    : { id: nuovoId("m"), tipo, imp: 0, nota: "", cat: null, sub: null, rif: null, ecc: false,
+        data: oggiISO(),
+        // Il Principale è l'unico conto da cui si spende: è il valore giusto
+        // per default, e non va chiesto ogni volta.
+        pocket: tipo === "in" ? "ing" : "principale", pocketTo: null, rimborsoDi: null };
 
   let testoImporto = b.imp ? (b.imp / 100).toFixed(2).replace(".", ",") : "";
   let categoriaManuale = Boolean(movimento?.cat);
@@ -762,10 +887,7 @@ export function apriMovimento({ movimento = null, ridisegna, tipo = "out" } = {}
     return Boolean(b.data);
   };
 
-  const salva = (eccezionale) => {
-    const imp = centesimi(testoImporto);
-    if (!imp) { avviso("Manca l'importo.", { tono: "errore" }); return; }
-    if (b.tipo === "out" && !b.cat) { avviso("Manca la categoria.", { tono: "errore" }); return; }
+  const scrivi = (imp, eccezionale) => {
     salvaMovimento({ ...b, imp, ecc: b.tipo === "out" ? Boolean(eccezionale) : false });
     // Si impara solo da una scelta esplicita: memorizzare quello che ha
     // indovinato l'app la farebbe convergere sui propri errori.
@@ -774,6 +896,23 @@ export function apriMovimento({ movimento = null, ridisegna, tipo = "out" } = {}
     tocco(12);
     avviso(nuovo ? "Registrato." : "Aggiornato.");
     ridisegna();
+  };
+
+  const salva = (eccezionale) => {
+    const imp = centesimi(testoImporto);
+    if (!imp) { avviso("Manca l'importo.", { tono: "errore" }); return; }
+    if (b.tipo === "out" && !b.cat) { avviso("Manca la categoria.", { tono: "errore" }); return; }
+
+    // FRIZIONE SULLE SPESE GROSSE. Sopra la soglia si passa da una domanda:
+    // le uscite sopra i 50 € sono cinque in due mesi e pesano più di tutte
+    // le colazioni sommate, quindi è lì che tre secondi di attesa valgono
+    // qualcosa — e su un caffè non devono esserci.
+    const soglia = { ...SOGLIE_PREDEFINITE, ...(stato().soglie || {}) }.spesaGrossa;
+    if (nuovo && b.tipo === "out" && imp >= soglia) {
+      chiediSeCiDormi(imp, b, () => scrivi(imp, eccezionale), ridisegna);
+      return;
+    }
+    scrivi(imp, eccezionale);
   };
 
   // Ordinaria o straordinaria è la domanda che tiene in piedi tutto il
@@ -1001,6 +1140,10 @@ export function vistaSetup(mese, ridisegna) {
     ]),
   ]);
 
+  // Il ciclo, i pocket, i ricorrenti e le soglie: tutto quello che il
+  // Registro v2 ha aggiunto e che va configurato una volta sola.
+  aggiungi(fuori, [vistaSetupV2(ridisegna)]);
+
   return fuori;
 }
 
@@ -1102,5 +1245,566 @@ function bloccoImport(ridisegna) {
       areaTesto,
       anteprima,
     ]),
+  ]);
+}
+
+/* ============================================================== RICARICA
+   Il flusso anti-sforamento. È il cuore del prodotto.
+
+   Quando il Principale è vuoto e servono soldi, l'app NON deve impedirlo:
+   deve renderlo cosciente e tracciato. Da qui le tre cose che sembrano
+   attrito e sono il punto:
+
+   1. si deve scegliere DA DOVE, e l'app dice cosa comporta;
+   2. il campo «perché» è obbligatorio — tre secondi di frizione fermano
+      metà delle ricariche impulsive, e lo storico dei motivi è la cosa più
+      utile da rileggere a fine mese;
+   3. dalla seconda volta nello stesso ciclo, l'app lo dice.
+*/
+
+export function apriRicarica(ridisegna) {
+  const oggi = oggiISO();
+  const ciclo = cicloDi(oggi);
+  const s = settimana(oggi);
+  const sf = sforamenti(ciclo);
+
+  const b = { fonte: "cassa", imp: 0, perche: "" };
+  let testoImporto = "";
+
+  const { corpo } = apriFoglio({
+    titolo: "Ricarica fuori ciclo",
+    sinistra: el("button", { class: "btn nudo", type: "button", testo: "Annulla",
+      onClick: () => chiudiFoglio() }),
+    alChiudi: ridisegna,
+  });
+
+  const schermo = el("div", { class: "fi-importo cifra vuoto", testo: "0,00" });
+  const conseguenza = el("p", { class: "fi-conseguenza" });
+  const zonaConferma = el("div", {});
+
+  const saldoCassa = saldoPocket("cassa");
+
+  const aggiornaConseguenza = () => {
+    if (b.fonte === "cassa") {
+      const dopo = saldoCassa - b.imp;
+      const settimaneCoperte = s.budget > 0 ? Math.floor(Math.max(0, dopo) / s.budget) : 0;
+      conseguenza.textContent = b.imp > 0
+        ? `Anticipi la prossima settimana: lunedì avrai ${euro(Math.max(0, s.budget - b.imp))} invece di ${euro(s.budget)}.`
+        : `Nella Cassa ci sono ${euro(saldoCassa)}, cioè ${plurale(settimaneCoperte, "settimana", "settimane")}.`;
+      conseguenza.className = "fi-conseguenza";
+    } else {
+      conseguenza.textContent = "Intacchi la riserva. Viene contato come sforamento.";
+      conseguenza.className = "fi-conseguenza male";
+    }
+  };
+
+  const disegnaConferma = () => {
+    zonaConferma.replaceChildren();
+    const perche = b.perche.trim();
+    const ok = b.imp > 0 && perche.length >= 3;
+    zonaConferma.append(el("button", {
+      class: "btn pieno grande", type: "button", disabled: !ok,
+      testo: ok ? `Ricarica ${euro(b.imp)}` : perche.length < 3 && b.imp > 0
+        ? "Scrivi perché, anche due parole"
+        : "Quanto ti serve?",
+      onClick: () => {
+        // Un travaso dalla Cassa NON è uno sforamento: sposta soldi miei fra
+        // pocket miei. Dall'ING sì, ed è la distinzione che rende il
+        // contatore degli sforamenti una metrica e non un rumore.
+        salvaMovimento(b.fonte === "cassa"
+          ? { id: nuovoId("m"), data: oggi, tipo: "giro", imp: b.imp,
+              pocket: "cassa", pocketTo: "principale", cat: null, sub: null,
+              nota: `Anticipo — ${perche}` }
+          : { id: nuovoId("m"), data: oggi, tipo: "extra", imp: b.imp,
+              pocket: "principale", pocketTo: null, cat: null, sub: null,
+              nota: perche });
+        tocco(14);
+        avviso(b.fonte === "cassa" ? "Anticipo registrato." : "Sforamento registrato.");
+        chiudiFoglio();
+      },
+    }));
+  };
+
+  aggiungi(corpo, [
+    el("p", { class: "fi-ric-stato", testo:
+      `Restano ${plurale(s.giorniRimasti, "giorno", "giorni")} a lunedì. ` +
+      (sf.n === 0
+        ? "Questo ciclo non hai ancora ricaricato."
+        : `Questo ciclo hai già ricaricato ${plurale(sf.n, "volta", "volte")}.`) }),
+
+    // Dalla seconda in poi si aggiunge il contesto. Non è un rimprovero: è
+    // il numero che serve per decidere, e senza va nascosto.
+    sf.n >= 1 && el("p", { class: "fi-ric-avviso", testo:
+      `L'ultima è del ${dataBreve(sf.ultimo.data)} da ${euro(sf.ultimo.imp, { tondo: true })}${sf.ultimo.nota ? ` — «${sf.ultimo.nota}»` : ""}.` }),
+
+    el("div", { class: "gruppo-titolo", testo: "Da dove" }),
+    segmenti([["cassa", "Cassa"], ["ing", "ING"]], b.fonte, (v) => {
+      b.fonte = v; aggiornaConseguenza();
+    }),
+    conseguenza,
+
+    el("div", { class: "gruppo-titolo", testo: "Quanto" }),
+    schermo,
+    tastierino((t) => {
+      testoImporto = digita(testoImporto, t);
+      b.imp = centesimi(testoImporto);
+      schermo.textContent = testoImporto || "0,00";
+      schermo.classList.toggle("vuoto", !testoImporto);
+      tocco(5);
+      aggiornaConseguenza();
+      disegnaConferma();
+    }),
+
+    el("div", { class: "campo-gruppo" }, [
+      el("label", { class: "campo-etichetta", testo: "Perché" }),
+      el("input", { class: "campo", type: "text", maxlength: "80",
+        placeholder: "cena fuori non prevista",
+        onInput: (e) => { b.perche = e.target.value; disegnaConferma(); } }),
+      el("p", { class: "nota-2", stile: { marginTop: "6px" },
+        testo: "Obbligatorio. A fine mese rileggere i motivi vale più dei totali." }),
+    ]),
+
+    zonaConferma,
+  ]);
+
+  aggiornaConseguenza();
+  disegnaConferma();
+}
+
+/** Un tasto premuto sopra un testo di importo: torna il testo nuovo. */
+function digita(v, t) {
+  if (t === "←") return v.slice(0, -1);
+  if (t === ",") return v.includes(",") ? v : (v ? v + "," : "0,");
+  const [, dec] = v.split(",");
+  if (dec != null && dec.length >= 2) return v;
+  if (v.replace(",", "").length >= 8) return v;
+  return v + t;
+}
+
+/* ================================================================ SALDO ING
+   L'unico saldo che l'app non può dedurre: ING vive fuori di qui. */
+
+export function apriSaldoING(ridisegna) {
+  const p = pocketPerId("ing");
+  let testo = p?.saldo ? (p.saldo / 100).toFixed(2).replace(".", ",") : "";
+
+  const { corpo } = apriFoglio({
+    titolo: "Saldo ING",
+    sinistra: el("button", { class: "btn nudo", type: "button", testo: "Annulla", onClick: () => chiudiFoglio() }),
+    alChiudi: ridisegna,
+    mezzo: true,
+  });
+
+  const schermo = el("div", { class: "fi-importo cifra" + (testo ? "" : " vuoto"), testo: testo || "0,00" });
+
+  aggiungi(corpo, [
+    el("p", { class: "nota", testo:
+      "ING è una riserva che sta fuori dall'app: il saldo non si deduce dai movimenti, si copia dall'estratto conto." }),
+    schermo,
+    tastierino((t) => {
+      testo = digita(testo, t);
+      schermo.textContent = testo || "0,00";
+      schermo.classList.toggle("vuoto", !testo);
+      tocco(5);
+    }),
+    el("button", {
+      class: "btn pieno grande", type: "button", testo: "Salva",
+      onClick: () => { scriviPocket("ing", { saldo: centesimi(testo) }); avviso("Saldo aggiornato."); chiudiFoglio(); },
+    }),
+  ]);
+}
+
+/* ============================================================ CI DORMO SU
+   La frizione sulle spese grosse.
+
+   Sopra la soglia — 50 € di serie — prima di confermare si passa da una
+   domanda sola, con il costo espresso in una unità che significa qualcosa:
+   non «194 €» ma «una settimana e mezza di budget».
+
+   «Ci dormo su» non annulla: mette la spesa fra le INTENZIONI. Se dopo
+   ventiquattro ore la confermi si registra, se la ignori decade da sola
+   dopo sette giorni. Sulla base dello storico questa singola funzione vale
+   più di tutte le altre: le uscite sopra i 50 € sono cinque in due mesi e
+   pesano più di tutte le colazioni sommate.
+*/
+
+function chiediSeCiDormi(imp, bozza, conferma, ridisegna) {
+  const s = settimana();
+  const settimane = s.budget > 0 ? imp / s.budget : 0;
+  const quanto = settimane >= 0.9
+    ? `Sono ${settimane.toFixed(1).replace(".", ",")} settimane di budget.`
+    : `Sono ${Math.round((imp / Math.max(1, s.budget)) * 100)}% del budget della settimana.`;
+
+  const { corpo } = apriFoglio({
+    titolo: "Un momento",
+    sinistra: el("button", { class: "btn nudo", type: "button", testo: "Indietro", onClick: () => chiudiFoglio() }),
+    mezzo: true,
+  });
+
+  aggiungi(corpo, [
+    el("div", { class: "fi-dormo-cifra cifra", html: euroGrande(imp) }),
+    el("p", { class: "fi-dormo-quanto", testo: quanto }),
+    s.resta > 0 && el("p", { class: "nota", testo:
+      `Dopo questa ne restano ${euro(s.resta - imp)} per ${plurale(s.giorniRimasti, "giorno", "giorni")}.` }),
+
+    el("div", { class: "fi-dormo-scelta" }, [
+      el("button", { class: "btn morbido", type: "button", testo: "Ci dormo su",
+        onClick: () => {
+          metteInSospeso({ ...bozza, imp, id: nuovoId("p") });
+          chiudiFoglio();   // il foglio della domanda
+          chiudiFoglio();   // il foglio del movimento
+          avviso("Messa in sospeso. La ritrovi in Riepilogo.");
+          ridisegna();
+        } }),
+      el("button", { class: "btn", type: "button", testo: "Registra",
+        onClick: () => { chiudiFoglio(); conferma(); } }),
+    ]),
+  ]);
+}
+
+/* --------------------------------------------------------- le in sospeso */
+
+function blocchoSospese(ridisegna) {
+  const p = pendenti();
+  if (!p.length) return null;
+
+  return el("section", { class: "scheda fi-sospese" }, [
+    el("div", { class: "micro", testo: "Ci hai dormito su" }),
+    el("ul", { class: "fi-sospese-lista" }, p.map((x) => {
+      const ore = Math.floor((Date.now() - x.ts) / 3600000);
+      const pronta = ore >= 24;
+      return el("li", { class: "fi-sospesa" }, [
+        el("div", { class: "fi-sospesa-testo" }, [
+          el("div", { class: "fi-sospesa-nota", testo: x.nota || categoriaPerId(x.cat)?.nome || "Spesa" }),
+          el("div", { class: "nota-2", testo: pronta
+            ? "Sono passate 24 ore. La vuoi ancora?"
+            : `Ancora ${plurale(24 - ore, "ora", "ore")} di attesa` }),
+        ]),
+        el("span", { class: "fi-sospesa-cifra num", testo: euro(x.imp) }),
+        el("div", { class: "fi-sospesa-azioni" }, [
+          el("button", { class: "btn piccolo nudo", type: "button", testo: "Lascia stare",
+            onClick: () => { togliDaSospeso(x.id); avviso("Lasciata perdere."); ridisegna(); } }),
+          el("button", { class: "btn piccolo", type: "button", testo: "Registra", disabled: !pronta,
+            onClick: () => {
+              const { ts, ...m } = x;
+              salvaMovimento({ ...m, id: nuovoId("m"), data: oggiISO() });
+              togliDaSospeso(x.id);
+              avviso("Registrata.");
+              ridisegna();
+            } }),
+        ]),
+      ]);
+    })),
+  ]);
+}
+
+/* ========================================================= SALDI DEI POCKET
+   Si compila una volta sola, copiando da Revolut e da ING. Da lì in poi i
+   saldi li muovono i movimenti, e questa schermata serve solo a rimetterli
+   in bolla quando ci si accorge di uno scostamento.
+
+   La cassa settimanale sta qui e non in Impostazioni perché è il numero che
+   trasforma i quattro saldi in «quanto posso spendere oggi»: separarli
+   vorrebbe dire compilarne metà e non capire perché il conto non parte. */
+
+export function apriSetupPocket(ridisegna) {
+  const b = {};
+  for (const p of pocketConSaldi()) b[p.id] = p.saldo || 0;
+  let cassaSett = Number(stato().config?.cassaSettimanale) || 0;
+
+  const { corpo } = apriFoglio({
+    titolo: "Saldi dei pocket",
+    sinistra: el("button", { class: "btn nudo", type: "button", testo: "Annulla", onClick: () => chiudiFoglio() }),
+    alChiudi: ridisegna,
+  });
+
+  const NOTE = {
+    principale: "Revolut · la settimana corrente. È l'unico conto da cui si spende.",
+    cassa: "Revolut · le settimane future del mese. Parcheggio, non spendibile.",
+    fisse: "Revolut · gli addebiti automatici. Non si tocca.",
+    ing: "Il deposito. Riserva: alimenta gli altri, non si spende da qui.",
+  };
+
+  aggiungi(corpo, [
+    el("p", { class: "nota", testo:
+      "Copia i quattro saldi come sono adesso. I movimenti già in archivio non li toccano: contano da oggi in avanti." }),
+
+    ...pocketConSaldi().map((p) => el("div", { class: "campo-gruppo fi-setup-pocket" }, [
+      el("label", { class: "campo-etichetta", testo: p.nome }),
+      campo({
+        tipo: "text", valore: p.saldo ? (p.saldo / 100).toFixed(2).replace(".", ",") : "",
+        segnaposto: "0,00",
+        inputmode: "decimal",
+        alCambio: (v) => { b[p.id] = centesimi(v); },
+      }),
+      el("p", { class: "nota-2", testo: NOTE[p.id] || "" }),
+    ])),
+
+    el("div", { class: "gruppo-titolo", testo: "Il travaso del lunedì" }),
+    el("div", { class: "campo-gruppo" }, [
+      campo({
+        tipo: "text", valore: cassaSett ? (cassaSett / 100).toFixed(2).replace(".", ",") : "",
+        segnaposto: "130,00",
+        inputmode: "decimal",
+        alCambio: (v) => { cassaSett = centesimi(v); },
+      }),
+      el("p", { class: "nota-2", testo:
+        "Quanto passa dalla Cassa al Principale ogni lunedì. È il budget della settimana, e la barra del consumo si misura su questo." }),
+    ]),
+
+    el("button", {
+      class: "btn pieno grande", type: "button", testo: "Salva i saldi",
+      stile: { marginTop: "var(--s5)" },
+      onClick: () => {
+        for (const [id, saldo] of Object.entries(b)) scriviPocket(id, { saldo });
+        scriviMeta((s) => {
+          s.config.cassaSettimanale = cassaSett;
+          // La data spartiacque si sposta a oggi: i saldi appena inseriti
+          // sono di oggi, e i movimenti di ieri non devono riscalarli.
+          s.config.pocketDa = oggiISO();
+        });
+        avviso("Saldi salvati.");
+        chiudiFoglio();
+      },
+    }),
+  ]);
+}
+
+/* ============================================== IMPOSTAZIONI — REGISTRO v2
+   Il ciclo, i pocket, i ricorrenti e le soglie. Sta in fondo alla sezione
+   Finanze di #/impostazioni, sotto quello che c'era già. */
+
+export function vistaSetupV2(ridisegna) {
+  const s = stato();
+  const soglie = { ...SOGLIE_PREDEFINITE, ...(s.soglie || {}) };
+  const fuori = el("div", {});
+
+  /* --- il ciclo ------------------------------------------------------- */
+  const g = Number(s.config?.giornoStipendio) || 21;
+  aggiungi(fuori, [el("section", { class: "scheda" }, [
+    el("div", { class: "scheda-titolo", testo: "Il ciclo dello stipendio" }),
+    el("p", { class: "nota", testo:
+      "Il mese finanziario non parte il primo. Da questo giorno si contano budget, proiezioni e «quanto manca alla fine del mese»: col mese solare i conti sbagliavano di venti giorni tutti i mesi." }),
+    el("div", { class: "campo-gruppo", stile: { marginTop: "var(--s3)" } }, [
+      el("label", { class: "campo-etichetta", testo: "Giorno dello stipendio" }),
+      el("div", { class: "fi-riga-doppia" }, [
+        campo({ tipo: "number", valore: String(g), min: "1", max: "28",
+          alCambio: (v) => {
+            const n = Math.min(28, Math.max(1, Number(v) || 1));
+            scriviMeta((st) => { st.config.giornoStipendio = n; });
+          } }),
+        el("span", { class: "nota", testo: `Ciclo in corso: ${nomeCiclo(cicloDi())}` }),
+      ]),
+    ]),
+  ])]);
+
+  /* --- i pocket -------------------------------------------------------- */
+  aggiungi(fuori, [el("section", { class: "scheda" }, [
+    el("div", { class: "scheda-titolo", testo: "I pocket" }),
+    lista(pocketConSaldi().map((p) => riga({
+      etichetta: p.nome,
+      valore: euro(p.saldoVero),
+      dettaglio: TIPI_POCKET[p.tipo]?.nome + (p.external ? " · saldo a mano" : ""),
+    }))),
+    el("button", {
+      class: "btn tenue pieno", type: "button", testo: "Correggi i saldi",
+      onClick: () => apriSetupPocket(ridisegna),
+    }),
+    el("p", { class: "nota", testo:
+      `I movimenti muovono i saldi da ${dataBreve(s.config?.pocketDa || oggiISO())} in avanti. Quelli precedenti restano nello storico e non li toccano.` }),
+  ])]);
+
+  /* --- i ricorrenti ---------------------------------------------------- */
+  const zonaRic = el("div", {});
+  const disegnaRic = () => {
+    zonaRic.replaceChildren();
+    const ric = s.ricorrenti || [];
+    aggiungi(zonaRic, [
+      ric.length === 0
+        ? el("p", { class: "nota", testo: "Nessun ricorrente. Senza, la sezione «In arrivo» della home resta vuota." })
+        : lista(ric.map((r) => riga({
+            etichetta: r.nome,
+            valore: r.tipo === "variabile"
+              ? `${euro(r.stimaMin, { tondo: true })}–${euro(r.stimaMax, { tondo: true })}`
+              : euro(r.imp, { tondo: true }),
+            dettaglio: `${etichettaCadenza(r)} · ${nomePocket(r.pocket)}${r.attivo ? "" : " · sospeso"}`,
+            tono: r.attivo ? "" : "",
+            azione: () => apriRicorrente(r, () => { disegnaRic(); ridisegna(); }),
+          }))),
+      el("button", {
+        class: "btn tenue pieno", type: "button", testo: "Aggiungi un ricorrente",
+        onClick: () => apriRicorrente(null, () => { disegnaRic(); ridisegna(); }),
+      }),
+    ]);
+  };
+  disegnaRic();
+
+  aggiungi(fuori, [el("section", { class: "scheda" }, [
+    el("div", { class: "scheda-titolo", testo: "Uscite ricorrenti" }),
+    el("p", { class: "nota", testo:
+      "Alimentano «In arrivo» e l'allarme sulle Spese fisse scoperte. Le variabili si dichiarano con un intervallo, e nelle proiezioni vale sempre il massimo." }),
+    zonaRic,
+  ])]);
+
+  /* --- le soglie ------------------------------------------------------- */
+  aggiungi(fuori, [el("section", { class: "scheda" }, [
+    el("div", { class: "scheda-titolo", testo: "Soglie" }),
+    campoSoglia("Minimo della riserva ING", soglie.ingMinimo, (v) => scriviSoglia("ingMinimo", v),
+      "Sotto questa cifra ING passa in ambra e compare l'avviso."),
+    campoSoglia("Frizione sulle spese grosse", soglie.spesaGrossa, (v) => scriviSoglia("spesaGrossa", v),
+      "Sopra questo importo, prima di registrare l'app chiede se ci vuoi dormire su."),
+    el("div", { class: "campo-gruppo" }, [
+      el("label", { class: "campo-etichetta", testo: "Avviso di categoria" }),
+      segmenti([["0.75", "75%"], ["0.85", "85%"], ["0.95", "95%"]], String(soglie.catAvviso),
+        (v) => scriviSoglia("catAvviso", Number(v))),
+      el("p", { class: "nota", testo: "A che punto del budget di categoria compare l'avviso." }),
+    ]),
+  ])]);
+
+  return fuori;
+}
+
+const scriviSoglia = (k, v) => scriviMeta((s) => { s.soglie = { ...(s.soglie || {}), [k]: v }; });
+
+function campoSoglia(etichetta, valore, alSalva, nota) {
+  return el("div", { class: "campo-gruppo" }, [
+    el("label", { class: "campo-etichetta", testo: etichetta }),
+    campo({ tipo: "text", inputmode: "decimal",
+      valore: valore ? (valore / 100).toFixed(2).replace(".", ",") : "",
+      alCambio: (v) => alSalva(centesimi(v)) }),
+    el("p", { class: "nota", testo: nota }),
+  ]);
+}
+
+const CADENZE = [["mensile", "Ogni mese"], ["bimestrale", "Ogni 2 mesi"], ["trimestrale", "Ogni 3 mesi"], ["annuale", "Ogni anno"]];
+const NOMI_MESI_LUNGHI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
+  "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
+
+function etichettaCadenza(r) {
+  const c = CADENZE.find(([k]) => k === r.cadenza)?.[1] || r.cadenza;
+  if (r.cadenza === "mensile") return `${c} il ${r.giorno}`;
+  return `${c} · ${r.giorno} ${NOMI_MESI_LUNGHI[(r.mese || 1) - 1]}`;
+}
+
+/** Il foglio di un ricorrente: fisso o variabile, con cadenza e pocket. */
+function apriRicorrente(esistente, ridisegna) {
+  const b = esistente
+    ? { ...esistente }
+    : { id: nuovoId("r"), nome: "", imp: 0, cat: "fisse", pocket: "fisse", tipo: "fissa",
+        cadenza: "mensile", giorno: 1, mese: 1, stimaMin: 0, stimaMax: 0, attivo: true };
+
+  const { corpo } = apriFoglio({
+    titolo: esistente ? "Ricorrente" : "Nuovo ricorrente",
+    sinistra: el("button", { class: "btn nudo", type: "button", testo: "Annulla", onClick: () => chiudiFoglio() }),
+    destra: el("button", {
+      class: "btn nudo", type: "button", testo: "Salva",
+      onClick: () => {
+        if (!b.nome.trim()) { avviso("Serve un nome.", { tono: "errore" }); return; }
+        salvaRicorrente({ ...b, nome: b.nome.trim() });
+        chiudiFoglio();
+        avviso("Salvato.");
+      },
+    }),
+    alChiudi: ridisegna,
+  });
+
+  const zonaImporto = el("div", {});
+  const zonaQuando = el("div", {});
+
+  const disegnaImporto = () => {
+    zonaImporto.replaceChildren();
+    if (b.tipo === "fissa") {
+      aggiungi(zonaImporto, [
+        el("label", { class: "campo-etichetta", testo: "Importo" }),
+        campo({ tipo: "text", inputmode: "decimal",
+          valore: b.imp ? (b.imp / 100).toFixed(2).replace(".", ",") : "",
+          alCambio: (v) => { b.imp = centesimi(v); } }),
+      ]);
+    } else {
+      aggiungi(zonaImporto, [
+        el("label", { class: "campo-etichetta", testo: "Stima" }),
+        el("div", { class: "fi-ric-range" }, [
+          campo({ tipo: "text", inputmode: "decimal", segnaposto: "minimo",
+            valore: b.stimaMin ? (b.stimaMin / 100).toFixed(2).replace(".", ",") : "",
+            alCambio: (v) => { b.stimaMin = centesimi(v); } }),
+          campo({ tipo: "text", inputmode: "decimal", segnaposto: "massimo",
+            valore: b.stimaMax ? (b.stimaMax / 100).toFixed(2).replace(".", ",") : "",
+            alCambio: (v) => { b.stimaMax = centesimi(v); } }),
+        ]),
+        el("p", { class: "nota", testo: "Nelle proiezioni vale il massimo: una bolletta sottostimata è esattamente il caso in cui il pocket non basta." }),
+      ]);
+    }
+  };
+
+  const disegnaQuando = () => {
+    zonaQuando.replaceChildren();
+    aggiungi(zonaQuando, [
+      el("label", { class: "campo-etichetta", testo: "Giorno del mese" }),
+      campo({ tipo: "number", min: "1", max: "31", valore: String(b.giorno),
+        alCambio: (v) => { b.giorno = Math.min(31, Math.max(1, Number(v) || 1)); } }),
+      // Le cadenze non mensili hanno bisogno di un mese di ancoraggio: senza,
+      // un annuale cadrebbe ogni anno nel mese in cui lo stai guardando.
+      b.cadenza !== "mensile" && el("div", { class: "campo-gruppo" }, [
+        el("label", { class: "campo-etichetta", testo: "A partire da" }),
+        pillole(NOMI_MESI_LUNGHI.map((n, i) => [String(i + 1), n.slice(0, 3)]),
+          String(b.mese || 1), (v) => { b.mese = Number(v); }, { unaRiga: true }),
+      ]),
+    ]);
+  };
+
+  disegnaImporto();
+  disegnaQuando();
+
+  aggiungi(corpo, [
+    campo({ etichetta: "Nome", valore: b.nome, segnaposto: "Rata prestito",
+      alCambio: (v) => { b.nome = v; } }),
+
+    el("div", { class: "campo-gruppo" }, [
+      el("label", { class: "campo-etichetta", testo: "Importo" }),
+      segmenti([["fissa", "Certo"], ["variabile", "Stimato"]], b.tipo,
+        (v) => { b.tipo = v; disegnaImporto(); }),
+    ]),
+    el("div", { class: "campo-gruppo" }, [zonaImporto]),
+
+    el("div", { class: "campo-gruppo" }, [
+      el("label", { class: "campo-etichetta", testo: "Ogni quanto" }),
+      segmenti(CADENZE, b.cadenza, (v) => { b.cadenza = v; disegnaQuando(); }),
+    ]),
+    el("div", { class: "campo-gruppo" }, [zonaQuando]),
+
+    el("div", { class: "campo-gruppo" }, [
+      el("label", { class: "campo-etichetta", testo: "Da quale pocket esce" }),
+      pillole((stato().pockets || []).map((p) => [p.id, p.nome]), b.pocket,
+        (v) => { b.pocket = v; }),
+    ]),
+
+    el("div", { class: "campo-gruppo" }, [
+      el("label", { class: "campo-etichetta", testo: "Categoria" }),
+      pillole(stato().cats.map((c) => [c.id, c.nome, coloreCat(c.id)]), b.cat,
+        (v) => { b.cat = v; }, { unaRiga: true }),
+    ]),
+
+    el("div", { class: "campo-gruppo" }, [
+      segmenti([["si", "Attivo"], ["no", "Sospeso"]], b.attivo ? "si" : "no",
+        (v) => { b.attivo = v === "si"; }),
+      el("p", { class: "nota", testo: "Un ricorrente sospeso resta configurato ma sparisce da «In arrivo»." }),
+    ]),
+
+    esistente && el("button", {
+      class: "btn distruttivo nudo pieno", type: "button", testo: "Elimina",
+      stile: { marginTop: "var(--s6)" },
+      onClick: (e) => {
+        const btn = e.currentTarget;
+        if (btn.dataset.sicuro !== "1") {
+          btn.dataset.sicuro = "1";
+          btn.textContent = "Tocca di nuovo per eliminare";
+          setTimeout(() => { btn.dataset.sicuro = ""; btn.textContent = "Elimina"; }, 3000);
+          return;
+        }
+        eliminaRicorrente(b.id);
+        chiudiFoglio();
+        avviso("Eliminato.");
+      },
+    }),
   ]);
 }

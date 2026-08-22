@@ -23,9 +23,12 @@ const TRATTI = {
     '<circle cx="12" cy="4.4" r="2.1"/>' +
     '<path d="M12 6.9v6.2M12 13.1l-3.1 7.4M12 13.1l3.1 7.4M6.6 9.1L12 10.4l5.4-1.3"/>',
   spunta:    '<path d="M4.4 12.5l4.5 4.5L19.6 6.4"/>',
+  // Tre cursori, non un ingranaggio. La ruota dentata era un poligono a
+  // mano libera: a 21px i denti si impastavano e sembrava un glifo rotto.
+  // Questa è fatta di sole linee e cerchi, e regge qualunque misura.
   ingranaggio:
-    '<circle cx="12" cy="12" r="3"/>' +
-    '<path d="M12 2.4l1.5 2.3 2.7-.6.5 2.7 2.6 1-1.2 2.5 1.8 2.1-2.2 1.6.5 2.7-2.8.2-1 2.6-2.4-1.4-2.4 1.4-1-2.6-2.8-.2.5-2.7L2.6 12.4l1.8-2.1L3.2 7.8l2.6-1 .5-2.7 2.7.6z"/>',
+    '<path d="M4 7h9.5M18.5 7H20M4 12h3.5M12 12h8M4 17h8.5M17.5 17H20"/>' +
+    '<circle cx="16" cy="7" r="2.2"/><circle cx="9.5" cy="12" r="2.2"/><circle cx="15" cy="17" r="2.2"/>',
 
   // ------------------------------------------------------------- controlli
   piu:       '<path d="M12 5.2v13.6M5.2 12h13.6"/>',

@@ -12,6 +12,7 @@ import { icona } from "../../core/icone.js";
 import {
   abitudiniVive, abitudinePerId, eFatta, alterna, stato, scriviMeta,
   salvaAbitudine, eliminaAbitudine, coloreTinta, TINTE,
+  FASCE, partiDi, parteFatta, alternaParte,
 } from "./dati.js";
 import {
   progressoGiorno, eAttesa, serie, serieMigliore, costanza,
@@ -105,7 +106,13 @@ export function elenco(giorno, ridisegna) {
 }
 
 function rigaAbitudine(h, giorno, ridisegna, { spenta = false } = {}) {
-  const fatta = eFatta(h.id, giorno);
+  const parti = partiDi(h);
+  // Con le parti la spunta del genitore non si tocca a mano: è vera quando
+  // sono vere tutte le parti. Spuntare «integratori» in blocco alle undici
+  // di sera è esattamente quello che le parti servono a impedire.
+  const fatta = parti.length
+    ? parti.every((p) => parteFatta(h.id, p.id, giorno))
+    : eFatta(h.id, giorno);
   const colore = coloreTinta(h.tint);
   const n = serie(h);
 
@@ -116,6 +123,7 @@ function rigaAbitudine(h, giorno, ridisegna, { spenta = false } = {}) {
     type: "button",
     "aria-pressed": String(fatta),
     "aria-label": fatta ? `Togli ${h.name}` : `Segna ${h.name}`,
+    disabled: parti.length > 0,
     onClick: (e) => {
       e.stopPropagation();
       alterna(h.id, giorno);
@@ -143,6 +151,20 @@ function rigaAbitudine(h, giorno, ridisegna, { spenta = false } = {}) {
 
   const li = el("li", { class: "ab-li" + (spenta ? " spenta" : "") }, [
     el("div", { class: "ab-riga-fuori" }, [spunta, corpo]),
+    parti.length > 0 && el("ul", { class: "ab-parti" }, parti.map((p) => {
+      const pf = parteFatta(h.id, p.id, giorno);
+      const b = el("button", {
+        class: "ab-parte" + (pf ? " fatta" : ""),
+        type: "button", "aria-pressed": String(pf),
+        onClick: () => { alternaParte(h.id, p.id, giorno); tocco(pf ? 6 : 12); ridisegna(); },
+      }, [
+        el("span", { class: "ab-parte-spunta", html: icona("spunta", 13, 3) }),
+        el("span", { class: "ab-parte-nome", testo: p.nome }),
+        el("span", { class: "ab-parte-fascia", testo: FASCE[p.fascia || "qualsiasi"]?.nome || "" }),
+      ]);
+      b.style.setProperty("--accento", colore);
+      return el("li", {}, [b]);
+    })),
   ]);
   return li;
 }
@@ -238,7 +260,10 @@ export function apriModifica(id, ridisegna) {
       class: "btn nudo", type: "button", testo: "Salva",
       onClick: () => {
         if (!bozza.name.trim()) { avviso("Serve un nome.", { tono: "errore" }); return; }
-        salvaAbitudine({ ...bozza, name: bozza.name.trim() });
+        // Le parti senza nome si buttano: una riga vuota nell'editor è
+        // qualcuno che ha toccato «aggiungi» e ci ha ripensato.
+        const parti = (bozza.parti || []).filter((p) => p.nome.trim()).map((p) => ({ ...p, nome: p.nome.trim() }));
+        salvaAbitudine({ ...bozza, name: bozza.name.trim(), parti });
         chiudiFoglio();
         avviso(esistente ? "Modificata." : "Aggiunta.");
         ridisegna();
@@ -278,6 +303,48 @@ export function apriModifica(id, ridisegna) {
   };
   disegnaPiano();
 
+  /* ------------------------------------------------------------- le parti --
+     Un'abitudine può essere una cosa sola o un contenitore di cose. Gli
+     integratori sono quattro pastiglie in tre momenti diversi: con una
+     casella unica la spunti la sera per tutte e quattro, e il dato smette
+     di dire qualcosa. Con le parti, la home sa dire «prendi il magnesio»
+     alle dieci di sera invece di «ti mancano gli integratori». */
+
+  bozza.parti = Array.isArray(bozza.parti) ? bozza.parti.map((p) => ({ ...p })) : [];
+  const zonaParti = el("div", { class: "campo-gruppo ab-editor-parti" });
+
+  const disegnaParti = () => {
+    zonaParti.replaceChildren();
+    aggiungi(zonaParti, [
+      el("label", { class: "campo-etichetta", testo: "Parti" }),
+      el("p", { class: "nota", stile: { margin: "0 0 var(--s3)" }, testo: bozza.parti.length
+        ? "Ognuna si spunta da sé, e la home ricorda solo quella della fascia in corso."
+        : "Facoltative. Servono quando una spunta sola nasconde più cose in momenti diversi della giornata." }),
+
+      ...bozza.parti.map((p, i) => el("div", { class: "ab-editor-parte" }, [
+        campo({
+          valore: p.nome, segnaposto: "Magnesio",
+          alCambio: (v) => { p.nome = v; },
+        }),
+        segmenti(
+          Object.entries(FASCE).map(([k, f]) => [k, f.nome]),
+          p.fascia || "qualsiasi",
+          (v) => { p.fascia = v; }
+        ),
+        el("button", {
+          class: "btn distruttivo nudo piccolo", type: "button", testo: "Togli",
+          onClick: () => { bozza.parti.splice(i, 1); disegnaParti(); },
+        }),
+      ])),
+
+      el("button", {
+        class: "btn tenue pieno", type: "button", testo: "Aggiungi una parte",
+        onClick: () => { bozza.parti.push({ id: nuovoId("pt"), nome: "", fascia: "qualsiasi" }); disegnaParti(); },
+      }),
+    ]);
+  };
+  disegnaParti();
+
   aggiungi(corpo, [
     campo({
       etichetta: "Nome", valore: bozza.name, segnaposto: "Meditazione",
@@ -314,6 +381,8 @@ export function apriModifica(id, ridisegna) {
       ),
     ]),
     zonaPiano,
+
+    zonaParti,
 
     el("div", { class: "campo-gruppo", style: "margin-top:var(--s4)" }, [
       campo({

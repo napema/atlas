@@ -14,14 +14,16 @@ import { icona } from "../../core/icone.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { annuncia, ascolta } from "../../core/bus.js";
-import { casella, stato, movimentiVivi } from "./dati.js";
+import { casella, stato, movimentiVivi, migra } from "./dati.js";
 import {
   statistiche, budgetTotale, cassaSettimana, verdetto, meseDi, spostaMese,
   nomeMese, importoEffettivo, proiezione,
+  cicloDi, settimana, inArrivo, spesoOggi, ricorrentiDiOggi, alert,
 } from "./calcolo.js";
 import {
   vistaHome, vistaMovimenti, vistaAnalisi, vistaSetup,
   apriMovimento, apriCategoria, apriSottocategoria, apriDettaglio,
+  apriRicarica, apriSaldoING, apriSetupPocket,
 } from "./viste.js";
 
 let contenitore = null;
@@ -45,6 +47,14 @@ function ridisegna(patch = {}) {
 
 // I fogli hanno bisogno di riaprirsi a vicenda (categoria → sottocategoria →
 // dettaglio) senza che le viste conoscano il modulo: si passano queste.
+// Le azioni che la home può far partire ma non sa costruire: il flusso di
+// ricarica e il saldo di ING, che vivono nei fogli.
+const azioniHome = {
+  ricarica: () => apriRicarica(disegna),
+  saldoING: () => apriSaldoING(disegna),
+  pocketSetup: () => apriSetupPocket(disegna),
+};
+
 const aperture = {
   cat: (id) => apriCategoria(vista.mese, id, disegna, aperture.sub, aperture.dett),
   sub: (cid, s) => apriSottocategoria(vista.mese, cid, s, disegna, aperture.dett),
@@ -70,7 +80,7 @@ function disegna() {
       onClick: () => ridisegna({ scheda: id }),
     }))),
 
-    vista.scheda === "home"      ? vistaHome(vista.mese, vista.grafico, ridisegna, aperture.cat)
+    vista.scheda === "home"      ? vistaHome(vista.mese, vista.grafico, ridisegna, aperture.cat, azioniHome)
     : vista.scheda === "movimenti" ? vistaMovimenti(vista.mese, vista.filtro, ridisegna, aperture.dett)
     : vistaAnalisi(vista.mese, aperture.cat, aperture.sub),
   ]);
@@ -141,15 +151,27 @@ function pubblicaSullaLavagna() {
 /* ---------------------------------------------------------------- sync -- */
 
 export function avviaSync() {
+  // La migrazione gira all'apertura del canale, cioè all'avvio dell'app e
+  // non al montaggio del modulo: la home legge `oggi()` senza montare
+  // Finanze, e leggerebbe uno stato senza pocket.
+  migra();
+
   const canale = apriCanale({
     id: "finanze",
     file: "finanze.json",
     impacchetta: () => {
       const s = stato();
       return {
-        v: 3,
+        v: 4,
         movs: s.movs,
-        meta: { cats: s.cats, profili: s.profili, rules: s.rules, config: s.config, up: s.metaUp || 0 },
+        // pockets, ricorrenti e soglie viaggiano dentro `meta` come tutto il
+        // resto della configurazione: un campo nuovo che resta fuori dal
+        // pacchetto è un campo che esiste su un dispositivo solo.
+        meta: {
+          cats: s.cats, profili: s.profili, rules: s.rules, config: s.config,
+          pockets: s.pockets, ricorrenti: s.ricorrenti, soglie: s.soglie,
+          up: s.metaUp || 0,
+        },
       };
     },
     applica: (remoto) => {
@@ -164,6 +186,9 @@ export function avviaSync() {
           // e vince chi ha scritto per ultimo solo sulle chiavi in comune.
           if (rm.rules) s.rules = { ...s.rules, ...rm.rules };
           if (rm.config) s.config = { ...s.config, ...rm.config };
+          if (Array.isArray(rm.pockets)) s.pockets = rm.pockets;
+          if (Array.isArray(rm.ricorrenti)) s.ricorrenti = rm.ricorrenti;
+          if (rm.soglie) s.soglie = { ...s.soglie, ...rm.soglie };
           s.metaUp = rm.up;
         }
       }, { origine: "sync", tocca: false });
@@ -213,39 +238,50 @@ export default {
     return vistaSetup(meseDi(), () => { if (contenitore) disegna(); });
   },
 
+  /**
+   * Quello che la home di ATLAS mostra di Finanze.
+   *
+   * Il numero è il saldo del Principale — «quanto posso spendere» — e non
+   * più il totale speso nel mese: speso 1.034 € non dice se stasera posso
+   * uscire a cena, restano 67 € sì.
+   *
+   * `dettaglio` porta la cosa che ribalta la risposta al numero, in ordine
+   * di quanto la ribalta: prima cosa esce OGGI, poi quanto è già uscito
+   * oggi, poi quanti giorni mancano a lunedì.
+   */
   oggi() {
-    const mese = meseDi();
-    const st = statistiche(mese);
-    if (!st.nMovimenti && !budgetTotale(mese)) return null;
+    migra();
+    const iso = oggiISO();
+    const st = statistiche(meseDi());
+    if (!st.nMovimenti && !budgetTotale(meseDi())) return null;
 
-    const cassa = cassaSettimana(mese, oggiISO());
-    const v = verdetto(mese);
+    const s = settimana(iso);
+    const oggiRic = ricorrentiDiOggi(iso);
+    const speso = spesoOggi(iso);
+    const av = alert(iso);
 
-    // In settimana il numero utile è quello che resta in cassa, non il
-    // totale del mese: è la cifra su cui si decide se uscire a cena.
-    if (cassa.attiva) {
-      return {
-        titolo: "Finanze",
-        valore: euro(cassa.resta),
-        dettaglio: cassa.resta < 0
-          ? `Cassa sforata di ${euro(-cassa.resta)}`
-          : `In cassa · ${plurale(cassa.giorniRimasti, "giorno", "giorni")} alla ricarica`,
-        urgente: cassa.resta <= 0,
-        avanzamento: cassa.tetto ? Math.min(1, cassa.speso / cassa.tetto) : 0,
-        azione: { rotta: "#/finanze" },
-      };
+    const pezzi = [];
+    if (oggiRic.length) {
+      // Un addebito che esce oggi viene prima di tutto: è l'unica cosa che
+      // può rendere sbagliato il numero grande nel giro di poche ore.
+      pezzi.push(oggiRic.length === 1
+        ? `Oggi esce ${oggiRic[0].nome.toLowerCase()} · ${euro(oggiRic[0].importo, { tondo: true })}`
+        : `Oggi escono ${oggiRic.length} addebiti · ${euro(oggiRic.reduce((t, r) => t + r.importo, 0), { tondo: true })}`);
     }
+    if (speso > 0) pezzi.push(`Oggi ${euro(speso, { tondo: true })}`);
+    pezzi.push(s.finita
+      ? `settimana finita · ${plurale(s.giorniRimasti, "giorno", "giorni")} a lunedì`
+      : `${euro(s.alGiorno, { tondo: true })} al giorno fino a domenica`);
 
-    const bt = budgetTotale(mese);
-    const proj = proiezione(mese);
     return {
       titolo: "Finanze",
-      valore: euro(st.ordinaria, { tondo: true }),
-      dettaglio: bt
-        ? `${Math.round((st.ordinaria / bt) * 100)}% del budget${proj ? ` · proiezione ${euro(proj, { tondo: true })}` : ""}`
-        : v.testo,
-      urgente: v.livello === "rosso",
-      avanzamento: bt ? Math.min(1, st.ordinaria / bt) : 0,
+      valore: euro(s.resta),
+      dettaglio: pezzi.join(" · "),
+      urgente: s.finita || av.some((a) => a.livello === "critico"),
+      avanzamento: s.frazione,
+      // Il testo per la carta larga della home, quando Finanze è la cosa
+      // più urgente: è l'alert vero, non un riassunto.
+      allarme: av[0]?.testo || null,
       azione: { rotta: "#/finanze" },
     };
   },

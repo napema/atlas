@@ -173,3 +173,194 @@ export function normalizza(s) {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+/* =========================================================================
+   REGISTRO v2 — pocket, ricorrenti, ciclo dello stipendio.
+
+   Tutto quello che segue è AGGIUNTO, mai sostituito. I 161 movimenti
+   esistenti restano com'erano: i campi nuovi (`pocket`, `pocketTo`,
+   `rimborsoDi`) sono opzionali e chi non ce l'ha viene letto con un valore
+   di riposo. È la ragione per cui `migra()` più sotto non trasforma niente
+   e si limita a riempire i vuoti.
+   ========================================================================= */
+
+/**
+ * I pocket. Non è un budget: è dove stanno i soldi davvero.
+ *
+ *   ING        la riserva. Non si spende da qui, alimenta gli altri.
+ *   FISSE      addebiti automatici. Non si tocca.
+ *   CASSA      le settimane future del mese. Parcheggio, non spendibile.
+ *   PRINCIPALE la settimana corrente. L'unico conto da cui si spende.
+ *
+ * Ogni lunedì un travaso fisso Cassa → Principale: quello è il budget della
+ * settimana, e quando il Principale è a zero la settimana è finita.
+ */
+export const TIPI_POCKET = {
+  spendibile: { nome: "Spendibile" },
+  parcheggio: { nome: "Parcheggio" },
+  fisse:      { nome: "Spese fisse" },
+  riserva:    { nome: "Riserva" },
+};
+
+export function pocketIniziali() {
+  return [
+    { id: "principale", nome: "Principale",  tipo: "spendibile", saldo: 0, external: false },
+    { id: "cassa",      nome: "Cassa",       tipo: "parcheggio", saldo: 0, external: false },
+    { id: "fisse",      nome: "Spese fisse", tipo: "fisse",      saldo: 0, external: false },
+    // ING è `external`: il saldo non si deduce dai movimenti, lo si scrive a
+    // mano, perché è un conto che vive fuori dall'app.
+    { id: "ing",        nome: "ING",         tipo: "riserva",    saldo: 0, external: true },
+  ];
+}
+
+/**
+ * Le uscite ricorrenti. Alimentano la sezione "In arrivo" della home.
+ *
+ * `fissa` è un importo certo; `variabile` è una stima con un intervallo, e
+ * nelle proiezioni si usa sempre `stimaMax` — prudenziale, perché una
+ * bolletta sottostimata è esattamente il caso in cui il pocket Fisse non
+ * basta e lo sforamento arriva dal nulla.
+ */
+export function ricorrentiIniziali() {
+  const r = (id, nome, imp, cat, giorno, extra = {}) => ({
+    id, nome, imp, cat, pocket: "fisse", tipo: "fissa",
+    // `mese` ancora le cadenze non mensili: senza, un annuale cadeva ogni
+    // anno nel mese in cui lo stavi guardando. 1-12, ignorato se mensile.
+    cadenza: "mensile", giorno, mese: null,
+    stimaMin: null, stimaMax: null, attivo: true, ...extra,
+  });
+  return [
+    r("rata-auto",    "Rata prestito", 40000, "fisse", 25),
+    r("affitto",      "Affitto",       65000, "fisse", 1),
+    r("abbonamenti",  "Abbonamenti",    5500, "fisse", 27),
+    r("condominio",   "Condominio",     5000, "casa",  1),
+    r("utenze", "Gas, luce e acqua", 0, "casa", 3,
+      { tipo: "variabile", cadenza: "bimestrale", mese: 1, stimaMin: 18000, stimaMax: 35000 }),
+    r("assicurazione", "Assicurazione auto", 0, "acc", 15,
+      { cadenza: "annuale", mese: 6, tipo: "variabile", pocket: "ing", stimaMin: 40000, stimaMax: 55000 }),
+    r("bollo", "Bollo auto", 0, "acc", 31,
+      { cadenza: "annuale", mese: 12, tipo: "variabile", pocket: "ing", stimaMin: 15000, stimaMax: 22000 }),
+  ];
+}
+
+/**
+ * Automatico / necessario / discrezionale, per sottocategoria.
+ *
+ * Serve alla card "come spendi", che risponde a "dove vanno i soldi" meglio
+ * di qualunque torta: una barra sola, due numeri. La chiave è
+ * `"<cat>|<sub>"`; una categoria senza sottocategoria ricade sulla classe
+ * della categoria in `CLASSE_CAT`.
+ */
+export const CLASSE_CAT = {
+  fisse: "automatico", casa: "automatico", acc: "automatico", risp: "automatico",
+  spesa: "necessario", auto: "necessario",
+  cibo: "discrezionale", personale: "discrezionale", trasporti: "discrezionale",
+};
+export const CLASSI_SUB = {
+  "auto|Manutenzione": "necessario",
+  "auto|Carburante": "necessario",
+  "auto|Lavaggio": "discrezionale",
+  "auto|Multe": "discrezionale",
+  "personale|Cura personale": "necessario",
+  "personale|Integratori": "necessario",
+  "trasporti|Treno": "discrezionale",
+  "trasporti|Mezzi urbani": "necessario",
+};
+export function classeDi(cat, sub) {
+  return CLASSI_SUB[`${cat}|${sub}`] || CLASSE_CAT[cat] || "discrezionale";
+}
+
+export const SOGLIE_PREDEFINITE = {
+  ingMinimo: 90000,      // sotto, la riserva va in ambra
+  catAvviso: 0.85,       // categoria all'85% del budget del ciclo
+  spesaGrossa: 5000,     // sopra, il foglio chiede conferma
+};
+
+/* ---------------------------------------------------------- migrazione -- */
+
+/**
+ * Riempie i campi di v4 lasciando intatto tutto il resto.
+ *
+ * Gira a ogni avvio ed è idempotente: se i campi ci sono già non tocca
+ * niente, quindi non fa partire il sync e non produce un `up` nuovo su
+ * record che non sono cambiati. È l'unico modo sicuro di far evolvere uno
+ * schema quando i dati veri sono già su due dispositivi.
+ */
+export function migra() {
+  const s = stato();
+  const serve =
+    !Array.isArray(s.pockets) || !Array.isArray(s.ricorrenti) ||
+    !s.soglie || s.config?.giornoStipendio == null || (s.v || 0) < 4;
+  if (!serve) return;
+
+  casella.aggiorna((st) => {
+    if (!Array.isArray(st.pockets)) st.pockets = pocketIniziali();
+    if (!Array.isArray(st.ricorrenti)) st.ricorrenti = ricorrentiIniziali();
+    if (!st.soglie) st.soglie = { ...SOGLIE_PREDEFINITE };
+    st.config = st.config || {};
+    // Lo stipendio arriva il 21, non il 1. Tutti i calcoli di "quanto manca
+    // alla fine del mese" usano il ciclo 21→20: con il mese solare i numeri
+    // non tornavano mai, ed è il motivo per cui non tornavano.
+    if (st.config.giornoStipendio == null) st.config.giornoStipendio = 21;
+    if (st.config.cassaSettimanale == null) st.config.cassaSettimanale = 13000;
+    if (st.config.pendenti == null) st.config.pendenti = [];
+    // Da oggi in avanti i movimenti muovono i pocket. Prima è storico.
+    if (st.config.pocketDa == null) st.config.pocketDa = new Date().toISOString().slice(0, 10);
+    // I movimenti vecchi non hanno `pocket`: sono tutti usciti dal
+    // Principale, che è l'unico conto da cui si spende.
+    for (const m of st.movs) {
+      if (!m || m.del) continue;
+      if (m.pocket == null) m.pocket = m.tipo === "in" ? "ing" : "principale";
+      if (m.pocketTo === undefined) m.pocketTo = null;
+      if (m.rimborsoDi === undefined) m.rimborsoDi = m.rif ?? null;
+    }
+    st.v = 4;
+  });
+}
+
+/* ----------------------------------------------------------- scritture -- */
+
+export const pocketPerId = (id) => (stato().pockets || []).find((p) => p.id === id) || null;
+
+export function scriviPocket(id, patch) {
+  scriviMeta((s) => {
+    const p = (s.pockets || []).find((x) => x.id === id);
+    if (p) Object.assign(p, patch);
+  });
+}
+
+export function salvaRicorrente(r) {
+  scriviMeta((s) => {
+    s.ricorrenti = s.ricorrenti || [];
+    const i = s.ricorrenti.findIndex((x) => x.id === r.id);
+    if (i >= 0) s.ricorrenti[i] = { ...s.ricorrenti[i], ...r };
+    else s.ricorrenti.push(r);
+  });
+}
+
+export function eliminaRicorrente(id) {
+  scriviMeta((s) => { s.ricorrenti = (s.ricorrenti || []).filter((x) => x.id !== id); });
+}
+
+/**
+ * Le spese messe in sospeso da «ci dormo su».
+ *
+ * Non sono movimenti: sono intenzioni. Vivono in `config` e non nell'array
+ * dei movimenti proprio perché non devono comparire in nessun totale finché
+ * non vengono confermate. Decadono da sole dopo sette giorni.
+ */
+export const pendenti = () => (stato().config?.pendenti || []).filter((p) => !scaduta(p));
+const scaduta = (p) => (Date.now() - (p.ts || 0)) > 7 * 86400000;
+
+export function metteInSospeso(bozza) {
+  scriviMeta((s) => {
+    s.config.pendenti = (s.config.pendenti || []).filter((p) => (Date.now() - (p.ts || 0)) <= 7 * 86400000);
+    s.config.pendenti.push({ ...bozza, ts: Date.now() });
+  });
+}
+
+export function togliDaSospeso(id) {
+  scriviMeta((s) => {
+    s.config.pendenti = (s.config.pendenti || []).filter((p) => p.id !== id);
+  });
+}

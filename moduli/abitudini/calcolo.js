@@ -16,7 +16,7 @@
 // `weekly` è l'unico che non si risolve guardando il solo giorno: per
 // sapere se è attesa oggi bisogna contare i log della settimana.
 
-import { abitudiniVive, eFatta, stato } from "./dati.js";
+import { abitudiniVive, eFatta, stato, partiDi, parteFatta, FASCE, fasciaAdesso } from "./dati.js";
 import { isoDi, daISO, piuGiorni, oggiISO } from "../../core/ui.js";
 
 const PREDEFINITA = { type: "daily", days: [1, 2, 3, 4, 5, 6, 0], times: 3 };
@@ -93,6 +93,15 @@ export function progressoGiorno(iso = oggiISO()) {
       // denominatore ogni giorno per una cosa che è in pari.
       if (eFatta(h.id, iso)) { attese++; fatte++; }
       else if (settimanaleObbligatoria(h, iso)) attese++;
+      continue;
+    }
+    // Un'abitudine con parti conta per le sue parti: «integratori» sono
+    // quattro spunte in tre momenti diversi, e contarla come una sola
+    // faceva sembrare completa una giornata in cui ne avevi presi due.
+    const parti = partiDi(h);
+    if (parti.length) {
+      attese += parti.length;
+      fatte += parti.filter((p) => parteFatta(h.id, p.id, iso)).length;
       continue;
     }
     attese++;
@@ -192,4 +201,46 @@ export function etichettaPiano(h) {
   if (giorni.length === 7) return "Ogni giorno";
   const nomi = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
   return giorni.map((d) => nomi[d]).join(" · ");
+}
+
+/* ---------------------------------------------------------- i promemoria */
+/*
+   Le parti non ancora spuntate la cui fascia è ADESSO.
+
+   È la ragione per cui le parti esistono: la home non deve dire «ti mancano
+   4 integratori», deve dire «prendi il magnesio», perché alle dieci di sera
+   il magnesio è l'unica delle quattro che ha ancora senso.
+*/
+
+export function promemoriaAdesso(iso = oggiISO(), ora = new Date().getHours()) {
+  const fasce = fasciaAdesso(ora);
+  const out = [];
+  for (const h of abitudiniVive()) {
+    if (!ePrevista(h, iso)) continue;
+    for (const p of partiDi(h)) {
+      const f = p.fascia || "qualsiasi";
+      if (!fasce.includes(f)) continue;
+      if (parteFatta(h.id, p.id, iso)) continue;
+      out.push({
+        habitId: h.id, parteId: p.id,
+        abitudine: h.name, nome: p.nome,
+        emoji: h.emoji, tint: h.tint,
+        fascia: f, nomeFascia: FASCE[f]?.nome || "",
+      });
+    }
+  }
+  return out.sort((a, b) => (FASCE[a.fascia]?.ordine || 9) - (FASCE[b.fascia]?.ordine || 9));
+}
+
+/** Tutte le parti di oggi, spuntate o no. Serve al conteggio della home. */
+export function partiDiOggi(iso = oggiISO()) {
+  const out = [];
+  for (const h of abitudiniVive()) {
+    if (!ePrevista(h, iso)) continue;
+    for (const p of partiDi(h)) {
+      out.push({ habitId: h.id, parteId: p.id, nome: p.nome, fascia: p.fascia || "qualsiasi",
+        fatta: parteFatta(h.id, p.id, iso) });
+    }
+  }
+  return out;
 }

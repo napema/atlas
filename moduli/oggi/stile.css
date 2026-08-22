@@ -157,3 +157,91 @@
   .og-azioni { flex-direction: row; }
   .og-azioni > * { flex: 1; }
 }
+
+/* ------------------------------------------------------- i promemoria --- */
+/* La card delle cose che scadono ADESSO. È l'unico elemento della home che
+   può apparire e sparire, perché non è un dato: è una sveglia. Quando è
+   vuota non lascia un buco, semplicemente non c'è.
+
+   Il ritmo verticale: 20px di respiro attorno, 12 fra i gruppi, 8 fra le
+   voci. Tre passi e basta — con cinque, gli elementi smettono di dire a
+   quale livello appartengono. */
+
+.og-promemoria {
+  position: relative;
+  padding: var(--s5);
+  border-radius: var(--r-scheda);
+  background: var(--scheda);
+  margin-bottom: var(--s3);
+  overflow: hidden;
+}
+.og-promemoria::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--accento);
+}
+
+.og-prom-testa { display: flex; align-items: center; gap: 7px; margin-bottom: var(--s4); }
+.og-prom-icona { display: flex; color: var(--accento); }
+
+.og-prom-gruppo + .og-prom-gruppo { margin-top: var(--s4); }
+.og-prom-fascia {
+  font-size: var(--t-11);
+  font-weight: 600;
+  color: var(--testo-3);
+  margin-bottom: var(--s2);
+}
+.og-prom-lista { list-style: none; display: flex; flex-direction: column; gap: var(--s2); }
+
+/* Una voce è un bersaglio unico da 52px: si spunta col pollice senza
+   guardare, che è tutto quello che deve saper fare. */
+.og-prom-voce {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 52px;
+  padding: 0 var(--s4) 0 var(--s3);
+  border: 0;
+  border-radius: var(--r-interno);
+  background: var(--scheda-alta);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva), transform var(--veloce) var(--molla);
+}
+.og-prom-voce:active { transform: scale(0.985); background: var(--scheda-viva); }
+
+.og-prom-cerchio {
+  width: 26px; height: 26px;
+  flex: none;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: transparent;
+  color: transparent;
+  box-shadow: inset 0 0 0 2px var(--tinta, var(--accento));
+  transition: background var(--veloce) var(--curva);
+}
+.og-prom-voce:active .og-prom-cerchio { background: color-mix(in srgb, var(--tinta) 30%, transparent); }
+.og-prom-cerchio svg { display: block; }
+
+.og-prom-nome {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--t-17);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Da quale abitudine viene: serve la prima volta e poi non si legge più,
+   quindi sta a destra, piccola e tenue. */
+.og-prom-da {
+  flex: none;
+  font-size: var(--t-11);
+  color: var(--testo-3);
+  max-width: 40%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}

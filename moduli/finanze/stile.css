@@ -358,3 +358,202 @@
 .fi-uscita  { background: color-mix(in srgb, var(--male) 20%, var(--scheda)); color: var(--male); }
 .fi-entrata { background: color-mix(in srgb, var(--ok) 20%, var(--scheda));  color: var(--ok); }
 .fi-altro   { flex: none; width: 52px; padding: 0; font-size: var(--t-19); letter-spacing: 0.06em; }
+
+/* =========================================================================
+   REGISTRO v2 — i blocchi della home nuova.
+   ========================================================================= */
+
+/* ------------------------------------------------------------ il numero -- */
+/* La prima cosa che si vede, e occupa tutta la larghezza. Non sta in una
+   scheda ma sul fondo nudo: è quello che la fa leggere come il titolo della
+   schermata invece che come un dato fra gli altri. */
+
+.fi-numero { padding: var(--s2) var(--s1) var(--s6); }
+.fi-numero-testa {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s3); margin-bottom: var(--s2);
+}
+.fi-numero .cifra-xl { font-size: clamp(48px, 15vw, 68px); }
+.fi-numero-nota { margin: var(--s2) 0 0; font-size: var(--t-15); color: var(--testo-2); }
+.fi-numero-ritmo { margin: var(--s3) 0 0; font-size: var(--t-15); }
+
+.fi-consumo {
+  height: 8px; margin-top: var(--s4);
+  border-radius: var(--r-pillola);
+  background: var(--traccia);
+  overflow: hidden;
+}
+.fi-consumo > i {
+  display: block; height: 100%;
+  border-radius: var(--r-pillola);
+  background: var(--accento);
+  transition: width var(--lento) var(--curva);
+}
+/* Neutro fino al 70% consumato: rosso il lunedì solo perché hai fatto la
+   spesa grossa è un allarme che insegna a ignorare gli allarmi. */
+.fi-numero.avviso .fi-consumo > i { background: var(--avviso); }
+.fi-numero.male   .fi-consumo > i { background: var(--male); }
+
+.fi-numero-scelta { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); margin-top: var(--s5); }
+.fi-numero-scelta .btn { min-height: 52px; }
+
+.fi-avviso-testo { font-size: var(--t-15); line-height: 1.45; }
+
+/* -------------------------------------------------------------- in arrivo */
+
+.fi-arrivo-testa {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--s3); margin-bottom: var(--s3);
+}
+.fi-arrivo-lista { list-style: none; display: flex; flex-direction: column; }
+.fi-arrivo-riga {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  grid-template-areas: "quando nome importo" ". pocket pocket";
+  align-items: baseline;
+  gap: 2px var(--s3);
+  padding: var(--s3) 0;
+  box-shadow: inset 0 -1px 0 var(--filo);
+}
+.fi-arrivo-riga:last-child { box-shadow: none; }
+.fi-arrivo-quando {
+  grid-area: quando;
+  font-size: var(--t-11); font-weight: 700;
+  color: var(--testo-3); text-transform: uppercase; letter-spacing: 0.04em;
+}
+/* Le voci a due giorni o meno accendono il giorno: è quella la riga che
+   cambia la risposta a «posso spendere stasera». */
+.fi-arrivo-riga.vicina .fi-arrivo-quando { color: var(--avviso); }
+.fi-arrivo-nome {
+  grid-area: nome;
+  display: flex; align-items: center; gap: 7px; min-width: 0;
+  font-size: var(--t-15);
+}
+.fi-arrivo-nome > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-arrivo-importo { grid-area: importo; font-size: var(--t-15); font-weight: 600; white-space: nowrap; }
+.fi-arrivo-pocket { grid-area: pocket; font-size: var(--t-11); color: var(--testo-3); }
+
+.fi-arrivo-verifica {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s3);
+  margin-top: var(--s3); padding-top: var(--s3);
+  border-top: 1px solid var(--filo);
+  font-size: var(--t-13);
+  color: var(--testo-2);
+}
+.fi-arrivo-verifica.ok .num   { color: var(--ok); font-weight: 600; }
+.fi-arrivo-verifica.male      { color: var(--male); }
+.fi-arrivo-verifica.male .num { color: var(--male); font-weight: 700; }
+
+/* --------------------------------------------------------------- i pocket */
+
+.fi-pocket-lista { list-style: none; display: flex; flex-direction: column; margin-top: var(--s3); }
+.fi-pocket-riga {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "nome saldo" "nota nota";
+  gap: 2px var(--s3);
+  align-items: baseline;
+  padding: var(--s3) 0;
+  box-shadow: inset 0 -1px 0 var(--filo);
+}
+.fi-pocket-riga.tocca { cursor: pointer; }
+.fi-pocket-riga.tocca:active { opacity: 0.6; }
+.fi-pocket-nome  { grid-area: nome; font-size: var(--t-15); font-weight: 500; }
+.fi-pocket-saldo { grid-area: saldo; font-size: var(--t-17); font-weight: 700; }
+.fi-pocket-nota  { grid-area: nota; font-size: var(--t-11); color: var(--testo-3); }
+/* La riserva sotto il minimo non è un guasto, è una condizione: si dice con
+   una parola, non con un rosso da errore. */
+.fi-pocket-riga.sotto .fi-pocket-saldo,
+.fi-pocket-riga.sotto .fi-pocket-nota { color: var(--avviso); }
+.fi-pocket-totale {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--s3); padding-top: var(--s3);
+}
+
+/* ---------------------------------------------------- categorie del ciclo */
+
+.fi-catlista { list-style: none; display: flex; flex-direction: column; gap: var(--s1); }
+.fi-catriga {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "nome cifra" "barra barra";
+  gap: 7px var(--s3);
+  align-items: center;
+  width: 100%;
+  padding: var(--s3) 0;
+  border: 0; background: none; color: inherit; font: inherit; text-align: left;
+  cursor: pointer;
+}
+.fi-catriga:active { opacity: 0.6; }
+.fi-catriga-nome { grid-area: nome; display: flex; align-items: center; gap: var(--s2); font-size: var(--t-15); }
+.fi-catriga-emoji { font-size: 16px; line-height: 1; }
+.fi-catriga-cifra { grid-area: cifra; font-size: var(--t-13); color: var(--testo-2); }
+.fi-catriga-barra {
+  grid-area: barra;
+  height: 6px; border-radius: var(--r-pillola);
+  background: var(--traccia); overflow: hidden;
+}
+.fi-catriga-barra > i {
+  display: block; height: 100%;
+  border-radius: var(--r-pillola);
+  background: var(--tinta, var(--accento));
+  transition: width var(--lento) var(--curva);
+}
+
+/* ------------------------------------------------------------ come spendi */
+
+.fi-come-barra {
+  display: flex; height: 12px; margin: var(--s3) 0;
+  border-radius: var(--r-pillola); overflow: hidden; background: var(--traccia);
+}
+.fi-come-barra > i { display: block; height: 100%; transition: width var(--lento) var(--curva); }
+.fi-come-barra > i.necessario    { background: var(--ciano); }
+.fi-come-barra > i.discrezionale { background: var(--arancio); }
+.fi-come-legenda { display: flex; flex-wrap: wrap; gap: var(--s4); font-size: var(--t-13); color: var(--testo-2); }
+.fi-come-legenda > span { display: inline-flex; align-items: center; gap: 7px; }
+.fi-come-legenda i { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+.fi-come-legenda i.necessario    { background: var(--ciano); }
+.fi-come-legenda i.discrezionale { background: var(--arancio); }
+
+/* ------------------------------------------------------------ sforamenti */
+
+.fi-sfor.ok   { box-shadow: inset 3px 0 0 var(--ok); }
+.fi-sfor.male { box-shadow: inset 3px 0 0 var(--avviso); }
+
+/* --------------------------------------------------------------- ricarica */
+
+.fi-ric-stato { font-size: var(--t-15); line-height: 1.45; margin: 0 0 var(--s2); }
+.fi-ric-avviso {
+  font-size: var(--t-13); color: var(--testo-2);
+  padding: var(--s3) var(--s4); margin: 0 0 var(--s3);
+  border-radius: var(--r-interno);
+  background: var(--scheda-alta);
+}
+.fi-conseguenza { font-size: var(--t-13); color: var(--testo-2); margin: var(--s3) 0 0; line-height: 1.45; }
+.fi-conseguenza.male { color: var(--avviso); }
+
+/* --------------------------------------------------------------- ci dormo */
+
+.fi-dormo-cifra { font-size: clamp(44px, 13vw, 58px); text-align: center; padding: var(--s5) 0 var(--s2); }
+.fi-dormo-quanto { text-align: center; font-size: var(--t-19); font-weight: 600; margin: 0 0 var(--s3); }
+.fi-dormo-scelta { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); margin-top: var(--s5); }
+.fi-dormo-scelta .btn { min-height: 54px; }
+
+.fi-sospese-lista { list-style: none; display: flex; flex-direction: column; gap: var(--s2); margin-top: var(--s3); }
+.fi-sospesa {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "testo cifra" "azioni azioni";
+  gap: var(--s2) var(--s3);
+  align-items: baseline;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-interno);
+  background: var(--scheda-alta);
+}
+.fi-sospesa-testo { grid-area: testo; min-width: 0; }
+.fi-sospesa-nota { font-size: var(--t-15); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-sospesa-cifra { grid-area: cifra; font-size: var(--t-17); font-weight: 700; }
+.fi-sospesa-azioni { grid-area: azioni; display: flex; gap: var(--s2); justify-content: flex-end; }
+
+.fi-ric-range { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }

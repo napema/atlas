@@ -127,3 +127,50 @@ export function riordina(idOrdinati) {
 export function scriviMeta(patch) {
   casella.aggiorna((s) => { Object.assign(s.meta, patch); s.metaUp = Date.now(); });
 }
+
+/* =========================================================================
+   LE PARTI DI UN'ABITUDINE.
+
+   Nasce da un caso concreto: «integratori» è una spunta sola, ma dentro ci
+   sono quattro cose in tre momenti diversi della giornata — omega 3 e D3 al
+   mattino, creatina prima dell'allenamento, magnesio la sera. Con una
+   casella unica la spunti la sera per tutte e quattro, e il dato smette di
+   dire qualcosa.
+
+   Una parte è un figlio con la sua fascia oraria e la sua spunta. Il log
+   riusa `idLog` con la chiave `<habitId>#<parteId>`, quindi indice, lapidi
+   e fusione del sync funzionano già senza una riga in più.
+
+   Un'abitudine con parti risulta fatta quando TUTTE le sue parti lo sono.
+   ========================================================================= */
+
+export const FASCE = {
+  mattina:     { nome: "Mattina",         da: 5,  a: 12, ordine: 1 },
+  pomeriggio:  { nome: "Pomeriggio",      da: 12, a: 18, ordine: 2 },
+  preWorkout:  { nome: "Pre-allenamento", da: 15, a: 21, ordine: 3 },
+  sera:        { nome: "Sera",            da: 18, a: 24, ordine: 4 },
+  qualsiasi:   { nome: "Quando capita",   da: 0,  a: 24, ordine: 5 },
+};
+
+/** La chiave di log di una parte. Deliberatamente la stessa di un'abitudine. */
+export const chiaveParte = (habitId, parteId) => `${habitId}#${parteId}`;
+
+export const partiDi = (h) => (Array.isArray(h?.parti) ? h.parti : []);
+
+export const parteFatta = (habitId, parteId, data) =>
+  eFatta(chiaveParte(habitId, parteId), data);
+
+export const alternaParte = (habitId, parteId, data) =>
+  alterna(chiaveParte(habitId, parteId), data);
+
+/**
+ * La fascia è «adesso»? Il pre-allenamento si sovrappone di proposito al
+ * pomeriggio e alla sera: non si sa a che ora ci si allena, e un promemoria
+ * che compare solo alle 15 in punto non serve a nessuno.
+ */
+export function fasciaAdesso(ora = new Date().getHours()) {
+  const dentro = Object.entries(FASCE)
+    .filter(([id, f]) => id !== "qualsiasi" && ora >= f.da && ora < f.a)
+    .map(([id]) => id);
+  return dentro.length ? dentro : ["qualsiasi"];
+}

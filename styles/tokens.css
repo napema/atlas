@@ -11,7 +11,10 @@
      2. la tinta identifica una COSA (una categoria, un'abitudine). Lo STATO
         si dice con la forma e con la parola. Un colore che vuol dire due
         cose non ne vuol dire nessuna.
-     3. il nero è nero. Le schede si staccano per luminosità, non per bordo.
+     3. il fondo è quasi nero (#08080b, non #000). Le schede si staccano per
+        luminosità, non per bordo. Il nero assoluto su OLED fa sparire il
+        bordo dello schermo e la pagina sembra galleggiare nel vuoto: due
+        punti di luminanza bastano a darle un pavimento.
    ========================================================================= */
 
 @font-face { font-family: "SF Pro Text"; font-weight: 400; font-style: normal; font-display: swap;
@@ -33,7 +36,7 @@
   /* ------------------------------------------------------------ superfici --
      Quattro livelli, non di più. Il fondo è nero vero: è quello che fa
      sembrare le schede sospese invece che disegnate. */
-  --fondo:        #000000;
+  --fondo:        #08080b;
   --fondo-alto:   #0b0b0d;   /* barre e cromatura */
   --scheda:       #141416;   /* la superficie normale */
   --scheda-alta:  #1e1e22;   /* dentro una scheda: campi, incassi */

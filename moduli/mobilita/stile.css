@@ -563,3 +563,21 @@
   .sess-piede { grid-column: 1 / -1; grid-row: 3; }
   .sess-media { height: auto; aspect-ratio: 16 / 9; max-height: none; }
 }
+
+/* «Hai corso oggi?» — l'unica domanda che l'app non può risolvere da sola,
+   quindi i due tasti devono essere grandi e leggersi al volo. */
+.chip-scelta {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 var(--s4);
+  border: 0;
+  border-radius: var(--r-pillola);
+  background: var(--scheda-alta);
+  color: var(--testo-2);
+  font-family: var(--font);
+  font-size: var(--t-15);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
+}
+.chip-scelta.is-active { background: var(--accento); color: var(--fondo); }

@@ -734,3 +734,25 @@ hr { border: 0; height: 1px; background: var(--filo); margin: var(--s4) 0; }
 
   #avvisi { max-width: calc(100vw - 244px - var(--s16)); }
 }
+
+/* --------------------------------------------------------------- il velo --
+   Un alone della tinta del modulo in cima alla pagina, dietro tutto.
+   Serve a una cosa sola: il nero pieno da bordo a bordo è corretto ma muto,
+   e su uno schermo grande sembra che l'app non abbia finito di caricare.
+
+   Sta all'8%: abbastanza da dare un pavimento e un'identità di modulo,
+   troppo poco per spostare il contrasto di qualunque testo — la fascia più
+   luminosa è in alto, dove stanno il saluto e i titoli, cioè testo bianco su
+   quasi-nero, e lì il rapporto resta sopra 18:1. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(110% 55% at 50% -12%,
+      color-mix(in srgb, var(--accento) 8%, transparent), transparent 62%),
+    var(--fondo);
+  transition: background var(--lento) var(--curva);
+}
