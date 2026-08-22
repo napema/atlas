@@ -14,7 +14,7 @@
  * che stanno in core/app.js. Il perché è scritto lì.
  */
 
-const VERSIONE = "atlas-v16";
+const VERSIONE = "atlas-v17";
 const GUSCIO = `guscio-${VERSIONE}`;
 
 const DA_PRECARICARE = [
@@ -77,6 +77,9 @@ const DA_PRECARICARE = [
   "./assets/fonts/sf-pro-text-bold.woff2",
   "./assets/fonts/sf-pro-display-semibold.woff2",
   "./assets/fonts/sf-pro-display-bold.woff2",
+  // AppleColorEmoji.woff NON sta qui: sono 45 MB, e nel precarico vorrebbe
+  // dire che la prima apertura non finisce mai. Lo prende la regola
+  // cache-first sui font al primo uso, e da lì in poi c'è anche offline.
 ];
 
 

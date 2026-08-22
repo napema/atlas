@@ -97,7 +97,7 @@
      sta in un font proprietario che non si ridistribuisce — ma dichiarare
      la pila evita il caso peggiore, cioè il glifo monocromatico preso da un
      font di testo. */
-  --font-e: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
+  --font-e: "AppleColorEmoji", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 
   --t-64: 64px; --t-48: 48px; --t-40: 40px; --t-34: 34px; --t-28: 28px;
   --t-22: 22px; --t-19: 19px; --t-17: 17px; --t-15: 15px; --t-13: 13px;
@@ -224,3 +224,42 @@
   :root:not([data-tema="scuro"]) { --pillola-tinta: var(--scheda-alta); }
 }
 :root[data-tema="chiaro"] { --pillola-tinta: var(--scheda-alta); }
+
+/* ------------------------------------------------------ le emoji Apple --
+   Sono il font di sistema di Apple, imbarcato come webfont. Tre note.
+
+   1. `local()` PRIMA dell'url, e non è un dettaglio: su iPhone e su Mac il
+      font è già installato, `local()` lo trova e i 45 MB non partono mai.
+      Li scarica solo chi non ce l'ha, cioè Windows e Android.
+
+   2. `unicode-range` limitato ai blocchi delle emoji: senza, il browser
+      considererebbe questo font come candidato per QUALSIASI carattere e lo
+      scaricherebbe al primo pezzo di testo. Così parte solo quando in
+      pagina compare davvero un'emoji.
+
+   3. Fuori dal precarico del service worker, di proposito: mettere 45 MB
+      nell'installazione iniziale vorrebbe dire che la prima apertura non
+      finisce mai. Ci pensa la regola cache-first sui font, quindi dopo il
+      primo caricamento funziona anche offline.
+
+   Il formato è `woff` e non `woff2` perché il woff2 di quel pacchetto non
+   si carica — lo dice il pacchetto stesso — e in ogni caso il grosso del
+   peso sono i PNG dentro la tabella `sbix`, che non si comprimono più.
+
+   SUI DIRITTI: il font è di Apple e questo è un pacchetto non ufficiale.
+   Sta qui perché è stato chiesto esplicitamente, ed è una scelta di chi usa
+   l'app; ridistribuirlo in un progetto pubblico non è coperto da nessuna
+   licenza. Per toglierlo basta cancellare questo blocco e il file: la pila
+   `--font-e` ricade da sola su Segoe UI Emoji. */
+@font-face {
+  font-family: "AppleColorEmoji";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local("Apple Color Emoji"),
+       url("../assets/fonts/AppleColorEmoji.woff") format("woff");
+  unicode-range:
+    U+203C, U+2049, U+2122, U+2139, U+2194-21AA, U+231A-231B, U+2328,
+    U+23CF-23FA, U+24C2, U+25AA-25FE, U+2600-27BF, U+2934-2935, U+2B00-2BFF,
+    U+3030, U+303D, U+3297, U+3299, U+FE0F, U+1F000-1FAFF, U+E0020-E007F;
+}
