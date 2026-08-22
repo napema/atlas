@@ -12,7 +12,7 @@
  * appiccicato. È l'errore che costa più tempo a diagnosticare.
  */
 
-const VERSIONE = "atlas-v10";
+const VERSIONE = "atlas-v11";
 const GUSCIO = `guscio-${VERSIONE}`;
 
 const DA_PRECARICARE = [
