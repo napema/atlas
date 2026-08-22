@@ -46,25 +46,25 @@ export const svuota = (n) => { while (n.firstChild) n.removeChild(n.firstChild);
 // ------------------------------------------------------------ struttura --
 
 /**
- * Il titolo grande in cima a una vista, con il pallino del sync.
- * Il collasso su scorrimento lo gestisce core/app.js: qui c'è solo la forma.
+ * Il titolo in cima a una vista: occhiello piccolo sopra, titolo grande
+ * sotto, e le azioni a destra. `azione` può essere un nodo solo o un elenco.
  */
 export function intestazione(titolo, occhiello = "", azione = null) {
-  return el("header", { class: "intestazione" }, [
-    el("div", {}, [
-      occhiello && el("div", { class: "occhiello", testo: occhiello }),
+  const azioni = [].concat(azione || []).filter(Boolean);
+  return el("header", { class: "testa" }, [
+    el("div", { class: "testa-testo" }, [
+      occhiello && el("div", { class: "micro", testo: occhiello }),
       el("h1", { testo: titolo }),
     ]),
-    azione || el("span", { class: "sync-pallino", "data-ruolo": "sync" }),
+    el("div", { class: "testa-azioni" }, azioni.length
+      ? azioni
+      : [el("span", { class: "sync-pallino", "data-ruolo": "sync" })]),
   ]);
 }
 
 export function scheda(titolo, corpo, { accento, classe = "" } = {}) {
   const s = el("section", { class: `scheda ${classe}`.trim() }, [
-    titolo && el("div", { class: "scheda-titolo" }, [
-      el("span", { class: "pallino" }),
-      el("span", { testo: titolo }),
-    ]),
+    titolo && el("div", { class: "scheda-titolo", testo: titolo }),
   ]);
   if (accento) s.style.setProperty("--accento", accento);
   aggiungi(s, [].concat(corpo).map((c) => (typeof c === "string" ? el("p", { testo: c }) : c)));
@@ -74,9 +74,9 @@ export function scheda(titolo, corpo, { accento, classe = "" } = {}) {
 /** Riquadro con una cifra sola. `tono` colora la cifra, non lo sfondo. */
 export function riquadro({ etichetta, valore, dettaglio, tono = "" }) {
   return el("div", { class: "riquadro" }, [
-    el("div", { class: "etichetta-riga", testo: etichetta }),
+    el("div", { class: "micro", testo: etichetta }),
     el("div", { class: `cifra ${tono}`.trim(), html: String(valore) }),
-    dettaglio && el("div", { class: "nota", testo: dettaglio }),
+    dettaglio && el("div", { class: "nota-2", testo: dettaglio }),
   ]);
 }
 
@@ -214,7 +214,7 @@ export function anello(frazione, { misura = 44, spessore = 4, colore = "var(--ac
   svg.setAttribute("width", misura);
   svg.setAttribute("height", misura);
   svg.setAttribute("aria-hidden", "true");
-  for (const [stroke, dash] of [["var(--sfondo-4)", null], [colore, off]]) {
+  for (const [stroke, dash] of [["var(--traccia)", null], [colore, off]]) {
     const cer = document.createElementNS(ns, "circle");
     cer.setAttribute("cx", misura / 2);
     cer.setAttribute("cy", misura / 2);
@@ -272,9 +272,14 @@ export function apriFoglio({ titolo, sinistra, destra, mezzo = false, alChiudi }
   document.body.append(foglio);
   pila.push({ foglio, alChiudi });
 
-  // Un frame di ritardo: senza, il browser applica lo stato finale subito
-  // e la transizione non si vede.
-  requestAnimationFrame(() => { velo.classList.add("aperto"); foglio.classList.add("aperto"); });
+  // Leggere una proprietà di layout forza il calcolo dello stato iniziale:
+  // senza, il browser accorpa le due classi e la transizione non si vede.
+  // Prima c'era un requestAnimationFrame, e in una scheda non visibile —
+  // l'app riaperta da una notifica — quel frame non arriva mai e il foglio
+  // resta trasparente sopra la schermata, invisibile e cliccabile.
+  void foglio.offsetHeight;
+  velo.classList.add("aperto");
+  foglio.classList.add("aperto");
   document.body.style.overflow = "hidden";
 
   return { elemento: foglio, corpo, chiudi: () => chiudiFoglio(foglio) };
@@ -426,4 +431,129 @@ export function durata(secondi) {
  */
 export function nuovoId(prefisso = "r") {
   return `${prefisso}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/* =========================================================================
+   LA TESSERA A BARRA
+   L'oggetto caratteristico di ATLAS. Nome in alto, cifra grande al centro,
+   e in fondo una barra colorata col cursore che dice a che punto sei.
+
+   Perché il cursore a triangolo e non solo la barra piena: una barra al 40%
+   e una al 45% sono indistinguibili di sfuggita, e su una griglia di sei
+   tessere è proprio di sfuggita che si guardano. Il triangolo dà un punto
+   preciso su cui posare l'occhio.
+   ========================================================================= */
+
+/**
+ * @param {object} o
+ * @param {string} o.nome       il titolo della tessera
+ * @param {string} [o.emoji]    simbolo davanti al nome
+ * @param {string} [o.icona]    in alternativa all'emoji, una chiave di icone.js
+ * @param {string} [o.sotto]    la riga di contesto sotto il nome
+ * @param {string} [o.micro]    l'etichetta minuscola sopra la cifra
+ * @param {string} [o.tonoMicro] "" | "ok" | "avviso" | "male"
+ * @param {string} o.cifra      HTML della cifra (di solito da euroGrande)
+ * @param {string} [o.coda]     la riga sotto la cifra
+ * @param {number} [o.frazione] 0–1, quanto è piena la barra
+ * @param {string} [o.tinta]    il colore della tessera
+ * @param {Function} [o.azione]
+ */
+export function tessera({ nome, emoji, icona: nomeIcona, sotto, micro, tonoMicro = "",
+                          cifra, coda, frazione = 0, tinta, azione }) {
+  const f = Math.max(0, Math.min(1, Number(frazione) || 0));
+  const t = el(azione ? "button" : "div", {
+    class: "tessera",
+    ...(azione ? { type: "button", onClick: azione } : {}),
+  }, [
+    el("div", { class: "tessera-testa" }, [
+      emoji && el("span", { class: "tessera-emoji", testo: emoji }),
+      nomeIcona && el("span", { class: "tessera-icona", html: icona(nomeIcona, 16) }),
+      el("span", { class: "tessera-nome", testo: nome }),
+    ]),
+    sotto && el("div", { class: "tessera-sotto", testo: sotto }),
+    micro && el("div", { class: `micro ${tonoMicro}`.trim(), testo: micro }),
+    el("div", { class: "cifra tessera-cifra", html: String(cifra ?? "—") }),
+    coda && el("div", { class: "tessera-coda", testo: coda }),
+    el("div", { class: "barra-cursore" }, [
+      el("i", { stile: { width: `${f * 100}%` } }),
+      // Il triangolo si ferma prima dei bordi: a 0% e a 100% mezzo cursore
+      // uscirebbe dalla tessera e verrebbe tagliato dall'overflow.
+      el("b", { stile: { left: `${Math.min(97, Math.max(3, f * 100))}%` } }),
+    ]),
+  ]);
+  if (tinta) t.style.setProperty("--tinta", tinta);
+  return t;
+}
+
+/**
+ * La barra a segmenti con la legenda: una riga sola divisa in fette.
+ * Dice la composizione di un totale senza chiedere una ciambella, e in
+ * mezzo a una schermata di numeri costa molto meno spazio.
+ *
+ * @param {Array<{etichetta, valore, tinta}>} voci
+ */
+export function spezzata(voci, { legenda = true, quante = 4 } = {}) {
+  const totale = voci.reduce((s, v) => s + v.valore, 0) || 1;
+  const ordinate = [...voci].sort((a, b) => b.valore - a.valore);
+  const mostrate = ordinate.slice(0, quante);
+  const resto = ordinate.slice(quante).reduce((s, v) => s + v.valore, 0);
+  if (resto > 0) mostrate.push({ etichetta: "Altro", valore: resto, tinta: "var(--testo-4)" });
+
+  const barra = el("div", { class: "spezzata" }, mostrate.map((v) => {
+    const i = el("i", { stile: { width: `${(v.valore / totale) * 100}%` } });
+    i.style.setProperty("--tinta", v.tinta);
+    return i;
+  }));
+
+  if (!legenda) return barra;
+
+  return el("div", {}, [
+    barra,
+    el("div", { class: "legenda" }, mostrate.map((v) => {
+      const p = el("span", { class: "punto" });
+      p.style.setProperty("--tinta", v.tinta);
+      return el("span", { class: "legenda-voce" }, [
+        p,
+        el("span", { testo: v.etichetta }),
+        el("b", { testo: `${Math.round((v.valore / totale) * 100)}%` }),
+      ]);
+    })),
+  ]);
+}
+
+/** La pillola con la tendina, tipo "settimana ⌄". Cicla fra le voci. */
+export function selettore(voci, attivo, alCambio) {
+  const etichetta = el("span", { testo: voci.find(([v]) => v === attivo)?.[1] || voci[0][1] });
+  let corrente = attivo;
+  return el("button", {
+    class: "selettore", type: "button",
+    onClick: () => {
+      const i = voci.findIndex(([v]) => v === corrente);
+      const [v, t] = voci[(i + 1) % voci.length];
+      corrente = v;
+      etichetta.textContent = t;
+      alCambio(v);
+    },
+  }, [etichetta, el("span", { html: icona("giu", 14) })]);
+}
+
+/** Il quadratino con l'emoji davanti a una riga di elenco. */
+export function gettone(simbolo, tinta = null) {
+  const g = el("span", { class: `gettone${tinta ? " tinto" : ""}`, testo: simbolo });
+  if (tinta) g.style.setProperty("--tinta", tinta);
+  return g;
+}
+
+/**
+ * Una cifra in euro alla maniera delle etichette dei prezzi: simbolo piccolo
+ * e alzato, intero grande, centesimi piccoli. Restituisce HTML.
+ */
+export function euroGrande(cent, { segno = false, centesimi: conCentesimi = true } = {}) {
+  const c = Math.round(Number(cent) || 0);
+  const n = Math.abs(c) / 100;
+  const intero = NUM.format(Math.trunc(n));
+  const dec = String(Math.round((n - Math.trunc(n)) * 100)).padStart(2, "0");
+  const meno = c < 0 ? "−" : (segno ? "+" : "");
+  return `${escapa(meno)}<span class="val">€</span>${escapa(intero)}` +
+         (conCentesimi ? `<span class="cts">,${escapa(dec)}</span>` : "");
 }

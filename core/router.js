@@ -121,11 +121,9 @@ async function disegna() {
   // L'accento del modulo entra come variabile: da qui in giù ogni
   // `var(--accento)` dei componenti condivisi diventa il colore giusto,
   // senza una riga di codice nel modulo.
+  // Le tinte si scuriscono da sole nel tema chiaro (styles/tokens.css): non
+  // servono più le due varianti che il registro portava dietro a mano.
   document.documentElement.style.setProperty("--accento", mod.accento);
-  // La variante da testo va impostata insieme: usare la tinta piena per
-  // scrivere su fondo chiaro scende sotto i 4,5:1 e il numero non si legge.
-  document.documentElement.style.setProperty("--accento-testo", mod.accentoTesto || mod.accento);
-  document.documentElement.style.setProperty("--accento-pieno", mod.accentoPieno || mod.accento);
 
   contenitore.innerHTML = "";
   contenitore.dataset.modulo = id;

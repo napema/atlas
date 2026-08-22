@@ -297,4 +297,8 @@ export default {
     await disegna();
   },
   smonta() { contenitore = null; },
+
+  // Nessun tasto tondo: in Impostazioni non c'è un'azione che valga il
+  // pollice, e un pulsante che non sai cosa fa è peggio di nessun pulsante.
+  azionePrincipale: () => null,
 };

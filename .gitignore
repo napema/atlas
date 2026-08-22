@@ -11,3 +11,7 @@ node_modules/
 # La copia del vecchio Registro caricata per il confronto: sta gia in
 # legacy/finanze/ ed e byte per byte la stessa. Non serve committarla due volte.
 old_finance_tracker_to_consider/
+
+# La configurazione del server di anteprima locale: dipende da cosa ha
+# installato la macchina su cui si sviluppa, non dal progetto.
+.claude/

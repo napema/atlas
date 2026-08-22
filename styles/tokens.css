@@ -1,19 +1,19 @@
 /* =========================================================================
    ATLAS — token di design.
-   Riferimento: docs/APPLE.md. Soft futurism: materiali vibranti al posto
-   dei riempimenti pieni, SF Pro a ogni corpo, tinte di sistema come accento
-   e mai come sfondo.
 
-   TRE REGOLE che nessun modulo può violare:
-     1. nessun colore letterale — solo token
-     2. una sola tinta per schermata, e solo sull'azione primaria
-     3. niente ombre su schede, pulsanti, campi. La profondità viene dal
-        materiale e dal raggio, non dal drop-shadow
+   Linguaggio: nero pieno, schede a raggio largo, cifre enormi, e UNA tinta
+   vivida per oggetto. Il colore qui non è decorazione: la barra colorata
+   sotto una scheda È il dato, ed è quello che ti fa riconoscere una voce
+   senza leggerla.
+
+   TRE REGOLE:
+     1. nessun colore letterale nei moduli. Solo token.
+     2. la tinta identifica una COSA (una categoria, un'abitudine). Lo STATO
+        si dice con la forma e con la parola. Un colore che vuol dire due
+        cose non ne vuol dire nessuna.
+     3. il nero è nero. Le schede si staccano per luminosità, non per bordo.
    ========================================================================= */
 
-/* SF Pro self-hosted: identico su iOS, Windows e offline.
-   Le soglie ottiche di Apple sono Text ≤19px e Display ≥20px — rispettarle
-   è metà dell'effetto "piattaforma". */
 @font-face { font-family: "SF Pro Text"; font-weight: 400; font-style: normal; font-display: swap;
   src: url("../assets/fonts/sf-pro-text-regular.woff2") format("woff2"); }
 @font-face { font-family: "SF Pro Text"; font-weight: 500; font-style: normal; font-display: swap;
@@ -28,231 +28,168 @@
   src: url("../assets/fonts/sf-pro-display-bold.woff2") format("woff2"); }
 
 :root {
-  /* ---------------------------------------------------- tinte di sistema --
-     Invarianti fra i temi nei nomi, non nei valori: in scuro schiariscono
-     per reggere il contrasto sul nero. Una per superficie, mai mescolate. */
-  --blu:     #007aff;
-  --verde:   #34c759;
-  --rosso:   #ff3b30;
-  --arancio: #ff9500;
-  --viola:   #af52de;
-  --rosa:    #ff2d55;
-  --giallo:  #ffcc00;
-  --menta:   #00c7be;
-  --indaco:  #5856d6;
-  --grigio:  #8e8e93;
-  --teal:    #30b0c7;
-  --marrone: #a2845e;
+  color-scheme: dark;
 
-  /* --- le tinte, versione TESTO ---
-     Le tinte di sistema sono pensate per i riempimenti. Come colore del
-     testo su fondo chiaro non ce la fanno: il verde di sistema su bianco
-     fa 2,2:1 e il rosso 3,5:1, contro i 4,5 che servono sotto i 18px.
-     Apple pubblica varianti scurite proprio per questo. In scuro invece
-     le tinte normali vanno benissimo e restano quelle. */
-  --verde-testo:   #1d7a33;
-  --rosso-testo:   #d70015;
-  --arancio-testo: #b25000;
-  --blu-testo:     #0040dd;
-  --viola-testo:   #8944ab;
+  /* ------------------------------------------------------------ superfici --
+     Quattro livelli, non di più. Il fondo è nero vero: è quello che fa
+     sembrare le schede sospese invece che disegnate. */
+  --fondo:        #000000;
+  --fondo-alto:   #0b0b0d;   /* barre e cromatura */
+  --scheda:       #141416;   /* la superficie normale */
+  --scheda-alta:  #1e1e22;   /* dentro una scheda: campi, incassi */
+  --scheda-viva:  #292930;   /* premuto, selezionato */
+  --traccia:      #2b2b31;   /* il fondo di una barra di avanzamento */
+  --filo:         rgba(255, 255, 255, 0.07);
 
-  /* Il modulo attivo riscrive --accento e --accento-testo su :root; questi
-     sono i ripieghi. Il secondo serve perché la tinta piena come colore del
-     TESTO non regge su fondo chiaro — vedi sopra. */
-  --accento: var(--blu);
-  /* Per SCRIVERE sul fondo della pagina: scura in chiaro, viva in scuro. */
-  --accento-testo: var(--blu-testo);
-  /* Per RIEMPIRE un controllo che porta testo bianco sopra. Non coincide con
-     la precedente: in scuro il testo vuole una tinta viva, un riempimento
-     con sopra il bianco la vuole scura. Sono due esigenze opposte e servono
-     due variabili. */
-  --accento-pieno: #0062cc;
+  /* ------------------------------------------------------------ etichette --
+     I quattro livelli restano sopra 4,5:1 sul fondo più chiaro su cui possono
+     capitare (--scheda-viva): il terziario a #74747c faceva 3,97:1 e le
+     etichette minuscole sparivano. Il quarto è decorativo — righelli,
+     segnaposto — e sta sopra 3:1, non ci va testo da leggere. */
+  --testo:    #ffffff;
+  --testo-2:  #b8b8c2;
+  --testo-3:  #90909a;
+  --testo-4:  #5e5e68;
 
-  /* Le versioni traslucide si ricavano dall'accento invece di essere fisse:
-     erano rimaste blu anche dentro Finanze, che è verde. */
-  --accento-tenue: color-mix(in srgb, var(--accento) 14%, transparent);
-  --accento-alone: color-mix(in srgb, var(--accento) 22%, transparent);
+  /* --------------------------------------------------------- tinte vivide --
+     Le tinte con cui si riconosce una voce: la barra di una categoria, il
+     colore di un'abitudine, la fetta di un grafico. Scelte per distinguersi
+     fra loro anche di sfuggita, e tutte sopra 4,5:1 sul nero — quindi si
+     possono usare anche come testo, non solo come riempimento. */
+  --rosa:     #ff5fa2;
+  --blu:      #3fa9ff;
+  --giallo:   #ffd426;
+  --arancio:  #ff8a4c;
+  --viola:    #c77dff;
+  --verde:    #32d74b;
+  --menta:    #5fe3c0;
+  --rosso:    #ff4d5e;
+  --indaco:   #8b8bff;
+  --pesca:    #ffb26b;
+  --ciano:    #4fd8eb;
+  --lime:     #b8f14a;
+  --grigio:   #90909a;
 
-  /* --------------------------------------------------- superfici, chiaro --
-     `sfondo` è la pagina, `elevata` è la scheda, `raggruppata` è il fondo
-     di una lista o di un campo. Tre livelli bastano: un quarto costringe a
-     inventare gerarchie che l'occhio non legge. */
-  --sfondo:        #ffffff;
-  --sfondo-2:      #ffffff;   /* superficie elevata: scheda, foglio */
-  --sfondo-3:      #f2f2f7;   /* raggruppata: campi, righe, incassi */
-  --sfondo-4:      #e5e5ea;   /* traccia di una barra di avanzamento */
-  --separatore:    rgba(60, 60, 67, 0.18);
-  --etichetta:     #1d1d1f;
-  --etichetta-2:   rgba(60, 60, 67, 0.78);
-  --etichetta-3:   rgba(60, 60, 67, 0.55);
-  --etichetta-4:   rgba(60, 60, 67, 0.30);
-  --riempimento:   rgba(120, 120, 128, 0.12);
-  --riempimento-2: rgba(120, 120, 128, 0.20);
+  /* Gli stati sono un insieme SEPARATO dalle tinte: se il verde di "tutto
+     bene" fosse anche il verde di una categoria, non si capirebbe più quale
+     dei due sta parlando. */
+  --ok:       #32d74b;
+  --avviso:   #ffd426;
+  --male:     #ff4d5e;
 
-  /* ------------------------------------------------- materiali vibranti --
-     Alpha sopra un backdrop-filter. Sostituiscono i riempimenti pieni su
-     barre, fogli e sovrapposizioni. Mai un'ombra sopra un materiale: la
-     sfoca e annulla l'effetto. */
-  --materiale-sottile:  rgba(255, 255, 255, 0.60);
-  --materiale-regolare: rgba(255, 255, 255, 0.78);
-  --materiale-spesso:   rgba(255, 255, 255, 0.92);
-  --sfocatura: blur(30px) saturate(180%);
+  /* L'accento del modulo. Lo imposta il router leggendolo dal registro. */
+  --accento:       var(--blu);
+  --accento-tenue: color-mix(in srgb, var(--accento) 16%, transparent);
+  --accento-velo:  color-mix(in srgb, var(--accento) 30%, transparent);
 
-  /* --- il vetro ---
-     Superficie translucida con un filo di luce sul bordo: chiaro in alto,
-     scuro in basso, come se la luce venisse da sopra. È quel filo a dare la
-     sensazione di spessore — senza, una superficie sfocata sembra solo una
-     macchia. Non è un bordo da 1px: è un gradiente ritagliato in maschera,
-     quindi non compete con il raggio e non fa la scaletta sugli angoli. */
-  --vetro-fondo: rgba(255, 255, 255, 0.55);
-  --vetro-alto:  rgba(255, 255, 255, 0.70);
-  --vetro-basso: rgba(255, 255, 255, 0.10);
-  --vetro-sfocatura: blur(20px) saturate(180%);
+  /* ---------------------------------------------------------- tipografia --
+     SF Pro nativa dove c'è, self-hosted dove non c'è. La scala è più larga
+     di quella di sistema perché qui le cifre sono protagoniste: 48 e 64 non
+     sono titoli, sono numeri. */
+  --font:   -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-d: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-m: ui-monospace, "SF Mono", Menlo, "Cascadia Mono", monospace;
 
-  /* Il velo dietro un foglio modale. Non è un materiale: è oscuramento. */
-  --velo: rgba(0, 0, 0, 0.28);
+  --t-64: 64px; --t-48: 48px; --t-40: 40px; --t-34: 34px; --t-28: 28px;
+  --t-22: 22px; --t-19: 19px; --t-17: 17px; --t-15: 15px; --t-13: 13px;
+  --t-11: 11px; --t-10: 10px;
 
-  /* ------------------------------------------------------------ tipografia --
-     Scala HIG. Corpo 17 sul tocco, 13 sul denso da scrivania. */
-  /* SF Pro NATIVA per prima.
-     Su iPhone e Mac `-apple-system` è la San Francisco vera di sistema: ha
-     l'ottica variabile, il crenaggio giusto a ogni corpo e tutti i glifi.
-     I woff2 self-hosted qui sotto sono istanze statiche, e servono solo dove
-     la nativa non c'è — cioè su Windows. Metterli davanti significherebbe
-     usare la copia peggiore proprio sul dispositivo per cui l'app è fatta. */
-  --font-testo:  -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
-  --font-titolo: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
-  --font-mono:   ui-monospace, "SF Mono", Menlo, "Cascadia Mono", monospace;
-
-  --t-56: 56px;  --t-44: 44px;  --t-34: 34px;  --t-28: 28px;
-  --t-22: 22px;  --t-17: 17px;  --t-15: 15px;  --t-13: 13px;
-  --t-12: 12px;  --t-11: 11px;
-
-  /* ------------------------------------------------------------ spaziatura --
-     Base 8. La scala di apple.md, niente valori fuori scala. */
+  /* ---------------------------------------------------------- spaziatura -- */
   --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px; --s5: 20px;
-  --s6: 24px; --s8: 32px; --s11: 44px; --s14: 56px; --s20: 80px;
+  --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px; --s16: 64px;
 
-  /* ---------------------------------------------------------------- forma --
-     12 sui controlli, 14 sulle schede, 10 sui campi, 16 in cima ai fogli.
-     Niente bordi netti da 1px sulle schede: raggio più materiale. */
-  --r-campo:   10px;
-  --r-btn:     12px;
-  --r-scheda:  14px;
-  --r-foglio:  16px;
+  /* --------------------------------------------------------------- forma --
+     Raggi larghi. È la differenza più immediata fra "pannello" e "oggetto":
+     una scheda con 20px di raggio si legge come una cosa che potresti
+     prendere in mano. */
+  --r-scheda:  20px;
+  --r-interno: 14px;
+  --r-campo:   14px;
+  --r-btn:     16px;
   --r-pillola: 999px;
-  --tocco:     44px;   /* area minima toccabile, non negoziabile */
-  --tocco-denso: 28px; /* solo da scrivania, con puntatore fine */
+  --tocco:     44px;
 
-  /* ------------------------------------------------------------- profondità --
-     Su iOS la stratificazione è materiale, non ombra. L'unica cosa
-     ammessa è il filo di separazione alla macOS. */
-  --filo: 0 1px 0 rgba(0, 0, 0, 0.04);
-
-  /* ------------------------------------------------------------- movimento --*/
-  --curva:   cubic-bezier(0.32, 0.72, 0, 1);   /* la curva di iOS */
-  --veloce:  180ms;
-  --normale: 320ms;
-  --lento:   450ms;
+  /* ---------------------------------------------------------- movimento -- */
+  --curva:   cubic-bezier(0.32, 0.72, 0, 1);
+  --molla:   cubic-bezier(0.34, 1.4, 0.64, 1);
+  --veloce:  160ms;
+  --normale: 300ms;
+  --lento:   480ms;
 }
 
-/* ------------------------------------------------------------------ scuro --
-   Il blocco è ripetuto perché CSS non permette di riusare un gruppo di
-   dichiarazioni, e una variabile definita solo dentro una media query non
-   può essere forzata a mano dalle impostazioni. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-tema="chiaro"]) {
-    --blu:     #0a84ff;
-    --verde:   #30d158;
-    --rosso:   #ff453a;
-    --arancio: #ff9f0a;
-    --viola:   #bf5af2;
-    --rosa:    #ff375f;
-    --giallo:  #ffd60a;
-    --menta:   #63e6e2;
-    --indaco:  #7d7aff;
-    --grigio:  #98989d;
-    --teal:    #40c8e0;
-    --marrone: #ac8e68;
+/* ------------------------------------------------------------------ chiaro --
+   Il progetto nasce scuro e resta scuro: le tinte vivide sul nero sono la
+   cosa che lo rende riconoscibile. Il chiaro esiste perché di giorno
+   all'aperto serve — non è un'alternativa alla pari, è la stessa
+   impaginazione su carta. Le tinte si scuriscono quel tanto che basta a
+   stare sopra 4,5:1 sul bianco: stesse identità, leggibili anche lì. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="scuro"]) {
+    color-scheme: light;
 
-    --verde-testo:   #30d158;
-    --rosso-testo:   #ff453a;
-    --arancio-testo: #ff9f0a;
-    --blu-testo:     #0a84ff;
-    --viola-testo:   #bf5af2;
+    --fondo:        #f2f2f5;
+    --fondo-alto:   #fbfbfd;
+    --scheda:       #ffffff;
+    --scheda-alta:  #f0f0f4;
+    --scheda-viva:  #e4e4ea;
+    --traccia:      #e2e2e8;
+    --filo:         rgba(0, 0, 0, 0.06);
 
+    --testo:    #0c0c0d;
+    --testo-2:  #57575f;
+    --testo-3:  #64646f;
+    --testo-4:  #828290;
 
-    --sfondo:        #000000;
-    --sfondo-2:      #1c1c1e;
-    --sfondo-3:      #2c2c2e;
-    --sfondo-4:      #3a3a3c;
-    --separatore:    rgba(84, 84, 88, 0.65);
-    --etichetta:     #f5f5f7;
-    --etichetta-2:   rgba(235, 235, 245, 0.78);
-    --etichetta-3:   rgba(235, 235, 245, 0.55);
-    --etichetta-4:   rgba(235, 235, 245, 0.30);
-    --riempimento:   rgba(120, 120, 128, 0.24);
-    --riempimento-2: rgba(120, 120, 128, 0.36);
+    --rosa:     #d4185f;
+    --blu:      #0a6fd8;
+    --giallo:   #856400;
+    --arancio:  #bd4f16;
+    --viola:    #8639cc;
+    --verde:    #157a37;
+    --menta:    #077362;
+    --rosso:    #cc1526;
+    --indaco:   #4646d0;
+    --pesca:    #a9631b;
+    --ciano:    #01738a;
+    --lime:     #587510;
+    --grigio:   #67676f;
 
-    --materiale-sottile:  rgba(30, 30, 32, 0.62);
-    --materiale-regolare: rgba(30, 30, 32, 0.80);
-    --materiale-spesso:   rgba(30, 30, 32, 0.94);
-    --vetro-fondo: rgba(60, 60, 66, 0.42);
-    --vetro-alto:  rgba(255, 255, 255, 0.16);
-    --vetro-basso: rgba(255, 255, 255, 0.03);
-    --velo: rgba(0, 0, 0, 0.48);
-
-    --filo: 0 1px 0 rgba(255, 255, 255, 0.04);
+    --ok:       #157a37;
+    --avviso:   #856400;
+    --male:     #cc1526;
   }
 }
 
-:root[data-tema="scuro"] {
-  --blu:     #0a84ff;
-  --verde:   #30d158;
-  --rosso:   #ff453a;
-  --arancio: #ff9f0a;
-  --viola:   #bf5af2;
-  --rosa:    #ff375f;
-  --giallo:  #ffd60a;
-  --menta:   #63e6e2;
-  --indaco:  #7d7aff;
-  --grigio:  #98989d;
-  --teal:    #40c8e0;
-  --marrone: #ac8e68;
-
-  --verde-testo:   #30d158;
-  --rosso-testo:   #ff453a;
-  --arancio-testo: #ff9f0a;
-  --blu-testo:     #0a84ff;
-  --viola-testo:   #bf5af2;
-
-
-  --sfondo:        #000000;
-  --sfondo-2:      #1c1c1e;
-  --sfondo-3:      #2c2c2e;
-  --sfondo-4:      #3a3a3c;
-  --separatore:    rgba(84, 84, 88, 0.65);
-  --etichetta:     #f5f5f7;
-  --etichetta-2:   rgba(235, 235, 245, 0.78);
-  --etichetta-3:   rgba(235, 235, 245, 0.55);
-  --etichetta-4:   rgba(235, 235, 245, 0.30);
-  --riempimento:   rgba(120, 120, 128, 0.24);
-  --riempimento-2: rgba(120, 120, 128, 0.36);
-
-  --materiale-sottile:  rgba(30, 30, 32, 0.62);
-  --materiale-regolare: rgba(30, 30, 32, 0.80);
-  --materiale-spesso:   rgba(30, 30, 32, 0.94);
-  --vetro-fondo: rgba(60, 60, 66, 0.42);
-  --vetro-alto:  rgba(255, 255, 255, 0.16);
-  --vetro-basso: rgba(255, 255, 255, 0.03);
-  --velo: rgba(0, 0, 0, 0.48);
-
-  --filo: 0 1px 0 rgba(255, 255, 255, 0.04);
+:root[data-tema="chiaro"] {
+  color-scheme: light;
+  --fondo:        #f2f2f5;
+  --fondo-alto:   #fbfbfd;
+  --scheda:       #ffffff;
+  --scheda-alta:  #f0f0f4;
+  --scheda-viva:  #e4e4ea;
+  --traccia:      #e2e2e8;
+  --filo:         rgba(0, 0, 0, 0.06);
+  --testo:    #0c0c0d;
+  --testo-2:  #57575f;
+  --testo-3:  #64646f;
+  --testo-4:  #828290;
+  --rosa:     #d4185f;
+  --blu:      #0a6fd8;
+  --giallo:   #856400;
+  --arancio:  #bd4f16;
+  --viola:    #8639cc;
+  --verde:    #157a37;
+  --menta:    #077362;
+  --rosso:    #cc1526;
+  --indaco:   #4646d0;
+  --pesca:    #a9631b;
+  --ciano:    #01738a;
+  --lime:     #587510;
+  --grigio:   #67676f;
+  --ok:       #157a37;
+  --avviso:   #856400;
+  --male:     #cc1526;
 }
-
-:root                     { color-scheme: light dark; }
-:root[data-tema="chiaro"] { color-scheme: light; }
-:root[data-tema="scuro"]  { color-scheme: dark; }
 
 @media (prefers-reduced-motion: reduce) {
   :root { --veloce: 0ms; --normale: 0ms; --lento: 0ms; }

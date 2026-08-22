@@ -38,9 +38,12 @@ impostazioni con diagnostica.
 
 ### ✅ Sistema di stile
 
-Rifatto su `docs/APPLE.md`. Token in `styles/tokens.css`, componenti in
-`styles/base.css`, un `stile.css` per modulo caricato dal router insieme al
-modulo. Chiaro e scuro, più la scelta manuale.
+Rifatto da capo: nero pieno, tinte sature, un eroe per schermata, tessere al
+posto degli elenchi. Il tentativo in stile Apple è stato abbandonato — dava
+una schermata piatta in cui la cifra che conta pesava quanto l'etichetta di
+fianco. Token in `styles/tokens.css`, componenti in `styles/base.css`, un
+`stile.css` per modulo caricato dal router insieme al modulo. Chiaro e scuro,
+più la scelta manuale. Tutto scritto in `docs/DESIGN.md`.
 
 ### ✅ I tre moduli
 
@@ -96,6 +99,20 @@ _(nessuna)_
 - **Le iscrizioni push sono di core** (21 ago) — stavano in
   `abitudini.json`. Tenerle in un modulo avrebbe riportato la duplicazione
   che ATLAS elimina.
+- **Via lo stile Apple** (22 ago) — `liquid-glass`, i materiali traslucidi e
+  le tinte di sistema davano una schermata piatta, tutta dello stesso grigio.
+  Al suo posto: nero pieno, tinte sature, un eroe per schermata, tessere al
+  posto degli elenchi. `docs/APPLE.md` è stato sostituito da
+  `docs/DESIGN.md`. Restano le due lezioni che valevano: contrasto misurato e
+  44px di bersaglio.
+- **Una tinta per modulo, tutte diverse** (22 ago) — Oggi e Mobilità erano
+  tutte e due blu. Ora Oggi è pesca, Finanze lime, Mobilità ciano, Abitudini
+  viola. Finanze ha lasciato il verde perché il verde vuol dire "fatto" e un
+  colore che significa due cose non ne significa nessuna.
+- **Il tasto tondo al posto del "+" in intestazione** (22 ago) — stesso gesto,
+  ma in cima allo schermo il pollice non ci arriva. Ogni modulo dichiara la
+  sua azione con `azionePrincipale()`, e chi non ne ha una ovvia restituisce
+  `null` invece di mostrarne una debole.
 
 ---
 

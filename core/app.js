@@ -5,7 +5,7 @@
 // 3. i sync partono DOPO, in sottofondo: la rete non deve ritardare il primo tocco
 // 4. il service worker per ultimo: serve al secondo avvio, non al primo
 
-import { MODULI_IN_BARRA, avviaTuttiISync } from "./registro.js";
+import { MODULI_IN_BARRA, avviaTuttiISync, prendiModulo } from "./registro.js";
 import { avviaRouter, osservaRotta, rottaCorrente, vaiA } from "./router.js";
 import { osservaStato, configurato } from "./sync.js";
 import { icona } from "./icone.js";
@@ -15,30 +15,53 @@ import { el } from "./ui.js";
 
 function costruisciBarra() {
   const barra = document.getElementById("barra");
-  barra.innerHTML = "";
+  barra.replaceChildren();
 
   // Il marchio si vede solo da scrivania (il CSS lo nasconde sotto i 900px):
-  // su iPhone c'e gia l'icona sulla schermata Home, in una colonna laterale
-  // invece una finestra senza nome e disorientante.
+  // su iPhone c'è già l'icona sulla schermata Home, mentre una colonna
+  // laterale senza nome è disorientante.
   barra.append(el("div", { class: "marchio", testo: "ATLAS" }));
+
   for (const m of MODULI_IN_BARRA) {
     barra.append(el("a", {
-      class: "scheda-barra",
+      class: "tab",
       href: `#/${m.id}`,
       "data-modulo": m.id,
     }, [
-      el("span", { html: icona(m.icona, 26) }),
+      el("span", { html: icona(m.icona, 24) }),
       el("span", { testo: m.nome }),
     ]));
   }
 }
 
 function evidenziaBarra({ id }) {
-  for (const s of document.querySelectorAll(".scheda-barra")) {
-    const attiva = s.dataset.modulo === id;
-    if (attiva) s.setAttribute("aria-current", "page");
+  for (const s of document.querySelectorAll(".tab")) {
+    if (s.dataset.modulo === id) s.setAttribute("aria-current", "page");
     else s.removeAttribute("aria-current");
   }
+}
+
+/**
+ * Il tasto tondo: una sola azione, quella del modulo che stai guardando.
+ *
+ * Non è una scorciatoia in più — è L'azione. Registrare una spesa, iniziare
+ * la sessione, aggiungere un'abitudine: sono le tre cose per cui apri l'app,
+ * e devono stare tutte sotto lo stesso pollice. Un modulo che non ha
+ * un'azione ovvia non lo mostra affatto, invece di mostrarne una debole.
+ */
+let bottoneAzione = null;
+
+function aggiornaAzione(mod) {
+  const a = mod?.azionePrincipale?.();
+  if (!a) { bottoneAzione?.remove(); bottoneAzione = null; return; }
+
+  if (!bottoneAzione) {
+    bottoneAzione = el("button", { class: "azione-tonda", type: "button" });
+    document.body.append(bottoneAzione);
+  }
+  bottoneAzione.innerHTML = icona(a.icona || "piu", 26);
+  bottoneAzione.setAttribute("aria-label", a.etichetta || "Azione");
+  bottoneAzione.onclick = a.fai;
 }
 
 // ------------------------------------------------------------------- tema --
@@ -89,11 +112,18 @@ async function avvia() {
   applicaTemaSalvato();
   costruisciBarra();
 
-  osservaRotta((r) => { evidenziaBarra(r); allineaBarraDiStato(); aggiornaPallini(); });
+  osservaRotta((r) => {
+    evidenziaBarra(r);
+    aggiornaAzione(r.modulo);
+    allineaBarraDiStato();
+    aggiornaPallini();
+  });
   osservaStato((s) => { statiCanali.set(s.id, s); aggiornaPallini(); });
 
   await avviaRouter(document.getElementById("vista"));
-  evidenziaBarra(rottaCorrente());
+  const r = rottaCorrente();
+  evidenziaBarra(r);
+  aggiornaAzione(await prendiModulo(r.id));
   allineaBarraDiStato();
 
   // In sottofondo: i dati di tutti i moduli devono arrivare anche se stai

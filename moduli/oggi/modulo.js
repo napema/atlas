@@ -1,22 +1,20 @@
-// moduli/oggi — la home. È la ragione per cui i tre tracker diventano uno.
+// moduli/oggi — la home.
 //
-// Non ha dati propri: interroga gli altri moduli con `oggi()` e impagina le
-// risposte. Ma non è un elenco di schede — quella era la prima versione, e
-// tre riquadri identici in fila non dicono niente più di tre app aperte in
-// fila. Qui c'è una gerarchia:
+// Non è un cruscotto. È quello che ti direbbe qualcuno che ha già guardato
+// i numeri al posto tuo: una frase che riassume la giornata, la cosa da fare
+// adesso, e sotto i tre numeri per chi vuole controllare.
 //
-//   1. il saluto, grande, con la data
-//   2. la riga del giorno: tre micro-numeri, colti con la coda dell'occhio
-//   3. quello che manca, grande e toccabile
-//   4. quello che è a posto, compatto
-//   5. la settimana: sette pallini che dicono la costanza, non il dettaglio
+// La differenza pratica: un cruscotto ti dà sei dati e ti lascia il lavoro
+// di capire quale conta. Qui il lavoro è già fatto — la frase in cima dice
+// se puoi stare tranquillo, e se non puoi dice esattamente cosa manca.
 //
-// Il criterio: quello che è già a posto si stringe, quello che manca si
-// allarga. Una home che dà lo stesso spazio a tutto costringe a leggerla
-// tutta ogni volta.
+// Non ha dati propri: interroga gli altri moduli con `oggi()`.
 
 import { MODULI_DATI, prendiModulo } from "../../core/registro.js";
-import { el, aggiungi, anello, plurale, euro, GIORNI_INIZIALI, dataUmana } from "../../core/ui.js";
+import {
+  el, aggiungi, plurale, euroGrande, tessera, gettone,
+  GIORNI_INIZIALI, dataUmana, oggiISO,
+} from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
 import { ascolta } from "../../core/bus.js";
 import { fattiDelGiorno, ultimiGiorni, giornoCorrente } from "../../core/contesto.js";
@@ -24,28 +22,23 @@ import { fattiDelGiorno, ultimiGiorni, giornoCorrente } from "../../core/contest
 let contenitore = null;
 const staccatori = [];
 
-/**
- * Il gettone del disegno in corso.
- *
- * `disegna()` è asincrona perché deve caricare i moduli, e fra lo svuotamento
- * del contenitore e l'append c'è un `await`. Due chiamate ravvicinate — e ne
- * arrivano, perché la home ascolta tre eventi e il sync ne spara più d'uno
- * all'avvio — si intrecciano e appendono tutte e due: la schermata compariva
- * in doppia copia. Solo l'ultimo disegno partito ha il diritto di scrivere.
- */
-let gettone = 0;
+// `disegna()` è asincrona perché carica i moduli, e fra lo svuotamento e
+// l'append c'è un await. Due chiamate ravvicinate — e ne arrivano, la home
+// ascolta tre eventi — si intreccerebbero appendendo tutte e due. Solo
+// l'ultimo disegno partito ha il diritto di scrivere.
+let gettoneDisegno = 0;
 
-const SALUTI = [[5, "Buonanotte"], [13, "Buongiorno"], [18, "Buon pomeriggio"], [22, "Buonasera"], [24, "Buonanotte"]];
-const saluto = () => SALUTI.find(([h]) => new Date().getHours() < h)?.[1] || "Ciao";
+const SALUTI = [[5, "buonanotte"], [13, "buongiorno"], [18, "buon pomeriggio"], [22, "buonasera"], [24, "buonanotte"]];
+const saluto = () => SALUTI.find(([h]) => new Date().getHours() < h)?.[1] || "ciao";
 
 const dataLunga = () =>
   new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
 
-/* --------------------------------------------------------------- vista -- */
+/* ================================================================ vista == */
 
 async function disegna() {
   if (!contenitore) return;
-  const mio = ++gettone;
+  const mio = ++gettoneDisegno;
 
   // Tollerante di proposito: un modulo rotto non deve portarsi via la home,
   // che è la schermata che si apre più spesso di tutte.
@@ -53,200 +46,184 @@ async function disegna() {
     const mod = await prendiModulo(voce.id);
     return { mod, dati: mod?.oggi?.() ?? null };
   }));
-
-  // Nel frattempo è partito un disegno più recente, o la home è stata
-  // smontata: questo non deve toccare niente.
-  if (mio !== gettone || !contenitore) return;
-  contenitore.replaceChildren();
+  if (mio !== gettoneDisegno || !contenitore) return;
 
   const schede = esiti.filter((e) => e.status === "fulfilled").map((e) => e.value);
   const conDati = schede.filter((s) => s.dati);
-  const urgenti = conDati.filter((s) => s.dati.urgente);
-  const tranquille = conDati.filter((s) => !s.dati.urgente);
+  const daFare = conDati.filter((s) => s.dati.urgente || s.dati.fatto === false);
+  const fatti = conDati.filter((s) => s.dati.fatto === true);
 
-  aggiungi(contenitore, [testata(conDati), rigaDelGiorno()]);
+  // Una cosa da fare alla volta, e la più urgente. Prima la carta larga
+  // mostrava TUTTE le cose da fare e sotto la griglia le rimostrava una per
+  // una: la stessa frase due volte nella stessa schermata, che è il modo più
+  // veloce per far smettere di leggere.
+  const principale = daFare
+    .slice()
+    .sort((a, b) => Number(Boolean(b.dati.urgente)) - Number(Boolean(a.dati.urgente)))[0] || null;
+  // I tre riquadri ci sono sempre, anche vuoti: quello promosso a carta
+  // larga esce dalla griglia, gli altri restano. Una home che cambia forma
+  // ogni giorno non si impara a leggere con la coda dell'occhio.
+  const resto = schede.filter((s) => s !== principale);
 
-  if (!conDati.length) {
-    contenitore.append(nienteAncora(schede));
-  } else if (urgenti.length) {
-    // C'è qualcosa da chiudere: quello prende tutto lo spazio, e il resto
-    // si stringe in una riga di numeri — è contesto, non un invito.
-    aggiungi(contenitore, [
-      ...urgenti.map((s) => schedaGrande(s.mod, s.dati)),
-      tranquille.length > 0 && el("div", { class: "og-riga" }, tranquille.map((s) => schedaPiccola(s.mod, s.dati))),
-    ]);
-  } else {
-    // Niente di urgente: le schede restano larghe col loro dettaglio. Tre
-    // numeri nudi non dicono più di tre app aperte in fila, e il dettaglio
-    // ("3 giorni alla ricarica") è metà dell'informazione.
-    aggiungi(contenitore, conDati.map((s) => schedaMedia(s.mod, s.dati)));
-  }
+  contenitore.replaceChildren();
 
-  contenitore.append(strisciaSettimana());
+  aggiungi(contenitore, [
+    saluto_(),
+    briefing(conDati, daFare, fatti),
+    principale && cartaDaFare(principale.mod, principale.dati),
+    resto.length > 0 && el("div", { class: "griglia-tessere" }, resto.map((s) => tesseraModulo(s.mod, s.dati))),
+    strisciaSettimana(),
+  ]);
 }
 
-function testata(conDati) {
-  const urgenti = conDati.filter((s) => s.dati.urgente).length;
-  const chiusi = conDati.filter((s) => s.dati.fatto).length;
-
-  const sottotitolo = urgenti > 0
-    ? `${plurale(urgenti, "cosa", "cose")} da chiudere`
-    : chiusi > 0 ? `${plurale(chiusi, "cosa", "cose")} già a posto`
-    : "Giornata appena cominciata";
-
-  return el("header", { class: "og-testata" }, [
-    el("div", { class: "og-data", testo: dataLunga() }),
-    el("h1", { class: "og-saluto", testo: saluto() }),
-    el("p", { class: `og-sommario${urgenti ? " urgente" : ""}` }, [
+/** Il saluto. Minuscolo e grande: è una persona che parla, non un'insegna. */
+function saluto_() {
+  return el("header", { class: "og-saluto-blocco" }, [
+    el("h1", { class: "og-saluto" }, [
+      el("span", { testo: saluto() }),
+      el("span", { class: "og-punto", testo: "." }),
+    ]),
+    el("p", { class: "og-data" }, [
       el("span", { class: "sync-pallino", "data-ruolo": "sync" }),
-      el("span", { testo: sottotitolo }),
+      el("span", { testo: dataLunga() }),
     ]),
   ]);
 }
 
 /**
- * La riga del giorno: tre micro-numeri presi dalla lavagna condivisa.
+ * La frase che riassume la giornata.
  *
- * Vengono da lì e non dai moduli di proposito: la lavagna è l'unico posto
- * dove si può leggere "cosa è successo oggi" senza caricare tre moduli e
- * senza sapere quali esistono. È anche il pezzo che rende visibile a colpo
- * d'occhio la cosa che ATLAS fa e le tre app separate non facevano.
+ * È la parte che fa la differenza fra un cruscotto e un'assistente: invece
+ * di tre numeri messi in fila, una riga che dice cosa vuol dire averli.
  */
-function rigaDelGiorno() {
+function briefing(conDati, daFare, fatti) {
   const f = fattiDelGiorno();
-  const voci = [];
+  let frase;
+  let tono = "";
 
-  if (f.mobilita?.["durata-min"] != null) {
-    voci.push({ icona: "corpo", valore: `${f.mobilita["durata-min"]}′`, etichetta: "mobilità" });
-  }
-  if (f.abitudini?.attese != null) {
-    voci.push({ icona: "spunta", valore: `${f.abitudini.spuntate ?? 0}/${f.abitudini.attese}`, etichetta: "abitudini" });
-  }
-  if (f.finanze?.speso != null) {
-    voci.push({ icona: "portafoglio", valore: euro(f.finanze.speso, { tondo: true }), etichetta: "speso oggi" });
+  if (!conDati.length) {
+    frase = "Non c'è ancora niente da segnalare. Buona giornata.";
+  } else if (!daFare.length) {
+    frase = fatti.length
+      ? `Tutto chiuso per oggi — ${plurale(fatti.length, "cosa fatta", "cose fatte")}. Puoi staccare.`
+      : "Niente di urgente in programma.";
+    tono = "sereno";
+  } else {
+    const nomi = daFare.map((s) => (s.dati.titolo || s.mod.nome).toLowerCase());
+    const elenco = nomi.length === 1 ? nomi[0]
+      : `${nomi.slice(0, -1).join(", ")} e ${nomi[nomi.length - 1]}`;
+    const ora = new Date().getHours();
+    frase = ora >= 21
+      ? `Ti manca ${elenco}. Si sta facendo tardi.`
+      : `Ti ${nomi.length === 1 ? "manca" : "mancano"} ${elenco}.`;
+    tono = ora >= 21 ? "sveglia" : "";
   }
 
-  if (!voci.length) return el("div", { hidden: true });
+  // Sotto la frase, i pochi numeri del giorno presi dalla lavagna: vengono
+  // da lì e non dai moduli perché la lavagna è l'unico posto dove si legge
+  // "cosa è successo oggi" senza sapere quali moduli esistono.
+  const numeri = [];
+  if (f.mobilita?.["durata-min"] != null) numeri.push([`${f.mobilita["durata-min"]}′`, "di mobilità"]);
+  if (f.abitudini?.attese != null) numeri.push([`${f.abitudini.spuntate ?? 0}/${f.abitudini.attese}`, "abitudini"]);
+  if (f.finanze?.speso != null) numeri.push([euroGrande(f.finanze.speso, { centesimi: false }), "spesi"]);
 
-  return el("div", { class: "og-giorno" }, voci.map((v) => el("div", { class: "og-giorno-voce" }, [
-    el("span", { class: "og-giorno-icona", html: icona(v.icona, 16) }),
-    el("span", { class: "og-giorno-valore num", testo: v.valore }),
-    el("span", { class: "og-giorno-etichetta", testo: v.etichetta }),
-  ])));
+  return el("section", { class: `og-briefing ${tono}`.trim() }, [
+    el("p", { class: "og-frase", testo: frase }),
+    numeri.length > 0 && el("div", { class: "og-numeri" }, numeri.map(([v, e]) => el("div", { class: "og-numero" }, [
+      el("span", { class: "cifra og-numero-cifra", html: v }),
+      el("span", { class: "nota-2", testo: e }),
+    ]))),
+  ]);
 }
 
 /**
- * Gli ultimi sette giorni: un pallino per giorno, pieno se qualcosa è
- * successo. Non dice cosa — per quello ci sono i moduli — dice se ci sei
- * stato, che è la domanda a cui un tracker deve rispondere per primo.
+ * La carta di una cosa da fare: larga, con l'invito esplicito.
+ * È l'unico elemento della home su cui si tocca per AGIRE invece che per
+ * andare a guardare, e per questo è l'unico con un pulsante dentro.
+ */
+function cartaDaFare(mod, dati) {
+  const c = el("a", { class: "og-carta", href: dati.azione?.rotta || `#/${mod.id}` }, [
+    el("div", { class: "og-carta-testa" }, [
+      el("span", { class: "og-carta-icona", html: icona(mod.icona, 18) }),
+      el("span", { class: "og-carta-nome", testo: dati.titolo || mod.nome }),
+    ]),
+    el("div", { class: "og-carta-valore cifra", html: String(dati.valore ?? "") }),
+    dati.dettaglio && el("p", { class: "og-carta-nota", testo: dati.dettaglio }),
+    el("span", { class: "og-carta-invito" }, [
+      el("span", { testo: dati.azione?.etichetta || "Apri" }),
+      el("span", { html: icona("freccia", 15) }),
+    ]),
+  ]);
+  c.style.setProperty("--tinta", mod.accento);
+  return c;
+}
+
+/**
+ * La tessera compatta di un modulo, nella griglia in basso.
+ *
+ * Regge i tre stati che la home deve saper distinguere: il modulo che non
+ * c'è ancora (niente `oggi()`), quello che c'è e oggi non ha niente da dire
+ * (`oggi()` torna null), e quello che ha un numero.
+ */
+function tesseraModulo(mod, dati) {
+  if (!dati) {
+    const inMigrazione = typeof mod.oggi !== "function";
+    return tessera({
+      nome: mod.nome,
+      icona: mod.icona,
+      micro: inMigrazione ? "in migrazione" : "a posto",
+      tonoMicro: inMigrazione ? "" : "ok",
+      cifra: inMigrazione ? "—" : "✓",
+      coda: inMigrazione ? "non ancora dentro ATLAS" : "niente da segnalare oggi",
+      frazione: inMigrazione ? 0 : 1,
+      tinta: inMigrazione ? "var(--testo-4)" : mod.accento,
+      azione: inMigrazione ? null : () => { location.hash = `#/`; },
+    });
+  }
+
+  return tessera({
+    nome: dati.titolo || mod.nome,
+    icona: mod.icona,
+    micro: dati.fatto === true ? "fatto" : dati.fatto === false ? "da fare" : null,
+    tonoMicro: dati.fatto === true ? "ok" : dati.fatto === false ? "avviso" : "",
+    cifra: String(dati.valore ?? "—"),
+    coda: dati.dettaglio,
+    frazione: typeof dati.avanzamento === "number" ? dati.avanzamento : (dati.fatto === true ? 1 : 0.08),
+    tinta: mod.accento,
+    azione: () => { location.hash = dati.azione?.rotta || `#/`; },
+  });
+}
+
+/**
+ * Gli ultimi sette giorni. Non dice COSA hai fatto — per quello ci sono i
+ * moduli — dice se ci sei stato, che è la domanda a cui un tracker deve
+ * rispondere per prima.
  */
 function strisciaSettimana() {
   const giorni = ultimiGiorni(7).reverse();
   const oggi = giornoCorrente();
-
-  const pallini = giorni.map(({ giorno, fatti }) => {
-    const quanti = Object.values(fatti).reduce((n, m) => n + Object.keys(m).length, 0);
-    const d = new Date(`${giorno}T12:00:00`);
-    return el("div", {
-      class: "og-sett-giorno" + (quanti ? " pieno" : "") + (giorno === oggi ? " oggi" : ""),
-      title: `${dataUmana(giorno)} · ${quanti ? plurale(quanti, "cosa segnata", "cose segnate") : "niente"}`,
-    }, [
-      el("span", { class: "og-sett-lettera", testo: GIORNI_INIZIALI[(d.getDay() + 6) % 7] }),
-      el("span", { class: "og-sett-punto" }),
-    ]);
-  });
-
   const attivi = giorni.filter(({ fatti }) => Object.keys(fatti).length).length;
 
-  return el("section", { class: "og-settimana" }, [
+  return el("section", { class: "scheda og-settimana" }, [
     el("div", { class: "og-settimana-testa" }, [
-      el("span", { class: "etichetta-riga", testo: "Ultimi sette giorni" }),
+      el("span", { class: "micro", testo: "Ultimi sette giorni" }),
       el("span", { class: "nota num", testo: `${attivi} su 7` }),
     ]),
-    el("div", { class: "og-sett-riga" }, pallini),
-  ]);
-}
-
-/* --------------------------------------------------------- le tre forme -- */
-
-/** Quello che manca: grande, con il numero in evidenza e la via d'uscita. */
-function schedaGrande(mod, dati) {
-  const s = el("a", { class: "og-grande", href: dati.azione?.rotta || `#/${mod.id}` }, [
-    el("div", { class: "og-grande-testa" }, [
-      el("span", { class: "og-icona", html: icona(mod.icona, 20) }),
-      el("span", { class: "og-nome", testo: dati.titolo || mod.nome }),
-      el("span", { class: "og-freccia", html: icona("freccia", 18) }),
-    ]),
-    dati.valore != null && el("div", { class: "og-valore cifra", testo: String(dati.valore) }),
-    dati.dettaglio && el("div", { class: "og-dettaglio", testo: dati.dettaglio }),
-    dati.azione?.etichetta && el("span", { class: "og-invito", testo: dati.azione.etichetta }),
-  ]);
-  s.style.setProperty("--accento", mod.accento);
-  return s;
-}
-
-/**
- * La forma normale: nome e stato in alto, contesto sotto.
- * Se il modulo dichiara `fatto: true` compare la spunta — la differenza fra
- * fatto e da fare deve leggersi prima del numero, non dopo.
- */
-function schedaMedia(mod, dati) {
-  const s = el("a", { class: `og-media${dati.fatto ? " fatto" : ""}`, href: dati.azione?.rotta || `#/${mod.id}` }, [
-    el("span", { class: "og-icona", html: icona(mod.icona, 20) }),
-    el("div", { class: "og-media-testo" }, [
-      el("div", { class: "og-media-alto" }, [
-        el("span", { class: "og-nome", testo: dati.titolo || mod.nome }),
-        el("span", { class: "og-media-valore cifra" }, [
-          dati.fatto === true && el("span", { class: "og-spunta", html: icona("spunta", 15, 2.6) }),
-          el("span", { testo: String(dati.valore ?? "—") }),
-        ]),
-      ]),
-      dati.dettaglio && el("div", { class: "og-dettaglio", testo: dati.dettaglio }),
-    ]),
-    el("span", { class: "og-freccia", html: icona("freccia", 16) }),
-  ]);
-  s.style.setProperty("--accento", mod.accento);
-  return s;
-}
-
-/** Quello che è a posto quando c'è altro di urgente: solo il numero. */
-function schedaPiccola(mod, dati) {
-  const s = el("a", { class: `og-piccola${dati.fatto ? " fatto" : ""}`, href: dati.azione?.rotta || `#/${mod.id}` }, [
-    el("span", { class: "og-icona", html: icona(mod.icona, 18) }),
-    el("span", { class: "og-piccola-valore cifra", testo: String(dati.valore ?? "—") }),
-    el("span", { class: "og-piccola-nome", testo: dati.titolo || mod.nome }),
-  ]);
-  s.style.setProperty("--accento", mod.accento);
-  return s;
-}
-
-/**
- * Il caso in cui nessun modulo ha niente da dire.
- *
- * Non è un errore ed è importante che non lo sembri: all'una di notte, con
- * tutto fatto, la home DEVE essere vuota. Quello che si mostra qui sono le
- * scorciatoie per cominciare, non un messaggio di errore.
- */
-function nienteAncora(schede) {
-  return el("div", { class: "og-vuoto" }, [
-    el("div", { class: "og-vuoto-anello" }, [
-      anello(1, { misura: 64, spessore: 5, colore: "var(--verde)" }),
-      el("span", { class: "og-vuoto-spunta", html: icona("spunta", 26, 2.4) }),
-    ]),
-    el("p", { class: "og-vuoto-titolo", testo: "Tutto a posto" }),
-    el("p", { class: "nota", testo: "Niente da segnalare per oggi." }),
-    el("div", { class: "og-scorciatoie" }, schede.map(({ mod }) => {
-      const b = el("a", { class: "og-scorciatoia", href: `#/${mod.id}` }, [
-        el("span", { class: "og-icona", html: icona(mod.icona, 22) }),
-        el("span", { testo: mod.nome }),
+    el("div", { class: "og-sett-riga" }, giorni.map(({ giorno, fatti }) => {
+      const quanti = Object.values(fatti).reduce((n, m) => n + Object.keys(m).length, 0);
+      const d = new Date(`${giorno}T12:00:00`);
+      return el("div", {
+        class: "og-sett-giorno" + (quanti ? " pieno" : "") + (giorno === oggi ? " oggi" : ""),
+        title: `${dataUmana(giorno)} · ${quanti ? plurale(quanti, "cosa segnata", "cose segnate") : "niente"}`,
+      }, [
+        el("span", { class: "og-sett-lettera", testo: GIORNI_INIZIALI[(d.getDay() + 6) % 7] }),
+        el("span", { class: "og-sett-punto" }),
       ]);
-      b.style.setProperty("--accento", mod.accento);
-      return b;
     })),
   ]);
 }
 
-/* ------------------------------------------------------------ contratto -- */
+/* ============================================================ contratto == */
 
 export default {
   async monta(cont) {
@@ -264,4 +241,8 @@ export default {
     while (staccatori.length) staccatori.pop()();
     contenitore = null;
   },
+
+  // Nessun tasto tondo: dalla home l'azione dipende da cosa manca, e ce
+  // l'hanno già le carte. Un pulsante generico qui non saprebbe cosa fare.
+  azionePrincipale: () => null,
 };

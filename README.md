@@ -74,8 +74,9 @@ durare anni non deve dipendere da una catena di strumenti che invecchia.
 - **`CLAUDE.md`** — perché ATLAS esiste, il contratto dei moduli, le regole
   ferme. Da leggere prima di toccare qualsiasi cosa.
 - **`docs/SCHEMI.md`** — i tre schemi letti dai dati veri, con le trappole.
-- **`docs/APPLE.md`** — il riferimento di stile. I token ne sono la
-  traduzione: se divergono, vince il documento.
+- **`docs/DESIGN.md`** — il linguaggio visivo: token, componenti, e le
+  regole misurate (contrasto, bersagli, il colore che vuol dire una cosa
+  sola). Da leggere prima di aggiungere una schermata.
 - **`docs/SYNC.md`** — come è configurata la sincronizzazione e i guasti veri
   da cui nascono le sue regole.
 - **`docs/MIGRAZIONE.md`** — la procedura di porting e la lista di controllo.

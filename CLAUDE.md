@@ -82,6 +82,8 @@ export default {
   async monta(contenitore, posizione) {},  // disegna dentro il contenitore
   smonta() {},                              // stacca ascoltatori, ferma timer
   oggi() { return null; },                  // la scheda per la home
+  impostazioni() { return null; },          // la propria sezione in #/impostazioni
+  azionePrincipale() { return null; },      // il tasto tondo in basso a destra
   avviaSync() {},                           // apre il proprio canale
 };
 ```
@@ -163,8 +165,10 @@ Queste non si discutono senza una ragione scritta.
    resuscita il record.
 6. **Il sync non ridisegna sotto le dita.** Se l'utente sta scrivendo o ha
    una modale aperta, il ridisegno aspetta. I dati arrivano comunque.
-7. **Nessun colore letterale nei moduli.** Solo token. L'unica cosa che un
-   modulo sceglie è il proprio `--accento`, e lo sceglie nel registro.
+7. **Nessun colore letterale nei moduli.** Solo token, e l'accento del modulo
+   lo sceglie il registro, non il modulo. Un colore vuol dire **una cosa
+   sola**: verde è "fatto" e rosso è uno stato negativo, quindi nessun modulo
+   e nessuna categoria può prenderseli. Il resto in `docs/DESIGN.md`.
 8. **Niente dipendenze esterne, niente build.** Nessun CDN: offline non
    c'è. Se serve una libreria pesante (3D, grafici), sta in un solo modulo
    e si carica pigramente.
@@ -257,6 +261,7 @@ carica da solo quando quella chat lavora lì dentro.
 | `docs/CANTIERE.md` | chi sta facendo cosa, richieste a core, decisioni aperte |
 | `docs/MIGRAZIONE.md` | la procedura di porting e la lista di controllo |
 | `docs/SYNC.md` | come è configurato il sync e i guasti da cui nascono le sue regole |
+| `docs/DESIGN.md` | il linguaggio visivo: token, componenti, contrasto misurato. **Da leggere prima di aggiungere una schermata** |
 
 ## 7. Note per chi scrive il codice
 

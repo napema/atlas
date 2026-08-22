@@ -8,7 +8,7 @@
   display: block;
   border: 0;
   border-radius: var(--r-pillola);
-  background: var(--riempimento-2);
+  background: var(--scheda-viva);
   padding: 2px;
   cursor: pointer;
   transition: background var(--veloce) var(--curva);
@@ -18,10 +18,10 @@
   width: 27px; height: 27px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform var(--veloce) var(--curva);
 }
-.interruttore.acceso { background: var(--verde); }
+.interruttore.acceso { background: var(--ok); }
 .interruttore.acceso .interruttore-pallina { transform: translateX(20px); }
 
 /* --------------------------------------------------------- le sezioni --- */
@@ -42,25 +42,22 @@
 
 .im-sezione {
   flex: none;
-  min-height: 34px;
+  min-height: 40px;
   padding: 6px var(--s4);
   border: 0;
   border-radius: var(--r-pillola);
-  background: var(--riempimento);
-  color: var(--etichetta-2);
-  font-family: var(--font-testo);
-  font-size: var(--t-15);
-  font-weight: 500;
+  background: var(--scheda);
+  color: var(--testo-2);
+  font-family: var(--font);
+  font-size: var(--t-13);
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
   transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
 }
-.im-sezione.attiva {
-  background: var(--sfondo-2);
-  color: var(--etichetta);
-  font-weight: 600;
-  box-shadow: var(--filo), inset 0 0 0 1px var(--accento-tenue);
-}
+.im-sezione.attiva { background: var(--testo); color: var(--fondo); }
+
+.im-corpo { display: flex; flex-direction: column; }
 
 @media (min-width: 900px) {
   .im-sezioni { margin-inline: 0; padding-inline: 0; flex-wrap: wrap; overflow: visible; }
