@@ -44,12 +44,34 @@
   --teal:    #30b0c7;
   --marrone: #a2845e;
 
-  /* Il modulo attivo riscrive --accento su :root; questo è il ripiego. */
+  /* --- le tinte, versione TESTO ---
+     Le tinte di sistema sono pensate per i riempimenti. Come colore del
+     testo su fondo chiaro non ce la fanno: il verde di sistema su bianco
+     fa 2,2:1 e il rosso 3,5:1, contro i 4,5 che servono sotto i 18px.
+     Apple pubblica varianti scurite proprio per questo. In scuro invece
+     le tinte normali vanno benissimo e restano quelle. */
+  --verde-testo:   #1d7a33;
+  --rosso-testo:   #d70015;
+  --arancio-testo: #b25000;
+  --blu-testo:     #0040dd;
+  --viola-testo:   #8944ab;
+
+  /* Il modulo attivo riscrive --accento e --accento-testo su :root; questi
+     sono i ripieghi. Il secondo serve perché la tinta piena come colore del
+     TESTO non regge su fondo chiaro — vedi sopra. */
   --accento: var(--blu);
-  /* Versione traslucida dell'accento, per aloni e riempimenti tenui.
-     I moduli la ridefiniscono insieme a --accento. */
-  --accento-tenue: rgba(0, 122, 255, 0.14);
-  --accento-alone: rgba(0, 122, 255, 0.18);
+  /* Per SCRIVERE sul fondo della pagina: scura in chiaro, viva in scuro. */
+  --accento-testo: var(--blu-testo);
+  /* Per RIEMPIRE un controllo che porta testo bianco sopra. Non coincide con
+     la precedente: in scuro il testo vuole una tinta viva, un riempimento
+     con sopra il bianco la vuole scura. Sono due esigenze opposte e servono
+     due variabili. */
+  --accento-pieno: #0062cc;
+
+  /* Le versioni traslucide si ricavano dall'accento invece di essere fisse:
+     erano rimaste blu anche dentro Finanze, che è verde. */
+  --accento-tenue: color-mix(in srgb, var(--accento) 14%, transparent);
+  --accento-alone: color-mix(in srgb, var(--accento) 22%, transparent);
 
   /* --------------------------------------------------- superfici, chiaro --
      `sfondo` è la pagina, `elevata` è la scheda, `raggruppata` è il fondo
@@ -153,8 +175,12 @@
     --teal:    #40c8e0;
     --marrone: #ac8e68;
 
-    --accento-tenue: rgba(10, 132, 255, 0.22);
-    --accento-alone: rgba(10, 132, 255, 0.28);
+    --verde-testo:   #30d158;
+    --rosso-testo:   #ff453a;
+    --arancio-testo: #ff9f0a;
+    --blu-testo:     #0a84ff;
+    --viola-testo:   #bf5af2;
+
 
     --sfondo:        #000000;
     --sfondo-2:      #1c1c1e;
@@ -194,8 +220,12 @@
   --teal:    #40c8e0;
   --marrone: #ac8e68;
 
-  --accento-tenue: rgba(10, 132, 255, 0.22);
-  --accento-alone: rgba(10, 132, 255, 0.28);
+  --verde-testo:   #30d158;
+  --rosso-testo:   #ff453a;
+  --arancio-testo: #ff9f0a;
+  --blu-testo:     #0a84ff;
+  --viola-testo:   #bf5af2;
+
 
   --sfondo:        #000000;
   --sfondo-2:      #1c1c1e;

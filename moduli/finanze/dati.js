@@ -73,7 +73,10 @@ export const COLORI_CAT = {
   auto:      "var(--arancio)",
   spesa:     "var(--verde)",
   trasporti: "var(--indaco)",
-  cibo:      "var(--rosso)",
+  // Cibo fuori era rosso, e il rosso nella stessa schermata vuol dire già
+  // "oltre budget". Due significati sullo stesso colore non si distinguono:
+  // il rosso resta agli stati, alle categorie il marrone.
+  cibo:      "var(--marrone)",
   personale: "var(--rosa)",
   acc:       "var(--menta)",
   risp:      "var(--teal)",

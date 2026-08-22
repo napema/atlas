@@ -55,7 +55,12 @@
   cursor: pointer;
   transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
 }
-.im-sezione.attiva { background: var(--accento); color: #fff; font-weight: 600; }
+.im-sezione.attiva {
+  background: var(--sfondo-2);
+  color: var(--etichetta);
+  font-weight: 600;
+  box-shadow: var(--filo), inset 0 0 0 1px var(--accento-tenue);
+}
 
 @media (min-width: 900px) {
   .im-sezioni { margin-inline: 0; padding-inline: 0; flex-wrap: wrap; overflow: visible; }

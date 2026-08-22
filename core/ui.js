@@ -183,12 +183,20 @@ export function campo({ etichetta, valore = "", tipo = "text", segnaposto = "", 
   ]);
 }
 
-/** Barra di avanzamento. `stato` = "" | "avviso" | "oltre". */
-export function traccia(frazione, stato = "", { sottile = false } = {}) {
+/**
+ * Barra di avanzamento.
+ *
+ * `stato` ("" | "avviso" | "oltre") colora la barra per SEMAFORO, e va usato
+ * solo dove il colore significa davvero "quanto sei messo male". Dove invece
+ * ogni riga ha già un colore che la identifica — le categorie di Finanze —
+ * si passa `colore` e si lascia `stato` vuoto: due significati sullo stesso
+ * rosso, nella stessa schermata, non si distinguono più.
+ */
+export function traccia(frazione, stato = "", { sottile = false, colore = null } = {}) {
   const pct = Math.max(0, Math.min(1, Number(frazione) || 0)) * 100;
-  return el("div", { class: `traccia ${sottile ? "sottile" : ""}`.trim() }, [
-    el("div", { class: `barra ${stato}`.trim(), stile: { width: `${Math.max(2, pct)}%` } }),
-  ]);
+  const barra = el("div", { class: `barra ${stato}`.trim(), stile: { width: `${Math.max(3, pct)}%` } });
+  if (colore) barra.style.background = colore;
+  return el("div", { class: `traccia ${sottile ? "sottile" : ""}`.trim() }, [barra]);
 }
 
 /**
@@ -330,12 +338,18 @@ export function euro(centesimi, { segno = false, tondo = false } = {}) {
   return (c < 0 ? "−" : "+") + s;
 }
 
-/** Come `euro`, ma coi centesimi rimpiccioliti alla Wallet. Restituisce HTML. */
+/**
+ * Come `euro`, ma coi centesimi rimpiccioliti alla Wallet. Restituisce HTML.
+ *
+ * Si rimpiccioliscono SOLO le due cifre dei centesimi. Il simbolo € resta
+ * al corpo pieno: alzato e ridotto insieme alla virgola diventava un apice
+ * fluttuante, e "800,00 €" si leggeva come una nota a piè di pagina.
+ */
 export function euroRicco(centesimi, { segno = false } = {}) {
   const s = euro(centesimi, { segno });
-  const i = s.lastIndexOf(",");
-  if (i < 0) return escapa(s);
-  return `${escapa(s.slice(0, i))}<span class="cts">${escapa(s.slice(i))}</span>`;
+  const m = s.match(/^(.*?)(,\d{2})(\s*€)$/);
+  if (!m) return escapa(s);
+  return `${escapa(m[1])}<span class="cts">${escapa(m[2])}</span>${escapa(m[3])}`;
 }
 
 /** Da stringa scritta a mano a centesimi. Accetta "12,50", "12.50", "12". */

@@ -122,6 +122,10 @@ async function disegna() {
   // `var(--accento)` dei componenti condivisi diventa il colore giusto,
   // senza una riga di codice nel modulo.
   document.documentElement.style.setProperty("--accento", mod.accento);
+  // La variante da testo va impostata insieme: usare la tinta piena per
+  // scrivere su fondo chiaro scende sotto i 4,5:1 e il numero non si legge.
+  document.documentElement.style.setProperty("--accento-testo", mod.accentoTesto || mod.accento);
+  document.documentElement.style.setProperty("--accento-pieno", mod.accentoPieno || mod.accento);
 
   contenitore.innerHTML = "";
   contenitore.dataset.modulo = id;

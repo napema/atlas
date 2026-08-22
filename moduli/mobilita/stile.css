@@ -14,7 +14,12 @@
   cursor: pointer;
   transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
 }
-.mo-scheda.attiva { background: var(--accento); color: #fff; font-weight: 600; }
+.mo-scheda.attiva {
+  background: var(--sfondo-2);
+  color: var(--etichetta);
+  font-weight: 600;
+  box-shadow: var(--filo), inset 0 0 0 1px var(--accento-tenue);
+}
 
 /* ----------------------------------------------------------- settimana -- */
 
@@ -26,7 +31,7 @@
   margin-bottom: var(--s3);
 }
 .mo-giorno { display: flex; flex-direction: column; align-items: center; gap: var(--s2); }
-.mo-giorno-lettera { font-size: var(--t-11); font-weight: 600; color: var(--etichetta-3); }
+.mo-giorno-lettera { font-size: var(--t-11); font-weight: 600; color: var(--etichetta-2); }
 .mo-giorno-punto {
   width: 11px; height: 11px;
   border-radius: 50%;
@@ -34,7 +39,7 @@
   transition: background var(--normale) var(--curva);
 }
 .mo-giorno.fatto .mo-giorno-punto { background: var(--accento); }
-.mo-giorno.oggi .mo-giorno-lettera { color: var(--accento); }
+.mo-giorno.oggi .mo-giorno-lettera { color: var(--accento-testo); }
 .mo-giorno.oggi .mo-giorno-punto { box-shadow: 0 0 0 3px var(--accento-tenue); }
 .mo-giorno.futuro { opacity: 0.4; }
 
@@ -52,7 +57,7 @@
   padding: 3px 10px;
   border-radius: var(--r-pillola);
   background: var(--accento-tenue);
-  color: var(--accento);
+  color: var(--accento-testo);
   font-size: var(--t-11);
   font-weight: 600;
 }
@@ -95,10 +100,10 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accento);
+  color: var(--accento-testo);
   min-height: 18px;
 }
-.mo-p-lato.prep { color: var(--arancio); }
+.mo-p-lato.prep { color: var(--arancio-testo); }
 
 .mo-p-passi {
   text-align: left;

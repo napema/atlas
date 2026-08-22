@@ -48,7 +48,7 @@ h2 { font-size: var(--t-28); font-weight: 700; }
 h3 { font-size: var(--t-22); font-weight: 600; }
 h4 { font-family: var(--font-testo); font-size: var(--t-17); font-weight: 600; letter-spacing: -0.01em; }
 p  { margin: 0 0 var(--s3); }
-a  { color: var(--accento); text-decoration: none; }
+a  { color: var(--accento-testo); text-decoration: none; }
 b, strong { font-weight: 600; }
 small { font-size: var(--t-13); }
 
@@ -71,16 +71,23 @@ small { font-size: var(--t-13); }
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--etichetta-3);
+  color: var(--etichetta-2);
 }
-.nota     { font-size: var(--t-13); color: var(--etichetta-3); line-height: 1.4; }
+/* `.nota` e `.etichetta-riga` PORTANO informazione — "3 giorni alla
+   ricarica", "Resta in cassa" — quindi vanno sul livello SECONDARIO, non
+   sul terziario. Con etichetta-2 in tema chiaro facevano 3,03:1, sotto il
+   minimo di 4,5 per il testo sotto i 18px: la ragione per cui l'interfaccia
+   sembrava slavata. Il terziario resta a quello che è davvero terziario:
+   lettere dei giorni accanto a un pallino, frecce, segnaposto. */
+.nota { font-size: var(--t-13); color: var(--etichetta-2); line-height: 1.4; }
 .etichetta-riga {
-  font-size: var(--t-13); font-weight: 500; color: var(--etichetta-3);
+  font-size: var(--t-13); font-weight: 500; color: var(--etichetta-2);
   letter-spacing: -0.005em;
 }
-.positivo { color: var(--verde); }
-.negativo { color: var(--rosso); }
-.attenzione { color: var(--arancio); }
+/* Le classi di stato usano le varianti da TESTO, non le tinte piene. */
+.positivo { color: var(--verde-testo); }
+.negativo { color: var(--rosso-testo); }
+.attenzione { color: var(--arancio-testo); }
 
 /* ---------------------------------------------------------------- shell -- */
 
@@ -146,7 +153,7 @@ small { font-size: var(--t-13); }
   padding: var(--s1) 2px;
   border: 0;
   background: none;
-  color: var(--etichetta-3);
+  color: var(--etichetta-2);
   font-family: inherit;
   font-size: var(--t-11);
   font-weight: 500;
@@ -158,7 +165,7 @@ small { font-size: var(--t-13); }
 /* La scheda attiva prende l'accento DEL MODULO a cui porta, non quello
    della schermata corrente: è l'unico punto dove più tinte convivono, ed
    è voluto — sono quattro destinazioni diverse, non una superficie sola. */
-.scheda-barra[aria-current="page"] { color: var(--accento); }
+.scheda-barra[aria-current="page"] { color: var(--accento-testo); }
 .scheda-barra:active { opacity: 0.45; }
 
 /* --------------------------------------------------------------- schede -- */
@@ -182,7 +189,7 @@ small { font-size: var(--t-13); }
    raggi grandi fa la scaletta. La maschera sottrae l'interno e lascia solo
    la cornice, che segue il raggio perfettamente perché lo eredita. */
 .scheda::before,
-.vetro::before,
+
 .riquadro::before,
 .lista::before {
   content: "";
@@ -199,25 +206,19 @@ small { font-size: var(--t-13); }
   pointer-events: none;
 }
 /* Il contenuto deve stare sopra al filo, non sotto. */
-.scheda > *, .vetro > *, .riquadro > *, .lista > * { position: relative; z-index: 1; }
+.scheda > *, .riquadro > *, .lista > * { position: relative; z-index: 1; }
 
-/**
- * La superficie di vetro vera: translucida, con lo sfondo che traspare.
- * Si usa dove sotto c'è qualcosa da lasciar intravedere — non su ogni
- * scheda, o l'effetto si annulla da solo e resta solo il costo di calcolo.
- */
-.vetro {
-  position: relative;
-  background: var(--vetro-fondo);
-  backdrop-filter: var(--vetro-sfocatura);
-  -webkit-backdrop-filter: var(--vetro-sfocatura);
-  border-radius: var(--r-scheda);
-}
+/* NOTA: qui c'era una classe `.vetro` con backdrop-filter, pensata per le
+   schede. È stata tolta per due ragioni. Non la usava nessuno, e il CSS
+   morto è esattamente ciò che mi ha fatto perdere tempo con la barra alta
+   fantasma. E soprattutto: il vetro vero è roba del livello FUNZIONALE —
+   barre, fogli, sovrapposizioni — non del contenuto. Una scheda translucida
+   in mezzo al contenuto non aggiunge profondità, toglie leggibilità. */
 
 /* Dove il backdrop-filter non c'è, il vetro diventa una superficie normale:
    translucido senza sfocatura sotto è illeggibile. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .vetro, #barra, .foglio, .avviso { background: var(--sfondo-2); }
+  #barra, .foglio, .avviso { background: var(--sfondo-2); }
 }
 /* In chiaro lo sfondo pagina è bianco come la scheda: serve un fondo
    raggruppato dietro, altrimenti le schede spariscono. */
@@ -289,14 +290,14 @@ small { font-size: var(--t-13); }
   transition: background var(--veloce) var(--curva);
 }
 .riga:active { background: var(--riempimento); }
-.riga .valore { margin-left: auto; color: var(--etichetta-3); font-variant-numeric: tabular-nums; }
+.riga .valore { margin-left: auto; color: var(--etichetta-2); font-variant-numeric: tabular-nums; }
 .riga .freccia { color: var(--etichetta-4); display: flex; flex: none; margin-left: var(--s1); }
 .riga .icona { color: var(--etichetta-3); display: flex; flex: none; }
 
 /* Intestazione di gruppo sopra una lista, maiuscoletto come iOS. */
 .gruppo-titolo {
   font-size: var(--t-13);
-  color: var(--etichetta-3);
+  color: var(--etichetta-2);
   padding: 0 var(--s4) var(--s2);
   margin-top: var(--s5);
 }
@@ -312,7 +313,12 @@ small { font-size: var(--t-13); }
   padding: 10px var(--s5);
   border: 0;
   border-radius: var(--r-btn);
-  background: var(--accento);
+  /* Il riempimento usa la tinta SCURITA, non quella piena: bianco sul blu di
+     sistema fa 3,9:1 su fondo chiaro, sotto la soglia per un'etichetta da
+     17px. Con la variante da testo si arriva sopra 8:1 e il pulsante resta
+     inequivocabilmente blu. In scuro le due variabili coincidono, e lì resta
+     il comportamento di sistema. */
+  background: var(--accento-pieno);
   color: #fff;
   font-family: var(--font-testo);
   font-size: var(--t-17);
@@ -329,16 +335,16 @@ small { font-size: var(--t-13); }
 /* Bordato: riempimento trasparente, filo e testo nella tinta. */
 .btn.bordato {
   background: transparent;
-  color: var(--accento);
+  color: var(--accento-testo);
   box-shadow: inset 0 0 0 1px currentColor;
 }
 /* Tenue: riempimento nella tinta al 14%. La variante che si usa di più,
    perché non compete con l'azione primaria. */
-.btn.tenue { background: var(--accento-tenue); color: var(--accento); }
+.btn.tenue { background: var(--accento-tenue); color: var(--accento-testo); }
 /* Nudo: solo testo. */
-.btn.nudo  { background: none; color: var(--accento); padding-inline: var(--s2); }
+.btn.nudo  { background: none; color: var(--accento-testo); padding-inline: var(--s2); }
 .btn.distruttivo { background: var(--rosso); color: #fff; }
-.btn.distruttivo.nudo, .btn.distruttivo.tenue { background: none; color: var(--rosso); }
+.btn.distruttivo.nudo, .btn.distruttivo.tenue { background: none; color: var(--rosso-testo); }
 .btn.piccolo { min-height: 34px; font-size: var(--t-15); padding: 6px var(--s4); }
 
 /* Pulsante tondo di sola icona, per le barre. */
@@ -346,7 +352,7 @@ small { font-size: var(--t-13); }
   width: var(--tocco); height: var(--tocco);
   display: inline-flex; align-items: center; justify-content: center;
   border: 0; border-radius: 50%;
-  background: none; color: var(--accento);
+  background: none; color: var(--accento-testo);
   cursor: pointer;
 }
 .btn-icona:active { background: var(--riempimento); }
@@ -367,7 +373,9 @@ small { font-size: var(--t-13); }
   line-height: 1.35;
   transition: box-shadow var(--veloce) var(--curva);
 }
-.campo::placeholder { color: var(--etichetta-4); }
+/* etichetta-4 su una scheda scura fa 2,5:1 — troppo poco anche per un
+   segnaposto, che è testo a tutti gli effetti finché il campo è vuoto. */
+.campo::placeholder { color: var(--etichetta-3); }
 /* L'alone di focus è l'unica "ombra" ammessa: è un anello, non una caduta. */
 .campo:focus { outline: none; box-shadow: 0 0 0 4px var(--accento-alone); }
 select.campo { appearance: none; padding-right: var(--s8); }
@@ -376,7 +384,7 @@ select.campo { appearance: none; padding-right: var(--s8); }
   display: block;
   font-size: var(--t-13);
   font-weight: 500;
-  color: var(--etichetta-3);
+  color: var(--etichetta-2);
   margin: 0 0 var(--s2) 2px;
 }
 .campo-gruppo { margin-bottom: var(--s4); }
@@ -428,7 +436,16 @@ select.campo { appearance: none; padding-right: var(--s8); }
   cursor: pointer;
   transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
 }
-.pillola[aria-pressed="true"] { background: var(--accento); color: #fff; font-weight: 600; }
+/* Stessa ragione: riempimento tenue e testo nella tinta, invece di bianco
+   su tinta piena — che con verde, giallo e menta è illeggibile. */
+/* Pillola scelta: riempimento pieno con testo bianco. La versione con
+   riempimento tenue e testo nella tinta arrivava solo a 3,5:1, perché testo
+   e fondo erano lo stesso colore a due opacità diverse. */
+.pillola[aria-pressed="true"] {
+  background: var(--accento-pieno);
+  color: #fff;
+  font-weight: 600;
+}
 .pillola:active { opacity: 0.7; }
 
 /* ------------------------------------------------------- avanzamento --- */
@@ -537,7 +554,7 @@ select.campo { appearance: none; padding-right: var(--s8); }
   text-align: center;
   animation: sali var(--normale) var(--curva);
 }
-.avviso.errore { color: var(--rosso); }
+.avviso.errore { color: var(--rosso-testo); }
 .avviso.via { opacity: 0; transition: opacity var(--normale) var(--curva); }
 @keyframes sali { from { opacity: 0; transform: translateY(10px) scale(0.96); } }
 
@@ -560,7 +577,7 @@ select.campo { appearance: none; padding-right: var(--s8); }
 .vuoto {
   padding: var(--s14) var(--s4);
   text-align: center;
-  color: var(--etichetta-3);
+  color: var(--etichetta-2);
 }
 .vuoto p { margin-bottom: var(--s2); }
 .vuoto .grande { font-size: var(--t-22); color: var(--etichetta-2); font-family: var(--font-titolo); }
@@ -621,24 +638,23 @@ hr {
    ========================================================================= */
 
 @media (min-width: 900px) {
+  /* Niente griglia: la barra esce dal flusso e `#app` le lascia il posto con
+     un'imbottitura. Con la griglia la pagina avrebbe dovuto scorrere dentro
+     la colonna del contenuto, e `window.scrollY` — che tutti i moduli usano
+     per ricordare dove eri — sarebbe rimasto a zero per sempre. */
   #app {
-    display: grid;
-    grid-template-columns: 232px minmax(0, 1fr);
+    display: block;
+    padding-left: 232px;
     min-height: 100dvh;
   }
 
   /* --- la barra diventa colonna --- */
-  /* Le colonne vanno assegnate a mano: nell'HTML la vista viene PRIMA della
-     barra (giusto: da telefono il contenuto conta più della cromatura, e
-     l'ordine del DOM è quello che legge chi naviga da tastiera). Senza
-     queste due righe la griglia le mette nell'ordine del sorgente e la
-     barra finisce a destra larga 1200px. */
   #barra {
-    grid-column: 1;
-    position: sticky;
     top: 0;
-    left: auto; right: auto; bottom: auto;
-    height: 100dvh;
+    left: 0;
+    right: auto;
+    bottom: 0;
+    width: 232px;
     flex-direction: column;
     justify-content: flex-start;
     align-items: stretch;
@@ -646,6 +662,11 @@ hr {
     padding: var(--s5) var(--s3);
     border-top: 0;
     border-right: 0.5px solid var(--separatore);
+    /* Una barra laterale è un elemento GRANDE del livello funzionale, e le
+       regole del vetro dicono che i grandi vanno più opachi: il contenuto
+       che scorre dietro a un pannello alto quanto lo schermo renderebbe
+       illeggibili le voci. Le barre piccole restano sottili. */
+    background: var(--materiale-spesso);
   }
   #barra::before { display: none; }
   /* Il filo di luce passa dal bordo alto a quello destro. */
@@ -688,17 +709,18 @@ hr {
 
   /* --- il contenuto respira --- */
   #vista {
-    grid-column: 2;
-    max-width: 1080px;
+    max-width: 1180px;
     padding: var(--s8) var(--s8) var(--s12);
-    margin: 0;
+    margin: 0 auto;
   }
 
   .intestazione { margin-bottom: var(--s6); }
   .intestazione h1 { font-size: 40px; }
 
-  /* Le griglie usano lo spazio invece di allungarsi in colonna. */
-  .griglia-2 { grid-template-columns: repeat(4, 1fr); }
+  /* Le griglie usano lo spazio, ma `auto-fit` invece di un numero fisso di
+     colonne: con `repeat(4, 1fr)` due riquadri occupavano mezza riga e
+     lasciavano metà scheda vuota. */
+  .griglia-2 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
   .griglia   { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 
   /* I fogli non salgono dal basso: da scrivania è un gesto che non esiste.
@@ -721,12 +743,6 @@ hr {
   #avvisi { bottom: var(--s6); left: calc(232px + 50%); }
 }
 
-/* Schermi molto larghi: il contenuto smette di crescere e si centra. Una
-   riga di testo lunga 1600px non si legge, e allargare all'infinito è il
-   modo più veloce per rendere illeggibile una tabella di movimenti. */
-@media (min-width: 1400px) {
-  #vista { margin: 0 auto; }
-}
 
 /* Col puntatore fine le righe si stringono: 44px sono per il pollice, e da
    mouse diventano una lista che scorre per niente. */

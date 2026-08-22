@@ -12,7 +12,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--etichetta-3);
+  color: var(--etichetta-2);
   margin-bottom: var(--s2);
 }
 /* Il saluto è la cosa più grande della schermata, e deve esserlo: è
@@ -65,7 +65,7 @@
   font-size: clamp(34px, 9vw, 44px);
   line-height: 1.05;
   margin-top: var(--s3);
-  color: var(--accento);
+  color: var(--accento-testo);
 }
 .og-dettaglio {
   font-size: var(--t-15);
@@ -101,7 +101,7 @@
 }
 .og-piccola-nome {
   font-size: var(--t-12);
-  color: var(--etichetta-3);
+  color: var(--etichetta-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -118,7 +118,7 @@
 .og-vuoto { text-align: center; padding: var(--s6) 0 var(--s4); }
 .og-vuoto-anello { display: grid; place-items: center; margin-bottom: var(--s4); }
 .og-vuoto-anello .anello { grid-area: 1 / 1; }
-.og-vuoto-spunta { grid-area: 1 / 1; color: var(--verde); display: flex; }
+.og-vuoto-spunta { grid-area: 1 / 1; color: var(--verde-testo); display: flex; }
 .og-vuoto-titolo {
   font-family: var(--font-titolo);
   font-size: var(--t-22);
@@ -173,7 +173,7 @@
 .og-media-valore {
   font-size: var(--t-22);
   line-height: 1.1;
-  color: var(--accento);
+  color: var(--accento-testo);
   white-space: nowrap;
 }
 .og-media .og-dettaglio { font-size: var(--t-13); margin-top: 2px; }
@@ -201,7 +201,7 @@
 .og-giorno-valore { font-size: var(--t-17); font-weight: 700; letter-spacing: -0.02em; }
 .og-giorno-etichetta {
   font-size: var(--t-11);
-  color: var(--etichetta-3);
+  color: var(--etichetta-2);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
 }
 
@@ -221,7 +221,7 @@
 }
 .og-sett-riga { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s1); }
 .og-sett-giorno { display: flex; flex-direction: column; align-items: center; gap: var(--s2); }
-.og-sett-lettera { font-size: var(--t-11); font-weight: 600; color: var(--etichetta-3); }
+.og-sett-lettera { font-size: var(--t-11); font-weight: 600; color: var(--etichetta-2); }
 .og-sett-punto {
   width: 10px; height: 10px;
   border-radius: 50%;
@@ -229,19 +229,21 @@
   transition: background var(--normale) var(--curva);
 }
 .og-sett-giorno.pieno .og-sett-punto { background: var(--verde); }
-.og-sett-giorno.oggi .og-sett-lettera { color: var(--accento); font-weight: 700; }
+.og-sett-giorno.oggi .og-sett-lettera { color: var(--accento-testo); font-weight: 700; }
 .og-sett-giorno.oggi .og-sett-punto { box-shadow: 0 0 0 3px var(--accento-tenue); }
 
 /* ------------------------------------------------------ stato "fatto" -- */
 
 .og-spunta {
   display: inline-flex;
-  color: var(--verde);
+  color: var(--verde-testo);
   margin-right: 5px;
   vertical-align: -2px;
 }
-.og-media.fatto .og-media-valore { color: var(--verde); }
-.og-piccola.fatto .og-piccola-valore { color: var(--verde); }
+/* Il numero resta nell'accento del modulo. Verde qui vorrebbe dire "fatto",
+   ma verde è già il colore di Finanze: lo stesso colore per due cose diverse
+   non si distingue più. A dire "fatto" ci pensa la spunta, che è una forma
+   e non un colore — quindi la vede anche chi i colori non li distingue. */
 
 .og-invito {
   display: inline-block;

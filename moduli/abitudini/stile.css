@@ -19,7 +19,7 @@
   border: 0;
   border-radius: var(--r-btn);
   background: none;
-  color: var(--etichetta-3);
+  color: var(--etichetta-2);
   font-family: var(--font-testo);
   cursor: pointer;
   transition: background var(--veloce) var(--curva);
@@ -39,7 +39,7 @@
 }
 /* Il giorno corrente si riconosce dal numero pieno nella tinta, non da un
    bordo: un bordo in più su sette caselle è rumore. */
-.ab-giorno.oggi .ab-giorno-numero { color: var(--accento); font-weight: 700; }
+.ab-giorno.oggi .ab-giorno-numero { color: var(--accento-testo); font-weight: 700; }
 
 /* ------------------------------------------------------------ riepilogo -- */
 
@@ -100,7 +100,7 @@
   padding: 3px 9px;
   border-radius: var(--r-pillola);
   background: var(--riempimento);
-  color: var(--arancio);
+  color: var(--arancio-testo);
   font-size: var(--t-12);
   font-weight: 600;
   font-variant-numeric: tabular-nums;

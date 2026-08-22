@@ -61,13 +61,16 @@ export function vistaHome(mese, grafico, cambia, apriCat) {
         el("span", { class: "nota", testo: `${euro(st.ordinaria)} di ${euro(bt, { tondo: true })} · giorno ${giorno} di ${giorni}` }),
       ]),
       av.length > 0 && el("button", {
-        class: "fi-verdetto-conta", type: "button", testo: String(av.length),
-        "aria-label": `${av.length} avvisi`,
+        class: "fi-verdetto-conta", type: "button",
+        "aria-label": `${plurale(av.length, "avviso", "avvisi")}, tocca per aprirli`,
+        "aria-expanded": "false",
         onClick: (e) => {
-          avvisiBox.hidden = !avvisiBox.hidden;
-          e.currentTarget.classList.toggle("aperto", !avvisiBox.hidden);
+          const aperto = avvisiBox.hidden;
+          avvisiBox.hidden = !aperto;
+          e.currentTarget.classList.toggle("aperto", aperto);
+          e.currentTarget.setAttribute("aria-expanded", String(aperto));
         },
-      }),
+      }, [el("span", { testo: String(av.length) })]),
     ]),
     av.length > 0 && avvisiBox,
   ]);
@@ -126,9 +129,14 @@ export function vistaHome(mese, grafico, cambia, apriCat) {
   aggiungi(fuori, [el("div", { class: "griglia-2" }, [
     el("div", { class: "riquadro" }, [
       el("div", { class: "etichetta-riga", testo: "Sforamenti" }),
+      // "2 · 150 €" si leggeva come una moltiplicazione. La cifra è una
+      // sola — quanto è entrato da fuori — e il conteggio va nella riga
+      // sotto, dove sta il resto del contesto.
       el("div", { class: `cifra ${st.sforamentiN ? "negativo" : "positivo"}`,
-        testo: st.sforamentiN === 0 ? "0" : `${st.sforamentiN} · ${euro(st.sforamentiTot, { tondo: true })}` }),
-      el("div", { class: "nota", testo: st.sforamentiN === 0 ? "target rispettato" : "ricariche da fuori" }),
+        html: st.sforamentiN === 0 ? "0" : euroRicco(st.sforamentiTot) }),
+      el("div", { class: "nota", testo: st.sforamentiN === 0
+        ? "target rispettato"
+        : `${plurale(st.sforamentiN, "ricarica", "ricariche")} da fuori` }),
     ]),
     el("div", { class: "riquadro" }, [
       el("div", { class: "etichetta-riga", testo: "Straordinari" }),
@@ -152,15 +160,23 @@ export function vistaHome(mese, grafico, cambia, apriCat) {
     ]);
     for (const r of righe) {
       const frazione = r.budget > 0 ? r.speso / r.budget : 0;
+      const sforata = r.budget > 0 && frazione >= 1;
       s.append(el("button", { class: "fi-cat", type: "button", onClick: () => apriCat(r.c.id) }, [
         el("div", { class: "fi-cat-testa" }, [
           el("span", { class: "fi-cat-nome" }, [
             el("i", { class: "fi-punto", stile: { background: coloreCat(r.c.id) } }),
             el("span", { testo: r.c.nome }),
+            // Lo sforamento si dice a parole, non solo col colore: il rosso
+            // qui vorrebbe dire "oltre budget" mentre due righe sotto vuol
+            // dire "Cibo fuori", e chi non distingue i colori non lo vede
+            // affatto.
+            sforata && el("span", { class: "fi-tag rosso", testo: "oltre" }),
           ]),
           el("span", { class: "num", testo: euro(r.speso) }),
         ]),
-        traccia(r.speso / massimo, r.budget && frazione >= 1 ? "oltre" : r.budget && frazione >= 0.9 ? "avviso" : "", { sottile: true }),
+        // La barra prende il colore DELLA CATEGORIA, lo stesso del pallino:
+        // è la stessa cosa detta due volte, non due cose diverse.
+        traccia(r.speso / massimo, "", { sottile: true, colore: coloreCat(r.c.id) }),
       ]));
     }
     fuori.append(s);
