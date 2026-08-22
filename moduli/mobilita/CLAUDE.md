@@ -108,3 +108,42 @@ corso, e `urgente: true` quando la serale manca e si sta facendo tardi.
 ## Quando hai finito
 
 Lista di controllo in `docs/MIGRAZIONE.md`. Poi aggiorna `docs/CANTIERE.md`.
+
+---
+
+## Aggiornamento (22 agosto 2026) — il porting è stato rifatto
+
+La prima versione **aveva riscritto Mobilità invece di innestarla**, contro
+quanto dice questo stesso file, e per strada aveva perso:
+
+- i **video** degli esercizi (l'iframe non c'era proprio, gli id sì);
+- l'**assessment** intero — 484 righe, tre test, mai portate;
+- le **pillole** del player (fonte, tipo di lavoro, lato, carico, attrezzo);
+- le schermate di **preparazione**, di **ripresa** e l'**avviso collo**;
+- metà dei **progressi**.
+
+Adesso `oggi.js`, `sessione.js`, `progressi.js` e `assessment.js` sono i file
+di `mobility_to_consider/js/` **copiati come sono**, classi CSS comprese.
+Chi li deve aggiornare li ricopia di là e rifà solo questi tre passaggi:
+
+1. `./storage.js` → `./ponte.js`, `./icone.js` → `../../core/icone.js`,
+   `./foto-sync.js` → `./foto.js`;
+2. `pillola` → `mo-chip` (l'unica classe rinominata: in ATLAS `.pillola` è
+   già il filtro di base.css, e i due si sovrascrivevano);
+3. niente altro.
+
+### I due innesti
+
+- **`ponte.js`** espone `getState`/`updateState` con la forma piatta che quei
+  file si aspettano (`assessment`, `programma`, `streak`, `storicoSessioni`
+  alla radice), mentre sotto vivono in `meta` e `records` della casella.
+- **`foto.js`** sostituisce `foto-sync.js`, che era l'unico file impossibile
+  da copiare: parlava da solo con `api.github.com` e la regola 1 lo vieta. La
+  compressione è identica; i binari vanno in `core/blobs.js`.
+
+### Cosa resta aperto
+
+Le foto dei bersagli si scattano e si vedono, ma **restano sul dispositivo**:
+caricarle nel repo richiede un canale per file non-JSON in `core/sync.js`, che
+non c'è. I riferimenti nel JSON si sincronizzano già. Annotato in
+`docs/CANTIERE.md`.

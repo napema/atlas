@@ -126,8 +126,11 @@ _(nessuna)_
   due dispositivi mostrano gli stessi numeri per qualche giorno. I repo dati
   vecchi non si cancellano: costano nulla e sono l'unica rete di sicurezza
   rimasta.
-- **Le foto dei progressi di Mobilità.** Lo schema c'è (`foto[]` e
-  `core/blobs.js`), l'interfaccia per scattarle no. Serviva
-  all'assessment, che oggi è completato con la sola lateralizzazione.
+- **Le foto dei bersagli restano sul dispositivo.** Dal ri-porting di
+  Mobilità (22 ago) l'interfaccia per scattarle c'è — è dentro l'assessment,
+  parte 3 — e i binari vanno in `core/blobs.js`. Quello che manca è la salita
+  nel repo: `core/sync.js` sa fare canali JSON, non file binari. I
+  riferimenti nel JSON si sincronizzano già, quindi l'altro dispositivo sa
+  che una foto esiste ma non la vede.
 - **`legacy/`.** Si cancella quando le tre app di partenza sono spente e i
   moduli hanno retto un mese.

@@ -150,7 +150,19 @@ Ogni azione sta accanto alla cosa su cui agisce.
    non visibile — l'app riaperta da una notifica — quel frame non arriva mai, e
    il foglio resta trasparente sopra la schermata: invisibile e cliccabile. Si
    forza un reflow (`void nodo.offsetHeight`) e si aggiunge la classe subito.
-7. **I tre riquadri della home ci sono sempre**, anche vuoti. Una home che
+7. **Due componenti non possono chiamarsi uguale.** Il CSS è globale anche
+   quando il file è di un modulo: `.micro.avviso` ha incontrato `.avviso`
+   della bolla del toast e l'etichetta minuscola è diventata una pillola
+   bianca grande quanto la tessera; `.pillola` di Mobilità ha incontrato
+   `.pillola` di base.css e i filtri sono diventati alti 26px. Prima di
+   aggiungere un nome a un foglio di modulo, si controlla che base.css non
+   ce l'abbia già:
+
+   ```bash
+   grep -oE '^.[a-z][a-z0-9_-]*' styles/base.css | sort -u
+   ```
+
+8. **I tre riquadri della home ci sono sempre**, anche vuoti. Una home che
    nasconde ciò che non ha dati cambia forma ogni giorno, e una cosa che cambia
    forma non si impara a leggere con la coda dell'occhio.
 

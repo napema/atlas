@@ -56,6 +56,15 @@ const TRATTI = {
 
   // -------------------------------------------------------------- sessione
   riproduci: '<path d="M7.6 4.8l11.2 7.2-11.2 7.2z"/>',
+
+  // Le quattro che Mobilità porta con sé da mobility-blueprint. Stanno qui e
+  // non nel modulo perché il registro delle icone è uno solo: un modulo che
+  // si disegna i propri SVG è la strada per averne tre versioni diverse.
+  play:       '<path d="M7.5 4.8 19 12 7.5 19.2z"/>',
+  avviso:     '<path d="M12 4.2 21 19.6H3z"/><path d="M12 10v3.6M12 16.6v.6"/>',
+  bersaglio:  '<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.2"/>',
+  onda:       '<path d="M2.5 12h3l2.5-6 4 12 3-8 2 2h4.5"/>',
+  fotocamera: '<path d="M3.5 8.5h3.2l1.5-2.4h7.6l1.5 2.4h3.2a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.4"/>',
   pausa:     '<path d="M9 5.2v13.6M15 5.2v13.6"/>',
   salta:     '<path d="M6 5.2L14.4 12 6 18.8z"/><path d="M18 5.2v13.6"/>',
   ricomincia:

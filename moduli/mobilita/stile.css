@@ -1,4 +1,17 @@
-/* moduli/mobilita — stile specifico. */
+/* moduli/mobilita — stile.
+   =========================================================================
+   QUESTO FILE È L'UNICA COSA CHE CAMBIA rispetto a napema/mobility-blueprint.
+
+   `oggi.js`, `sessione.js`, `progressi.js` e `assessment.js` sono copiati di
+   là senza una modifica, classi CSS comprese: quindi i nomi qui sotto sono i
+   LORO nomi — `sess-layout`, `riquadro-oggi`, `lat-card`, `bersaglio__foto` —
+   e non vanno rinominati, altrimenti la prossima volta che quei file
+   cambiano di là non si possono più ri-copiare.
+
+   Qui dentro cambiano solo i valori, e vengono tutti dai token di ATLAS.
+   ========================================================================= */
+
+/* ================================================================ schede == */
 
 .mo-schede { display: flex; gap: var(--s1); margin-bottom: var(--s5); }
 .mo-scheda {
@@ -16,12 +29,140 @@
 }
 .mo-scheda.attiva { background: var(--testo); color: var(--fondo); }
 
-/* ================================================================== eroe == */
-/* Una scheda sola che risponde a tutto: cosa, per quanto, e il tasto per
-   partire. Prima erano tre schede in fila e la risposta si componeva
-   leggendole tutte e tre. */
+/* ============================================================= tipografia = */
+/* I quattro livelli di testo dell'app di partenza, ridisegnati sulla scala
+   di ATLAS. Display solo per i titoli, come dice docs/DESIGN.md. */
 
-.mo-eroe {
+.titolo-grande {
+  font-family: var(--font-d);
+  font-size: var(--t-34);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0;
+}
+.titolo-2 {
+  font-family: var(--font-d);
+  font-size: var(--t-22);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+.testata {
+  font-family: var(--font-d);
+  font-size: var(--t-28);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin: 0;
+}
+.sottotitolo { font-size: var(--t-17); color: var(--testo-2); margin: var(--s2) 0 0; }
+.corpo       { font-size: var(--t-17); line-height: 1.45; margin: 0 0 var(--s3); }
+.didascalia  { font-size: var(--t-13); color: var(--testo-2); line-height: 1.4; margin: 0; }
+.occhiello {
+  font-size: var(--t-10);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--testo-3);
+}
+.view-placeholder { color: var(--testo-3); text-align: center; padding: var(--s10) 0; }
+.vista-intestazione { margin-bottom: var(--s5); }
+
+/* ============================================================== pillole === */
+/* Le targhette del player: fonte del video, tipo di lavoro, lato, carico,
+   attrezzo, muscoli. Nell'originale erano quattro colori fissi; qui prendono
+   i token, e i tre "semantici" restano distinguibili anche in chiaro. */
+
+.mo-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 3px 10px;
+  border-radius: var(--r-pillola);
+  background: var(--scheda-alta);
+  color: var(--testo-2);
+  font-size: var(--t-11);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.mo-chip.is-verde   { background: color-mix(in srgb, var(--ok) 18%, transparent);      color: var(--ok); }
+.mo-chip.is-blu     { background: color-mix(in srgb, var(--ciano) 18%, transparent);   color: var(--ciano); }
+.mo-chip.is-arancio { background: color-mix(in srgb, var(--arancio) 18%, transparent); color: var(--arancio); }
+
+.sess-chip-riga { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ============================================================= pulsanti === */
+
+.btn-primary {
+  width: 100%;
+  min-height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  border: 0;
+  border-radius: var(--r-btn);
+  background: var(--testo);
+  color: var(--fondo);
+  font-family: var(--font);
+  font-size: var(--t-17);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--veloce) var(--molla), opacity var(--veloce) var(--curva);
+}
+.btn-primary:active { transform: scale(0.985); opacity: 0.9; }
+.btn-primary[disabled] { opacity: 0.3; pointer-events: none; }
+
+.btn-secondary {
+  min-height: 46px;
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--r-btn);
+  background: var(--scheda-alta);
+  color: var(--testo);
+  font-family: var(--font);
+  font-size: var(--t-15);
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-side {
+  min-height: 44px;
+  padding: 0 var(--s4);
+  border: 0;
+  border-radius: var(--r-btn);
+  background: var(--scheda-alta);
+  color: var(--testo-2);
+  font-family: var(--font);
+  font-size: var(--t-15);
+  cursor: pointer;
+}
+
+/* ================================================================ vetro === */
+/* Nell'originale era una superficie traslucida. Qui è una scheda piena: il
+   fondo di ATLAS è nero e la traslucidità sul nero non si vede, si sporca.
+
+   `.scheda` NON si ridefinisce qui: è un componente di base.css e questo
+   foglio è globale come tutti gli altri, quindi ritoccarlo cambierebbe le
+   schede di Finanze e Abitudini insieme a queste. `.vetro` gli si allinea. */
+
+.vetro {
+  background: var(--scheda);
+  border-radius: var(--r-scheda);
+  padding: var(--s4);
+  margin-bottom: var(--s3);
+}
+.scheda__testa {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+
+/* ================================================================= oggi === */
+
+.riquadro-oggi {
   position: relative;
   padding: var(--s5);
   border-radius: var(--r-scheda);
@@ -31,114 +172,68 @@
 }
 /* Un velo dell'accento che sfuma verso l'alto: dà profondità senza mettere
    testo su un fondo colorato, che è dove la leggibilità si perde. */
-.mo-eroe::before {
+.riquadro-oggi::before {
   content: "";
   position: absolute;
   inset: 0 0 auto;
-  height: 190px;
+  height: 200px;
   background: linear-gradient(180deg, var(--accento-tenue), transparent);
   pointer-events: none;
 }
-.mo-eroe > * { position: relative; }
-.mo-eroe.fatta::before { background: linear-gradient(180deg, color-mix(in srgb, var(--ok) 15%, transparent), transparent); }
-
-.mo-eroe-testa { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
-.mo-serie {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 10px;
-  border-radius: var(--r-pillola);
-  background: color-mix(in srgb, var(--arancio) 18%, transparent);
-  color: var(--arancio);
-  font-size: var(--t-11);
-  font-weight: 700;
-}
-.mo-serie svg { display: block; }
-
-.mo-eroe-nome {
-  margin: var(--s3) 0 0;
+.riquadro-oggi > * { position: relative; }
+.riquadro-oggi__durata {
   font-family: var(--font-d);
-  font-size: var(--t-28);
+  font-size: clamp(46px, 14vw, 62px);
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin: var(--s2) 0;
 }
-.mo-eroe-durata { display: flex; align-items: baseline; gap: 8px; margin-top: var(--s1); }
-.mo-eroe-durata .cifra-xl { font-size: clamp(46px, 14vw, 62px); }
-.mo-eroe-unita { font-size: var(--t-19); font-weight: 600; color: var(--testo-3); }
-.mo-eroe-perche { margin: var(--s2) 0 0; font-size: var(--t-15); color: var(--testo-2); line-height: 1.45; }
-
-.mo-eroe .btn.grande { margin-top: var(--s5); }
+.riquadro-oggi__meta { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3); }
 
 /* --------------------------------------------------------- la settimana -- */
 
-.mo-settimana {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: var(--s2);
-  margin: var(--s5) 0 0;
-}
-.mo-giorno { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.mo-giorno-punto {
+.settimana { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s2); margin: var(--s5) 0; }
+.giorno { display: flex; flex-direction: column-reverse; align-items: center; gap: 6px; }
+.giorno__pallino {
   width: 100%;
   aspect-ratio: 1;
-  max-height: 40px;
+  max-height: 42px;
   display: grid;
   place-items: center;
   border-radius: 12px;
   background: var(--scheda-alta);
-  color: var(--fondo);
+  color: var(--testo-3);
+  font-size: var(--t-13);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   transition: background var(--normale) var(--curva);
 }
-.mo-giorno-punto svg { display: block; }
-.mo-giorno.fatto .mo-giorno-punto { background: var(--ok); }
-.mo-giorno.oggi .mo-giorno-punto { box-shadow: 0 0 0 2px var(--testo); }
-.mo-giorno.oggi:not(.fatto) .mo-giorno-punto { background: var(--scheda-viva); }
-.mo-giorno.futuro .mo-giorno-punto { background: transparent; box-shadow: inset 0 0 0 1.5px var(--traccia); }
-.mo-giorno-lettera {
-  font-size: var(--t-10);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--testo-3);
-}
-.mo-giorno.oggi .mo-giorno-lettera { color: var(--testo); }
+.giorno__lettera { font-size: var(--t-10); font-weight: 700; letter-spacing: 0.06em; color: var(--testo-3); }
+.giorno.is-fatto .giorno__pallino { background: var(--ok); color: var(--fondo); }
+.giorno.is-oggi  .giorno__pallino { box-shadow: 0 0 0 2px var(--testo); }
+.giorno.is-oggi  .giorno__lettera { color: var(--testo); }
+.giorno.is-futuro .giorno__pallino { background: transparent; box-shadow: inset 0 0 0 1.5px var(--traccia); }
 
-/* ================================================================ corso === */
+/* --------------------------------------------------------- i blocchi ----- */
 
-.mo-corso {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s4);
-  flex-wrap: wrap;
-}
-.mo-corso .nota { margin-top: 3px; }
-.mo-corso .segmenti { flex: none; width: 152px; }
-.mo-corso-dom { font-size: var(--t-17); font-weight: 600; letter-spacing: -0.015em; }
-
-/* ============================================================== moduli === */
-
-.mo-moduli { list-style: none; display: flex; flex-direction: column; gap: var(--s2); }
-.mo-moduli li {
+.elenco-moduli { list-style: none; margin: var(--s3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--s2); }
+.elenco-moduli li {
   display: flex;
   align-items: center;
   gap: var(--s3);
   padding: var(--s3) var(--s4);
   border-radius: var(--r-interno);
-  background: var(--scheda);
+  background: var(--scheda-alta);
 }
-.mo-modulo-num {
-  width: 26px; height: 26px; flex: none;
-  display: grid; place-items: center;
-  border-radius: 9px;
-  background: var(--accento-tenue);
-  color: var(--accento);
-  font-size: var(--t-11);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+.modulo__nome { flex: 1; min-width: 0; font-size: var(--t-15); font-weight: 500; }
+.modulo__muscoli {
+  flex: 1; min-width: 0;
+  font-size: var(--t-13);
+  color: var(--testo-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.mo-modulo-testo { flex: 1; min-width: 0; }
-.mo-modulo-nome { font-size: var(--t-15); font-weight: 500; }
-.mo-modulo-testo .nota { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mo-modulo-min {
+.modulo__durata {
   flex: none;
   font-size: var(--t-13);
   font-weight: 600;
@@ -146,53 +241,129 @@
   font-variant-numeric: tabular-nums;
 }
 
-.mo-valvole { display: flex; flex-direction: column; gap: var(--s1); margin-top: var(--s4); }
+.piano { display: flex; flex-direction: column; gap: var(--s2); }
+.piano-quando { font-size: var(--t-13); color: var(--testo-3); }
+.piano-cosa { font-size: var(--t-15); }
 
-/* ============================================================== player === */
+/* ============================================================ overlay ===== */
+/* A schermo intero e sopra tutto, barra dei moduli compresa: durante una
+   sessione non deve esserci nient'altro, e la barra in basso è una via
+   d'uscita accidentale a portata di pollice. */
 
-.mo-p-anello { display: grid; place-items: center; padding: var(--s5) 0 var(--s3); }
-.mo-p-nome {
-  text-align: center;
+.mo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: var(--fondo);
+}
+.mo-overlay[hidden] { display: none; }
+.mo-overlay-testa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  flex: none;
+  padding: calc(env(safe-area-inset-top) + var(--s3)) var(--s4) var(--s3);
+  border-bottom: 1px solid var(--filo);
+}
+.mo-overlay-corpo { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+/* ============================================================== player ==== */
+
+.sess-layout { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.sess-testa { flex: none; }
+.sess-scorre {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--s5) var(--s4);
+}
+.sess-piede {
+  flex: none;
+  padding: var(--s3) var(--s4) calc(env(safe-area-inset-bottom) + var(--s4));
+  border-top: 1px solid var(--filo);
+  background: var(--fondo);
+}
+
+/* La barra di avanzamento della sessione: sottile, in cima, e si riempie da
+   sinistra. `--p` la scrive il player a ogni tick. */
+.sess-anello { height: 3px; background: var(--traccia); overflow: hidden; }
+.sess-anello__pieno {
+  height: 100%;
+  width: calc(var(--p, 0) * 1%);
+  background: var(--accento);
+  transition: width 1s linear;
+}
+
+/* Il video. È la ragione per cui questo modulo esiste in questa forma: un
+   follow-along senza il filmato è una lista di istruzioni scritte. */
+.sess-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+}
+.sess-media:empty { display: none; }
+.sess-media iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+
+.sess-riga-timer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s4);
+  border-bottom: 1px solid var(--filo);
+}
+.sess-countdown-compatto {
+  flex: none;
+  min-width: 68px;
+  text-align: right;
   font-family: var(--font-d);
-  font-size: var(--t-28);
+  font-size: var(--t-40);
   font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
-.mo-p-lato {
-  text-align: center;
-  margin-top: var(--s2);
-  font-size: var(--t-13);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accento);
+/* In preparazione il conto è tenue: non è tempo di lavoro, è tempo per
+   mettersi in posizione, e vederlo urlare come il resto confonde. */
+.is-prep .sess-countdown-compatto { color: var(--testo-3); }
+.is-prep .sess-anello__pieno { background: var(--testo-4); }
+
+.sess-cambio {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-interno);
+  background: color-mix(in srgb, var(--arancio) 16%, transparent);
+  color: var(--arancio);
+  font-size: var(--t-15);
+  font-weight: 600;
+  margin-bottom: var(--s4);
 }
-.mo-p-lato.prep { color: var(--testo-3); }
-.mo-p-conto {
-  text-align: center;
-  font-size: var(--t-48);
-  margin-top: var(--s1);
-}
-.mo-p-passi {
-  list-style: none;
-  counter-reset: p;
-  display: flex; flex-direction: column; gap: var(--s2);
-  margin: var(--s5) 0;
-}
-.mo-p-passi li {
+.sess-cambio[hidden] { display: none; }
+.sess-cambio svg { flex: none; }
+
+.sess-passi { list-style: none; counter-reset: p; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s2); }
+.sess-passi li {
   counter-increment: p;
   position: relative;
-  padding: var(--s3) var(--s4) var(--s3) 42px;
+  padding: var(--s3) var(--s4) var(--s3) 44px;
   border-radius: var(--r-interno);
   background: var(--scheda);
   font-size: var(--t-15);
   line-height: 1.45;
 }
-.mo-p-passi li::before {
+.sess-passi li::before {
   content: counter(p);
-  position: absolute; left: var(--s4); top: var(--s3);
-  width: 20px; height: 20px;
+  position: absolute;
+  left: var(--s4); top: var(--s3);
+  width: 21px; height: 21px;
   display: grid; place-items: center;
   border-radius: 50%;
   background: var(--scheda-viva);
@@ -200,26 +371,195 @@
   font-size: var(--t-10);
   font-weight: 700;
 }
-.mo-p-posizione { text-align: center; }
-.mo-p-comandi { display: flex; gap: var(--s2); margin-top: var(--s4); }
-.mo-p-comandi .btn { flex: 1; }
 
-/* ============================================================ progressi == */
+.sess-gate { padding: var(--s5) 0; display: flex; flex-direction: column; gap: var(--s4); }
+.sess-avviso {
+  display: flex;
+  gap: var(--s3);
+  padding: var(--s4);
+  border-radius: var(--r-interno);
+  background: color-mix(in srgb, var(--avviso) 14%, transparent);
+  color: var(--testo);
+  font-size: var(--t-15);
+  line-height: 1.45;
+  box-shadow: inset 3px 0 0 var(--avviso);
+}
+.sess-avviso svg { flex: none; color: var(--avviso); }
 
-.mo-volume { display: flex; flex-direction: column; gap: var(--s3); margin-top: var(--s3); }
-.mo-vol-riga { display: flex; flex-direction: column; gap: 6px; }
-.mo-vol-testa {
-  display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3);
+.sess-fine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s3);
+  text-align: center;
+  padding: var(--s16) var(--s4);
+}
+
+/* =========================================================== progressi ==== */
+
+.riga-volume { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--s3); }
+.riga-volume__testa {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
   font-size: var(--t-13);
 }
-.mo-vol-testa > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-.mo-badge {
-  padding: 4px 10px;
+.riga-volume__testa > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.riga-volume__valore { flex: none; color: var(--testo-2); font-variant-numeric: tabular-nums; }
+.barra-volume {
+  height: 8px;
   border-radius: var(--r-pillola);
-  background: color-mix(in srgb, var(--ok) 18%, transparent);
-  color: var(--ok);
-  font-size: var(--t-11);
-  font-weight: 700;
+  background: var(--accento);
+  min-width: 3px;
+  transition: width var(--lento) var(--curva);
+}
+
+.griglia-mesi { display: grid; grid-template-columns: repeat(auto-fill, minmax(14px, 1fr)); gap: 4px; margin-top: var(--s3); }
+.griglia-mesi > span { aspect-ratio: 1; border-radius: 4px; background: var(--scheda-viva); }
+.griglia-mesi > span.is-empty { background: transparent; box-shadow: inset 0 0 0 1.5px var(--traccia); }
+
+.photo-row { display: flex; gap: var(--s3); flex-wrap: wrap; margin-top: var(--s3); }
+.photo-thumb {
+  width: 132px;
+  border-radius: var(--r-interno);
+  overflow: hidden;
+  background: var(--scheda-alta);
+}
+.photo-thumb img { width: 100%; display: block; }
+.photo-thumb .didascalia { padding: 6px var(--s2); }
+
+/* ========================================================== assessment ==== */
+
+.assess-tabs { display: flex; gap: var(--s1); padding: var(--s4) var(--s4) 0; flex: none; }
+.assess-tab {
+  flex: 1;
+  min-height: 40px;
+  border: 0;
+  border-radius: var(--r-pillola);
+  background: var(--scheda);
+  color: var(--testo-2);
+  font-family: var(--font);
+  font-size: var(--t-13);
+  font-weight: 600;
+  cursor: pointer;
+}
+.assess-tab.is-active { background: var(--testo); color: var(--fondo); }
+.assess-part { flex: 1; min-height: 0; overflow-y: auto; padding: var(--s5) var(--s4); }
+.assess-intro { margin-bottom: var(--s5); }
+.assess-note { font-size: var(--t-13); color: var(--testo-2); line-height: 1.45; }
+.assess-footer {
   flex: none;
+  padding: var(--s3) var(--s4) calc(env(safe-area-inset-bottom) + var(--s4));
+  border-top: 1px solid var(--filo);
+}
+
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--s4); }
+.field label { font-size: var(--t-13); font-weight: 600; color: var(--testo-2); }
+.field input, .field select {
+  min-height: var(--tocco);
+  padding: 10px var(--s4);
+  border: 0;
+  border-radius: var(--r-campo);
+  background: var(--scheda-alta);
+  color: var(--testo);
+  font-family: var(--font);
+  /* 17px: sotto, iOS zooma al focus e non torna più indietro. */
+  font-size: var(--t-17);
+}
+.field.mini input { max-width: 140px; }
+
+.choose { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.choose button {
+  flex: 1;
+  min-width: 96px;
+  min-height: var(--tocco);
+  border: 0;
+  border-radius: var(--r-btn);
+  background: var(--scheda-alta);
+  color: var(--testo-2);
+  font-family: var(--font);
+  font-size: var(--t-15);
+  font-weight: 600;
+  cursor: pointer;
+}
+.choose button.is-active { background: var(--accento); color: var(--fondo); }
+
+.lat-card { padding: var(--s5); border-radius: var(--r-scheda); background: var(--scheda); margin-bottom: var(--s3); }
+.lat-card__q { font-size: var(--t-17); font-weight: 600; margin-bottom: var(--s2); }
+.lat-card__why { font-size: var(--t-13); color: var(--testo-2); margin-bottom: var(--s3); line-height: 1.45; }
+.lat-card__meta { display: flex; gap: var(--s2); flex-wrap: wrap; margin-bottom: var(--s3); }
+.lat-video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: var(--r-interno);
+  background: #000;
+  margin-bottom: var(--s3);
+  display: block;
+}
+
+.esito-box, .verdict-box {
+  padding: var(--s5);
+  border-radius: var(--r-scheda);
+  background: var(--scheda);
+  box-shadow: inset 3px 0 0 var(--accento);
+  margin-bottom: var(--s4);
+}
+.esito-titolo, .verdict-titolo {
+  font-family: var(--font-d);
+  font-size: var(--t-19);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--s2);
+}
+.verdict-corpo { font-size: var(--t-15); line-height: 1.5; color: var(--testo-2); }
+
+.target-card { padding: var(--s5); border-radius: var(--r-scheda); background: var(--scheda); margin-bottom: var(--s3); }
+.target-sub { font-size: var(--t-13); color: var(--testo-2); margin-bottom: var(--s4); line-height: 1.45; }
+
+.bersaglio { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) 0; }
+.bersaglio__foto { width: 60px; height: 60px; border-radius: var(--r-interno); object-fit: cover; background: var(--scheda-alta); flex: none; }
+.bersaglio__testo { flex: 1; min-width: 0; }
+.bersaglio__nome { font-size: var(--t-15); font-weight: 500; }
+.bersaglio__valore { font-size: var(--t-13); color: var(--testo-2); font-variant-numeric: tabular-nums; }
+
+/* L'input file vero è nascosto: si tocca l'etichetta, che è un bersaglio da
+   44px e si può disegnare. */
+.photo-input-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--tocco);
+  padding: 0 var(--s4);
+  border-radius: var(--r-btn);
+  background: var(--scheda-alta);
+  color: var(--testo);
+  font-size: var(--t-13);
+  font-weight: 600;
+  cursor: pointer;
+}
+.photo-input-label input[type="file"] { display: none; }
+
+/* ---------------------------------------------------------- scrivania ---- */
+
+@media (min-width: 900px) {
+  /* L'overlay lascia scoperta la colonna dei moduli: da scrivania non è una
+     via d'uscita accidentale come il pollice sul telefono, ed è comodo
+     vedere dove si è. */
+  .mo-overlay { left: 244px; }
+  .sess-scorre, .assess-part { padding-inline: var(--s8); }
+  .sess-piede, .assess-footer { padding-inline: var(--s8); }
+  .sess-media { max-height: 46vh; aspect-ratio: auto; height: 46vh; }
+  .sess-media iframe { object-fit: contain; }
+}
+
+@media (min-width: 1120px) {
+  /* Il player su uno schermo largo: il video a sinistra, i passi a destra,
+     invece di un nastro verticale che obbliga a scorrere mentre ti muovi. */
+  .sess-layout { display: grid; grid-template-columns: 1.2fr 1fr; grid-template-rows: auto 1fr auto; }
+  .sess-testa { grid-column: 1; grid-row: 1 / span 2; }
+  .sess-scorre { grid-column: 2; grid-row: 1 / span 2; border-left: 1px solid var(--filo); }
+  .sess-piede { grid-column: 1 / -1; grid-row: 3; }
+  .sess-media { height: auto; aspect-ratio: 16 / 9; max-height: none; }
 }
