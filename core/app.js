@@ -130,18 +130,62 @@ async function avvia() {
   // guardando una schermata sola, altrimenti la home dice cose vecchie.
   avviaTuttiISync();
 
-  if ("serviceWorker" in navigator) {
+  if ("serviceWorker" in navigator) registraServiceWorker();
+}
+
+/**
+ * Registrazione del service worker e — soprattutto — il suo aggiornamento.
+ *
+ * Alzare `VERSIONE` in sw.js non basta, e per un po' ho creduto di sì. Perché
+ * la versione nuova arrivi davvero servono tre cose, e ne mancavano tutte e
+ * tre:
+ *
+ *  1. `updateViaCache: "none"`. Senza, il browser può servirsi `sw.js` dalla
+ *     propria cache HTTP: i byte nuovi non li vede, quindi non installa
+ *     niente, quindi la versione resta quella di ieri per sempre.
+ *  2. `update()` a ogni avvio e ogni volta che torni sulla finestra. Un'app
+ *     installata resta aperta per giorni: se il controllo lo fai solo alla
+ *     registrazione, non lo fai mai.
+ *  3. Il ricaricamento quando il worker nuovo prende il comando. Senza,
+ *     la pagina continua a girare col codice vecchio già caricato in memoria
+ *     e "ho ricaricato e non è cambiato niente" è letteralmente vero.
+ */
+async function registraServiceWorker() {
+  // Tocco su una notifica mentre l'app è già aperta: il service worker non
+  // può cambiare rotta da solo, manda un messaggio e ci pensiamo noi.
+  navigator.serviceWorker.addEventListener("message", (e) => {
+    if (e.data?.tipo === "vai-a" && e.data.rotta) vaiA(e.data.rotta);
+  });
+
+  // Un ricaricamento solo, mai due: `controllerchange` scatta anche alla
+  // primissima installazione, quando non c'era ancora un controllore e non
+  // c'è niente di vecchio da buttare.
+  let giaRicaricato = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (giaRicaricato || !controlloreIniziale) return;
+    giaRicaricato = true;
+    location.reload();
+  });
+
+  let reg;
+  try {
     // Non dentro un listener di `load`: questo è un modulo ES chiamato dopo
     // un await, e a quel punto `load` è già passato — il listener non
     // scatterebbe mai e l'app resterebbe senza offline.
-    navigator.serviceWorker.register("./sw.js").catch((e) => console.warn("[sw]", e));
-
-    // Tocco su una notifica mentre l'app è già aperta: il service worker non
-    // può cambiare rotta da solo, manda un messaggio e ci pensiamo noi.
-    navigator.serviceWorker.addEventListener("message", (e) => {
-      if (e.data?.tipo === "vai-a" && e.data.rotta) vaiA(e.data.rotta);
-    });
+    reg = await navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" });
+  } catch (e) {
+    console.warn("[sw]", e);
+    return;
   }
+
+  reg.update().catch(() => { /* offline: riproveremo al prossimo giro */ });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) reg.update().catch(() => {});
+  });
 }
+
+// Va letto PRIMA della registrazione: dopo, `controller` è già valorizzato
+// anche al primo avvio e non si distingue più l'installazione dall'aggiornamento.
+const controlloreIniziale = Boolean(navigator.serviceWorker?.controller);
 
 avvia();

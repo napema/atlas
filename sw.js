@@ -8,11 +8,13 @@
  *     vecchia di sync è peggio di nessuna risposta: farebbe credere al
  *     dispositivo di essere allineato quando non lo è.
  *
- * VERSIONE: va alzata a ogni rilascio, altrimenti il vecchio guscio resta
- * appiccicato. È l'errore che costa più tempo a diagnosticare.
+ * VERSIONE: va alzata a ogni rilascio. Da sola però NON basta, e crederlo è
+ * costato un pomeriggio: perché la versione nuova arrivi davvero servono
+ * anche `updateViaCache: "none"` e il ricaricamento su `controllerchange`,
+ * che stanno in core/app.js. Il perché è scritto lì.
  */
 
-const VERSIONE = "atlas-v11";
+const VERSIONE = "atlas-v12";
 const GUSCIO = `guscio-${VERSIONE}`;
 
 const DA_PRECARICARE = [
@@ -104,26 +106,53 @@ self.addEventListener("fetch", (e) => {
   if (url.hostname === "api.github.com" || url.hostname.endsWith(".githubusercontent.com")) return;
   if (url.origin !== self.location.origin) return;
 
-  // Navigazione: sempre il guscio. Con l'hash routing ogni rotta è index.html.
+  // Navigazione: rete prima, guscio come riserva. Con l'hash routing ogni
+  // rotta è index.html.
   if (req.mode === "navigate") {
+    e.respondWith(reteConRiserva(req, "./index.html"));
+    return;
+  }
+
+  // Font e icone non cambiano mai a parità di nome: quelli dalla cache, sono
+  // i file pesanti ed è lì che l'offline si gioca davvero.
+  if (/\.(woff2?|png|jpe?g|svg|ico)$/.test(url.pathname)) {
     e.respondWith((async () => {
       const c = await caches.open(GUSCIO);
-      return (await c.match("./index.html")) || (await c.match("./")) || fetch(req);
+      const salvata = await c.match(req);
+      if (salvata) return salvata;
+      const res = await fetch(req).catch(() => null);
+      if (res?.ok) c.put(req, res.clone());
+      return res || new Response("", { status: 504, statusText: "offline" });
     })());
     return;
   }
 
-  // Tutto il resto: cache prima, rete come riserva, e aggiornamento silenzioso
-  // in sottofondo perché il prossimo avvio trovi la versione nuova.
-  e.respondWith((async () => {
-    const c = await caches.open(GUSCIO);
-    const salvata = await c.match(req);
-    const dallaRete = fetch(req)
-      .then((res) => { if (res.ok) c.put(req, res.clone()); return res; })
-      .catch(() => null);
-    return salvata || (await dallaRete) || new Response("", { status: 504, statusText: "offline" });
-  })());
+  // IL CODICE DELL'APP — html, css, js — si prende dalla rete, e la cache è
+  // solo la riserva per quando la rete non c'è.
+  //
+  // Prima era il contrario: cache prima, e aggiornamento silenzioso in
+  // sottofondo "perché il prossimo avvio trovi la versione nuova". Il difetto
+  // di quella frase è "il prossimo": vuol dire che dopo ogni rilascio la
+  // prima apertura mostra sempre la versione precedente. Sommato a un
+  // service worker che il browser si teneva in cache, la versione precedente
+  // era quella di sempre — e chi guardava lo schermo aveva ragione a dire che
+  // non era cambiato niente.
+  e.respondWith(reteConRiserva(req));
 });
+
+/** Rete, e se non risponde la copia in cache (`riserva` o la richiesta stessa). */
+async function reteConRiserva(req, riserva = null) {
+  const c = await caches.open(GUSCIO);
+  try {
+    const res = await fetch(req);
+    if (res.ok) c.put(riserva || req, res.clone());
+    return res;
+  } catch {
+    return (await c.match(riserva || req))
+      || (riserva && await c.match("./"))
+      || new Response("", { status: 504, statusText: "offline" });
+  }
+}
 
 /* ------------------------------------------------------------- notifiche --
  * Mobilità e Abitudini avevano due sistemi di push identici e incompatibili,
