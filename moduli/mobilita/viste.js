@@ -32,80 +32,86 @@ export function vistaOggi(ridisegna, avviaSessione) {
   const sett = settimanaFatta(sessioni);
 
   const fuori = el("div", {});
+  const n = serie(sessioni);
 
-  // La striscia della settimana: sette pallini, non un grafico.
-  aggiungi(fuori, [el("nav", { class: "mo-settimana", "aria-label": "Settimana" },
-    sett.giorni.map((g, i) => el("div", {
-      class: "mo-giorno" + (sett.fatti[i] ? " fatto" : "") + (g === oggi ? " oggi" : "") + (g > oggi ? " futuro" : ""),
-      title: dataUmana(g),
+  /* --- 1. l'eroe: cosa devi fare oggi, e per quanto ---------------------- */
+  const eroe = el("section", { class: "mo-eroe" + (fattaOggi ? " fatta" : "") }, [
+    el("div", { class: "mo-eroe-testa" }, [
+      el("div", { class: `micro ${fattaOggi ? "ok" : ""}`,
+        testo: fattaOggi ? "Fatta oggi" : "Oggi tocca a" }),
+      n > 1 && el("span", { class: "mo-serie" }, [
+        el("span", { html: icona("fiamma", 14) }),
+        el("span", { testo: `${n} di fila` }),
+      ]),
+    ]),
+    el("h2", { class: "mo-eroe-nome", testo: TIPI_SESSIONE[tipo].nome }),
+    el("div", { class: "mo-eroe-durata" }, [
+      el("span", { class: "cifra cifra-xl", testo: String(minuti(totale)) }),
+      el("span", { class: "mo-eroe-unita", testo: "min" }),
+    ]),
+    el("p", { class: "mo-eroe-perche", testo: TIPI_SESSIONE[tipo].perche }),
+
+    // La striscia: sette caselle, quelle passate piene, oggi cerchiato.
+    el("nav", { class: "mo-settimana", "aria-label": "Settimana" },
+      sett.giorni.map((g, i) => el("div", {
+        class: "mo-giorno" + (sett.fatti[i] ? " fatto" : "") + (g === oggi ? " oggi" : "") + (g > oggi ? " futuro" : ""),
+        title: dataUmana(g),
+      }, [
+        el("span", { class: "mo-giorno-punto", html: sett.fatti[i] ? icona("spunta", 14) : "" }),
+        el("span", { class: "mo-giorno-lettera", testo: GIORNI_INIZIALI[i] }),
+      ]))),
+
+    el("button", {
+      class: "btn pieno grande", type: "button",
+      onClick: () => avviaSessione(tipo),
     }, [
-      el("span", { class: "mo-giorno-lettera", testo: GIORNI_INIZIALI[i] }),
-      el("span", { class: "mo-giorno-punto" }),
-    ]))
-  )]);
+      el("span", { html: icona("riproduci", 19) }),
+      el("span", { testo: fattaOggi ? "Rifai la sessione" : "Inizia" }),
+    ]),
+  ]);
+  aggiungi(fuori, [eroe]);
 
-  // L'unica domanda che l'app non può risolvere da sola.
-  aggiungi(fuori, [el("section", { class: "scheda" }, [
-    el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "Hai corso oggi?" })]),
-    segmenti([["no", "No"], ["si", "Sì, ho corso"]], haCorso ? "si" : "no", (v) => {
+  /* --- 2. l'unica domanda che l'app non può risolvere da sola ------------ */
+  aggiungi(fuori, [el("section", { class: "scheda mo-corso" }, [
+    el("div", {}, [
+      el("div", { class: "mo-corso-dom", testo: "Hai corso oggi?" }),
+      el("p", { class: "nota", testo: "È l'unica cosa che devi dirmi: il resto lo decide l'app." }),
+    ]),
+    segmenti([["no", "No"], ["si", "Sì"]], haCorso ? "si" : "no", (v) => {
       segnaGiorno({ data: oggi, haCorso: v === "si", forza: null });
       ridisegna();
     }),
-    el("p", { class: "nota", style: "margin-top:var(--s3)", testo: "È l'unica cosa che devi dirmi: il resto lo decide l'app." }),
   ])]);
 
-  // La sessione di oggi.
-  aggiungi(fuori, [el("section", { class: "scheda mo-sessione" }, [
-    el("div", { class: "mo-sessione-testa" }, [
-      el("div", {}, [
-        el("div", { class: "etichetta-riga", testo: TIPI_SESSIONE[tipo].nome }),
-        el("div", { class: "cifra mo-durata", testo: `${minuti(totale)} min` }),
-      ]),
-      fattaOggi && el("span", { class: "mo-badge", testo: "già fatta" }),
+  /* --- 3. da cosa è fatta ------------------------------------------------ */
+  aggiungi(fuori, [
+    el("div", { class: "sezione-titolo" }, [
+      el("h3", { testo: "Come è fatta" }),
+      el("span", { class: "nota", testo: `${moduli.length} blocchi · settimana ${settimana}` }),
     ]),
-    el("p", { class: "nota", testo: TIPI_SESSIONE[tipo].perche }),
-
-    el("ul", { class: "mo-moduli" }, moduli.map((m) => el("li", {}, [
+    el("ul", { class: "mo-moduli" }, moduli.map((m, i) => el("li", {}, [
+      el("span", { class: "mo-modulo-num", testo: String(i + 1) }),
       el("div", { class: "mo-modulo-testo" }, [
         el("div", { class: "mo-modulo-nome", testo: m.nome }),
         el("div", { class: "nota", testo: m.muscoli.slice(0, 4).join(" · ") }),
       ]),
-      el("span", { class: "nota mono", testo: `${minuti(m.durataSec)}′` }),
+      el("span", { class: "mo-modulo-min", testo: `${minuti(m.durataSec)}′` }),
     ]))),
+  ]);
 
-    el("button", {
-      class: "btn pieno", type: "button", style: "margin-top:var(--s4)",
-      onClick: () => avviaSessione(tipo),
-    }, [
-      el("span", { html: icona("riproduci", 18) }),
-      el("span", { testo: fattaOggi ? "Rifai la sessione" : "Inizia" }),
-    ]),
-
-    // La dose minima è sempre a un tocco: è la valvola che evita lo zero.
-    tipo !== "minima" && el("button", {
-      class: "btn nudo pieno", type: "button", testo: "Non ho tempo · dose minima",
-      onClick: () => { segnaGiorno({ data: oggi, forza: "minima" }); ridisegna(); },
-    }),
-    forzata && el("button", {
-      class: "btn nudo pieno", type: "button", testo: "Torna alla sessione completa",
-      onClick: () => { segnaGiorno({ data: oggi, forza: null }); ridisegna(); },
-    }),
-  ])]);
-
-  // Serie e settimana di programma.
-  const n = serie(sessioni);
-  aggiungi(fuori, [el("div", { class: "griglia-2" }, [
-    el("div", { class: "riquadro" }, [
-      el("div", { class: "etichetta-riga", testo: "Serie" }),
-      el("div", { class: "cifra", testo: String(n) }),
-      el("div", { class: "nota", testo: n === 1 ? "giorno di fila" : "giorni di fila" }),
-    ]),
-    el("div", { class: "riquadro" }, [
-      el("div", { class: "etichetta-riga", testo: "Settimana" }),
-      el("div", { class: "cifra", testo: String(settimana) }),
-      el("div", { class: "nota", testo: "del programma" }),
-    ]),
-  ])]);
+  /* --- 4. le valvole ----------------------------------------------------- */
+  // La dose minima è sempre a un tocco: è ciò che evita lo zero nei giorni
+  // storti, ed è il motivo per cui la serie non si spezza quasi mai.
+  const valvole = [];
+  if (tipo !== "minima") valvole.push(el("button", {
+    class: "btn nudo pieno", type: "button", testo: "Non ho tempo · dose minima",
+    onClick: () => { segnaGiorno({ data: oggi, forza: "minima" }); ridisegna(); },
+  }));
+  if (forzata) valvole.push(el("button", {
+    class: "btn nudo pieno", type: "button", testo: "Torna alla sessione completa",
+    onClick: () => { segnaGiorno({ data: oggi, forza: null }); ridisegna(); },
+  }));
+  if (valvole.length) aggiungi(fuori, [el("div", { class: "mo-valvole" }, valvole)]);
 
   return fuori;
 }
@@ -232,21 +238,21 @@ export function vistaProgressi() {
   const totaleSec = sessioni.reduce((t, s) => t + (s.durataSec || 0), 0);
 
   return el("div", {}, [
-    el("div", { class: "griglia-2" }, [
+    el("div", { class: "riquadri" }, [
       el("div", { class: "riquadro" }, [
-        el("div", { class: "etichetta-riga", testo: "Sessioni" }),
+        el("div", { class: "micro", testo: "Sessioni" }),
         el("div", { class: "cifra", testo: String(sessioni.length) }),
         el("div", { class: "nota", testo: "in totale" }),
       ]),
       el("div", { class: "riquadro" }, [
-        el("div", { class: "etichetta-riga", testo: "Tempo" }),
+        el("div", { class: "micro", testo: "Tempo" }),
         el("div", { class: "cifra", testo: fmtDurata(totaleSec) }),
         el("div", { class: "nota", testo: "sul tappeto" }),
       ]),
     ]),
 
     el("section", { class: "scheda" }, [
-      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "Volume per gruppo · 28 giorni" })]),
+      el("div", { class: "scheda-titolo" }, [el("span", { testo: "Volume per gruppo · 28 giorni" })]),
       el("div", { class: "mo-volume" }, volume.slice(0, 10).map(([nome, sec]) => el("div", { class: "mo-vol-riga" }, [
         el("div", { class: "mo-vol-testa" }, [
           el("span", { testo: nome }),
@@ -285,15 +291,15 @@ export function vistaImpostazioni(ridisegna) {
   return el("div", {}, [
     // --- il programma
     el("section", { class: "scheda" }, [
-      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "Il programma" })]),
-      el("div", { class: "griglia-2" }, [
+      el("div", { class: "scheda-titolo" }, [el("span", { testo: "Il programma" })]),
+      el("div", { class: "riquadri" }, [
         el("div", { class: "riquadro" }, [
-          el("div", { class: "etichetta-riga", testo: "Settimana" }),
+          el("div", { class: "micro", testo: "Settimana" }),
           el("div", { class: "cifra", testo: String(settimanaEffettiva(s.meta, sessioni)) }),
           el("div", { class: "nota", testo: "effettiva" }),
         ]),
         el("div", { class: "riquadro" }, [
-          el("div", { class: "etichetta-riga", testo: "Sessioni" }),
+          el("div", { class: "micro", testo: "Sessioni" }),
           el("div", { class: "cifra", testo: String(sessioni.length) }),
           el("div", { class: "nota", testo: "in totale" }),
         ]),
@@ -311,7 +317,7 @@ export function vistaImpostazioni(ridisegna) {
 
     // --- il giorno di palestra
     el("section", { class: "scheda" }, [
-      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "Giorno di palestra" })]),
+      el("div", { class: "scheda-titolo" }, [el("span", { testo: "Giorno di palestra" })]),
       pillole(NOMI_GIORNI.map((n, i) => [String(i), n.slice(0, 3)]), String(p.giornoPalestra ?? 2),
         (v) => { scriviMeta((m) => { m.programma.giornoPalestra = Number(v); }); avviso("Salvato."); ridisegna(); }),
       el("p", { class: "nota", testo:
@@ -320,7 +326,7 @@ export function vistaImpostazioni(ridisegna) {
 
     // --- l'aggancio
     el("section", { class: "scheda" }, [
-      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "L'aggancio" })]),
+      el("div", { class: "scheda-titolo" }, [el("span", { testo: "L'aggancio" })]),
       el("input", { class: "campo", type: "text", value: p.aggancio || "",
         placeholder: "Subito dopo la doccia serale",
         onChange: (e) => { scriviMeta((m) => { m.programma.aggancio = e.target.value; }); avviso("Salvato."); } }),
@@ -330,7 +336,7 @@ export function vistaImpostazioni(ridisegna) {
 
     // --- l'assessment
     el("section", { class: "scheda" }, [
-      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "Assessment" })]),
+      el("div", { class: "scheda-titolo" }, [el("span", { testo: "Assessment" })]),
       lista([
         riga({ etichetta: "Completato", valore: a.completato ? "sì" : "no", tono: a.completato ? "positivo" : "" }),
         riga({ etichetta: "Lato lateralizzato", valore: a.esitoTest2?.latoLateralizzato?.toUpperCase() || "non rilevato" }),
@@ -343,7 +349,7 @@ export function vistaImpostazioni(ridisegna) {
 
     // --- la sessione di oggi, forzata
     el("section", { class: "scheda" }, [
-      el("div", { class: "scheda-titolo" }, [el("span", { class: "pallino" }), el("span", { testo: "Oggi" })]),
+      el("div", { class: "scheda-titolo" }, [el("span", { testo: "Oggi" })]),
       el("p", { class: "nota", testo: "Di norma è l'app a decidere che sessione fare. Da qui puoi forzarla per oggi." }),
       pillole(
         Object.entries(TIPI_SESSIONE).map(([k, v]) => [k, v.nome]),

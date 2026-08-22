@@ -151,6 +151,14 @@ export default {
     contenitore = null;
   },
 
+  /** Il tasto tondo: iniziare la sessione, che è il motivo per cui sei qui. */
+  azionePrincipale() {
+    const s = stato();
+    const sessioni = sessioniVive();
+    const tipo = tipoDelGiorno(s.meta, sessioni, Boolean(s.giornoCorrente?.haCorso));
+    return { icona: "riproduci", etichetta: "Inizia la sessione", fai: () => avvia(tipo) };
+  },
+
   /** La sezione "Mobilità" di Impostazioni: programma, palestra, aggancio. */
   impostazioni() {
     return vistaImpostazioni(() => { if (contenitore) disegna(); });

@@ -1,136 +1,225 @@
 /* moduli/mobilita — stile specifico. */
 
-.mo-schede { display: flex; gap: var(--s1); margin-bottom: var(--s4); }
+.mo-schede { display: flex; gap: var(--s1); margin-bottom: var(--s5); }
 .mo-scheda {
   flex: 1;
-  min-height: 34px;
+  min-height: 40px;
   border: 0;
   border-radius: var(--r-pillola);
-  background: var(--riempimento);
-  color: var(--etichetta-2);
-  font-family: var(--font-testo);
-  font-size: var(--t-15);
-  font-weight: 500;
+  background: var(--scheda);
+  color: var(--testo-2);
+  font-family: var(--font);
+  font-size: var(--t-13);
+  font-weight: 600;
   cursor: pointer;
   transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
 }
-.mo-scheda.attiva {
-  background: var(--sfondo-2);
-  color: var(--etichetta);
-  font-weight: 600;
-  box-shadow: var(--filo), inset 0 0 0 1px var(--accento-tenue);
-}
+.mo-scheda.attiva { background: var(--testo); color: var(--fondo); }
 
-/* ----------------------------------------------------------- settimana -- */
+/* ================================================================== eroe == */
+/* Una scheda sola che risponde a tutto: cosa, per quanto, e il tasto per
+   partire. Prima erano tre schede in fila e la risposta si componeva
+   leggendole tutte e tre. */
+
+.mo-eroe {
+  position: relative;
+  padding: var(--s5);
+  border-radius: var(--r-scheda);
+  background: var(--scheda);
+  overflow: hidden;
+  margin-bottom: var(--s3);
+}
+/* Un velo dell'accento che sfuma verso l'alto: dà profondità senza mettere
+   testo su un fondo colorato, che è dove la leggibilità si perde. */
+.mo-eroe::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 190px;
+  background: linear-gradient(180deg, var(--accento-tenue), transparent);
+  pointer-events: none;
+}
+.mo-eroe > * { position: relative; }
+.mo-eroe.fatta::before { background: linear-gradient(180deg, color-mix(in srgb, var(--ok) 15%, transparent), transparent); }
+
+.mo-eroe-testa { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.mo-serie {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--r-pillola);
+  background: color-mix(in srgb, var(--arancio) 18%, transparent);
+  color: var(--arancio);
+  font-size: var(--t-11);
+  font-weight: 700;
+}
+.mo-serie svg { display: block; }
+
+.mo-eroe-nome {
+  margin: var(--s3) 0 0;
+  font-family: var(--font-d);
+  font-size: var(--t-28);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.mo-eroe-durata { display: flex; align-items: baseline; gap: 8px; margin-top: var(--s1); }
+.mo-eroe-durata .cifra-xl { font-size: clamp(46px, 14vw, 62px); }
+.mo-eroe-unita { font-size: var(--t-19); font-weight: 600; color: var(--testo-3); }
+.mo-eroe-perche { margin: var(--s2) 0 0; font-size: var(--t-15); color: var(--testo-2); line-height: 1.45; }
+
+.mo-eroe .btn.grande { margin-top: var(--s5); }
+
+/* --------------------------------------------------------- la settimana -- */
 
 .mo-settimana {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: var(--s1);
-  padding: var(--s3) 0;
-  margin-bottom: var(--s3);
+  gap: var(--s2);
+  margin: var(--s5) 0 0;
 }
-.mo-giorno { display: flex; flex-direction: column; align-items: center; gap: var(--s2); }
-.mo-giorno-lettera { font-size: var(--t-11); font-weight: 600; color: var(--etichetta-2); }
+.mo-giorno { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .mo-giorno-punto {
-  width: 11px; height: 11px;
-  border-radius: 50%;
-  background: var(--sfondo-4);
+  width: 100%;
+  aspect-ratio: 1;
+  max-height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--scheda-alta);
+  color: var(--fondo);
   transition: background var(--normale) var(--curva);
 }
-.mo-giorno.fatto .mo-giorno-punto { background: var(--accento); }
-.mo-giorno.oggi .mo-giorno-lettera { color: var(--accento-testo); }
-.mo-giorno.oggi .mo-giorno-punto { box-shadow: 0 0 0 3px var(--accento-tenue); }
-.mo-giorno.futuro { opacity: 0.4; }
-
-/* ------------------------------------------------------------- sessione -- */
-
-.mo-sessione-testa {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--s3);
-  margin-bottom: var(--s2);
+.mo-giorno-punto svg { display: block; }
+.mo-giorno.fatto .mo-giorno-punto { background: var(--ok); }
+.mo-giorno.oggi .mo-giorno-punto { box-shadow: 0 0 0 2px var(--testo); }
+.mo-giorno.oggi:not(.fatto) .mo-giorno-punto { background: var(--scheda-viva); }
+.mo-giorno.futuro .mo-giorno-punto { background: transparent; box-shadow: inset 0 0 0 1.5px var(--traccia); }
+.mo-giorno-lettera {
+  font-size: var(--t-10);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--testo-3);
 }
-.mo-durata { font-size: var(--t-34); line-height: 1.05; }
-.mo-badge {
-  padding: 3px 10px;
-  border-radius: var(--r-pillola);
-  background: var(--accento-tenue);
-  color: var(--accento-testo);
-  font-size: var(--t-11);
-  font-weight: 600;
-}
+.mo-giorno.oggi .mo-giorno-lettera { color: var(--testo); }
 
-.mo-moduli { list-style: none; margin: var(--s4) 0 0; padding: 0; }
-.mo-moduli li {
+/* ================================================================ corso === */
+
+.mo-corso {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--s3);
-  padding: var(--s2) 0;
-  box-shadow: inset 0 0.5px 0 var(--separatore);
+  gap: var(--s4);
+  flex-wrap: wrap;
 }
-.mo-moduli li:first-child { box-shadow: none; }
-.mo-modulo-testo { min-width: 0; }
-.mo-modulo-nome { font-size: var(--t-15); font-weight: 500; }
+.mo-corso .nota { margin-top: 3px; }
+.mo-corso .segmenti { flex: none; width: 152px; }
+.mo-corso-dom { font-size: var(--t-17); font-weight: 600; letter-spacing: -0.015em; }
 
-/* --------------------------------------------------------------- player -- */
+/* ============================================================== moduli === */
 
-.foglio.mo-player { max-height: 100dvh; height: 100dvh; border-radius: 0; }
-.mo-player .foglio-corpo { display: flex; flex-direction: column; text-align: center; gap: var(--s3); }
-
-.mo-p-posizione { text-align: center; }
-.mo-p-anello { display: grid; place-items: center; margin: var(--s2) auto 0; }
-.mo-p-conto {
-  font-size: var(--t-56);
-  line-height: 1;
-  margin-top: calc(-1 * var(--s20) - var(--s2));
-  margin-bottom: var(--s6);
+.mo-moduli { list-style: none; display: flex; flex-direction: column; gap: var(--s2); }
+.mo-moduli li {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-interno);
+  background: var(--scheda);
+}
+.mo-modulo-num {
+  width: 26px; height: 26px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 9px;
+  background: var(--accento-tenue);
+  color: var(--accento);
+  font-size: var(--t-11);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+.mo-modulo-testo { flex: 1; min-width: 0; }
+.mo-modulo-nome { font-size: var(--t-15); font-weight: 500; }
+.mo-modulo-testo .nota { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mo-modulo-min {
+  flex: none;
+  font-size: var(--t-13);
+  font-weight: 600;
+  color: var(--testo-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.mo-valvole { display: flex; flex-direction: column; gap: var(--s1); margin-top: var(--s4); }
+
+/* ============================================================== player === */
+
+.mo-p-anello { display: grid; place-items: center; padding: var(--s5) 0 var(--s3); }
 .mo-p-nome {
-  font-family: var(--font-titolo);
-  font-size: var(--t-22);
+  text-align: center;
+  font-family: var(--font-d);
+  font-size: var(--t-28);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
 }
 .mo-p-lato {
+  text-align: center;
+  margin-top: var(--s2);
   font-size: var(--t-13);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accento-testo);
-  min-height: 18px;
+  color: var(--accento);
 }
-.mo-p-lato.prep { color: var(--arancio-testo); }
-
+.mo-p-lato.prep { color: var(--testo-3); }
+.mo-p-conto {
+  text-align: center;
+  font-size: var(--t-48);
+  margin-top: var(--s1);
+}
 .mo-p-passi {
-  text-align: left;
-  margin: var(--s2) 0;
-  padding-left: var(--s5);
-  color: var(--etichetta-2);
+  list-style: none;
+  counter-reset: p;
+  display: flex; flex-direction: column; gap: var(--s2);
+  margin: var(--s5) 0;
+}
+.mo-p-passi li {
+  counter-increment: p;
+  position: relative;
+  padding: var(--s3) var(--s4) var(--s3) 42px;
+  border-radius: var(--r-interno);
+  background: var(--scheda);
   font-size: var(--t-15);
-  line-height: 1.5;
+  line-height: 1.45;
 }
-.mo-p-passi li { margin-bottom: var(--s1); }
-
-.mo-p-comandi {
-  display: flex;
-  gap: var(--s2);
-  margin-top: auto;
-  padding-top: var(--s4);
+.mo-p-passi li::before {
+  content: counter(p);
+  position: absolute; left: var(--s4); top: var(--s3);
+  width: 20px; height: 20px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--scheda-viva);
+  color: var(--testo-2);
+  font-size: var(--t-10);
+  font-weight: 700;
 }
-.mo-p-comandi .btn.tenue { flex: none; width: 56px; padding: 0; }
+.mo-p-posizione { text-align: center; }
+.mo-p-comandi { display: flex; gap: var(--s2); margin-top: var(--s4); }
+.mo-p-comandi .btn { flex: 1; }
 
-/* ------------------------------------------------------------ progressi -- */
+/* ============================================================ progressi == */
 
-.mo-volume { display: flex; flex-direction: column; gap: var(--s3); }
-.mo-vol-riga { display: flex; flex-direction: column; gap: 5px; }
+.mo-volume { display: flex; flex-direction: column; gap: var(--s3); margin-top: var(--s3); }
+.mo-vol-riga { display: flex; flex-direction: column; gap: 6px; }
 .mo-vol-testa {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--s3);
-  font-size: var(--t-15);
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3);
+  font-size: var(--t-13);
+}
+.mo-vol-testa > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.mo-badge {
+  padding: 4px 10px;
+  border-radius: var(--r-pillola);
+  background: color-mix(in srgb, var(--ok) 18%, transparent);
+  color: var(--ok);
+  font-size: var(--t-11);
+  font-weight: 700;
+  flex: none;
 }
