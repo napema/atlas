@@ -9,12 +9,13 @@
 
 import {
   el, aggiungi, apriFoglio, chiudiFoglio, avviso, tocco, traccia, lista, riga, vuoto,
-  campo, segmenti, pillole, euro, euroRicco, centesimi, nuovoId, plurale,
+  campo, segmenti, pillole, euro, euroRicco, euroGrande, centesimi, nuovoId, plurale,
+  tessera, spezzata, gettone, selettore,
   oggiISO, dataUmana, dataBreve, daISO, GIORNI, GIORNI_INIZIALI, MESI,
 } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
 import {
-  stato, movimentiVivi, categoriaPerId, profiloDi, chiaveProfilo, coloreCat, TIPI,
+  stato, movimentiVivi, categoriaPerId, profiloDi, chiaveProfilo, coloreCat, emojiCat, TIPI,
   salvaMovimento, eliminaMovimento, impara, normalizza, scriviMeta, casella,
 } from "./dati.js";
 import {
@@ -30,8 +31,13 @@ import { preparaImport, eseguiImport } from "./importa.js";
 const ETICHETTA_TIPO = Object.fromEntries(Object.entries(TIPI).map(([k, v]) => [k, v.nome]));
 
 /* ==================================================================== HOME
-   Risponde a "come sto andando", non elenca movimenti. Un colpo d'occhio,
-   un grafico, quattro numeri. Il resto sta nelle altre schermate. */
+   Risponde a "come sto andando". In cima la cifra che decide la giornata —
+   quanto resta in cassa — e sotto una tessera per categoria: simbolo, quanto
+   resta, e la barra col cursore che dice quanto è già andato.
+
+   La griglia di tessere ha preso il posto dell'elenco con le barrette: nove
+   righe di testo si leggono una per una, nove tessere colorate si scorrono
+   con l'occhio e ci si ferma su quella messa peggio. */
 
 export function vistaHome(mese, grafico, cambia, apriCat) {
   const st = statistiche(mese);
@@ -42,159 +48,172 @@ export function vistaHome(mese, grafico, cambia, apriCat) {
   const giorni = giorniDelMese(mese);
   const giorno = eCorrente ? Number(oggi.slice(8, 10)) : giorni;
   const av = avvisi(mese);
-  const v = verdetto(mese);
+  const cassa = eCorrente ? cassaSettimana(mese, oggi) : { attiva: false };
 
   const fuori = el("div", {});
 
-  // 1 — la riga che dice tutto
-  const avvisiBox = el("div", { class: "fi-avvisi", hidden: true },
-    av.map((a) => el("div", { class: `fi-avviso ${a.livello}` }, [
-      el("span", { class: "fi-avviso-icona", html: icona(a.livello === "rosso" ? "allarme" : "info", 16) }),
-      el("div", {}, [el("b", { testo: a.titolo }), el("span", { class: "nota", testo: a.testo })]),
-    ])));
+  /* --- 1. la cifra che decide la giornata ------------------------------ */
+  aggiungi(fuori, [eroe({ st, bt, cassa, giorno, giorni, mese, grafico, cambia, eCorrente })]);
 
-  aggiungi(fuori, [
-    el("div", { class: `fi-verdetto ${v.livello}` }, [
-      el("span", { class: "fi-verdetto-punto" }),
-      el("div", { class: "fi-verdetto-testo" }, [
-        el("b", { testo: v.testo }),
-        el("span", { class: "nota", testo: `${euro(st.ordinaria)} di ${euro(bt, { tondo: true })} · giorno ${giorno} di ${giorni}` }),
-      ]),
-      av.length > 0 && el("button", {
-        class: "fi-verdetto-conta", type: "button",
-        "aria-label": `${plurale(av.length, "avviso", "avvisi")}, tocca per aprirli`,
-        "aria-expanded": "false",
-        onClick: (e) => {
-          const aperto = avvisiBox.hidden;
-          avvisiBox.hidden = !aperto;
-          e.currentTarget.classList.toggle("aperto", aperto);
-          e.currentTarget.setAttribute("aria-expanded", String(aperto));
-        },
-      }, [el("span", { testo: String(av.length) })]),
-    ]),
-    av.length > 0 && avvisiBox,
-  ]);
-
-  // 2 — il grafico: settimana o mese
-  const cassa = eCorrente ? cassaSettimana(mese, oggi) : { attiva: false };
-  const scheda = el("section", { class: "scheda" }, [
-    segmenti([["settimana", "Settimana"], ["mese", "Mese"]], grafico, (x) => cambia({ grafico: x })),
-  ]);
-
-  if (grafico === "settimana" && cassa.attiva) {
-    const alGiorno = cassa.resta > 0 ? Math.floor(cassa.resta / cassa.giorniRimasti) : 0;
-    const massimo = Math.max(cassa.tetto / 5, ...cassa.perGiorno.map((d) => d.speso));
-    aggiungi(scheda, [
-      el("div", { class: "fi-testata" }, [
+  /* --- 2. gli avvisi, se ce ne sono ------------------------------------ */
+  if (av.length) {
+    aggiungi(fuori, [el("div", { class: "fi-avvisi" }, av.map((a) => {
+      const riga = el("div", { class: "fi-avviso" }, [
+        el("span", { class: "fi-avviso-punto" }),
         el("div", {}, [
-          el("div", { class: "etichetta-riga", testo: "Resta in cassa" }),
-          el("div", { class: `cifra fi-grande ${cassa.resta < 0 ? "negativo" : ""}`, html: euroRicco(cassa.resta) }),
+          el("b", { testo: a.titolo }),
+          el("span", { class: "nota", testo: a.testo }),
         ]),
-        el("div", { class: "fi-testata-lato" }, [
-          el("span", { testo: `${euro(alGiorno)}/giorno` }),
-          el("span", { testo: `${plurale(cassa.giorniRimasti, "giorno", "giorni")} alla ricarica` }),
-        ]),
+      ]);
+      riga.style.setProperty("--tinta", a.livello === "rosso" ? "var(--male)" : "var(--avviso)");
+      return riga;
+    }))]);
+  }
+
+  /* --- 3. le categorie, a tessere -------------------------------------- */
+  const cats = stato().cats
+    .map((c) => ({
+      c,
+      speso: st.perCat[c.id]?.ord || 0,
+      budget: Math.round((p.b[c.id] || 0) * 100),
+      n: st.perCat[c.id]?.movs.length || 0,
+    }))
+    .filter((r) => r.speso > 0 || r.budget > 0)
+    // Prima quelle messe peggio: la griglia si legge dall'alto, e in alto
+    // deve esserci quello su cui puoi ancora fare qualcosa.
+    .sort((a, b) => {
+      const fa = a.budget ? a.speso / a.budget : (a.speso ? 2 : 0);
+      const fb = b.budget ? b.speso / b.budget : (b.speso ? 2 : 0);
+      return fb - fa;
+    });
+
+  if (cats.length) {
+    aggiungi(fuori, [
+      el("div", { class: "sezione-titolo" }, [
+        el("h3", { testo: "Le tue buste" }),
+        el("span", { class: "nota", testo: `${cats.length} categorie` }),
       ]),
-      el("div", { class: "fi-barre" }, cassa.perGiorno.map((d, i) => el("div", {
-        class: "fi-barra" + (d.iso === oggi ? " oggi" : ""),
-        title: `${dataUmana(d.iso)} · ${euro(d.speso)}`,
-      }, [
-        el("div", { class: "fi-barra-colonna" }, [
-          el("div", { class: "fi-barra-riempimento",
-            stile: { height: `${massimo > 0 ? Math.min(100, Math.round((d.speso / massimo) * 100)) : 0}%` } }),
-        ]),
-        el("span", { class: "fi-barra-lettera", testo: GIORNI_INIZIALI[i] }),
-      ]))),
-      el("div", { class: "nota", testo: `${euro(cassa.speso)} di ${euro(cassa.tetto)} · copre spesa, cibo fuori e personale` }),
-    ]);
-  } else {
-    const proj = proiezione(mese);
-    aggiungi(scheda, [
-      el("div", { class: "fi-testata" }, [
-        el("div", {}, [
-          el("div", { class: "etichetta-riga", testo: "Spesa ordinaria" }),
-          el("div", { class: "cifra fi-grande", html: euroRicco(st.ordinaria) }),
-        ]),
-        el("div", { class: "fi-testata-lato" }, [
-          el("span", { testo: `${bt ? Math.round((st.ordinaria / bt) * 100) : 0}% di ${euro(bt, { tondo: true })}` }),
-          proj != null && el("span", { testo: `proiezione ${euro(proj, { tondo: true })}` }),
-        ]),
-      ]),
-      graficoCumulato(cumulata(mese), bt, eCorrente ? giorno : null, giorni),
+      el("div", { class: "griglia-tessere" }, cats.map((r) => tesseraCategoria(r, apriCat))),
     ]);
   }
-  fuori.append(scheda);
 
-  // 3 — due numeri, non di più
-  aggiungi(fuori, [el("div", { class: "griglia-2" }, [
+  /* --- 4. i due numeri che stanno fuori dal budget --------------------- */
+  aggiungi(fuori, [el("div", { class: "riquadri" }, [
     el("div", { class: "riquadro" }, [
-      el("div", { class: "etichetta-riga", testo: "Sforamenti" }),
-      // "2 · 150 €" si leggeva come una moltiplicazione. La cifra è una
-      // sola — quanto è entrato da fuori — e il conteggio va nella riga
-      // sotto, dove sta il resto del contesto.
-      el("div", { class: `cifra ${st.sforamentiN ? "negativo" : "positivo"}`,
-        html: st.sforamentiN === 0 ? "0" : euroRicco(st.sforamentiTot) }),
-      el("div", { class: "nota", testo: st.sforamentiN === 0
+      el("div", { class: `micro ${st.sforamentiN ? "male" : "ok"}`, testo: "Sforamenti" }),
+      el("div", { class: `cifra cifra-m ${st.sforamentiN ? "negativo" : ""}`,
+        html: st.sforamentiN === 0 ? "0" : euroGrande(st.sforamentiTot, { centesimi: false }) }),
+      el("div", { class: "nota-2", testo: st.sforamentiN === 0
         ? "target rispettato"
         : `${plurale(st.sforamentiN, "ricarica", "ricariche")} da fuori` }),
     ]),
     el("div", { class: "riquadro" }, [
-      el("div", { class: "etichetta-riga", testo: "Straordinari" }),
-      el("div", { class: "cifra", html: euroRicco(st.eccezionale) }),
-      el("div", { class: "nota", testo: st.eccezionale > 0
-        ? `${plurale(st.movEccezionali.length, "una tantum", "una tantum")}, fuori budget` : "nessuna una tantum" }),
+      el("div", { class: "micro", testo: "Straordinari" }),
+      el("div", { class: "cifra cifra-m", html: euroGrande(st.eccezionale, { centesimi: false }) }),
+      el("div", { class: "nota-2", testo: st.eccezionale > 0
+        ? `${st.movEccezionali.length} una tantum, fuori budget` : "nessuna una tantum" }),
     ]),
   ])]);
 
-  // 4 — dove stanno andando
-  const righe = stato().cats
-    .map((c) => ({ c, speso: st.perCat[c.id]?.ord || 0, budget: Math.round((p.b[c.id] || 0) * 100) }))
-    .filter((r) => r.speso > 0)
-    .sort((a, b) => b.speso - a.speso)
-    .slice(0, 5);
-
-  if (righe.length) {
-    const massimo = righe[0].speso;
-    const s = el("section", { class: "scheda" }, [
-      el("div", { class: "etichetta-riga", testo: "Dove stanno andando" }),
-    ]);
-    for (const r of righe) {
-      const frazione = r.budget > 0 ? r.speso / r.budget : 0;
-      const sforata = r.budget > 0 && frazione >= 1;
-      s.append(el("button", { class: "fi-cat", type: "button", onClick: () => apriCat(r.c.id) }, [
-        el("div", { class: "fi-cat-testa" }, [
-          el("span", { class: "fi-cat-nome" }, [
-            el("i", { class: "fi-punto", stile: { background: coloreCat(r.c.id) } }),
-            el("span", { testo: r.c.nome }),
-            // Lo sforamento si dice a parole, non solo col colore: il rosso
-            // qui vorrebbe dire "oltre budget" mentre due righe sotto vuol
-            // dire "Cibo fuori", e chi non distingue i colori non lo vede
-            // affatto.
-            sforata && el("span", { class: "fi-tag rosso", testo: "oltre" }),
-          ]),
-          el("span", { class: "num", testo: euro(r.speso) }),
-        ]),
-        // La barra prende il colore DELLA CATEGORIA, lo stesso del pallino:
-        // è la stessa cosa detta due volte, non due cose diverse.
-        traccia(r.speso / massimo, "", { sottile: true, colore: coloreCat(r.c.id) }),
-      ]));
-    }
-    fuori.append(s);
-  }
-
-  // 5 — il numero che guarda al mese prossimo
+  /* --- 5. il numero che guarda al mese prossimo ------------------------ */
   const risp = risparmioReale(mese);
-  aggiungi(fuori, [el("section", { class: "scheda" }, [
-    el("div", { class: "fi-riga-doppia" }, [
-      el("span", { class: "etichetta-riga", testo: "Risparmio reale" }),
-      el("span", { class: `cifra fi-medio ${risp.valore < 0 ? "negativo" : "positivo"}`,
-        testo: (risp.valore < 0 ? "−" : "") + euro(Math.abs(risp.valore)) }),
+  aggiungi(fuori, [el("section", { class: "scheda fi-risparmio" }, [
+    el("div", {}, [
+      el("div", { class: "micro", testo: "Risparmio reale" }),
+      el("div", { class: "nota", stile: { marginTop: "6px" },
+        testo: `${euro(risp.base, { tondo: true })} − affitto ${euro(risp.affitto, { tondo: true })} − utenze ${euro(risp.utenze, { tondo: true })}` }),
     ]),
-    el("div", { class: "nota", testo: `${euro(risp.base, { tondo: true })} − affitto ${euro(risp.affitto, { tondo: true })} − utenze ${euro(risp.utenze, { tondo: true })}` }),
+    el("span", { class: `cifra cifra-l ${risp.valore < 0 ? "negativo" : "positivo"}`,
+      html: euroGrande(risp.valore, { centesimi: false }) }),
   ])]);
 
   return fuori;
 }
+
+/**
+ * L'eroe: la cifra grande in cima.
+ *
+ * In settimana mostra quanto resta in cassa, perché è la cifra su cui si
+ * decide se uscire a cena stasera. A mese chiuso, o se la cassa non è
+ * attiva, mostra la spesa ordinaria contro il budget.
+ */
+function eroe({ st, bt, cassa, giorno, giorni, mese, grafico, cambia, eCorrente }) {
+  const settimana = grafico === "settimana" && cassa.attiva;
+  const s = el("section", { class: "fi-eroe" });
+
+  if (settimana) {
+    const alGiorno = cassa.resta > 0 ? Math.floor(cassa.resta / cassa.giorniRimasti) : 0;
+    const massimo = Math.max(cassa.tetto / 5, ...cassa.perGiorno.map((d) => d.speso));
+    const frazione = cassa.tetto ? Math.min(1, cassa.speso / cassa.tetto) : 0;
+
+    aggiungi(s, [
+      el("div", { class: "fi-eroe-testa" }, [
+        el("div", { class: `micro ${cassa.resta < 0 ? "male" : "ok"}`,
+          testo: `${Math.round(frazione * 100)}% della cassa` }),
+        segmenti([["settimana", "Settimana"], ["mese", "Mese"]], grafico, (x) => cambia({ grafico: x })),
+      ]),
+      el("div", { class: `cifra cifra-xl ${cassa.resta < 0 ? "negativo" : ""}`, html: euroGrande(cassa.resta) }),
+      el("p", { class: "fi-eroe-nota", testo: cassa.resta < 0
+        ? `Cassa esaurita · ${plurale(cassa.giorniRimasti, "giorno", "giorni")} alla ricarica`
+        : `restano in cassa · ${euro(alGiorno)} al giorno per ${plurale(cassa.giorniRimasti, "giorno", "giorni")}` }),
+
+      el("div", { class: "fi-settimana" }, cassa.perGiorno.map((d, i) => el("div", {
+        class: "fi-giorno" + (d.iso === oggiISO() ? " oggi" : ""),
+        title: `${dataUmana(d.iso)} · ${euro(d.speso)}`,
+      }, [
+        el("div", { class: "fi-colonna" }, [
+          el("i", { stile: { height: `${massimo > 0 ? Math.max(4, Math.min(100, (d.speso / massimo) * 100)) : 4}%` } }),
+        ]),
+        el("span", { class: "fi-giorno-lettera", testo: GIORNI_INIZIALI[i] }),
+      ]))),
+      el("p", { class: "nota-2", testo: `${euro(cassa.speso)} di ${euro(cassa.tetto)} · copre spesa, cibo fuori e personale` }),
+    ]);
+  } else {
+    const proj = proiezione(mese);
+    const frazione = bt ? Math.min(1, st.ordinaria / bt) : 0;
+    aggiungi(s, [
+      el("div", { class: "fi-eroe-testa" }, [
+        el("div", { class: `micro ${frazione >= 1 ? "male" : frazione >= 0.9 ? "avviso" : "ok"}`,
+          testo: `${Math.round(frazione * 100)}% del budget` }),
+        eCorrente && segmenti([["settimana", "Settimana"], ["mese", "Mese"]], grafico, (x) => cambia({ grafico: x })),
+      ]),
+      el("div", { class: "cifra cifra-xl", html: euroGrande(st.ordinaria) }),
+      el("p", { class: "fi-eroe-nota",
+        testo: `di ${euro(bt, { tondo: true })} · giorno ${giorno} di ${giorni}${proj != null ? ` · proiezione ${euro(proj, { tondo: true })}` : ""}` }),
+      graficoCumulato(cumulata(mese), bt, eCorrente ? giorno : null, giorni),
+    ]);
+  }
+  return s;
+}
+
+/** Una categoria come tessera: simbolo, quanto resta, barra col cursore. */
+function tesseraCategoria({ c, speso, budget, n }, apriCat) {
+  const frazione = budget > 0 ? speso / budget : (speso > 0 ? 1 : 0);
+  const resta = budget - speso;
+  const oltre = budget > 0 && speso > budget;
+  // Arrotondare verso lo zero nasconde lo sforamento: 100,3% diventava
+  // «100% speso» con la tessera rossa di fianco, e sembrava un errore.
+  const pct = frazione > 1 ? Math.ceil(frazione * 100) : Math.round(frazione * 100);
+  // E sotto il mezzo euro non si dice né «restano» né «oltre»: si dice che il
+  // budget è finito, perché «€0 oltre il budget» non vuol dire niente.
+  const inPari = budget > 0 && Math.abs(resta) < 100;
+
+  return tessera({
+    nome: c.nome,
+    emoji: emojiCat(c.id),
+    sotto: budget > 0 ? `di ${euro(budget, { tondo: true })}` : "senza budget",
+    micro: budget > 0 ? `${pct}% speso` : plurale(n, "movimento", "movimenti"),
+    tonoMicro: !budget ? "" : oltre ? "male" : frazione >= 0.9 ? "avviso" : "ok",
+    cifra: inPari ? "0" : euroGrande(budget > 0 ? Math.abs(resta) : speso, { centesimi: false }),
+    coda: !budget ? "speso finora"
+      : inPari ? "budget esaurito"
+      : oltre ? "oltre il budget" : "restano questo mese",
+    frazione: Math.min(1, frazione),
+    tinta: coloreCat(c.id),
+    azione: () => apriCat(c.id),
+  });
+}
+
 
 /* ============================================================== MOVIMENTI */
 
@@ -252,22 +271,27 @@ export function rigaMovimento(m, apriDett) {
   if (m.tipo === "out") descrizione = (cat?.nome || "—") + (m.sub ? ` · ${m.sub}` : "");
   else if (m.tipo === "in") descrizione = "Entrata";
   else if (m.tipo === "giro") descrizione = "Giroconto tra pocket";
-  else if (m.tipo === "extra") descrizione = "Ricarica extra — sforamento";
+  else if (m.tipo === "extra") descrizione = "Ricarica fuori budget";  // «sforamento» lo dice già la targhetta
   else {
     const origine = movimentiVivi().find((x) => x.id === m.rif);
     descrizione = ETICHETTA_TIPO[m.tipo] + (origine ? ` → ${origine.nota}` : " · non agganciato");
   }
 
   const segno = { in: "+", out: "−", extra: "+", giro: "", rimb: "−", reso: "−" }[m.tipo] ?? "−";
-  const colorePunto = m.tipo === "out" ? coloreCat(m.cat)
-    : m.tipo === "in" ? "var(--verde)"
-    : m.tipo === "extra" ? "var(--rosso)" : "var(--etichetta-4)";
+  // Un quadratino con il simbolo della categoria al posto del pallino: in un
+  // elenco di trenta movimenti il simbolo si riconosce prima della nota, e
+  // dà alla lista un ritmo che una colonna di testo non ha.
+  const tinta = m.tipo === "out" ? coloreCat(m.cat)
+    : m.tipo === "in" ? "var(--ok)"
+    : m.tipo === "extra" ? "var(--male)" : "var(--grigio)";
+  const simbolo = m.tipo === "out" ? emojiCat(m.cat)
+    : m.tipo === "in" ? "↓" : m.tipo === "extra" ? "!" : m.tipo === "giro" ? "⇄" : "↩";
 
   return el("li", {}, [el("button", {
     class: `riga fi-mov${straordinario ? " straordinario" : ""}`, type: "button",
     onClick: () => apriDett(m.id),
   }, [
-    el("span", { class: "fi-mov-punto", stile: { background: colorePunto } }),
+    gettone(simbolo, tinta),
     el("span", { class: "fi-mov-testo" }, [
       el("span", { class: "fi-mov-nota" }, [
         el("span", { testo: m.nota || ETICHETTA_TIPO[m.tipo] || "—" }),
@@ -312,7 +336,7 @@ export function vistaAnalisi(mese, apriCat, apriSub) {
   // 1 — andamento cumulato contro il ritmo del budget
   aggiungi(fuori, [el("section", { class: "scheda fi-larga" }, [
     el("div", { class: "fi-riga-doppia" }, [
-      el("span", { class: "etichetta-riga", testo: "Andamento del mese" }),
+      el("span", { class: "micro", testo: "Andamento del mese" }),
       el("span", { class: "nota num", testo: `budget ${euro(bt, { tondo: true })}` }),
     ]),
     graficoCumulato(cumulata(mese), bt, eCorrente ? giorno : null, giorni),
@@ -329,7 +353,7 @@ export function vistaAnalisi(mese, apriCat, apriSub) {
     .filter((e) => e.valore > 0);
   if (fette.length) {
     aggiungi(fuori, [el("section", { class: "scheda" }, [
-      el("div", { class: "etichetta-riga", testo: "Ripartizione uscite" }),
+      el("div", { class: "micro", testo: "Ripartizione uscite" }),
       graficoCiambella(fette, st.usciteNette),
     ])]);
   }
@@ -339,7 +363,7 @@ export function vistaAnalisi(mese, apriCat, apriSub) {
   if (cfr.alloraSpeso > 0 || st.ordinaria > 0) {
     const meglio = cfr.scarto <= 0;
     aggiungi(fuori, [el("section", { class: "scheda" }, [
-      el("div", { class: "etichetta-riga", testo: "Oggi, un mese fa" }),
+      el("div", { class: "micro", testo: "Oggi, un mese fa" }),
       el("div", { class: "fi-confronto" }, [
         el("div", { class: "fi-cfr" }, [
           el("span", { class: "nota", testo: `${MESI[Number(cfr.mesePrima.slice(5, 7)) - 1]} al giorno ${cfr.taglio}` }),
@@ -362,7 +386,7 @@ export function vistaAnalisi(mese, apriCat, apriSub) {
 
   // 4 — i sei numeri del mese
   aggiungi(fuori, [el("section", { class: "scheda" }, [
-    el("div", { class: "etichetta-riga", testo: "Statistiche del mese" }),
+    el("div", { class: "micro", testo: "Statistiche del mese" }),
     el("div", { class: "fi-statgrid" }, [
       casella_("Media al giorno", euro(sm.mediaGiorno)),
       casella_("Scontrino medio", sm.nUscite ? euro(sm.scontrinoMedio) : "—"),
@@ -377,14 +401,14 @@ export function vistaAnalisi(mese, apriCat, apriSub) {
 
   // 5 — sei mesi di uscite
   aggiungi(fuori, [el("section", { class: "scheda" }, [
-    el("div", { class: "etichetta-riga", testo: "Uscite nette · 6 mesi" }),
+    el("div", { class: "micro", testo: "Uscite nette · 6 mesi" }),
     graficoBarre(sei.usciteNette, sei.etichette, 5, bt || null),
     el("p", { class: "nota", testo: `Linea tratteggiata: budget del profilo ${p.nome} (${euro(bt, { tondo: true })}).` }),
   ])]);
 
   // 6 — sei mesi di sforamenti: l'unico numero che deve restare a zero
   aggiungi(fuori, [el("section", { class: "scheda" }, [
-    el("div", { class: "etichetta-riga negativo", testo: "Sforamenti · 6 mesi" }),
+    el("div", { class: "micro male", testo: "Sforamenti · 6 mesi" }),
     graficoBarre(sei.sforamenti, sei.etichette, 5, null, "var(--rosso)"),
     el("p", { class: "nota", testo: st.sforamentiTot > 0
       ? `Questo mese: ${st.sforamentiN} ricariche per ${euro(st.sforamentiTot)}.`
@@ -393,7 +417,7 @@ export function vistaAnalisi(mese, apriCat, apriSub) {
 
   // 7 — dove si concentra il ritmo
   aggiungi(fuori, [el("section", { class: "scheda" }, [
-    el("div", { class: "etichetta-riga", testo: "Media per giorno della settimana" }),
+    el("div", { class: "micro", testo: "Media per giorno della settimana" }),
     graficoBarre(mediaPerGiornoSettimana(mese), ["lun", "mar", "mer", "gio", "ven", "sab", "dom"],
       eCorrente ? (daISO(oggi).getDay() + 6) % 7 : -1),
   ])]);
@@ -402,7 +426,7 @@ export function vistaAnalisi(mese, apriCat, apriSub) {
   const top = sottocategorieDelMese(mese).slice(0, 5);
   if (top.length) {
     aggiungi(fuori, [el("section", { class: "scheda" }, [
-      el("div", { class: "etichetta-riga", testo: "Top sottocategorie" }),
+      el("div", { class: "micro", testo: "Top sottocategorie" }),
       el("div", { class: "fi-sublista" }, top.map((x) => el("button", {
         class: "fi-subriga", type: "button", onClick: () => apriSub(x.catId, x.sub),
       }, [

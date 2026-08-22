@@ -30,7 +30,7 @@ function tag(nome, attr = {}, dentro = [], stile = {}) {
 }
 
 /** Le etichette dei grafici. Il font arriva dal CSS (`.fi-svg text`). */
-function testo(x, y, contenuto, { misura = 13, peso = 600, colore = "var(--etichetta-3)", ancora = "middle" } = {}) {
+function testo(x, y, contenuto, { misura = 13, peso = 600, colore = "var(--testo-3)", ancora = "middle" } = {}) {
   const t = tag("text",
     { x, y, "text-anchor": ancora },
     [],
@@ -79,12 +79,12 @@ export function graficoCumulato(cum, budget, giornoOggi, giorniMese) {
   // reticolo senza aggiungere informazione.
   for (const f of [0.25, 0.5, 0.75, 1]) {
     svg.append(tag("line", { x1: bordo, y1: A - f * A, x2: L - bordo, y2: A - f * A, "stroke-width": 1, opacity: ".07" },
-      [], { stroke: "var(--etichetta-3)" }));
+      [], { stroke: "var(--testo-3)" }));
   }
 
   if (budget > 0) {
     svg.append(tag("line", { x1: x(0), y1: y(0), x2: x(giorniMese - 1), y2: y(budget),
-      "stroke-width": 1.5, "stroke-dasharray": "5 5", opacity: ".45" }, [], { stroke: "var(--etichetta-3)" }));
+      "stroke-width": 1.5, "stroke-dasharray": "5 5", opacity: ".45" }, [], { stroke: "var(--testo-3)" }));
   }
 
   const punti = [];
@@ -129,7 +129,7 @@ export function graficoCiambella(voci, totale) {
       a0 = a1;
     }
   }
-  svg.append(testo(C, C - 3, euro(totale, { tondo: true }), { misura: 15, peso: 700, colore: "var(--etichetta)" }));
+  svg.append(testo(C, C - 3, euro(totale, { tondo: true }), { misura: 15, peso: 700, colore: "var(--testo)" }));
   svg.append(testo(C, C + 14, "USCITE", { misura: 11, peso: 700 }));
 
   const legenda = el("div", { class: "fi-legenda" }, voci.map((v) => el("div", { class: "fi-legenda-riga" }, [
@@ -157,7 +157,7 @@ export function graficoBarre(valori, etichette, evidenzia, retta = null, colore 
   if (retta) {
     const ry = A - (retta / massimo) * A;
     svg.append(tag("line", { x1: bordo, y1: ry, x2: L - bordo, y2: ry,
-      "stroke-width": 1.5, "stroke-dasharray": "5 5", opacity: ".6" }, [], { stroke: "var(--etichetta-3)" }));
+      "stroke-width": 1.5, "stroke-dasharray": "5 5", opacity: ".6" }, [], { stroke: "var(--testo-3)" }));
   }
 
   valori.forEach((v, i) => {
@@ -166,7 +166,7 @@ export function graficoBarre(valori, etichette, evidenzia, retta = null, colore 
       x: bordo + i * larghezza + larghezza * 0.15, y: A - h,
       width: larghezza * 0.7, height: h, rx: 7,
       opacity: i === evidenzia ? 1 : 0.18,
-    }, [], { fill: i === evidenzia ? colore : "var(--etichetta-3)" }));
+    }, [], { fill: i === evidenzia ? colore : "var(--testo-3)" }));
     svg.append(testo(bordo + i * larghezza + larghezza / 2, A + 15, String(etichette[i]).toUpperCase(), { misura: 12 }));
   });
 

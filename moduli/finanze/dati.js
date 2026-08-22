@@ -73,15 +73,25 @@ export const COLORI_CAT = {
   auto:      "var(--arancio)",
   spesa:     "var(--verde)",
   trasporti: "var(--indaco)",
-  // Cibo fuori era rosso, e il rosso nella stessa schermata vuol dire già
-  // "oltre budget". Due significati sullo stesso colore non si distinguono:
-  // il rosso resta agli stati, alle categorie il marrone.
-  cibo:      "var(--marrone)",
-  personale: "var(--rosa)",
+  cibo:      "var(--rosa)",
+  personale: "var(--viola)",
   acc:       "var(--menta)",
-  risp:      "var(--teal)",
+  risp:      "var(--ciano)",
 };
 export const coloreCat = (id) => COLORI_CAT[id] || "var(--grigio)";
+
+/**
+ * Un simbolo per categoria.
+ *
+ * Non è decorazione: in una griglia di nove tessere il simbolo si riconosce
+ * prima del nome, e a quel punto il nome serve solo a confermare. Senza,
+ * nove tessere identiche vanno lette una per una.
+ */
+export const EMOJI_CAT = {
+  fisse: "📄", casa: "🏠", auto: "🚗", spesa: "🛒", trasporti: "🚆",
+  cibo: "🍝", personale: "🧴", acc: "🏦", risp: "🌱",
+};
+export const emojiCat = (id) => EMOJI_CAT[id] || "•";
 
 export function profiliIniziali() {
   return {

@@ -1,512 +1,330 @@
 /* moduli/finanze — stile specifico. */
 
-/* ------------------------------------------------------------- azioni --- */
-
-.fi-azioni { display: flex; align-items: center; gap: 0; }
-
-/* --------------------------------------------------------- mese e schede -- */
+/* ============================================================= navigatore = */
 
 .fi-mese {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--s3);
+  gap: var(--s1);
+  margin-bottom: var(--s4);
 }
 .fi-mese-nome {
   flex: 1;
   min-height: var(--tocco);
   border: 0;
   background: none;
-  color: var(--etichetta);
-  font-family: var(--font-titolo);
-  font-size: var(--t-17);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  color: var(--testo);
+  font-family: var(--font-d);
+  font-size: var(--t-19);
+  font-weight: 700;
+  letter-spacing: -0.025em;
   text-transform: capitalize;
+  text-align: center;
   cursor: pointer;
 }
 
-/* Quattro schede devono stare in 375px senza tagliarsi: l'imbottitura è
-   stretta di proposito, e `min-width: 0` permette al testo di comprimersi
-   invece di spingere la quarta fuori dallo schermo. */
-.fi-schede {
-  display: flex;
-  gap: var(--s1);
-  margin-bottom: var(--s4);
-}
+.fi-schede { display: flex; gap: var(--s1); margin-bottom: var(--s5); }
 .fi-scheda {
   flex: 1 1 0;
   min-width: 0;
-  min-height: 34px;
-  padding: 6px var(--s2);
+  min-height: 40px;
+  padding: 0 var(--s2);
   border: 0;
   border-radius: var(--r-pillola);
-  background: var(--riempimento);
-  color: var(--etichetta-2);
-  font-family: var(--font-testo);
-  font-size: var(--t-15);
-  font-weight: 500;
+  background: var(--scheda);
+  color: var(--testo-2);
+  font-family: var(--font);
+  font-size: var(--t-13);
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
   transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
 }
-/* Bianco su verde di sistema fa 2,02:1. Un controllo segmentato di iOS non
-   colora il segmento scelto: lo eleva su una superficie chiara e lascia il
-   testo al colore primario. Si legge, e per giunta è il pattern giusto. */
-.fi-scheda.attiva {
-  background: var(--sfondo-2);
-  color: var(--etichetta);
-  font-weight: 600;
-  box-shadow: var(--filo), inset 0 0 0 1px var(--accento-tenue);
-}
+.fi-scheda.attiva { background: var(--testo); color: var(--fondo); }
 
-/* ------------------------------------------------------------ verdetto -- */
+/* ================================================================== eroe == */
+/* La cifra grande in cima. Non sta in una scheda: sta sul fondo nudo, ed è
+   quello che la fa sembrare il titolo della schermata invece che un dato
+   fra gli altri. */
 
-.fi-verdetto {
+.fi-eroe { padding: var(--s2) var(--s1) var(--s6); }
+.fi-eroe-testa {
   display: flex;
   align-items: center;
-  gap: var(--s3);
-  padding: var(--s3) var(--s4);
-  border-radius: var(--r-scheda);
-  background: var(--sfondo-2);
-  margin-bottom: var(--s3);
-}
-.fi-verdetto-punto { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-.fi-verdetto.verde  .fi-verdetto-punto { background: var(--verde); }
-.fi-verdetto.ambra  .fi-verdetto-punto { background: var(--arancio); }
-.fi-verdetto.rosso  .fi-verdetto-punto { background: var(--rosso); }
-.fi-verdetto-testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.fi-verdetto-testo b { font-size: var(--t-15); letter-spacing: -0.01em; }
-/* Il bersaglio è tutto il tondo più il suo alone: 24px sono la pastiglia
-   visibile, 44 quella toccabile. */
-.fi-verdetto-conta {
-  margin-left: auto;
-  min-width: var(--tocco); min-height: var(--tocco);
-  display: grid; place-items: center;
-  border: 0;
-  background: none;
-  color: inherit;
-  font-family: var(--font-testo);
-  font-size: var(--t-13);
-  font-weight: 600;
-  flex: none;
-  cursor: pointer;
-}
-/* La pastiglia è disegnata dietro al numero invece che intorno: così il
-   bersaglio può essere 44px senza che si veda un cerchio grande come una
-   moneta in mezzo a una riga alta 20. */
-.fi-verdetto-conta { position: relative; }
-.fi-verdetto-conta::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  background: var(--riempimento);
-  transition: background var(--veloce) var(--curva);
-}
-.fi-verdetto-conta.aperto::before { background: var(--accento); }
-.fi-verdetto-conta.aperto { color: #fff; }
-
-.fi-avvisi { display: flex; flex-direction: column; gap: var(--s2); margin-bottom: var(--s3); }
-.fi-avviso {
-  display: flex;
-  gap: var(--s2);
-  padding: var(--s3) var(--s4);
-  border-radius: var(--r-scheda);
-  background: var(--sfondo-2);
-  font-size: var(--t-13);
-}
-.fi-avviso b { display: block; font-size: var(--t-15); margin-bottom: 1px; }
-.fi-avviso-icona { flex: none; display: flex; padding-top: 2px; }
-.fi-avviso.rosso .fi-avviso-icona { color: var(--rosso-testo); }
-.fi-avviso.ambra .fi-avviso-icona { color: var(--arancio-testo); }
-
-/* ------------------------------------------------------------- testate -- */
-
-.fi-testata {
-  display: flex;
-  align-items: flex-end;
   justify-content: space-between;
   gap: var(--s3);
-  margin: var(--s4) 0 var(--s3);
-}
-.fi-grande { font-size: var(--t-34); line-height: 1.05; }
-.fi-medio  { font-size: var(--t-22); }
-.fi-testata-lato {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 1px;
-  font-size: var(--t-13);
-  color: var(--etichetta-2);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.fi-riga-doppia { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); }
-
-/* ------------------------------------------------------ barre e grafici -- */
-
-.fi-barre {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: var(--s1);
-  height: 92px;
   margin-bottom: var(--s3);
 }
-.fi-barra { display: flex; flex-direction: column; gap: var(--s1); }
-.fi-barra-colonna {
+.fi-eroe-testa .segmenti { flex: none; width: 168px; }
+.fi-eroe-testa .segmento { font-size: var(--t-11); }
+
+.fi-eroe .cifra-xl { font-size: clamp(44px, 13vw, 60px); }
+.fi-eroe-nota { margin: var(--s3) 0 0; font-size: var(--t-13); color: var(--testo-2); }
+
+/* Le sette colonne della settimana. Sono barre vere, non un grafico:
+   l'altezza è l'unica variabile e si legge senza assi né numeri. */
+.fi-settimana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--s2);
+  height: 92px;
+  margin: var(--s5) 0 var(--s3);
+}
+.fi-giorno { display: flex; flex-direction: column; gap: var(--s2); }
+.fi-colonna {
   flex: 1;
   display: flex;
   align-items: flex-end;
-  border-radius: 6px;
-  background: var(--sfondo-3);
+  border-radius: 8px;
+  background: var(--traccia);
   overflow: hidden;
 }
-.fi-barra-riempimento {
-  width: 100%;
-  border-radius: 6px;
-  background: var(--accento);
-  min-height: 3px;
-  transition: height var(--normale) var(--curva);
-}
-.fi-barra-lettera {
-  text-align: center;
-  font-size: var(--t-11);
-  font-weight: 600;
-  color: var(--etichetta-2);
-}
-.fi-barra.oggi .fi-barra-lettera { color: var(--accento-testo); }
-
-
-
-
-
-/* --------------------------------------------------------- categorie --- */
-
-.fi-punto { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
-
-/* Le righe di "Dove stanno andando" erano incollate: testo, barra, subito
-   il testo dopo. Un separatore fra una e l'altra e un po' di respiro sotto
-   la barra bastano a farle leggere come righe invece che come un blocco. */
-.fi-cat {
+.fi-colonna > i {
   display: block;
   width: 100%;
-  padding: var(--s3) 0 var(--s4);
-  border: 0;
-  background: none;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  font: inherit;
-  box-shadow: inset 0 -0.5px 0 var(--separatore);
+  border-radius: 8px;
+  background: var(--accento);
+  transition: height var(--lento) var(--curva);
 }
-.fi-cat:last-child { box-shadow: none; padding-bottom: var(--s1); }
-.fi-cat:active { opacity: 0.6; }
-.fi-cat-testa {
+.fi-giorno-lettera {
+  text-align: center;
+  font-size: var(--t-10);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--testo-3);
+}
+.fi-giorno.oggi .fi-giorno-lettera { color: var(--testo); }
+.fi-giorno.oggi .fi-colonna > i { background: var(--testo); }
+
+/* ================================================================ avvisi == */
+
+.fi-avvisi { display: flex; flex-direction: column; gap: var(--s2); margin-bottom: var(--s5); }
+.fi-avviso {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
   gap: var(--s3);
-  margin-bottom: var(--s2);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-interno);
+  background: var(--scheda);
+  box-shadow: inset 3px 0 0 var(--tinta);
 }
-.fi-cat-nome { display: inline-flex; align-items: center; gap: var(--s2); font-size: var(--t-15); }
+.fi-avviso b { display: block; font-size: var(--t-15); margin-bottom: 1px; }
+.fi-avviso-punto {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--tinta); flex: none; margin-top: 7px;
+}
 
-.fi-ana { align-items: flex-start; }
-.fi-ana-corpo { flex: 1; display: flex; flex-direction: column; gap: var(--s1); min-width: 0; }
+/* ============================================================= risparmio == */
 
-/* -------------------------------------------------------- i movimenti -- */
+.fi-risparmio {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+}
 
-.fi-filtri { margin-bottom: var(--s3); }
+/* ============================================================ movimenti === */
+
+.fi-filtri { margin-bottom: var(--s4); }
 .fi-giorno-testa {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: 0 var(--s4) var(--s2);
-  margin-top: var(--s4);
-  font-size: var(--t-13);
-  color: var(--etichetta-2);
-  text-transform: capitalize;
+  padding: 0 var(--s2) var(--s2);
+  margin-top: var(--s5);
+  font-size: var(--t-11);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--testo-3);
 }
 
 .fi-mov { gap: var(--s3); }
-.fi-mov-punto { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .fi-mov-testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .fi-mov-nota {
-  font-size: var(--t-17);
+  display: flex; align-items: center; min-width: 0;
+  font-size: var(--t-15);
+  font-weight: 500;
   letter-spacing: -0.01em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
+.fi-mov-nota > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fi-mov-cifra {
   margin-left: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 1px;
+  flex: none;
+  font-size: var(--t-15);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.fi-mov-cifra .nota { font-size: var(--t-10); }
+
+.fi-tag {
+  font-size: var(--t-10);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: var(--r-pillola);
+  background: var(--scheda-alta);
+  color: var(--testo-2);
+  margin-left: 7px;
   flex: none;
 }
+.fi-tag.rosso { color: var(--male); }
+.fi-tag.ambra { color: var(--avviso); }
 
-/* --------------------------------------------------------- inserimento -- */
-
-.fi-importo {
-  font-size: var(--t-44);
-  text-align: center;
-  padding: var(--s3) 0 var(--s2);
-  letter-spacing: -0.03em;
-}
-.fi-importo.vuoto { color: var(--etichetta-4); }
-/* Il simbolo resta sulla linea di base: alzarlo lo trasformava in un apice. */
-.fi-importo::after { content: " €"; font-size: 0.5em; font-weight: 600; color: var(--etichetta-3); }
-
-.fi-tastierino {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--s2);
-  margin-bottom: var(--s5);
-}
-.fi-tasto {
-  min-height: 52px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: var(--r-btn);
-  background: var(--sfondo-3);
-  color: var(--etichetta);
-  font-family: var(--font-titolo);
-  font-size: var(--t-22);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-  transition: background var(--veloce) var(--curva);
-}
-.fi-tasto:active { background: var(--riempimento-2); }
-.fi-tasto-canc { color: var(--etichetta-2); }
-
-.fi-doppio-salva { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); margin-top: var(--s4); }
-.fi-doppio-salva .btn { flex-direction: column; gap: 1px; min-height: 58px; padding-inline: var(--s2); }
-.fi-doppio-salva .btn b { font-size: var(--t-15); }
-.fi-doppio-salva .btn small { font-size: var(--t-11); font-weight: 400; opacity: 0.75; }
-
-.fi-campo-corto { width: 92px; margin-left: auto; text-align: right; min-height: 34px; padding: 5px 10px; }
-
-.fi-dett-cifra { font-size: var(--t-44); text-align: center; padding: var(--s3) 0 var(--s1); }
-.fi-dett-nota { text-align: center; color: var(--etichetta-2); margin-bottom: var(--s4); }
-
-/* ===================================================================
-   ANALISI — i nove pannelli
-   =================================================================== */
+/* ============================================================== analisi === */
 
 .fi-analisi { display: flex; flex-direction: column; }
-/* Da scrivania i pannelli stanno a due colonne; quelli "larghi" restano
-   interi perché un grafico stretto a metà non si legge. */
 @media (min-width: 720px) {
   .fi-analisi { display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--s3); align-items: start; }
   .fi-larga { grid-column: 1 / -1; }
 }
 
 .fi-svg { width: 100%; height: 100%; display: block; overflow: visible; }
+/* Il testo dentro gli SVG non eredita dal body: senza questa regola le
+   etichette dei grafici escono nel font di default del browser. */
+.fi-svg text, .fi-ciambella text {
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
 .fi-grafico { height: 118px; margin: var(--s3) 0 var(--s2); }
 .fi-grafico-basso { height: 104px; }
 
-/* --- ciambella + legenda --- */
-.fi-ciambella-fuori {
-  display: flex;
-  align-items: center;
-  gap: var(--s4);
-  flex-wrap: wrap;
-  margin-top: var(--s3);
-}
-.fi-legenda { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 5px; }
-.fi-legenda-riga {
-  display: flex;
-  align-items: center;
-  gap: var(--s2);
-  font-size: var(--t-13);
-}
-.fi-legenda-nome { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fi-legenda-pct { color: var(--etichetta-2); min-width: 34px; text-align: right; }
-.fi-legenda-cifra { min-width: 56px; text-align: right; font-weight: 600; }
+.fi-ciambella-fuori { display: flex; align-items: center; gap: var(--s4); flex-wrap: wrap; margin-top: var(--s3); }
+.fi-legenda { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 6px; }
+.fi-legenda-riga { display: flex; align-items: center; gap: var(--s2); font-size: var(--t-13); }
+.fi-legenda-nome { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--testo-2); }
+.fi-legenda-pct { color: var(--testo-2); min-width: 34px; text-align: right; }
+.fi-legenda-cifra { min-width: 60px; text-align: right; font-weight: 600; }
 
-/* --- confronto col mese scorso --- */
-.fi-confronto { display: flex; gap: var(--s3); margin: var(--s3) 0 var(--s2); }
+.fi-confronto { display: flex; gap: var(--s2); margin: var(--s3) 0; }
 .fi-cfr {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--s2) var(--s3);
-  border-radius: var(--r-campo);
-  background: var(--sfondo-3);
+  display: flex; flex-direction: column; gap: 2px;
+  padding: var(--s3);
+  border-radius: var(--r-interno);
+  background: var(--scheda-alta);
 }
-.fi-cfr .num { font-size: var(--t-17); font-weight: 700; }
-/* La colonna del mese in corso si distingue con un filo laterale, non con
-   un fondo nella stessa tinta del testo: tinta su tinta, a due opacità
-   diverse, non arriva a 4,5:1 in nessuno dei due temi. */
+.fi-cfr .num { font-size: var(--t-19); font-weight: 700; }
 .fi-cfr.adesso { box-shadow: inset 3px 0 0 var(--accento); }
-.fi-cfr.adesso .num { color: var(--accento-testo); }
 
-/* --- i sei numeri --- */
-.fi-statgrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--s2);
-  margin-top: var(--s3);
-}
-.fi-statgrid.tre { grid-template-columns: repeat(3, 1fr); }
-.fi-statbox {
-  padding: var(--s3) var(--s2);
-  border-radius: var(--r-campo);
-  background: var(--sfondo-3);
-  text-align: center;
-}
-.fi-statval { font-size: var(--t-17); font-weight: 700; margin-top: 3px; letter-spacing: -0.02em; }
-.fi-statval small { font-size: var(--t-11); font-weight: 400; color: var(--etichetta-2); }
+.fi-statgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); margin-top: var(--s3); }
+.fi-statbox { padding: var(--s3) var(--s2); border-radius: var(--r-interno); background: var(--scheda-alta); text-align: center; }
+.fi-statval { font-size: var(--t-17); font-weight: 700; margin-top: 4px; letter-spacing: -0.02em; }
+.fi-statval small { font-size: var(--t-10); font-weight: 400; color: var(--testo-3); }
 
-/* --- sottocategorie --- */
 .fi-sublista { display: flex; flex-direction: column; margin-top: var(--s2); }
 .fi-subriga {
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
-  width: 100%;
-  min-height: var(--tocco);
-  padding: var(--s2) 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
+  display: flex; align-items: center; gap: var(--s3);
+  width: 100%; min-height: 52px; padding: var(--s2) 0;
+  border: 0; background: none; color: inherit; font: inherit; text-align: left;
   cursor: pointer;
-  box-shadow: inset 0 -0.5px 0 var(--separatore);
+  box-shadow: inset 0 -1px 0 var(--filo);
 }
 .fi-subriga:last-child { box-shadow: none; }
 .fi-subriga:active { opacity: 0.6; }
 .fi-subriga-testo { flex: 1; min-width: 0; }
-.fi-subriga-testo > div:first-child { font-size: var(--t-15); }
+.fi-subriga-testo > div:first-child { font-size: var(--t-15); font-weight: 500; }
 
-/* --- categorie vs pocket --- */
 .fi-cat-riga {
-  display: block;
-  width: 100%;
-  border: 0;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
+  display: block; width: 100%;
+  border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
 }
-.fi-cat-riga:active { background: var(--sfondo-3); }
-.fi-cat-riga .nota { margin-top: 5px; }
+.fi-cat-riga:active { background: var(--scheda-alta); }
+.fi-cat-testa { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s2); }
+.fi-cat-nome { display: inline-flex; align-items: center; gap: var(--s2); font-size: var(--t-15); font-weight: 500; }
+.fi-punto { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
+.fi-cat-riga .nota { margin-top: 6px; }
 
-/* ===================================================================
-   SETUP
-   =================================================================== */
+/* ================================================================ setup === */
 
 .fi-setrow { gap: var(--s2); flex-wrap: nowrap; }
 .fi-setnome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Il bersaglio è l'ETICHETTA, non il quadratino: 18px sono sotto la soglia
-   ovunque, e su un telefono un checkbox nudo si manca una volta su tre. */
 .fi-cassa-check {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--s2);
-  min-height: var(--tocco);
-  padding: 0 var(--s2);
-  font-size: var(--t-12);
-  color: var(--etichetta-2);
-  flex: none;
-  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: var(--tocco); padding: 0 var(--s2);
+  font-size: var(--t-11); color: var(--testo-3); flex: none; cursor: pointer;
 }
 .fi-cassa-check input { width: 22px; height: 22px; accent-color: var(--accento); cursor: pointer; }
-@media (min-width: 900px) and (pointer: fine) {
-  .fi-cassa-check { min-height: var(--tocco-denso); }
-}
 
-.fi-campo-corto { width: 88px; flex: none; text-align: right; min-height: 34px; padding: 5px 10px; }
-.fi-campo-mini  { width: 56px; flex: none; text-align: center; min-height: 34px; padding: 5px 6px; }
+.fi-campo-corto { width: 92px; flex: none; text-align: right; min-height: 40px; padding: 8px 12px; font-size: var(--t-15); }
+.fi-campo-mini  { width: 58px; flex: none; text-align: center; min-height: 40px; padding: 8px 6px; font-size: var(--t-15); }
 
 .fi-quadra {
-  padding: var(--s3) var(--s4);
-  border-radius: var(--r-scheda);
-  margin-bottom: var(--s4);
-  background: var(--sfondo-2);
-  box-shadow: inset 0 0 0 1.5px var(--verde);
+  padding: var(--s4);
+  border-radius: var(--r-interno);
+  margin-bottom: var(--s5);
+  background: var(--scheda);
+  box-shadow: inset 3px 0 0 var(--ok);
 }
-.fi-quadra.ko { box-shadow: inset 0 0 0 1.5px var(--rosso); }
-.fi-quadra b { font-size: var(--t-22); }
+.fi-quadra.ko { box-shadow: inset 3px 0 0 var(--male); }
+.fi-quadra b { font-size: var(--t-22); font-family: var(--font-d); letter-spacing: -0.02em; }
+.fi-riga-doppia { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); }
 
-/* --- import --- */
 .fi-imp-bottoni { display: flex; gap: var(--s2); margin-bottom: var(--s3); }
 .fi-imp-bottoni .btn { flex: 1; }
-.fi-textarea { min-height: 88px; resize: vertical; line-height: 1.4; font-family: var(--font-mono); font-size: var(--t-13); }
+.fi-textarea { min-height: 96px; resize: vertical; line-height: 1.45; font-family: var(--font-m); font-size: var(--t-13); }
 .fi-anteprima { margin-top: var(--s3); }
 .fi-imp-riga {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--s2);
-  padding: var(--s2) 0;
-  box-shadow: inset 0 -0.5px 0 var(--separatore);
+  display: flex; align-items: flex-start; gap: var(--s3);
+  padding: var(--s3) 0;
+  box-shadow: inset 0 -1px 0 var(--filo);
 }
-.fi-imp-riga.doppione { opacity: 0.45; }
-.fi-imp-riga input[type="checkbox"] { width: 20px; height: 20px; margin-top: 2px; flex: none; accent-color: var(--accento); }
+.fi-imp-riga.doppione { opacity: 0.4; }
+.fi-imp-riga input[type="checkbox"] { width: 22px; height: 22px; margin-top: 2px; flex: none; accent-color: var(--accento); }
 .fi-imp-testo { flex: 1; min-width: 0; }
 .fi-imp-nota { font-weight: 600; font-size: var(--t-15); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fi-imp-cifra { font-weight: 700; flex: none; }
-.fi-select { margin-top: 5px; width: 100%; min-height: 34px; padding: 5px 9px; font-size: var(--t-13); }
+.fi-imp-cifra { font-weight: 700; flex: none; font-variant-numeric: tabular-nums; }
+.fi-select { margin-top: 6px; width: 100%; min-height: 38px; padding: 6px 10px; font-size: var(--t-13); }
 
-/* ===================================================================
-   DETTAGLI E TAG
-   =================================================================== */
+/* ============================================================ il foglio == */
 
-.fi-dett-testa { text-align: center; padding: var(--s2) 0 var(--s5); }
-.fi-dett-cifra { font-size: var(--t-44); line-height: 1.05; }
-.fi-dett-nota { font-size: var(--t-17); color: var(--etichetta-2); margin-top: var(--s2); }
+.fi-dett-testa { text-align: center; padding: var(--s3) 0 var(--s5); }
+.fi-dett-cifra { font-size: var(--t-48); }
+.fi-dett-nota { font-size: var(--t-17); color: var(--testo-2); margin-top: var(--s3); }
 .fi-badge-cat {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  display: inline-flex; align-items: center; gap: 7px;
   margin-top: var(--s3);
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: var(--r-pillola);
-  background: var(--riempimento);
+  background: var(--scheda-alta);
   font-size: var(--t-13);
 }
 
-.fi-tag {
-  font-size: var(--t-11);
+/* --------------------------------------------------------- inserimento -- */
+
+.fi-importo {
+  font-size: clamp(48px, 15vw, 64px);
+  text-align: center;
+  padding: var(--s4) 0 var(--s3);
+  letter-spacing: -0.045em;
+}
+.fi-importo.vuoto { color: var(--testo-4); }
+.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; color: var(--testo-3); }
+
+.fi-tastierino { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); margin-bottom: var(--s5); }
+.fi-tasto {
+  min-height: 58px;
+  display: grid; place-items: center;
+  border: 0;
+  border-radius: var(--r-interno);
+  background: var(--scheda-alta);
+  color: var(--testo);
+  font-family: var(--font-d);
+  font-size: var(--t-22);
   font-weight: 600;
-  padding: 1px 7px;
-  border-radius: var(--r-pillola);
-  background: var(--riempimento);
-  color: var(--etichetta-2);
-  margin-left: 6px;
-  flex: none;
-}
-/* Il rosso a 11px non arriva a 4,5:1 in nessuno dei due temi. La parola
-   "oltre" dice già tutto: il colore qui non aggiunge, toglie leggibilità. */
-.fi-tag.ambra { color: var(--etichetta-2); }
-.fi-tag.rosso { color: var(--etichetta); font-weight: 700; }
-
-.fi-mov-nota { display: flex; align-items: center; min-width: 0; }
-.fi-mov-nota > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fi-mov.straordinario .fi-mov-punto { box-shadow: 0 0 0 2px var(--arancio); }
-
-.fi-suggerita { color: var(--verde-testo); font-weight: 400; }
-
-/* Il testo dentro gli SVG. Non si eredita dal body: gli elementi SVG hanno
-   il loro font di default, e senza questa regola le etichette dei grafici
-   escono in Times mentre tutto il resto è SF Pro. */
-.fi-svg text,
-.fi-ciambella text {
-  font-family: var(--font-testo);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva), transform var(--veloce) var(--molla);
 }
+.fi-tasto:active { background: var(--scheda-viva); transform: scale(0.94); }
+.fi-tasto-canc { color: var(--testo-2); }
 
-.fi-verdetto-conta > span { position: relative; }
+.fi-doppio-salva { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); margin-top: var(--s4); }
+.fi-doppio-salva .btn { flex-direction: column; gap: 1px; min-height: 62px; padding-inline: var(--s2); }
+.fi-doppio-salva .btn b { font-size: var(--t-15); }
+.fi-doppio-salva .btn small { font-size: var(--t-10); font-weight: 500; opacity: 0.7; }
+
+.fi-suggerita { color: var(--ok); font-weight: 500; text-transform: none; letter-spacing: 0; }

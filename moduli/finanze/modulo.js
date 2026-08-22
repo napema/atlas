@@ -57,11 +57,11 @@ function disegna() {
   contenitore.replaceChildren();
 
   aggiungi(contenitore, [
-    intestazione("Finanze", nomeMese(vista.mese), el("button", {
-      class: "btn-icona", type: "button", "aria-label": "Nuovo movimento",
-      html: icona("piu", 26),
-      onClick: () => apriMovimento({ ridisegna: disegna }),
-    })),
+    // Il "+" non sta più qui: sta nel tondo fisso in basso, dove il pollice
+    // lo raggiunge senza attraversare lo schermo.
+    // Il mese non va nel sottotitolo: lo dice già il navigatore qui sotto,
+    // e scritto due volte a due centimetri di distanza sembra un errore.
+    intestazione("Finanze"),
 
     navigatoreMese(),
 
@@ -181,6 +181,13 @@ export default {
     while (staccatori.length) staccatori.pop()();
     contenitore = null;
   },
+
+  /** Il tasto tondo: registrare una spesa è il gesto per cui apri Finanze. */
+  azionePrincipale: () => ({
+    icona: "piu",
+    etichetta: "Nuovo movimento",
+    fai: () => apriMovimento({ ridisegna: disegna }),
+  }),
 
   /** La sezione "Finanze" di Impostazioni: budget, cassa, casa, import. */
   impostazioni() {
