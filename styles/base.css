@@ -68,7 +68,7 @@ b, strong { font-weight: 600; }
   font-size: 0.56em;
   font-weight: 700;
   letter-spacing: -0.01em;
-  margin-right: 0.04em;
+  margin-left: 0.12em;
   vertical-align: 0.34em;
 }
 /* I centesimi: stessa idea, dall'altra parte. */
@@ -257,7 +257,10 @@ b, strong { font-weight: 600; }
 }
 .tessera-sotto { font-size: var(--t-11); color: var(--testo-3); margin-bottom: var(--s3); }
 .tessera .micro { margin-bottom: 2px; }
-.tessera-cifra { font-size: var(--t-28); }
+/* La cifra si appoggia al fondo, non segue quello che ha sopra: due tessere
+   affiancate, una con l'etichetta di stato e una senza, avevano i numeri a
+   cinquanta pixel di distanza in verticale e la riga sembrava storta. */
+.tessera-cifra { font-size: var(--t-28); margin-top: auto; }
 .tessera-coda { font-size: var(--t-11); color: var(--testo-3); margin-top: 2px; }
 
 /* La barra col cursore. */
@@ -274,28 +277,22 @@ b, strong { font-weight: 600; }
   background: var(--tinta, var(--accento));
   transition: width var(--lento) var(--curva);
 }
-/* Il triangolino che indica il punto esatto. Sta SOPRA la barra e punta in
-   giù: è la lancetta, e senza di lei una barra piena al 40% e una al 45%
-   sono la stessa cosa. */
-.barra-cursore > b {
-  position: absolute;
-  bottom: 8px;
-  width: 0; height: 0;
-  transform: translateX(-5px);
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 6px solid var(--tinta, var(--accento));
-  transition: left var(--lento) var(--curva);
-}
+/* Il triangolino che indicava il punto esatto non c'è più: alla scala di una
+   tessera era un cuneo di sei pixel appoggiato all'angolo tondo, e sembrava
+   sporco sullo schermo. Il bordo del riempimento dice già dove sei. */
+.barra-cursore > b { display: none; }
 
-/* La griglia delle tessere: due colonne strette, tre da tablet in su. */
+/* La griglia delle tessere.
+   `auto-fit` e non un numero fisso di colonne: con tre colonne fisse e due
+   sole tessere — la home, quando una delle tre è promossa a carta larga —
+   restava un buco a destra e la riga sembrava troncata. Così le colonne le
+   decide la larghezza disponibile, e quello che c'è riempie sempre la riga. */
 .griglia-tessere {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 156px), 1fr));
   gap: var(--s3);
   margin-bottom: var(--s3);
 }
-@media (min-width: 620px) { .griglia-tessere { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 /* -------------------------------------------------- riquadro statistico -- */
 
@@ -616,7 +613,11 @@ select.campo { appearance: none; }
   pointer-events: none;
   width: max-content; max-width: calc(100vw - var(--s8));
 }
-.avviso {
+/* La bolla del toast. Non si chiama `.avviso` — e non è pedanteria: le
+   tessere usano `.micro.avviso` per il tono giallo, i due nomi si
+   incontravano, e l'etichetta minuscola diventava una pillola bianca
+   grande quanto la tessera. */
+.bolla {
   padding: 12px var(--s5);
   border-radius: var(--r-pillola);
   background: var(--testo);
@@ -626,8 +627,8 @@ select.campo { appearance: none; }
   text-align: center;
   animation: sali var(--normale) var(--molla);
 }
-.avviso.errore { background: var(--male); color: #fff; }
-.avviso.via { opacity: 0; transition: opacity var(--normale) var(--curva); }
+.bolla.errore { background: var(--male); color: #fff; }
+.bolla.via { opacity: 0; transition: opacity var(--normale) var(--curva); }
 @keyframes sali { from { opacity: 0; transform: translateY(14px) scale(0.94); } }
 
 /* ============================================================ stato sync = */

@@ -312,7 +312,7 @@ export function avviso(testo, { durata = 2400, tono = "" } = {}) {
     cassetto = el("div", { id: "avvisi", role: "status", "aria-live": "polite" });
     document.body.append(cassetto);
   }
-  const a = el("div", { class: `avviso ${tono}`.trim(), testo });
+  const a = el("div", { class: `bolla ${tono}`.trim(), testo });
   cassetto.append(a);
   setTimeout(() => { a.classList.add("via"); setTimeout(() => a.remove(), 320); }, durata);
   return a;
@@ -554,6 +554,10 @@ export function euroGrande(cent, { segno = false, centesimi: conCentesimi = true
   const intero = NUM.format(Math.trunc(n));
   const dec = String(Math.round((n - Math.trunc(n)) * 100)).padStart(2, "0");
   const meno = c < 0 ? "−" : (segno ? "+" : "");
-  return `${escapa(meno)}<span class="val">€</span>${escapa(intero)}` +
-         (conCentesimi ? `<span class="cts">,${escapa(dec)}</span>` : "");
+  // Il simbolo va DOPO, come in `euro()` e come si scrive in italiano. Stava
+  // davanti, e nella stessa schermata si leggeva "€38" sopra e "7,81 €"
+  // sotto: due modi di scrivere la stessa cosa a due centimetri di distanza.
+  return `${escapa(meno)}${escapa(intero)}` +
+         (conCentesimi ? `<span class="cts">,${escapa(dec)}</span>` : "") +
+         `<span class="val">€</span>`;
 }

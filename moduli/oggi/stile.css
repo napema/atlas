@@ -130,15 +130,18 @@
 .og-sett-riga { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s1); }
 .og-sett-giorno { display: flex; flex-direction: column; align-items: center; gap: var(--s2); }
 .og-sett-lettera { font-size: var(--t-10); font-weight: 700; letter-spacing: 0.06em; color: var(--testo-3); }
+/* Sette barrette basse, non sette blocchi. A 32px di altezza e verde pieno
+   sembravano pulsanti da premere, e prendevano più spazio della cosa da fare
+   oggi: questa striscia è uno sguardo all'indietro, non un comando. */
 .og-sett-punto {
-  width: 100%; height: 32px;
-  border-radius: 9px;
+  width: 100%; height: 14px;
+  border-radius: 5px;
   background: var(--traccia);
   transition: background var(--normale) var(--curva);
 }
 .og-sett-giorno.pieno .og-sett-punto { background: var(--ok); }
 .og-sett-giorno.oggi .og-sett-lettera { color: var(--testo); }
-.og-sett-giorno.oggi .og-sett-punto { box-shadow: inset 0 0 0 2px var(--testo); }
+.og-sett-giorno.oggi .og-sett-punto { box-shadow: 0 0 0 1.5px var(--testo-3); }
 
 /* --------------------------------------------------------- da scrivania -- */
 

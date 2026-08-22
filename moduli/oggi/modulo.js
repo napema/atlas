@@ -188,7 +188,10 @@ function tesseraModulo(mod, dati) {
     tonoMicro: dati.fatto === true ? "ok" : dati.fatto === false ? "avviso" : "",
     cifra: String(dati.valore ?? "—"),
     coda: dati.dettaglio,
-    frazione: typeof dati.avanzamento === "number" ? dati.avanzamento : (dati.fatto === true ? 1 : 0.08),
+    // Niente riempimento finto: se il modulo non sa dire a che punto sei, la
+    // barra resta vuota. Un 8% messo lì per "far vedere qualcosa" è un dato
+    // inventato, e su una barra non si distingue da uno vero.
+    frazione: typeof dati.avanzamento === "number" ? dati.avanzamento : (dati.fatto === true ? 1 : 0),
     tinta: mod.accento,
     azione: () => { location.hash = dati.azione?.rotta || `#/`; },
   });

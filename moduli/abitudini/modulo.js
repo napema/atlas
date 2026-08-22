@@ -182,6 +182,8 @@ export default {
         : mancano.length === 1 ? `Manca: ${mancano[0].name}`
         : `Mancano ${mancano.length}: ${mancano.slice(0, 2).map((h) => h.name).join(", ")}${mancano.length > 2 ? "…" : ""}`,
       fatto: tutte,
+      // La barra della tessera dice a che punto sei, non è decorativa.
+      avanzamento: p.attese ? p.fatte / p.attese : 0,
       // Urgente solo di sera: prima è solo una giornata in corso.
       urgente: !tutte && new Date().getHours() >= 20,
       azione: { rotta: "#/abitudini" },

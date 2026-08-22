@@ -212,6 +212,7 @@ export default {
           ? `Cassa sforata di ${euro(-cassa.resta)}`
           : `In cassa · ${plurale(cassa.giorniRimasti, "giorno", "giorni")} alla ricarica`,
         urgente: cassa.resta <= 0,
+        avanzamento: cassa.tetto ? Math.min(1, cassa.speso / cassa.tetto) : 0,
         azione: { rotta: "#/finanze" },
       };
     }
@@ -225,6 +226,7 @@ export default {
         ? `${Math.round((st.ordinaria / bt) * 100)}% del budget${proj ? ` · proiezione ${euro(proj, { tondo: true })}` : ""}`
         : v.testo,
       urgente: v.livello === "rosso",
+      avanzamento: bt ? Math.min(1, st.ordinaria / bt) : 0,
       azione: { rotta: "#/finanze" },
     };
   },
