@@ -495,9 +495,12 @@
    scheda ma sul fondo nudo: è quello che la fa leggere come il titolo della
    schermata invece che come un dato fra gli altri. */
 
-/* Il fondo è `--s8` e non `--s6`: dentro il velo ci sta anche la barra del
-   consumo, e con 24px la riga del ritmo tocca il bordo della scheda sotto. */
-.fi-numero { padding: var(--s2) 0 var(--s8); margin-bottom: var(--s4); }
+/* Il blocco ha il padding di una scheda su tutti e quattro i lati, perché
+   il velo dietro gli disegna i bordi di una scheda. Senza quello laterale
+   «QUESTA SETTIMANA» e «0% CONSUMATO» finivano appiccicati al filo del
+   velo: allineati con le schede sotto sì, ma allineati col loro BORDO
+   invece che col loro contenuto, che è la cosa sbagliata da allineare. */
+.fi-numero { padding: var(--s5); margin-bottom: var(--s4); }
 .fi-numero-testa {
   display: flex; align-items: center; justify-content: space-between;
   gap: var(--s3); margin-bottom: var(--s2);
@@ -773,7 +776,7 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
 .fi-numero::before {
   content: "";
   position: absolute;
-  inset: -8px 0 0;
+  inset: 0;
   border-radius: var(--r-scheda);
   /* La sfumatura arriva fino in fondo. Si fermava al 78%, e col blocco
      cresciuto quel 78% cadeva sulla barra del consumo: il verde spariva

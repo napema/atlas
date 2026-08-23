@@ -17,6 +17,20 @@ html {
   background: var(--fondo);
   -webkit-text-size-adjust: 100%;
   overflow-x: hidden;
+
+  /* NIENTE ZOOM. ATLAS è installata sulla schermata Home e deve comportarsi
+     come un'app: pizzicare per ingrandire, o toccare due volte a vuoto e
+     ritrovarsi la schermata scalata e spostata, è il gesto che tradisce che
+     sotto c'è un sito.
+
+     `pan-x pan-y` e non `none`: togliere lo zoom NON deve togliere lo
+     scorrimento, né quello verticale della pagina né quello orizzontale
+     delle strisce che ce l'hanno. `manipulation` non basterebbe — toglie il
+     doppio tocco ma lascia il pizzico.
+
+     Su Safari il pizzico passa lo stesso: lì lo chiudono i `gesture*` in
+     core/app.js. Le tre difese sono complementari, non alternative. */
+  touch-action: pan-x pan-y;
 }
 
 body {
@@ -612,7 +626,16 @@ select.campo { appearance: none; }
 .foglio-testa h3 { font-family: var(--font); font-size: var(--t-17); font-weight: 600; text-align: center; letter-spacing: -0.01em; }
 .foglio-testa .btn.nudo:first-child { justify-self: start; }
 .foglio-testa .btn.nudo:last-child { justify-self: end; color: var(--accento); }
-.foglio-corpo { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 var(--s4) var(--s5); }
+/* `overscroll-behavior: contain`: arrivato in fondo al foglio, lo
+   scorrimento NON prosegue sulla pagina sotto. È quello che fa sembrare il
+   tastierino a schermo intero una schermata sua invece di un pannello
+   appoggiato su una pagina che si muove. */
+.foglio-corpo {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0 var(--s4) var(--s5);
+}
 
 /* ============================================================= avvisi ==== */
 

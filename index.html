@@ -2,7 +2,11 @@
 <html lang="it" data-tema="auto">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- `maximum-scale` e `user-scalable` bloccano lo zoom su Android. Safari li
+     ignora di proposito, per accessibilità: lì lo zoom si toglie con
+     `touch-action` in base.css e con i `gesture*` in core/app.js. Servono
+     tutti e tre insieme, nessuno dei tre basta da solo. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>ATLAS</title>
 <meta name="description" content="Finanze, mobilità e abitudini in una sola app.">
 

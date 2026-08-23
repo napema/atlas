@@ -176,7 +176,7 @@ function testa(q) {
       // grigio accanto alla parola «sincronizzato».
       el("span", { class: "og-meta-stato", title: sync.titolo }, [
         el("span", { class: `sync-pallino is-${sync.stato}` }),
-        el("span", { "data-ruolo": "sync-testo", testo: sync.etichetta }),
+        el("span", { class: "og-meta-parola", "data-ruolo": "sync-testo", testo: sync.etichetta }),
       ]),
     ]),
     el("h1", { class: "og-saluto" }, [

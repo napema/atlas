@@ -121,7 +121,29 @@ function aggiornaPallini() {
 
 // -------------------------------------------------------------------- via --
 
+/**
+ * Chiude il pizzico su Safari.
+ *
+ * `user-scalable=no` nel meta viewport Safari lo ignora dal 2016 — è una
+ * scelta di accessibilità loro, non un bug — e `touch-action: pan-x pan-y`
+ * ferma il doppio tocco ma non il pizzico. Restano questi tre eventi, che
+ * esistono solo su WebKit e che nessun altro browser emette.
+ *
+ * Si annulla il gesto, non il tocco: lo scorrimento con un dito passa da
+ * `touchmove` e non viene sfiorato. È la differenza fra togliere lo zoom e
+ * rompere la pagina.
+ *
+ * `passive: false` è obbligatorio: senza, `preventDefault()` viene ignorato
+ * e l'ascoltatore non fa niente pur essendo registrato.
+ */
+function bloccaZoom() {
+  for (const e of ["gesturestart", "gesturechange", "gestureend"]) {
+    document.addEventListener(e, (ev) => ev.preventDefault(), { passive: false });
+  }
+}
+
 async function avvia() {
+  bloccaZoom();
   applicaTemaSalvato();
   costruisciBarra();
 
