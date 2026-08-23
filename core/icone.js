@@ -19,15 +19,17 @@ const TRATTI = {
     '<path d="M3.6 8.6A2.6 2.6 0 0 1 6.2 6h11.2A2.6 2.6 0 0 1 20 8.6v8.8a2.6 2.6 0 0 1-2.6 2.6H6.2A2.6 2.6 0 0 1 3.6 17.4z"/>' +
     '<path d="M3.6 9.3V6.5a2 2 0 0 1 1.7-2l9.9-1.9"/>' +
     '<path d="M20 12.1h-3.3a1.95 1.95 0 0 0 0 3.9H20"/>',
-  // Non più l'omino stilizzato: a 21px il tronco, le braccia e le gambe
-  // diventavano quattro trattini che si toccano, e sembrava un ragno. Questa
-  // è una figura in allungo — testa, schiena inarcata, gamba distesa — che
-  // alla stessa misura resta una silhouette riconoscibile.
+  // NIENTE OMINI. Ne ho provati due e tutti e due, a 21px, diventavano un
+  // groviglio di trattini: una figura umana ha bisogno di testa, tronco, due
+  // braccia e due gambe, cioè sei tratti che a quella misura si toccano.
+  //
+  // Questa è una colonna vertebrale: una curva a S con quattro vertebre. Dice
+  // «corpo» senza disegnare una persona, non somiglia a nessuna delle altre
+  // icone della barra, e a qualunque misura resta la stessa forma.
   corpo:
-    '<circle cx="8.2" cy="5.1" r="2.2"/>' +
-    '<path d="M6.3 9.4c2.6-1.1 5-0.6 6.4 1.2l2.1 2.7 3.6 1.1"/>' +
-    '<path d="M12.7 10.6 10.9 15l4.3 1.1-1.1 4.2"/>' +
-    '<path d="M10.9 15 6.4 16.9l-2.6-2.4"/>',
+    '<path d="M14.4 3.2c-3.2 1.6-3.6 4.4-1.2 6.6 2.4 2.2 2 5-1.2 6.6"/>' +
+    '<path d="M12 16.4c-1.6.9-2.2 2.3-1.8 4.4"/>' +
+    '<path d="M14.9 5.1H17M12.4 9.4h2.2M13.6 13.7h2.4M10.8 18.2h2.1"/>',
   spunta:    '<path d="M4.4 12.5l4.5 4.5L19.6 6.4"/>',
   // Tre cursori, non un ingranaggio. La ruota dentata era un poligono a
   // mano libera: a 21px i denti si impastavano e sembrava un glifo rotto.

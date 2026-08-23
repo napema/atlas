@@ -181,10 +181,27 @@
 
 /* ============================================================== analisi === */
 
-.fi-analisi { display: flex; flex-direction: column; }
+/* I nove pannelli di Analisi vanno a COLONNE, non a griglia.
+
+   Con la griglia le righe si allineano al pannello più alto: «ripartizione
+   uscite» è alto il doppio di «statistiche del mese», e sotto quest'ultimo
+   restava un buco. Su schermo largo, con tre colonne, quel buco diventava
+   mezza pagina vuota in mezzo ai dati — ed è esattamente il punto che si
+   vedeva nello screenshot. Le colonne impaginano di seguito e non lasciano
+   niente in sospeso.
+
+   Il prezzo è che l'ordine di lettura diventa verticale invece che a
+   serpentina. È accettabile: i pannelli sono indipendenti, nessuno è la
+   continuazione di quello prima. */
+.fi-analisi { display: block; }
 @media (min-width: 720px) {
-  .fi-analisi { display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--s3); align-items: start; }
-  .fi-larga { grid-column: 1 / -1; }
+  .fi-analisi { column-count: 2; column-gap: var(--s3); }
+  .fi-analisi > * { break-inside: avoid; }
+  /* «Larga» qui vuol dire: sta da sola, fuori dalle colonne. */
+  .fi-larga { column-span: all; }
+}
+@media (min-width: 1240px) {
+  .fi-analisi { column-count: 3; }
 }
 
 .fi-svg { width: 100%; height: 100%; display: block; overflow: visible; }

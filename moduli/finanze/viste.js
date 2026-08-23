@@ -502,8 +502,10 @@ export function vistaAnalisi(mese, apriCat, apriSub) {
           el("span", { class: "num", testo: euro(cfr.adesso) }),
         ]),
       ]),
-      traccia(cfr.alloraSpeso > 0 ? cfr.adesso / Math.max(cfr.alloraSpeso, cfr.adesso) : 1,
-        meglio ? "" : "oltre", { sottile: true }),
+      // Qui c'era una barra che valeva `adesso / max(allora, adesso)`: senza
+      // etichetta e senza scala non diceva niente, ed era piena tutte le
+      // volte che stai spendendo di più. I due riquadri e la frase sotto
+      // dicono già tutto quello che c'è da dire.
       el("p", { class: "nota", testo: cfr.alloraSpeso === 0
         ? "Nessun termine di paragone: il mese scorso a questo punto non avevi speso nulla."
         : cfr.scarto === 0 ? "Stesso identico ritmo del mese scorso."

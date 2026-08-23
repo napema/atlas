@@ -729,7 +729,10 @@ hr { border: 0; height: 1px; background: var(--filo); margin: var(--s4) 0; }
   .griglia-tessere { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }
   .riquadri { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }
 
-  /* Una lista sola resta larga quanto si legge, e non stirata al contenitore. */
+  /* Una lista di RIGHE resta larga quanto si legge — una riga di testo lunga
+     1100px non si legge, si insegue. Ma il tetto vale solo dove la lista è
+     un dettaglio dentro una schermata: dove la lista È la schermata, come in
+     Abitudini, va a colonne, e ci pensa il modulo. */
   .lista, .gruppo-titolo { max-width: 760px; }
 
   #avvisi { max-width: calc(100vw - 244px - var(--s16)); }

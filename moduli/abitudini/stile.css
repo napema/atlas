@@ -433,3 +433,36 @@
 .ab-emoji-tasto:active { transform: scale(0.9); }
 .ab-emoji-tasto.scelta { background: var(--accento-tenue); box-shadow: inset 0 0 0 2px var(--accento); }
 .ab-emoji-libera { text-align: center; font-size: var(--t-17); }
+
+/* --------------------------------------------------------- da scrivania -- */
+
+@media (min-width: 1000px) {
+  /* Qui la lista È la schermata, non un dettaglio dentro una schermata:
+     lasciarla a 760px su uno schermo da 1600 significava tre quarti di nero
+     a destra e sei righe accatastate a sinistra.
+
+     Due colonne con `column-count` e non una griglia: un'abitudine con le
+     parti è alta il doppio di una senza, e con la griglia le righe si
+     allineerebbero alla più alta lasciando buchi. Le colonne no, riempiono. */
+  .ab-li,
+  .ab-serie-lista > li,
+  .ab-mappa-riga { break-inside: avoid; }
+
+  #vista[data-modulo="abitudini"] .lista {
+    max-width: none;
+    column-count: 2;
+    column-gap: var(--s5);
+  }
+  #vista[data-modulo="abitudini"] .gruppo-titolo { max-width: none; }
+
+  .ab-serie-lista { column-count: 2; column-gap: var(--s3); }
+  .ab-serie-lista > li { margin-bottom: var(--s2); }
+
+  /* L'eroe e la striscia della settimana restano larghi: sono il colpo
+     d'occhio, e spezzarli in colonne li renderebbe due cose invece di una. */
+  .ab-eroe, .ab-settimana { max-width: none; }
+}
+
+@media (min-width: 1400px) {
+  #vista[data-modulo="abitudini"] .lista { column-count: 3; }
+}
