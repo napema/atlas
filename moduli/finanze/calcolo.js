@@ -18,7 +18,7 @@
 
 import {
   movimentiVivi, stato, profiloDi, CATEGORIE_CASSA,
-  classeDi, SOGLIE_PREDEFINITE, pendenti, checkFatto, serieCheck, previsti,
+  classeDi, SOGLIE_PREDEFINITE, pendenti, checkFatto, serieCheck, previsti, ricorrentiVivi,
 } from "./dati.js";
 import { isoDi, daISO, oggiISO, MESI_BREVI } from "../../core/ui.js";
 
@@ -771,7 +771,7 @@ export const importoRicorrente = (r) =>
 export function inArrivo(giorni = 14, iso = oggiISO()) {
   const limite = isoDi(new Date(daISO(iso).getTime() + giorni * 86400000));
   const voci = [];
-  for (const r of stato().ricorrenti || []) {
+  for (const r of ricorrentiVivi()) {
     if (!r.attivo) continue;
     const quando = prossimaScadenza(r, iso);
     if (!quando || quando > limite) continue;

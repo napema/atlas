@@ -779,6 +779,91 @@ select.campo { appearance: none; }
 .sync-pallino.is-inattivo { background: var(--testo-4); }
 @keyframes pulsa { 50% { opacity: 0.2; } }
 
+/* ============================================================ eventi ===== */
+/*
+   La voce di calendario condivisa: data a sinistra, filo, nome, valore.
+   La costruisce `voceEvento()` in core/ui.js, e la usano la carta Finanze
+   della home e la scheda «In arrivo» dentro Finanze. Una sola, perché due
+   copie della stessa riga fra un mese non si somigliano più.
+
+   Il filo resta spento quasi sempre: se ogni riga è colorata, il colore non
+   dice più «questa».
+*/
+
+.eventi { list-style: none; display: flex; flex-direction: column; }
+.evento-riga { display: contents; }
+
+.evento {
+  display: grid;
+  grid-template-columns: 48px 3px 1fr auto;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s2) 0;
+  --tinta: var(--filo);
+}
+.evento.avviso { --tinta: var(--avviso); }
+.evento.male   { --tinta: var(--male); }
+
+/* Quando è toccabile è un `<button>`: si azzera quello che il browser gli
+   mette sopra, non si ridisegna — la griglia è la stessa. */
+button.evento {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--r-interno);
+  padding: var(--s2) var(--s2);
+  margin: 0 calc(-1 * var(--s2));
+  width: calc(100% + var(--s4));
+  transition: background var(--veloce) var(--curva);
+}
+button.evento:active { background: var(--scheda-alta); }
+button.evento { grid-template-columns: 48px 3px 1fr auto 15px; }
+
+.evento-data { display: flex; flex-direction: column; line-height: 1.15; }
+.evento-giorno {
+  font-size: var(--t-11);
+  font-weight: 700;
+  text-transform: capitalize;
+  color: var(--testo-3);
+}
+.evento-data.oggi .evento-giorno { color: var(--accento); }
+.evento-mese { font-size: var(--t-10); color: var(--testo-3); white-space: nowrap; }
+
+/* Il filo va da bordo a bordo della riga, non solo dietro il testo: è
+   quello che lo fa leggere come la barra di un evento e non come un
+   trattino. */
+.evento-filo {
+  align-self: stretch;
+  min-height: 30px;
+  border-radius: 999px;
+  background: var(--tinta);
+}
+
+.evento-testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.evento-nome {
+  font-size: var(--t-15);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.evento-dett {
+  font-size: var(--t-11);
+  color: var(--testo-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.evento.male .evento-dett { color: var(--male); }
+.evento-valore {
+  font-size: var(--t-15);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.evento-freccia { display: flex; color: var(--testo-3); }
+
 /* ============================================================== vuoto ==== */
 
 .vuoto { padding: var(--s16) var(--s4); text-align: center; color: var(--testo-3); }

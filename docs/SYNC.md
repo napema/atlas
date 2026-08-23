@@ -127,3 +127,57 @@ giro, e permette di forzarne uno.
 | `HTTP 404` sempre | `owner`/`repo` sbagliati — attenzione: un repo privato invisibile al token risponde 404, non 403 |
 | `conflitto` una volta ogni tanto | normale: l'altro dispositivo ha scritto, il giro dopo si allinea |
 | `conflitto` sempre | due schede della stessa app aperte che si rincorrono |
+
+---
+
+## 23 ago 2026 — i ricorrenti spariti, e perché
+
+**Il guasto.** Tre ricorrenti aggiunti sul telefono alle 16:35, 16:36 e
+16:37 (iCloud+, Claude Subscription, WindTRE) non ci sono più alle 16:53. E
+al loro posto è tornato «Abbonamenti», che era stato cancellato alle 16:33.
+
+**La causa.** `ricorrenti` viaggiava dentro `meta`, e `meta` si fonde come un
+blocco unico sul confronto di un solo timestamp:
+
+```js
+if (rm && (rm.up || 0) > (s.metaUp || 0)) {
+  …
+  if (Array.isArray(rm.ricorrenti)) s.ricorrenti = rm.ricorrenti;   // ← qui
+}
+```
+
+Basta che un dispositivo con una copia vecchia della configurazione scriva
+**qualunque cosa** — un pocket, una soglia, perfino solo di aver fatto il
+check di oggi — perché il suo `metaUp` diventi il più recente e l'intero
+elenco dei ricorrenti dell'altro dispositivo venga sostituito da quello che
+aveva lui in memoria. Non è un conflitto risolto male: è un conflitto che
+non viene nemmeno visto, perché l'unità di confronto è tutta la
+configurazione insieme.
+
+È la **regola 5** del contratto («ogni record ha `id` stabile e `up`, le
+cancellazioni sono lapidi»), e ai ricorrenti non era mai stata applicata:
+erano nati come una manciata di voci di setup, e sono diventati dati.
+
+**La correzione.** `ricorrenti` e `previsti` escono da `meta` e si fondono
+per record, come i movimenti:
+
+```js
+const ricRemoti = remoto.ricorrenti ?? remoto.meta?.ricorrenti;
+if (Array.isArray(ricRemoti)) {
+  s.ricorrenti = potaLapidi(fondiRecord(s.ricorrenti || [], ricRemoti));
+}
+```
+
+Ogni ricorrente ha `up`, e `eliminaRicorrente` scrive una lapide invece di
+togliere l'elemento. Il pacchetto ne manda **una copia anche dentro `meta`**,
+per i dispositivi non ancora aggiornati che sanno leggerli solo lì.
+
+Provato in tutte e due le direzioni: il dispositivo vecchio che riceve il
+nuovo e il nuovo che riceve il vecchio tengono entrambi tutti e tre i
+ricorrenti, e la lapide di «Abbonamenti» regge in tutti e due i casi.
+
+**La lezione, che vale per il prossimo campo.** Un array di record dentro un
+oggetto di configurazione è una bomba a orologeria: finché le voci sono tre
+e non cambiano mai non succede niente, e il giorno che diventano dati veri
+sparisce tutto in silenzio. Se una cosa ha un `id` e si può aggiungere o
+cancellare, si fonde per record. Non ci sono eccezioni ragionevoli.

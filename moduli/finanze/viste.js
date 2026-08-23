@@ -19,7 +19,7 @@ import {
   salvaMovimento, eliminaMovimento, impara, normalizza, scriviMeta, casella,
   CATEGORIE_CASSA, TIPI_POCKET, SOGLIE_PREDEFINITE, pocketPerId, scriviPocket,
   salvaRicorrente, eliminaRicorrente, pendenti, metteInSospeso, togliDaSospeso,
-  segnaCheck, segnaScadenzaPagata,
+  segnaCheck, segnaScadenzaPagata, ricorrentiVivi,
   previsti, salvaPrevisto, eliminaPrevisto, segnaPrevistoPagato,
 } from "./dati.js";
 import {
@@ -1992,7 +1992,7 @@ export function vistaSetupV2(ridisegna) {
   const zonaRic = el("div", {});
   const disegnaRic = () => {
     zonaRic.replaceChildren();
-    const ric = s.ricorrenti || [];
+    const ric = ricorrentiVivi();
     aggiungi(zonaRic, [
       ric.length === 0
         ? el("p", { class: "nota", testo: "Nessun ricorrente. Senza, la sezione «In arrivo» della home resta vuota." })

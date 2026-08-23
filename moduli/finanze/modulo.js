@@ -240,11 +240,20 @@ export function avviaSync() {
     impacchetta: () => {
       const s = stato();
       return {
-        v: 4,
+        v: 5,
         movs: s.movs,
-        // pockets, ricorrenti e soglie viaggiano dentro `meta` come tutto il
-        // resto della configurazione: un campo nuovo che resta fuori dal
-        // pacchetto è un campo che esiste su un dispositivo solo.
+        // RICORRENTI E PREVISTI VIAGGIANO FUORI DA `meta`, ed è il punto.
+        // Dentro si fondevano come un blocco unico sul confronto di un solo
+        // `metaUp`: bastava che un dispositivo con una configurazione
+        // vecchia scrivesse qualunque cosa perché l'elenco dei ricorrenti
+        // dell'altro venisse sostituito da quello vecchio. Fuori, si
+        // fondono per record come i movimenti.
+        ricorrenti: s.ricorrenti,
+        previsti: s.previsti,
+        // Una copia dentro `meta` per i dispositivi non ancora aggiornati,
+        // che sanno leggerli solo lì. Costa duecento byte e evita che un
+        // telefono fermo alla versione di ieri smetta di vedere i
+        // ricorrenti nuovi finché non si aggiorna.
         meta: {
           cats: s.cats, profili: s.profili, rules: s.rules, config: s.config,
           pockets: s.pockets, ricorrenti: s.ricorrenti, soglie: s.soglie,
@@ -255,6 +264,20 @@ export function avviaSync() {
     applica: (remoto) => {
       casella.aggiorna((s) => {
         s.movs = potaLapidi(fondiRecord(s.movs, remoto.movs));
+
+        // Per record, e SEMPRE — non sotto il confronto di `metaUp`. Un
+        // pacchetto vecchio non può più cancellare un ricorrente che non ha
+        // mai visto: può solo riportare indietro quelli che ha toccato lui.
+        // `remoto.meta.ricorrenti` è il ripiego per i pacchetti vecchi, che
+        // li mandavano solo lì.
+        const ricRemoti = remoto.ricorrenti ?? remoto.meta?.ricorrenti;
+        if (Array.isArray(ricRemoti)) {
+          s.ricorrenti = potaLapidi(fondiRecord(s.ricorrenti || [], ricRemoti));
+        }
+        if (Array.isArray(remoto.previsti)) {
+          s.previsti = potaLapidi(fondiRecord(s.previsti || [], remoto.previsti));
+        }
+
         const rm = remoto.meta;
         if (rm && (rm.up || 0) > (s.metaUp || 0)) {
           if (rm.cats?.length) s.cats = rm.cats;
@@ -265,7 +288,6 @@ export function avviaSync() {
           if (rm.rules) s.rules = { ...s.rules, ...rm.rules };
           if (rm.config) s.config = { ...s.config, ...rm.config };
           if (Array.isArray(rm.pockets)) s.pockets = rm.pockets;
-          if (Array.isArray(rm.ricorrenti)) s.ricorrenti = rm.ricorrenti;
           if (rm.soglie) s.soglie = { ...s.soglie, ...rm.soglie };
           s.metaUp = rm.up;
         }

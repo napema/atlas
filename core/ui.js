@@ -413,6 +413,59 @@ export function celebra(testo = "", { tinta = "var(--ok)" } = {}) {
   return velo;
 }
 
+/**
+ * Una voce di calendario: data a sinistra, filo, nome, valore a destra.
+ *
+ *   Mar  25 ago │ Rata prestito      250 €
+ *               │ Fisse
+ *
+ * È la forma di una cosa che SUCCEDE IN UNA DATA, e sta qui e non in un
+ * modulo perché ce ne sono già due che ne hanno bisogno — le uscite in
+ * arrivo di Finanze, in home e dentro Finanze — e una terza arriverà. Due
+ * copie della stessa riga sono due righe che fra un mese non si somigliano
+ * più.
+ *
+ * Perché la data ha una colonna sua invece di stare nella frase: quando una
+ * cosa succede è l'informazione con cui si scandisce l'elenco, e in mezzo a
+ * un testo va ritrovata a ogni riga.
+ *
+ * `tono` colora il filo, e deve restare spento quasi sempre. Se ogni riga è
+ * colorata, il colore non dice più «questa».
+ *
+ * @param {object}   v
+ * @param {string}   v.giornoNome  «Oggi», «Domani» o il giorno breve
+ * @param {string}   v.giornoData  «25 ago»
+ * @param {boolean}  [v.oggi]      accende la data
+ * @param {string}   v.nome
+ * @param {string}   [v.dettaglio] la riga sotto il nome
+ * @param {string}   [v.valore]    a destra
+ * @param {string}   [v.tono]      "" | "avviso" | "male"
+ * @param {Function} [v.azione]    se c'è, la riga diventa toccabile
+ */
+export function voceEvento(v) {
+  const dentro = [
+    el("span", { class: "evento-data" + (v.oggi ? " oggi" : "") }, [
+      el("span", { class: "evento-giorno", testo: v.giornoNome }),
+      el("span", { class: "evento-mese", testo: v.giornoData }),
+    ]),
+    el("span", { class: "evento-filo" }),
+    el("span", { class: "evento-testo" }, [
+      el("span", { class: "evento-nome", testo: v.nome }),
+      v.dettaglio && el("span", { class: "evento-dett", testo: v.dettaglio }),
+    ]),
+    v.valore != null && el("span", { class: "evento-valore", testo: String(v.valore) }),
+    v.azione && el("span", { class: "evento-freccia", html: icona("freccia", 15) }),
+  ].filter(Boolean);
+
+  const classe = `evento ${v.tono || ""}`.trim();
+  const corpo = v.azione
+    ? el("button", { class: classe, type: "button",
+        "aria-label": `${v.nome}, ${v.giornoData}`, onClick: v.azione }, dentro)
+    : el("div", { class: classe }, dentro);
+
+  return el("li", { class: "evento-riga" }, [corpo]);
+}
+
 /** Vibrazione breve. Su iOS in PWA spesso non c'è: fallisce in silenzio. */
 export function tocco(ms = 8) {
   try { navigator.vibrate?.(ms); } catch { /* niente */ }

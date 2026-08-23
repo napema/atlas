@@ -333,6 +333,11 @@ export function migra() {
     for (const r of st.ricorrenti) {
       if (r.da === undefined) r.da = null;
       if (r.pagato === undefined) r.pagato = null;
+      // `up` a zero e non a `Date.now()`: un record senza timestamp è un
+      // record che non ha mai vinto un confronto, ed è quello che deve
+      // fare. Riempirlo con l'ora della migrazione lo farebbe sembrare la
+      // modifica più recente su OGNI dispositivo che apre l'app.
+      if (r.up === undefined) r.up = 0;
     }
     if (!Array.isArray(st.previsti)) st.previsti = previstiIniziali();
     st.v = 5;
@@ -393,17 +398,42 @@ export function scriviPocket(id, patch) {
   });
 }
 
+/* =============================================== i ricorrenti si fondono ==
+   Ogni ricorrente ha `up`, e cancellarlo lascia una lapide.
+
+   NON è pignoleria di schema: è la regola 5 del contratto, e qui mancava.
+   Fino al 23 agosto i ricorrenti viaggiavano dentro `meta`, che si fonde
+   come un blocco unico sul confronto di un solo `metaUp`. Bastava che un
+   dispositivo con una copia vecchia della configurazione scrivesse
+   QUALUNQUE cosa — anche solo di aver fatto il check di oggi — perché il
+   suo `metaUp` diventasse il più recente e l'intero elenco dei ricorrenti
+   dell'altro dispositivo venisse sostituito da quello vecchio. È successo:
+   tre ricorrenti aggiunti sul telefono sono spariti, e ne è tornato uno
+   cancellato mezz'ora prima.
+
+   Con `up` per record e le lapidi, due dispositivi che modificano due
+   ricorrenti diversi tengono tutti e due, e uno vecchio non può cancellare
+   niente perché non cancella: sovrascrive solo ciò che ha davvero toccato.
+   ========================================================================= */
+
+/** I ricorrenti vivi. Le viste e il calcolo leggono sempre questo. */
+export const ricorrentiVivi = () => (stato().ricorrenti || []).filter((r) => r && !r.del);
+
 export function salvaRicorrente(r) {
   scriviMeta((s) => {
     s.ricorrenti = s.ricorrenti || [];
     const i = s.ricorrenti.findIndex((x) => x.id === r.id);
-    if (i >= 0) s.ricorrenti[i] = { ...s.ricorrenti[i], ...r };
-    else s.ricorrenti.push(r);
+    if (i >= 0) s.ricorrenti[i] = { ...s.ricorrenti[i], ...r, up: Date.now() };
+    else s.ricorrenti.push({ ...r, up: Date.now() });
   });
 }
 
+/** Lapide, non rimozione: senza, l'altro dispositivo lo resuscita. */
 export function eliminaRicorrente(id) {
-  scriviMeta((s) => { s.ricorrenti = (s.ricorrenti || []).filter((x) => x.id !== id); });
+  scriviMeta((s) => {
+    const i = (s.ricorrenti || []).findIndex((x) => x.id === id);
+    if (i >= 0) s.ricorrenti[i] = { id, del: true, up: Date.now() };
+  });
 }
 
 /**
