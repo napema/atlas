@@ -339,6 +339,10 @@ export function migra() {
       // modifica più recente su OGNI dispositivo che apre l'app.
       if (r.up === undefined) r.up = 0;
     }
+    // Stesso trattamento ai pocket, e per lo stesso motivo: `up: 0` vuol
+    // dire «questo valore non l'ha mai scritto nessuno», e deve perdere
+    // contro qualunque saldo scritto sul serio.
+    for (const p of st.pockets || []) if (p.up === undefined) p.up = 0;
     if (!Array.isArray(st.previsti)) st.previsti = previstiIniziali();
     st.v = 5;
   });
@@ -391,10 +395,25 @@ function aggiustamenti2608(st) {
 
 export const pocketPerId = (id) => (stato().pockets || []).find((p) => p.id === id) || null;
 
+/**
+ * `up` su ogni pocket, e non è un dettaglio: dentro c'è il saldo.
+ *
+ * I pocket viaggiavano dentro `meta`, che si fonde tutta insieme sul
+ * confronto di un solo `metaUp`. Un dispositivo che non aveva mai ricevuto
+ * i saldi — perché li avevi scritti sull'altro mentre lui aveva già una
+ * configurazione più recente, e allora `applica` gli rifiuta l'INTERO
+ * blocco remoto — teneva i suoi quattro zeri e poi li spediva. Alle 17:19
+ * i saldi sono passati da 251,59 / 390,02 / 455 / 3795,59 a zero secchi in
+ * una scrittura sola.
+ *
+ * Con `up` per pocket, quattro zeri mai toccati (`up: 0`) non possono più
+ * vincere su un saldo scritto davvero. È la regola 5, applicata alla cosa
+ * che di tutto lo stato è la più importante.
+ */
 export function scriviPocket(id, patch) {
   scriviMeta((s) => {
     const p = (s.pockets || []).find((x) => x.id === id);
-    if (p) Object.assign(p, patch);
+    if (p) Object.assign(p, patch, { up: Date.now() });
   });
 }
 

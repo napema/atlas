@@ -181,3 +181,42 @@ oggetto di configurazione è una bomba a orologeria: finché le voci sono tre
 e non cambiano mai non succede niente, e il giorno che diventano dati veri
 sparisce tutto in silenzio. Se una cosa ha un `id` e si può aggiungere o
 cancellare, si fonde per record. Non ci sono eccezioni ragionevoli.
+
+### E poco dopo: i saldi dei pocket a zero
+
+Stessa causa, campo diverso, dieci minuti dopo. Alle 17:19 i quattro saldi
+sono passati da 251,59 / 390,02 / 455 / 3795,59 a **zero secchi** in una
+scrittura sola.
+
+Il meccanismo, per esteso, perché è quello che rende il difetto invisibile:
+
+1. i saldi li scrivi su un dispositivo — «Correggi i saldi»;
+2. l'altro dispositivo ha già una configurazione più recente, per un motivo
+   qualunque (ha aggiunto un ricorrente, ha fatto il check di oggi);
+3. quando riceve, `applica` guarda `rm.up > s.metaUp`, vede che no, e
+   **rifiuta l'intero blocco remoto** — pockets compresi, che non ha mai
+   visto;
+4. resta con i suoi quattro pocket di default, saldo `0`, e alla prima
+   scrittura li spedisce con un `metaUp` più recente;
+5. il primo dispositivo li accetta, perché il timestamp è più recente.
+
+Nessuno dei due passaggi è sbagliato preso da solo. È sbagliata l'unità: la
+configurazione si confronta tutta insieme, quindi un dispositivo può
+sovrascrivere un campo che non ha mai ricevuto.
+
+**Correzione.** `pockets` esce da `meta` e si fonde per record, con `up` per
+pocket. Un pocket mai toccato ha `up: 0` e non può più vincere su un saldo
+scritto davvero. I pocket **non si potano**: sono quattro e fissi, e una
+lapide su un pocket vorrebbe dire perdere un saldo.
+
+Provato nelle due direzioni: quattro zeri con `up: 0` non scalfiscono i
+saldi veri né in ricezione né in invio, e una correzione con un `up`
+recente passa regolarmente.
+
+### La regola, per la prossima volta
+
+Dentro `meta` può restare solo ciò che **non ha un `id`** e non si aggiunge o
+cancella: `cats`, `profili`, `soglie`, `config`. Tutto il resto — qualunque
+cosa sia una lista di record — sta fuori e si fonde per record. Ogni volta
+che questa riga è stata violata, il risultato è stato lo stesso: dati
+spariti in silenzio, senza un errore, senza un conflitto visibile.

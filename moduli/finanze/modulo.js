@@ -211,6 +211,11 @@ export function avviaSync() {
         // fondono per record come i movimenti.
         ricorrenti: s.ricorrenti,
         previsti: s.previsti,
+        // I pocket qui fuori insieme agli altri: dentro `meta` un
+        // dispositivo che non aveva mai ricevuto i saldi spediva i suoi
+        // quattro zeri e li faceva vincere. Dentro c'è il denaro: è il
+        // record che meno di tutti può permettersi una fusione a blocchi.
+        pockets: s.pockets,
         // Una copia dentro `meta` per i dispositivi non ancora aggiornati,
         // che sanno leggerli solo lì. Costa duecento byte e evita che un
         // telefono fermo alla versione di ieri smetta di vedere i
@@ -238,6 +243,12 @@ export function avviaSync() {
         if (Array.isArray(remoto.previsti)) {
           s.previsti = potaLapidi(fondiRecord(s.previsti || [], remoto.previsti));
         }
+        // I pocket non si potano: sono quattro, fissi, e una lapide su un
+        // pocket vorrebbe dire perdere un saldo.
+        const pkRemoti = remoto.pockets ?? remoto.meta?.pockets;
+        if (Array.isArray(pkRemoti)) {
+          s.pockets = fondiRecord(s.pockets || [], pkRemoti);
+        }
 
         const rm = remoto.meta;
         if (rm && (rm.up || 0) > (s.metaUp || 0)) {
@@ -248,7 +259,6 @@ export function avviaSync() {
           // e vince chi ha scritto per ultimo solo sulle chiavi in comune.
           if (rm.rules) s.rules = { ...s.rules, ...rm.rules };
           if (rm.config) s.config = { ...s.config, ...rm.config };
-          if (Array.isArray(rm.pockets)) s.pockets = rm.pockets;
           if (rm.soglie) s.soglie = { ...s.soglie, ...rm.soglie };
           s.metaUp = rm.up;
         }
