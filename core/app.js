@@ -65,22 +65,57 @@ function applicaTemaSalvato() {
 const statiCanali = new Map();
 const PESO = { err: 3, corso: 2, off: 1, ok: 0, inattivo: 0 };
 
+const TITOLI = {
+  off: "Sync non configurato: i dati restano su questo dispositivo",
+  ok: "Sincronizzato",
+  corso: "Sincronizzazione in corso",
+  inattivo: "In attesa",
+  err: "Errore di sincronizzazione",
+};
+// Le etichette accanto al pallino: minuscole, perché stanno dentro una riga
+// di testo e non sono un titolo.
+const ETICHETTE = {
+  off: "non sincronizzato",
+  ok: "sincronizzato",
+  corso: "sincronizzo…",
+  inattivo: "in attesa",
+  err: "errore di sync",
+};
+
+// L'ultimo stato calcolato, tenuto qui perché serve anche a chi disegna un
+// pallino NUOVO fra un evento e l'altro. Vedi `statoSync()`.
+let ultimoStato = { stato: "off", titolo: TITOLI.off, etichetta: ETICHETTE.off };
+
+/**
+ * Lo stato del sync, aggregato su tutti i canali, per chi deve disegnarlo.
+ *
+ * Esiste perché `aggiornaPallini()` ritinge i pallini CHE CI SONO, e la home
+ * si ridisegna da sola a ogni fatto scritto: il pallino appena creato non
+ * aveva ancora ricevuto nessun evento, restava senza classe — quindi grigio
+ * — accanto alla scritta «sincronizzato», che invece era fissa nel codice.
+ * Il pallino diceva una cosa e la parola ne diceva un'altra.
+ */
+export const statoSync = () => ultimoStato;
+
 function aggiornaPallini() {
   let peggiore = configurato() ? "ok" : "off";
   let messaggio = "";
   for (const s of statiCanali.values()) {
     if ((PESO[s.stato] ?? 0) > (PESO[peggiore] ?? 0)) { peggiore = s.stato; messaggio = s.messaggio; }
   }
-  const titolo = {
-    off: "Sync non configurato: i dati restano su questo dispositivo",
-    ok: "Sincronizzato",
-    corso: "Sincronizzazione in corso",
-    inattivo: "In attesa",
-    err: `Errore di sincronizzazione — ${messaggio}`,
-  }[peggiore] || "";
+  const titolo = peggiore === "err"
+    ? `${TITOLI.err} — ${messaggio}`
+    : (TITOLI[peggiore] || "");
+  ultimoStato = { stato: peggiore, titolo, etichetta: ETICHETTE[peggiore] || "" };
+
   for (const p of document.querySelectorAll(".sync-pallino")) {
     p.className = `sync-pallino is-${peggiore}`;
     p.title = titolo;
+  }
+  // Chi mette una parola accanto al pallino la marca così, e la parola
+  // cambia insieme al colore invece di restare quella scritta a mano.
+  for (const t of document.querySelectorAll('[data-ruolo="sync-testo"]')) {
+    t.textContent = ultimoStato.etichetta;
   }
 }
 

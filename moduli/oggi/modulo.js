@@ -46,6 +46,7 @@ import {
 import { icona } from "../../core/icone.js";
 import { ascolta } from "../../core/bus.js";
 import { ultimiGiorni, giornoCorrente } from "../../core/contesto.js";
+import { statoSync } from "../../core/app.js";
 
 let contenitore = null;
 const staccatori = [];
@@ -166,12 +167,17 @@ function prioritarie(resta, ora) {
 */
 
 function testa(q) {
+  const sync = statoSync();
   return el("header", { class: "og-testa" }, [
     el("div", { class: "og-meta" }, [
       el("span", { class: "og-meta-data", testo: dataLunga() }),
-      el("span", { class: "og-meta-stato" }, [
-        el("span", { class: "sync-pallino", "data-ruolo": "sync" }),
-        el("span", { testo: "sincronizzato" }),
+      // Colore e parola vengono dalla stessa fonte. Prima la parola era
+      // scritta qui — «sincronizzato», sempre — mentre il pallino seguiva lo
+      // stato vero: bastava un sync non ancora partito per avere un pallino
+      // grigio accanto alla parola «sincronizzato».
+      el("span", { class: "og-meta-stato", title: sync.titolo }, [
+        el("span", { class: `sync-pallino is-${sync.stato}` }),
+        el("span", { "data-ruolo": "sync-testo", testo: sync.etichetta }),
       ]),
     ]),
     el("h1", { class: "og-saluto" }, [

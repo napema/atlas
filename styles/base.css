@@ -733,9 +733,13 @@ select.campo { appearance: none; }
   background: var(--testo-4); flex: none;
   transition: background var(--normale) var(--curva);
 }
-.sync-pallino.is-ok    { background: var(--ok); }
-.sync-pallino.is-corso { background: var(--avviso); animation: pulsa 1.3s ease-in-out infinite; }
-.sync-pallino.is-err   { background: var(--male); }
+.sync-pallino.is-ok       { background: var(--ok); }
+.sync-pallino.is-corso    { background: var(--avviso); animation: pulsa 1.3s ease-in-out infinite; }
+.sync-pallino.is-err      { background: var(--male); }
+/* Grigi, e scritti: erano gli unici due stati senza regola e finivano sul
+   colore di partenza per caso. Un colore che capita non è un colore. */
+.sync-pallino.is-off      { background: var(--testo-4); }
+.sync-pallino.is-inattivo { background: var(--testo-4); }
 @keyframes pulsa { 50% { opacity: 0.2; } }
 
 /* ============================================================== vuoto ==== */

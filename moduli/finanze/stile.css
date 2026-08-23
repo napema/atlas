@@ -495,7 +495,9 @@
    scheda ma sul fondo nudo: è quello che la fa leggere come il titolo della
    schermata invece che come un dato fra gli altri. */
 
-.fi-numero { padding: var(--s2) 0 var(--s6); }
+/* Il fondo è `--s8` e non `--s6`: dentro il velo ci sta anche la barra del
+   consumo, e con 24px la riga del ritmo tocca il bordo della scheda sotto. */
+.fi-numero { padding: var(--s2) 0 var(--s8); margin-bottom: var(--s4); }
 .fi-numero-testa {
   display: flex; align-items: center; justify-content: space-between;
   gap: var(--s3); margin-bottom: var(--s2);
@@ -762,11 +764,16 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
    usciva dal viewport, allargava il documento e mandava la terza scheda
    («Analisi») mezza fuori dallo schermo. Un elemento assoluto che sfora è
    sempre uno scorrimento orizzontale che non si vede dove nasce. */
+/* Il velo copre TUTTO il blocco, non i primi 190px.
+   Erano fissi, e il blocco è cresciuto: la barra del consumo e la riga del
+   ritmo finivano fuori dal velo, appoggiate sul fondo nudo a filo della
+   scheda sotto. Da lì la sensazione che fra i due non ci fosse spazio — lo
+   spazio c'era, ma la scatola finiva prima del suo contenuto, e una scatola
+   che finisce prima del contenuto si legge come una scatola senza margine. */
 .fi-numero::before {
   content: "";
   position: absolute;
-  inset: -8px 0 auto;
-  height: 190px;
+  inset: -8px 0 0;
   border-radius: var(--r-scheda);
   background: linear-gradient(180deg, var(--accento-tenue), transparent 78%);
   pointer-events: none;
