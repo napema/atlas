@@ -11,7 +11,7 @@ import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { annuncia, ascolta } from "../../core/bus.js";
 import { casella, stato, abitudiniVive, eFatta, alterna, idLog, alternaParte } from "./dati.js";
-import { progressoGiorno, mancantiOggi, serie, eAttesa, promemoriaAdesso } from "./calcolo.js";
+import { progressoGiorno, mancantiOggi, serie, eAttesa, promemoriaAdesso, restaOggi } from "./calcolo.js";
 import { strisciaSettimana, riepilogo, elenco, apriModifica, vistaImpostazioni, vistaSerie } from "./viste.js";
 
 let contenitore = null;
@@ -214,6 +214,9 @@ export default {
         : mancano.length === 1 ? mancano[0].name.toLowerCase()
         : `${mancano.length} abitudini`,
       serie: migliore,
+      // La checklist unica della home: abitudini semplici e parti, mescolate
+      // e ordinate per momento della giornata.
+      resta: restaOggi(giornoCorrente()),
       // La barra della tessera dice a che punto sei, non è decorativa.
       avanzamento: p.attese ? p.fatte / p.attese : 0,
       // I promemoria della fascia in corso: la home non deve dire «ti

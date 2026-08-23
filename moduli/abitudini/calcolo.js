@@ -272,3 +272,49 @@ export function partiDiOggi(iso = oggiISO()) {
   }
   return out;
 }
+
+/* ------------------------------------------------------- cosa resta oggi */
+/*
+   La lista piatta di quello che manca: le abitudini semplici e le PARTI di
+   quelle che ne hanno, mescolate e ordinate per momento della giornata.
+
+   La home ne fa una checklist unica insieme alla sessione di mobilità. È il
+   motivo per cui esiste: «cosa mi resta adesso» è una domanda sola, e finché
+   la risposta stava in due schermate diverse bisognava aprirle tutte e due.
+*/
+
+export function restaOggi(iso = oggiISO(), ora = new Date().getHours()) {
+  const out = [];
+  for (const h of abitudiniVive()) {
+    if (!eAttesa(h, iso)) continue;
+    const parti = partiDi(h);
+
+    if (!parti.length) {
+      if (eFatta(h.id, iso)) continue;
+      out.push({
+        chiave: h.id, habitId: h.id, parteId: null,
+        nome: h.name, emoji: h.emoji, tint: h.tint,
+        fascia: null, nomeFascia: "", quando: "adesso", ordine: 5,
+      });
+      continue;
+    }
+
+    for (const p of parti) {
+      if (parteFatta(h.id, p.id, iso)) continue;
+      const f = p.fascia || "qualsiasi";
+      out.push({
+        chiave: `${h.id}#${p.id}`, habitId: h.id, parteId: p.id,
+        // Il nome della parte basta: «Magnesio» dice più di «Supplements ·
+        // Magnesio», e il genitore lo si mette solo se serve a distinguere.
+        nome: p.nome, dentro: h.name, emoji: h.emoji, tint: h.tint,
+        fascia: f, nomeFascia: FASCE[f]?.nome || "",
+        quando: statoFascia(f, ora),
+        ordine: FASCE[f]?.ordine || 5,
+      });
+    }
+  }
+  // Prima i ritardi, poi l'ordine della giornata. Quello che non è ancora il
+  // momento resta in fondo ma NON sparisce: è comunque roba di oggi.
+  const peso = { tardi: 0, adesso: 1, presto: 2 };
+  return out.sort((a, b) => (peso[a.quando] - peso[b.quando]) || (a.ordine - b.ordine));
+}

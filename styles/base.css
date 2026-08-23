@@ -682,6 +682,11 @@ hr { border: 0; height: 1px; background: var(--filo); margin: var(--s4) 0; }
      colonna stretta il testo scavalcava l'icona. */
   .tab svg { width: 21px; height: 21px; flex: none; }
   .tab > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Impostazioni scende in fondo alla colonna: non è un modulo come gli
+     altri, è il posto dove si va quando qualcosa non va. Metterlo in fila
+     con Oggi e Finanze gli dava lo stesso peso di una cosa che apri ogni
+     giorno. */
+  .tab[data-modulo="impostazioni"] { margin-top: auto; }
   .tab:hover { background: var(--scheda); }
   .tab[aria-current="page"] { background: var(--scheda); color: var(--testo); font-weight: 600; }
   .tab[aria-current="page"] svg { color: var(--accento); }

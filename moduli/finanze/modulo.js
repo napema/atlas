@@ -138,6 +138,25 @@ function navigatoreMese() {
   ]);
 }
 
+/**
+ * La prima uscita ricorrente in arrivo, pronta da mostrare.
+ *
+ * Serve alla home, che di «in arrivo» vuole sapere una cosa sola: la
+ * prossima. L'elenco intero sta in Finanze, dove c'è lo spazio per leggerlo.
+ */
+function prossimaUscita(iso) {
+  const v = inArrivo(30, iso).voci[0];
+  if (!v) return null;
+  const quando = v.fra === 0 ? "oggi" : v.fra === 1 ? "domani" : `fra ${v.fra} gg`;
+  return {
+    quando,
+    nome: v.nome,
+    importo: v.stimato
+      ? `${euro(v.stimaMin, { tondo: true })}–${euro(v.stimaMax, { tondo: true })}`
+      : euro(v.importo, { tondo: true }),
+  };
+}
+
 /* ------------------------------------------------------------- lavagna -- */
 
 function pubblicaSullaLavagna() {
@@ -286,6 +305,14 @@ export default {
       // Il testo per la carta larga della home, quando Finanze è la cosa
       // più urgente: è l'alert vero, non un riassunto.
       allarme: av[0]?.testo || null,
+
+      // I tre numeri della carta in home, già formattati. Li formatta il
+      // modulo e non la home perché è il modulo a sapere che gli importi
+      // sono centesimi: passarli grezzi vorrebbe dire insegnarlo alla home.
+      spesoOggi: euro(speso, { tondo: true }),
+      alGiorno: s.finita ? "—" : euro(s.alGiorno, { tondo: true }),
+      prossima: prossimaUscita(iso),
+
       azione: { rotta: "#/finanze" },
     };
   },

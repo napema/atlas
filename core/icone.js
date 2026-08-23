@@ -19,17 +19,19 @@ const TRATTI = {
     '<path d="M3.6 8.6A2.6 2.6 0 0 1 6.2 6h11.2A2.6 2.6 0 0 1 20 8.6v8.8a2.6 2.6 0 0 1-2.6 2.6H6.2A2.6 2.6 0 0 1 3.6 17.4z"/>' +
     '<path d="M3.6 9.3V6.5a2 2 0 0 1 1.7-2l9.9-1.9"/>' +
     '<path d="M20 12.1h-3.3a1.95 1.95 0 0 0 0 3.9H20"/>',
-  // NIENTE OMINI. Ne ho provati due e tutti e due, a 21px, diventavano un
-  // groviglio di trattini: una figura umana ha bisogno di testa, tronco, due
-  // braccia e due gambe, cioè sei tratti che a quella misura si toccano.
+  // La figura in allungo laterale, dal riferimento che mi è stato passato:
+  // testa, braccio che passa sopra la testa, braccio piegato al fianco, due
+  // gambe divaricate. I due tentativi precedenti li ho fatti io e facevano
+  // pena entrambi.
   //
-  // Questa è una colonna vertebrale: una curva a S con quattro vertebre. Dice
-  // «corpo» senza disegnare una persona, non somiglia a nessuna delle altre
-  // icone della barra, e a qualunque misura resta la stessa forma.
+  // La differenza rispetto a quelli: il braccio alto e la schiena sono UN
+  // arco solo invece di due segmenti che si incontrano. È quello che a 21px
+  // tiene insieme la sagoma invece di sbriciolarla in trattini.
   corpo:
-    '<path d="M14.4 3.2c-3.2 1.6-3.6 4.4-1.2 6.6 2.4 2.2 2 5-1.2 6.6"/>' +
-    '<path d="M12 16.4c-1.6.9-2.2 2.3-1.8 4.4"/>' +
-    '<path d="M14.9 5.1H17M12.4 9.4h2.2M13.6 13.7h2.4M10.8 18.2h2.1"/>',
+    '<circle cx="10.2" cy="5.6" r="2.1"/>' +
+    '<path d="M7.4 9.9c-.9-3 1-5.6 4-5.2 2.6.3 4 2.5 3.7 5l-.7 3.6"/>' +
+    '<path d="M12.1 9c.3 1.4.1 2.6-.6 3.6-.6.8-1.5 1.3-2.6 1.5"/>' +
+    '<path d="M14.4 13.3 12 20.6M14.4 13.3l2.6 7.3"/>',
   spunta:    '<path d="M4.4 12.5l4.5 4.5L19.6 6.4"/>',
   // Tre cursori, non un ingranaggio. La ruota dentata era un poligono a
   // mano libera: a 21px i denti si impastavano e sembrava un glifo rotto.

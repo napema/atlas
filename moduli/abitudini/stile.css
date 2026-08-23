@@ -448,21 +448,15 @@
   .ab-serie-lista > li,
   .ab-mappa-riga { break-inside: avoid; }
 
-  #vista[data-modulo="abitudini"] .lista {
-    max-width: none;
-    column-count: 2;
-    column-gap: var(--s5);
-  }
+  /* NIENTE COLONNE. Ci ho provato e le abitudini spezzate su due colonne
+     erano peggio del problema che risolvevano: un'abitudine con le parti si
+     apre in verticale, e affiancata a un'altra il rientro delle parti non si
+     capisce più a chi appartiene. Restano una sotto l'altra, larghe. */
+  #vista[data-modulo="abitudini"] .lista,
   #vista[data-modulo="abitudini"] .gruppo-titolo { max-width: none; }
-
-  .ab-serie-lista { column-count: 2; column-gap: var(--s3); }
-  .ab-serie-lista > li { margin-bottom: var(--s2); }
 
   /* L'eroe e la striscia della settimana restano larghi: sono il colpo
      d'occhio, e spezzarli in colonne li renderebbe due cose invece di una. */
   .ab-eroe, .ab-settimana { max-width: none; }
 }
 
-@media (min-width: 1400px) {
-  #vista[data-modulo="abitudini"] .lista { column-count: 3; }
-}

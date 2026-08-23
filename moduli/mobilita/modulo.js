@@ -303,6 +303,14 @@ export default {
         : `${TIPI_SESSIONE[tipo]?.nome} · ${minuti} min`,
       fatto: false,
       mancaTesto: `la sessione di mobilità`,
+      // La sessione entra nella checklist della home come le abitudini. Non
+      // si spunta però: una sessione si FA, e toccarla apre il player.
+      resta: [{
+        chiave: "mobilita:sessione", apre: "#/mobilita/inizia",
+        nome: TIPI_SESSIONE[tipo]?.nome || "Sessione",
+        dentro: "Mobilità", emoji: "🤸", tint: "ciano",
+        nomeFascia: `${minuti} min`, quando: new Date().getHours() >= 21 ? "tardi" : "adesso",
+      }],
       serie: n,
       // Urgente di sera: è l'ora in cui la sessione salta davvero.
       urgente: new Date().getHours() >= 21,

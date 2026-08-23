@@ -200,8 +200,39 @@
   /* «Larga» qui vuol dire: sta da sola, fuori dalle colonne. */
   .fi-larga { column-span: all; }
 }
-@media (min-width: 1240px) {
-  .fi-analisi { column-count: 3; }
+@media (min-width: 1000px) {
+  /* DUE colonne e non tre, e con molta più aria dentro.
+
+     Tre colonne facevano stare tutto in una schermata, ed era esattamente il
+     motivo per cui non si leggeva: nove pannelli larghi 320px sono nove
+     francobolli. Con due colonne ogni pannello ne ha quasi 500, i grafici
+     diventano leggibili davvero e le legende non vanno a capo. Si scorre un
+     po' di più, e va benissimo: Analisi è la schermata in cui ci si ferma a
+     guardare, non quella che si apre di corsa. */
+  .fi-analisi { column-count: 2; column-gap: var(--s5); }
+  .fi-analisi > .scheda { padding: var(--s6); margin-bottom: var(--s5); }
+
+  /* I grafici respirano: erano alti 118px anche su uno schermo da 1600. */
+  .fi-grafico { height: 190px; margin: var(--s5) 0 var(--s3); }
+  .fi-grafico-basso { height: 150px; }
+  .fi-larga .fi-grafico { height: 250px; }
+
+  /* Ciambella e legenda affiancate con spazio vero, invece di andare a capo
+     appena il nome di una categoria è lungo. */
+  .fi-ciambella-fuori { flex-wrap: nowrap; gap: var(--s6); }
+  .fi-legenda { gap: var(--s2); }
+  .fi-legenda-riga { font-size: var(--t-15); }
+  .fi-legenda-cifra { min-width: 76px; }
+
+  .fi-statgrid { gap: var(--s3); }
+  .fi-statbox { padding: var(--s4) var(--s3); }
+  .fi-statval { font-size: var(--t-22); }
+
+  .fi-cfr { padding: var(--s4); }
+  .fi-cfr .num { font-size: var(--t-22); }
+
+  .fi-subriga { min-height: 60px; }
+  .fi-cat-riga { padding: var(--s2) 0; }
 }
 
 .fi-svg { width: 100%; height: 100%; display: block; overflow: visible; }
@@ -381,11 +412,10 @@
   /* Nove pannelli in due colonne su uno schermo largo lasciavano metà
      riga vuota sotto quelli bassi. Con tre, le altezze si compensano. */
   .fi-analisi { grid-template-columns: repeat(3, 1fr); }
-  /* I movimenti di un mese sono cinquanta righe: in colonna unica su uno
-     schermo largo è un nastro. Due colonne, e i giorni non si spezzano. */
-  .fi-mov-colonne { column-count: 2; column-gap: var(--s5); }
-  .fi-mov-colonne > .fi-giorno-blocco { break-inside: avoid; }
-  .fi-mov-colonne .lista { max-width: none; }
+  /* I movimenti restano in UNA colonna: due colonne di importi fanno
+     perdere l'ordine cronologico, che è l'unica cosa che una lista di
+     movimenti deve garantire. */
+  .fi-mov-colonne .lista, .fi-giorno-testa { max-width: none; }
 }
 
 /* ------------------------------------------------------- le tre azioni -- */
@@ -652,3 +682,57 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
   }
   #vista[data-modulo="finanze"] { padding-bottom: 140px; }
 }
+
+/* =========================================================================
+   RIEPILOGO — la gerarchia.
+
+   Il difetto era che quasi tutto era bianco pieno: il numero grande, i nomi
+   dei pocket, i totali delle categorie, le etichette. Con dieci cose dello
+   stesso colore non c'è una prima cosa da leggere, e l'occhio si ferma sulla
+   più grande invece che sulla più importante.
+
+   Adesso il bianco è un privilegio di tre elementi per schermata: il numero
+   della settimana, il saldo del Principale, il totale dei pocket. Tutto il
+   resto scende a --testo-2, e le etichette a --testo-3. Non è una scelta
+   estetica: è la gerarchia, scritta con l'unico strumento che si legge
+   prima del testo.
+   ========================================================================= */
+
+/* Le etichette e i secondari nelle schede della home non sono mai bianchi. */
+.fi-arrivo-nome,
+.fi-catriga-nome,
+.fi-pocket-nome { color: var(--testo-2); font-weight: 500; }
+
+.fi-arrivo-importo,
+.fi-catriga-cifra { color: var(--testo-2); }
+
+/* Il saldo di un pocket sì: è il dato, non l'etichetta. Ma solo quello che
+   si può spendere — gli altri tre sono contesto. */
+.fi-pocket-saldo { color: var(--testo-2); font-weight: 600; }
+.fi-pocket-riga:first-child .fi-pocket-nome { color: var(--testo); font-weight: 600; }
+.fi-pocket-riga:first-child .fi-pocket-saldo { color: var(--testo); font-weight: 700; }
+
+/* Le schede della home prendono la stessa intestazione della home vera:
+   maiuscoletto tenue a sinistra, cifra a destra. Uniformarle è metà del
+   lavoro — erano cinque intestazioni diverse in cinque schede. */
+.fi-arrivo-testa .micro,
+.fi-pocket .micro,
+.fi-come .micro { color: var(--testo-3); }
+
+/* Il velo sotto il numero grande, come sulle carte della home: dà un fondo
+   alla cifra senza chiuderla in una scheda. */
+.fi-numero { position: relative; }
+.fi-numero::before {
+  content: "";
+  position: absolute;
+  inset: -8px -16px auto;
+  height: 190px;
+  border-radius: var(--r-scheda);
+  background: linear-gradient(180deg, var(--accento-tenue), transparent 78%);
+  pointer-events: none;
+}
+.fi-numero > * { position: relative; }
+
+/* La barra del consumo era spessa come quelle delle categorie e pesava
+   uguale: è la barra principale, deve leggersi da sola. */
+.fi-consumo { height: 10px; }

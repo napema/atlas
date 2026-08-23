@@ -1,120 +1,157 @@
 /* moduli/oggi — la home.
    =========================================================================
-   Quattro livelli e non di più, e ognuno pesa visibilmente meno di quello
-   sopra: saluto, verdetto, cose da fare adesso, il fondo che si guarda solo
-   se si vuole.
+   UNA CARTA SOLA, RIPETUTA. Tutte le carte hanno lo stesso raggio, lo stesso
+   fondo, lo stesso filo, la stessa intestazione — emoji, nome, e a destra un
+   numero o niente. Cambia la tinta, e la tinta dice DI COSA parla la carta,
+   non quanto è urgente.
 
-   La regola che tiene in piedi la gerarchia: il corpo scende a ogni livello
-   (46 → 28 → 17 → 15 → 12) e il colore si spegne insieme. Se due livelli
-   hanno lo stesso peso, non sono due livelli.
+   È la regola che fa la differenza fra un cruscotto e sei riquadri disegnati
+   in sei momenti diversi: con carte uguali l'occhio impara a leggerle una
+   volta sola, con carte diverse deve ricominciare da ogni riquadro.
+
+   Il colore entra solo in tre punti per carta — l'emoji, il filo in alto, il
+   numero — e mai sotto il testo. Una carta colorata è una carta su cui il
+   testo si legge peggio.
    ========================================================================= */
 
-/* ------------------------------------------------------------- il saluto -- */
+/* ------------------------------------------------------- l'intestazione -- */
 
-.og-saluto-blocco { padding: var(--s4) 0 var(--s5); }
+.og-testa {
+  position: relative;
+  padding: var(--s5) 0 var(--s6);
+  text-align: center;
+}
 
-/* Minuscolo e grande. Il punto fermo alla fine è quello che lo fa suonare
-   come una frase detta invece che come un'insegna. */
+/* Data e stato in alto a destra. Su telefono tornano sotto il saluto,
+   centrati: in un angolo di uno schermo da 375px non ci sta niente. */
+.og-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: var(--s4);
+  font-size: var(--t-11);
+  color: var(--testo-3);
+}
+.og-meta-data { text-transform: capitalize; }
+.og-meta-stato { display: inline-flex; align-items: center; gap: 6px; }
+
 .og-saluto {
   font-family: var(--font-d);
-  font-size: clamp(34px, 10vw, 46px);
+  font-size: clamp(32px, 9vw, 44px);
   font-weight: 700;
   letter-spacing: -0.04em;
-  line-height: 1;
+  line-height: 1.05;
 }
 .og-saluto-parola { text-transform: lowercase; }
 .og-punto { color: var(--accento); }
-.og-data {
-  margin: var(--s3) 0 0;
-  font-size: var(--t-15);
-  color: var(--testo-2);
-  text-transform: capitalize;
+
+.og-riga-verdetto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2) var(--s4);
+  margin-top: var(--s3);
 }
-
-/* ----------------------------------------------------------- il verdetto -- */
-/* L'unica cosa della schermata che si legge sempre, quindi l'unica che ha il
-   diritto di essere grande. Non sta in una scheda: sta sul fondo nudo, come
-   il titolo di quello che stai per leggere. */
-
-.og-verdetto { padding: var(--s2) 0 var(--s6); }
-.og-verdetto-titolo {
-  font-size: var(--t-28);
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.25;
+.og-verdetto {
   margin: 0;
-}
-.og-verdetto-sotto {
-  margin: var(--s3) 0 0;
   font-size: var(--t-17);
-  line-height: 1.45;
   color: var(--testo-2);
 }
-/* Il tono si dice con un filo di colore a sinistra, mai colorando la frase:
-   una frase rossa si legge come un errore dell'app, non come una notizia. */
-.og-verdetto.male,
-.og-verdetto.avviso,
-.og-verdetto.ok {
-  padding-left: var(--s4);
-  border-left: 3px solid var(--traccia);
-}
-.og-verdetto.male   { border-left-color: var(--male); }
-.og-verdetto.avviso { border-left-color: var(--avviso); }
-.og-verdetto.ok     { border-left-color: var(--ok); }
-
-/* La riga della serie: piccola, calda, e presente solo quando c'è davvero
-   qualcosa da difendere. */
-.og-serie {
-  display: inline-block;
-  margin: var(--s4) 0 0;
-  padding: 6px 12px;
-  border-radius: var(--r-pillola);
-  color: var(--arancio);
-  background: var(--pillola-tinta);
+/* L'avviso sta accanto al verdetto, non sotto: è una correzione a quella
+   frase, e messo su una riga sua diventava un secondo titolo. */
+.og-avviso {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 7px;
+  max-width: 46ch;
+  padding: 7px var(--s3);
+  border-radius: var(--r-interno);
+  background: var(--scheda);
   font-size: var(--t-13);
-  font-weight: 600;
+  line-height: 1.4;
+  text-align: left;
+  color: var(--testo-2);
+}
+.og-avviso-punto {
+  width: 7px; height: 7px; flex: none; margin-top: 6px;
+  border-radius: 50%;
+  background: var(--male);
 }
 
-/* --------------------------------------------------------------- adesso -- */
-/* L'unica parte su cui si tocca per FARE invece che per andare. */
+/* ------------------------------------------------------------ la griglia */
 
-.og-adesso {
+.og-griglia { display: flex; flex-direction: column; gap: var(--s3); }
+.og-col { display: flex; flex-direction: column; gap: var(--s3); }
+
+/* Su telefono l'ordine è quello dell'importanza, non quello delle colonne:
+   prima quello che si tocca, poi quello che si guarda. */
+.og-col-centro { order: 1; }
+.og-col-sx     { order: 2; }
+.og-col-dx     { order: 3; }
+
+/* --------------------------------------------------------------- la carta */
+
+.og-carta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   padding: var(--s5);
   border-radius: var(--r-scheda);
   background: var(--scheda);
-  margin-bottom: var(--s3);
+  /* Il filo si vede appena e serve: sul nero pieno, senza, due carte
+     affiancate sembrano una superficie sola. */
+  box-shadow: inset 0 0 0 1px var(--filo);
+  overflow: hidden;
 }
-.og-adesso-gruppo + .og-adesso-gruppo { margin-top: var(--s5); }
-.og-adesso-testa {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: var(--s3); margin-bottom: var(--s3);
+/* La riga di tinta in alto: è l'unico posto dove il colore tocca il bordo
+   della carta, ed è quello che le rende distinguibili di sfuggita. */
+.og-carta::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: var(--tinta, var(--accento));
+  opacity: 0.85;
 }
-.og-adesso-conta {
-  min-width: 22px; height: 22px;
-  display: grid; place-items: center;
-  padding: 0 6px;
-  border-radius: var(--r-pillola);
-  background: var(--scheda-viva);
-  color: var(--testo-2);
+
+.og-carta-testa {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-bottom: var(--s4);
+}
+.og-carta-emoji { font-size: 17px; line-height: 1; flex: none; }
+.og-carta-nome {
+  flex: 1;
+  min-width: 0;
   font-size: var(--t-11);
   font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--testo-2);
+}
+.og-carta-valore {
+  flex: none;
+  font-family: var(--font-d);
+  font-size: var(--t-15);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  color: var(--tinta, var(--accento));
 }
-.og-adesso-gruppo.tardi .og-adesso-conta {
-  color: var(--avviso);
-  background: var(--pillola-tinta);
-}
-.og-adesso-lista { list-style: none; display: flex; flex-direction: column; gap: var(--s2); }
+.og-carta-corpo { flex: 1; display: flex; flex-direction: column; }
 
-/* Una voce è un bersaglio unico da 54px: si spunta col pollice senza
-   guardare, che è tutto quello che deve saper fare. */
-.og-adesso-voce {
+/* ------------------------------------------------------- resta da fare -- */
+
+.og-lista { list-style: none; display: flex; flex-direction: column; gap: var(--s2); }
+.og-voce {
   display: flex;
   align-items: center;
   gap: var(--s3);
   width: 100%;
   min-height: 54px;
-  padding: 0 var(--s4) 0 var(--s3);
+  padding: 0 var(--s3);
   border: 0;
   border-radius: var(--r-interno);
   background: var(--scheda-alta);
@@ -124,9 +161,10 @@
   cursor: pointer;
   transition: background var(--veloce) var(--curva), transform var(--veloce) var(--molla);
 }
-.og-adesso-voce:active { transform: scale(0.985); background: var(--scheda-viva); }
+.og-voce:active { transform: scale(0.985); background: var(--scheda-viva); }
+.og-voce.tardi { box-shadow: inset 2px 0 0 var(--avviso); }
 
-.og-adesso-cerchio {
+.og-voce-cerchio {
   width: 26px; height: 26px;
   flex: none;
   display: grid; place-items: center;
@@ -135,115 +173,161 @@
   box-shadow: inset 0 0 0 2px var(--tinta, var(--accento));
   transition: background var(--veloce) var(--curva);
 }
-.og-adesso-voce:active .og-adesso-cerchio { background: color-mix(in srgb, var(--tinta) 35%, transparent); }
-.og-adesso-cerchio svg { display: block; }
+.og-voce:active .og-voce-cerchio { background: color-mix(in srgb, var(--tinta) 35%, transparent); }
+.og-voce-cerchio svg { display: block; }
 
-.og-adesso-nome {
-  flex: 1; min-width: 0;
+.og-voce-testo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.og-voce-nome {
+  font-size: var(--t-15);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.og-voce-dentro { font-size: var(--t-11); color: var(--testo-3); }
+.og-voce-quando { flex: none; font-size: var(--t-11); color: var(--testo-3); }
+.og-voce.tardi .og-voce-quando { color: var(--avviso); font-weight: 600; }
+.og-voce-freccia { flex: none; display: flex; color: var(--testo-3); }
+
+.og-tuttofatto { margin: 0; font-size: var(--t-15); color: var(--testo-2); line-height: 1.45; }
+
+/* ------------------------------------------------------------- finanze -- */
+
+.og-soldi-eroe { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--s4); }
+.og-soldi-cifra {
+  font-family: var(--font-d);
+  font-size: clamp(34px, 8vw, 44px);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.og-soldi-eti { font-size: var(--t-11); color: var(--testo-3); }
+
+/* I tre numeri secondari: stessa dimensione fra loro, e tutti più piccoli
+   dell'eroe. Se pesassero uguale sarebbero quattro numeri e nessun titolo. */
+.og-soldi-riga {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s3);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--filo);
+}
+.og-soldi-voce { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.og-soldi-num {
   font-size: var(--t-17);
   font-weight: 600;
-  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.og-adesso-quando {
-  flex: none;
+.og-soldi-nota {
+  margin: var(--s2) 0 0;
   font-size: var(--t-11);
   color: var(--testo-3);
-  max-width: 40%;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-/* -------------------------------------------------------- la prossima --- */
-
-.og-carta {
-  display: block;
-  position: relative;
-  padding: var(--s5);
-  border-radius: var(--r-scheda);
-  background: var(--scheda);
-  color: inherit;
-  overflow: hidden;
-  margin-bottom: var(--s3);
-  transition: transform var(--veloce) var(--curva), background var(--veloce) var(--curva);
-}
-.og-carta::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  /* Un velo della tinta del modulo che sfuma verso destra: dà identità alla
-     carta senza dipingerla, e senza toccare il contrasto del testo. */
-  background: linear-gradient(100deg, color-mix(in srgb, var(--tinta) 16%, transparent), transparent 62%);
-  pointer-events: none;
-}
-.og-carta > * { position: relative; }
-.og-carta:active { transform: scale(0.99); background: var(--scheda-alta); }
-
-.og-carta-testa { display: flex; align-items: center; gap: var(--s2); }
-.og-carta-icona { display: flex; color: var(--tinta); }
-.og-carta-nome {
-  font-size: var(--t-13);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--tinta);
-}
-.og-carta-valore { font-size: clamp(30px, 9vw, 40px); margin-top: var(--s3); }
-.og-carta-nota { margin: var(--s2) 0 0; font-size: var(--t-15); color: var(--testo-2); }
-
-.og-carta-invito {
+.og-apri {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  align-self: flex-start;
   margin-top: var(--s4);
-  padding: 9px var(--s4);
+  min-height: 40px;
+  padding: 0 var(--s4);
   border-radius: var(--r-pillola);
-  background: var(--testo);
-  color: var(--fondo);
+  background: var(--scheda-alta);
+  color: var(--testo);
   font-size: var(--t-13);
+  font-weight: 600;
+}
+.og-apri svg { width: 14px; height: 14px; }
+
+/* --------------------------------------------------------------- serie -- */
+
+.og-serie-cifra {
+  font-family: var(--font-d);
+  font-size: clamp(48px, 12vw, 60px);
   font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+  color: var(--arancio);
+  font-variant-numeric: tabular-nums;
 }
-.og-carta-invito svg { width: 15px; height: 15px; }
-
-/* ------------------------------------------------------------- il fondo -- */
-/* Le tessere e la costanza: si guardano solo se si vuole, quindi partono
-   dopo uno stacco che le separa da tutto quello che sta sopra. */
-
-.og-glance { margin-top: var(--s5); }
-
-.og-settimana { padding: var(--s4) var(--s5) var(--s5); }
-.og-settimana-testa {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--s4);
-  margin-bottom: var(--s4);
+.og-serie-eti { font-size: var(--t-13); color: var(--testo-3); margin-top: 2px; }
+.og-serie-frase {
+  margin: var(--s4) 0 0;
+  font-size: var(--t-13);
+  line-height: 1.45;
+  color: var(--testo-2);
 }
-.og-settimana-nota { margin: 5px 0 0; }
-.og-sett-riga { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s1); }
-.og-sett-giorno { display: flex; flex-direction: column; align-items: center; gap: var(--s2); }
-.og-sett-lettera { font-size: var(--t-10); font-weight: 700; letter-spacing: 0.06em; color: var(--testo-3); }
-/* Barrette basse, non blocchi: questa striscia è uno sguardo all'indietro,
-   non un comando. A 32px e verde pieno sembravano pulsanti da premere. */
+
+/* ------------------------------------------------------------ costanza -- */
+
+.og-sett { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.og-sett-g { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .og-sett-punto {
-  width: 100%; height: 14px;
-  border-radius: 5px;
-  background: var(--traccia);
+  width: 100%; height: 26px;
+  border-radius: 7px;
+  background: var(--scheda-viva);
   transition: background var(--normale) var(--curva);
 }
-.og-sett-giorno.pieno .og-sett-punto { background: var(--ok); }
-.og-sett-giorno.oggi .og-sett-lettera { color: var(--testo); }
-.og-sett-giorno.oggi .og-sett-punto { box-shadow: 0 0 0 1.5px var(--testo-3); }
+.og-sett-g.pieno .og-sett-punto { background: var(--menta); }
+.og-sett-g.oggi .og-sett-punto { box-shadow: 0 0 0 1.5px var(--testo-3); }
+.og-sett-lettera { font-size: var(--t-10); font-weight: 700; letter-spacing: 0.05em; color: var(--testo-3); }
+.og-sett-g.oggi .og-sett-lettera { color: var(--testo); }
+.og-nota { margin: var(--s4) 0 0; font-size: var(--t-13); color: var(--testo-2); line-height: 1.4; }
+
+/* -------------------------------------------------------------- moduli -- */
+
+.og-modlista { list-style: none; display: flex; flex-direction: column; }
+.og-modriga {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: 46px;
+  color: inherit;
+  box-shadow: inset 0 -1px 0 var(--filo);
+}
+.og-modlista li:last-child .og-modriga { box-shadow: none; }
+.og-modicona { display: flex; color: var(--tinta); flex: none; }
+.og-modnome { flex: 1; min-width: 0; font-size: var(--t-15); }
+.og-modstato {
+  flex: none;
+  font-size: var(--t-13);
+  font-weight: 600;
+  color: var(--testo-2);
+  font-variant-numeric: tabular-nums;
+}
+.og-modstato.ok { color: var(--ok); }
+.og-modstato.avviso { color: var(--avviso); }
 
 /* --------------------------------------------------------- da scrivania -- */
 
-@media (min-width: 900px) {
-  .og-saluto-blocco { padding: var(--s2) 0 var(--s6); }
-  .og-verdetto-titolo { font-size: var(--t-34); }
-}
+@media (min-width: 1000px) {
+  /* Le tre colonne dello sketch. La centrale è la più larga perché è quella
+     che si usa: le laterali si guardano e basta. */
+  .og-griglia {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.8fr) minmax(360px, 1.6fr) minmax(220px, 0.9fr);
+    gap: var(--s4);
+    align-items: start;
+  }
+  .og-col-sx { order: 0; }
+  .og-col-centro { order: 0; }
+  .og-col-dx { order: 0; }
 
-@media (min-width: 1120px) {
-  /* Verdetto e cose da fare restano stretti — sono testo, e una riga lunga
-     1100px non si legge — mentre le tessere prendono tutta la larghezza. */
-  .og-verdetto, .og-adesso, .og-carta { max-width: 760px; }
+  /* Data e stato tornano nell'angolo, dove lo sketch li vuole. */
+  .og-meta {
+    position: absolute;
+    top: var(--s5); right: 0;
+    align-items: flex-end;
+    margin: 0;
+    text-align: right;
+  }
+  .og-testa { padding-top: var(--s6); }
+
+  /* La serie riempie la sua colonna: da sola in una carta bassa sembrava
+     un ritaglio avanzato. */
+  .og-col-sx .og-carta { min-height: 260px; }
+  .og-serie-cifra { font-size: 68px; }
 }
