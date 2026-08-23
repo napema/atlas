@@ -530,32 +530,6 @@
   gap: var(--s3); margin-bottom: var(--s3);
 }
 .fi-arrivo-lista { list-style: none; display: flex; flex-direction: column; }
-.fi-arrivo-riga {
-  display: grid;
-  grid-template-columns: 56px 1fr auto;
-  grid-template-areas: "quando nome importo" ". pocket pocket";
-  align-items: baseline;
-  gap: 2px var(--s3);
-  padding: var(--s3) 0;
-  box-shadow: inset 0 -1px 0 var(--filo);
-}
-.fi-arrivo-riga:last-child { box-shadow: none; }
-.fi-arrivo-quando {
-  grid-area: quando;
-  font-size: var(--t-11); font-weight: 700;
-  color: var(--testo-3); text-transform: uppercase; letter-spacing: 0.04em;
-}
-/* Le voci a due giorni o meno accendono il giorno: è quella la riga che
-   cambia la risposta a «posso spendere stasera». */
-.fi-arrivo-riga.vicina .fi-arrivo-quando { color: var(--avviso); }
-.fi-arrivo-nome {
-  grid-area: nome;
-  display: flex; align-items: center; gap: 7px; min-width: 0;
-  font-size: var(--t-15);
-}
-.fi-arrivo-nome > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fi-arrivo-importo { grid-area: importo; font-size: var(--t-15); font-weight: 600; white-space: nowrap; }
-.fi-arrivo-pocket { grid-area: pocket; font-size: var(--t-11); color: var(--testo-3); }
 
 .fi-arrivo-verifica {
   display: flex; align-items: center; justify-content: space-between;
@@ -730,11 +704,11 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
    ========================================================================= */
 
 /* Le etichette e i secondari nelle schede della home non sono mai bianchi. */
-.fi-arrivo-nome,
+.evento-nome,
 .fi-catriga-nome,
 .fi-pocket-nome { color: var(--testo-2); font-weight: 500; }
 
-.fi-arrivo-importo,
+.evento-valore,
 .fi-catriga-cifra { color: var(--testo-2); }
 
 /* Il saldo di un pocket sì: è il dato, non l'etichetta. Ma solo quello che
@@ -987,26 +961,6 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
    che stava per uscire una cosa già uscita.
    ========================================================================= */
 
-/* La riga è diventata un `<button>`: serve azzerare quello che il browser
-   ci mette sopra, non ridisegnarla — la griglia è la stessa di prima. */
-button.fi-arrivo-riga {
-  width: 100%;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background var(--veloce) var(--curva);
-}
-button.fi-arrivo-riga:active { background: var(--scheda-alta); }
-.fi-arrivo-lista li:last-child .fi-arrivo-riga { box-shadow: none; }
-
-/* La freccia occupa la sua colonna: senza, si infilava nella cella
-   dell'importo e i numeri smettevano di essere allineati fra loro. */
-.fi-arrivo-riga { grid-template-columns: 56px 1fr auto 16px; }
-.fi-arrivo-riga { grid-template-areas: "quando nome importo freccia" ". pocket pocket ."; }
-.fi-arrivo-freccia { grid-area: freccia; display: flex; align-self: center; color: var(--testo-3); }
 
 /* ---------------------------------------------------- il foglio di una voce */
 

@@ -831,6 +831,62 @@ export function inArrivo(giorni = 14, iso = oggiISO()) {
   };
 }
 
+/* ------------------------------------------- le uscite come eventi ------ */
+/*
+   Una voce di «In arrivo» tradotta nei campi che disegna `voceEvento()`.
+
+   Sta qui e non in una vista perché la usano in due — la carta Finanze
+   della home e la scheda «In arrivo» dentro Finanze — e devono dire le
+   stesse parole. Il giorno che una delle due comincia a scrivere «fra 2
+   giorni» dove l'altra scrive «Mer 25 ago», sono due schermate di due app
+   diverse.
+*/
+
+const GIORNI_BREVI = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
+
+/**
+ * `tono` non è decorazione: dice perché quella riga ti riguarda oggi.
+ * Rosso = il pocket da cui deve uscire non la copre. Ambra = esce entro due
+ * giorni. Altrimenti spento, che è la maggioranza dei casi ed è giusto:
+ * se ogni riga è colorata, il colore non dice più «questa».
+ */
+export function comeEvento(v) {
+  const d = daISO(v.quando);
+  const cop = coperturaDi(v);
+  return {
+    chiave: `${v.origine}:${v.id}:${v.quando}`,
+    giornoNome: v.fra === 0 ? "Oggi" : v.fra === 1 ? "Domani" : GIORNI_BREVI[d.getDay()],
+    giornoData: `${d.getDate()} ${MESI_BREVI[d.getMonth()]}`,
+    oggi: v.fra === 0,
+    nome: v.nome,
+    valore: v.stimato
+      ? `${eu(v.stimaMin)}–${eu(v.stimaMax)}`
+      : euEvento(v.importo),
+    dettaglio: cop.coperto
+      ? NOMI_POCKET[v.pocket] || v.pocket
+      : `${NOMI_POCKET[v.pocket] || v.pocket} · mancano ${eu(cop.manca)}`,
+    tono: !cop.coperto ? "male" : v.fra <= 2 ? "avviso" : "",
+  };
+}
+
+const NOMI_POCKET = { principale: "Principale", cassa: "Cassa", fisse: "Fisse", ing: "ING" };
+
+/**
+ * I centesimi solo quando ci sono.
+ *
+ * `eu()` arrotonda all'euro, e va bene per un affitto: su WindTRE da 4,99
+ * scriverebbe «5 €», che su una voce da cinque euro è un errore del 2% e
+ * soprattutto è una cifra che non compare in nessun estratto conto.
+ */
+const euEvento = (c) => (c || 0) % 100 === 0
+  ? eu(c)
+  : `${((c || 0) / 100).toLocaleString("it-IT",
+      { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+
+/** Le prossime `quante` uscite, già pronte da disegnare. Per la home. */
+export const calendarioUscite = (iso = oggiISO(), quante = 3) =>
+  inArrivo(30, iso).voci.slice(0, quante).map(comeEvento);
+
 /** Basta il pocket per sapere se una singola voce è coperta. */
 export function coperturaDi(voce) {
   const id = voce.pocket || "principale";

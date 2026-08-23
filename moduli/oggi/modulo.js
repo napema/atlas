@@ -40,7 +40,7 @@
 
 import { MODULI_DATI, prendiModulo } from "../../core/registro.js";
 import {
-  el, aggiungi, plurale, tocco,
+  el, aggiungi, plurale, tocco, voceEvento,
   GIORNI_INIZIALI, dataUmana, oggiISO,
 } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
@@ -371,38 +371,18 @@ const soldiVoce = (eti, num, nota) => el("div", { class: "og-soldi-voce" }, [
 ]);
 
 /**
- * Le prossime uscite come voci di un calendario: data a sinistra, filo
- * colorato, nome e importo.
+ * Le prossime uscite, con la stessa voce di calendario che usa la scheda
+ * «In arrivo» dentro Finanze — `voceEvento()` di core/ui.js.
  *
- * È la forma giusta per questa cosa, e non è una preferenza estetica: quando
- * esce una spesa è un fatto di CALENDARIO, e un calendario si legge dalla
- * colonna delle date. Ridotta a una riga di testo — «fra 2 gg · 400 € · Rata
- * prestito» — bisogna rileggerla ogni volta per capire quale dei tre pezzi è
- * la data.
- *
- * Il filo colorato dice perché quella riga ti riguarda oggi, e solo quando ti
- * riguarda: rosso se il pocket da cui deve uscire non la copre, ambra se esce
- * entro due giorni. Negli altri casi resta spento, che è la maggioranza dei
- * casi ed è giusto che lo sia.
+ * Le voci arrivano già formattate da `oggi()`: è il modulo a sapere che gli
+ * importi sono centesimi, e passarli grezzi vorrebbe dire insegnarlo alla
+ * home.
  */
 function calendario(voci) {
   if (!voci?.length) {
     return el("p", { class: "og-cal-vuoto", testo: "Niente in uscita nei prossimi 30 giorni." });
   }
-  return el("ul", { class: "og-cal" }, voci.map((v) => el("li", {
-    class: `og-cal-riga ${v.tono}`.trim(),
-  }, [
-    el("span", { class: "og-cal-data" + (v.oggi ? " oggi" : "") }, [
-      el("span", { class: "og-cal-giorno", testo: v.giornoNome }),
-      el("span", { class: "og-cal-mese", testo: v.giornoData }),
-    ]),
-    el("span", { class: "og-cal-filo" }),
-    el("span", { class: "og-cal-testo" }, [
-      el("span", { class: "og-cal-nome", testo: v.nome }),
-      el("span", { class: "og-cal-dett", testo: v.dettaglio }),
-    ]),
-    el("span", { class: "og-cal-importo", testo: v.importo }),
-  ])));
+  return el("ul", { class: "eventi og-cal" }, voci.map(voceEvento));
 }
 
 /**

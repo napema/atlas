@@ -8,7 +8,7 @@
 // posto sbagliato: sta in calcolo.js.
 
 import {
-  el, aggiungi, apriFoglio, chiudiFoglio, avviso, celebra, tocco, traccia, lista, riga, vuoto,
+  el, aggiungi, apriFoglio, chiudiFoglio, avviso, celebra, tocco, traccia, lista, riga, vuoto, voceEvento,
   campo, segmenti, pillole, euro, euroRicco, euroGrande, centesimi, nuovoId, plurale,
   tessera, spezzata, gettone, selettore,
   oggiISO, dataUmana, dataBreve, daISO, GIORNI, GIORNI_INIZIALI, MESI,
@@ -30,7 +30,7 @@ import {
   movimentiSottocategoria, contestoMovimento, quadratura,
   cicloDi, spostaCiclo, nomeCiclo, movimentiDelCiclo, categorieDelCiclo,
   settimana, saldoPocket, pocketConSaldi, inArrivo, comeSpendi, sforamenti,
-  alert, spesoOggi, importoRicorrente, prossimaScadenza, esitoCheck, coperturaDi,
+  alert, spesoOggi, importoRicorrente, prossimaScadenza, esitoCheck, coperturaDi, comeEvento,
 } from "./calcolo.js";
 import { graficoCumulato, graficoCiambella, graficoBarre } from "./grafici.js";
 import { preparaImport, eseguiImport } from "./importa.js";
@@ -294,28 +294,13 @@ function inArrivoBlocco(a, ridisegna) {
       el("span", { class: "cifra cifra-s negativo", html: euroGrande(a.totale, { centesimi: false }) }),
     ]),
 
-    // Ogni riga si apre. Prima era un elenco da guardare, e quando una di
-    // queste veniva pagata non c'era niente da toccare: restava lì a dire
-    // che stava per uscire una cosa già uscita.
-    el("ul", { class: "fi-arrivo-lista" }, a.voci.map((v) => el("li", {}, [
-      el("button", {
-        class: "fi-arrivo-riga" + (v.fra <= 2 ? " vicina" : ""),
-        type: "button", "aria-label": `${v.nome}, ${dataBreve(v.quando)}`,
-        onClick: () => apriInArrivo(v, ridisegna),
-      }, [
-        el("span", { class: "fi-arrivo-quando", testo: dataBreve(v.quando) }),
-        el("span", { class: "fi-arrivo-nome" }, [
-          el("span", { testo: v.nome }),
-          v.stimato && el("span", { class: "fi-tag ambra", testo: "stima" }),
-          v.origine === "previsto" && el("span", { class: "fi-tag", testo: "una tantum" }),
-        ]),
-        el("span", { class: "fi-arrivo-importo num", testo: v.stimato
-          ? `${euro(v.stimaMin, { tondo: true })}–${euro(v.stimaMax, { tondo: true })}`
-          : euro(v.importo) }),
-        el("span", { class: "fi-arrivo-pocket", testo: nomePocket(v.pocket) }),
-        el("span", { class: "fi-arrivo-freccia", html: icona("freccia", 15) }),
-      ]),
-    ]))),
+    // La stessa voce di calendario della home, `voceEvento()` di core/ui.js.
+    // Erano due righe diverse per la stessa cosa — qui una griglia con la
+    // data in maiuscoletto, in home un calendario — e la seconda si leggeva
+    // meglio. Averne due voleva anche dire che fra un mese non si sarebbero
+    // più somigliate.
+    el("ul", { class: "eventi fi-arrivo-lista" }, a.voci.map((v) =>
+      voceEvento({ ...comeEvento(v), azione: () => apriInArrivo(v, ridisegna) }))),
 
     // La verifica pocket per pocket. Con le sole Fisse bastava finché tutto
     // usciva da lì: una maxi rata sulla riserva non la vedeva nessuno.
