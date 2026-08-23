@@ -18,7 +18,7 @@
 
 import {
   movimentiVivi, stato, profiloDi, CATEGORIE_CASSA,
-  classeDi, SOGLIE_PREDEFINITE, pendenti, checkFatto, serieCheck,
+  classeDi, SOGLIE_PREDEFINITE, pendenti, checkFatto, serieCheck, previsti,
 } from "./dati.js";
 import { isoDi, daISO, oggiISO, MESI_BREVI } from "../../core/ui.js";
 
@@ -706,15 +706,40 @@ export function spesoOggi(iso = oggiISO()) {
 
 const MESI_CADENZA = { mensile: 1, bimestrale: 2, trimestrale: 3, annuale: 12 };
 
-/** La prossima scadenza di un ricorrente, da `iso` in avanti. */
+/**
+ * La prossima scadenza di un ricorrente, da `iso` in avanti.
+ *
+ * Tre cose la spostano in avanti, e sono tre cose diverse:
+ *
+ * `r.da`      il ricorrente non esiste prima di quella data. Le utenze
+ *             partono a settembre ma la prima bolletta arriva a fine
+ *             ottobre: senza una data d'inizio l'unico modo di dirlo era
+ *             tenerlo spento e ricordarsi di riaccenderlo.
+ * `r.pagato`  l'ultima scadenza già saldata. Una rata pagata tre giorni in
+ *             anticipo deve sparire da «In arrivo», non restarci fino al
+ *             giorno giusto raccontando una cosa falsa.
+ * `r.mese`    l'ancora della cadenza, per quelle non mensili.
+ *
+ * Quando c'è `da`, l'ancora la detta lui: è la data della PRIMA scadenza,
+ * quindi bimestrale da ottobre vuol dire ottobre-dicembre-febbraio e non
+ * gennaio-marzo-maggio. `mese` resta per i ricorrenti vecchi che non ce
+ * l'hanno.
+ */
 export function prossimaScadenza(r, iso = oggiISO()) {
   const passo = MESI_CADENZA[r.cadenza] || 1;
-  const d = daISO(iso);
-  // Le cadenze non mensili sono ANCORATE a un mese: senza l'ancora, un
-  // annuale cadeva ogni anno nel mese in cui lo stavi guardando, e il bollo
-  // di dicembre compariva ad agosto. `mese` è 1-12; se manca, l'ancora è
-  // gennaio, che almeno è stabile.
-  const ancora = passo === 1 ? null : ((r.mese || 1) - 1);
+
+  // Il punto di partenza è il più avanti fra oggi, l'inizio del ricorrente
+  // e il giorno dopo l'ultima scadenza saldata.
+  let partenza = iso;
+  if (r.da && r.da > partenza) partenza = r.da;
+  if (r.pagato && r.pagato >= partenza) {
+    partenza = isoDi(new Date(daISO(r.pagato).getTime() + 86400000));
+  }
+
+  const d = daISO(partenza);
+  const ancora = passo === 1 ? null
+    : r.da ? (daISO(r.da).getMonth())
+    : ((r.mese || 1) - 1);
   for (let k = 0; k <= 36; k++) {
     const mese = d.getMonth() + k;
     // Con l'ancora si accettano solo i mesi che distano un multiplo del
@@ -725,7 +750,11 @@ export function prossimaScadenza(r, iso = oggiISO()) {
     // il 30 a novembre, non il 1° dicembre.
     const ultimo = new Date(d.getFullYear(), mese + 1, 0).getDate();
     const cand = isoDi(new Date(d.getFullYear(), mese, Math.min(r.giorno, ultimo)));
-    if (cand >= iso) return cand;
+    // Il confronto è con PARTENZA, non con `iso`. Con `iso` una scadenza
+    // appena saldata continuava a essere la prossima: la partenza si
+    // spostava al giorno dopo, il candidato tornava quello di ieri, e
+    // passava lo stesso perché era comunque successivo a oggi.
+    if (cand >= partenza) return cand;
   }
   return null;
 }
@@ -753,21 +782,61 @@ export function inArrivo(giorni = 14, iso = oggiISO()) {
       // certa è il modo di scoprire troppo tardi che non bastava.
       stimato: r.tipo === "variabile",
       fra: Math.round((daISO(quando) - daISO(iso)) / 86400000),
+      origine: "ricorrente",
     });
   }
+
+  // I previsti: una tantum futuri, stessa lista. Se ne stessero in un
+  // riquadro loro bisognerebbe sommare due totali a mente per sapere quanto
+  // esce nei prossimi quattordici giorni, ed è esattamente la domanda a cui
+  // «In arrivo» esiste per rispondere.
+  for (const p of previsti()) {
+    if (!p.quando || p.quando > limite) continue;
+    voci.push({
+      ...p, importo: p.imp || 0, stimato: false,
+      fra: Math.round((daISO(p.quando) - daISO(iso)) / 86400000),
+      origine: "previsto",
+    });
+  }
+
   voci.sort((a, b) => a.quando.localeCompare(b.quando));
 
   const totale = voci.reduce((s, v) => s + v.importo, 0);
   const daFisse = voci.filter((v) => v.pocket === "fisse").reduce((s, v) => s + v.importo, 0);
   const saldoFisse = saldoPocket("fisse");
 
+  // Il conto pocket per pocket. Con le sole Fisse bastava, finché tutto
+  // usciva da lì; una maxi rata da 2.576 sulla riserva non la vedeva
+  // nessuno, e «coperto» diceva di sì guardando il pocket sbagliato.
+  const perPocket = {};
+  for (const v of voci) {
+    const id = v.pocket || "principale";
+    (perPocket[id] ||= { totale: 0, saldo: saldoPocket(id), voci: 0 });
+    perPocket[id].totale += v.importo;
+    perPocket[id].voci++;
+  }
+  for (const p of Object.values(perPocket)) {
+    p.scoperto = Math.max(0, p.totale - p.saldo);
+    p.coperto = p.scoperto === 0;
+  }
+
   return {
-    voci, totale, daFisse, saldoFisse,
+    voci, totale, daFisse, saldoFisse, perPocket,
     // È l'errore che ha spaccato luglio: abbonamenti da 55 in un pocket da
     // 20, che ogni mese sbordavano sul settimanale.
     scoperto: Math.max(0, daFisse - saldoFisse),
     coperte: daFisse <= saldoFisse,
+    // Lo scoperto vero, su tutti i pocket coinvolti.
+    scopertoTotale: Object.values(perPocket).reduce((s, p) => s + p.scoperto, 0),
   };
+}
+
+/** Basta il pocket per sapere se una singola voce è coperta. */
+export function coperturaDi(voce) {
+  const id = voce.pocket || "principale";
+  const saldo = saldoPocket(id);
+  return { pocket: id, saldo, manca: Math.max(0, (voce.importo ?? voce.imp ?? 0) - saldo),
+    coperto: saldo >= (voce.importo ?? voce.imp ?? 0) };
 }
 
 /** I ricorrenti che scadono proprio oggi: la home li dice per nome. */

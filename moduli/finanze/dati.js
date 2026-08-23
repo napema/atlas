@@ -290,7 +290,7 @@ export function migra() {
   const s = stato();
   const serve =
     !Array.isArray(s.pockets) || !Array.isArray(s.ricorrenti) ||
-    !s.soglie || s.config?.giornoStipendio == null || (s.v || 0) < 4;
+    !s.soglie || s.config?.giornoStipendio == null || (s.v || 0) < 5;
   if (!serve) return;
 
   casella.aggiorna((st) => {
@@ -315,7 +315,71 @@ export function migra() {
       if (m.rimborsoDi === undefined) m.rimborsoDi = m.rif ?? null;
     }
     st.v = 4;
+
+    /* --------------------------------------------------------------- v5 --
+       Due campi nuovi sui ricorrenti e una lista nuova accanto.
+
+       `da`   la data prima della quale il ricorrente non esiste. Serviva:
+              le utenze partono a settembre ma la prima bolletta arriva a
+              fine ottobre, e senza una data d'inizio l'unico modo di dirlo
+              era spegnere il ricorrente e ricordarsi di riaccenderlo.
+       `pagato` l'ultima scadenza già saldata. È quello che fa sparire una
+              voce da «In arrivo» quando la paghi in anticipo, senza
+              cancellare il ricorrente.
+       `previsti` i pagamenti una tantum futuri — la maxi rata d'agosto. Non
+              sono movimenti (non sono ancora usciti) e non sono ricorrenti
+              (non tornano): sono la terza cosa, e finché non c'era andavano
+              tenuti a mente.                                              */
+    for (const r of st.ricorrenti) {
+      if (r.da === undefined) r.da = null;
+      if (r.pagato === undefined) r.pagato = null;
+    }
+    if (!Array.isArray(st.previsti)) st.previsti = previstiIniziali();
+    st.v = 5;
   });
+
+  // Gli aggiustamenti chiesti il 23 agosto 2026. Stanno FUORI dal blocco dei
+  // campi nuovi e hanno un flag loro perché non sono una migrazione di
+  // struttura ma un cambio di dati: se un domani l'affitto cambia ancora, lo
+  // si cambia dall'interfaccia e questo non deve rimetterlo a 850.
+  if (!stato().config?.mig2608) casella.aggiorna(aggiustamenti2608);
+}
+
+/** Vedi sopra: una tantum, e mai più ripetuta. */
+function aggiustamenti2608(st) {
+  const tocca = (id, patch) => {
+    const r = (st.ricorrenti || []).find((x) => x.id === id);
+    if (r) Object.assign(r, patch);
+    return r;
+  };
+
+  tocca("rata-auto", { imp: 25000 });
+  // L'affitto sale a 850 e parte da ottobre: settembre è dentro la maxi rata.
+  tocca("affitto", { imp: 85000, da: "2026-10-01" });
+  // Il condominio non sparisce, si spegne: è dentro gli 850 dell'affitto, e
+  // cancellarlo perderebbe lo storico dei mesi in cui è uscito davvero.
+  tocca("condominio", { attivo: false });
+  // Utenze: ogni due mesi, la prima a fine ottobre. `da` fa anche da ancora
+  // della cadenza, quindi ottobre–dicembre–febbraio e non gennaio–marzo.
+  tocca("utenze", { tipo: "fissa", imp: 15000, cadenza: "bimestrale",
+    giorno: 31, mese: 10, da: "2026-10-31", stimaMin: null, stimaMax: null });
+  tocca("bollo", { tipo: "fissa", imp: 36000, stimaMin: null, stimaMax: null });
+  // L'assicurazione si paga in due rate a febbraio e giugno, che non sono
+  // una cadenza: quattro mesi e poi otto. Due ricorrenti annuali ancorati a
+  // due mesi diversi sono l'unico modo di dirlo senza mentire al calcolo.
+  tocca("assicurazione", { nome: "Assicurazione auto · 1ª rata", tipo: "fissa",
+    imp: 50000, cadenza: "annuale", mese: 2, giorno: 15, stimaMin: null, stimaMax: null });
+  if (!(st.ricorrenti || []).some((x) => x.id === "assicurazione-2")) {
+    st.ricorrenti.push({
+      id: "assicurazione-2", nome: "Assicurazione auto · 2ª rata", imp: 50000,
+      cat: "acc", pocket: "ing", tipo: "fissa", cadenza: "annuale",
+      giorno: 15, mese: 6, da: null, pagato: null,
+      stimaMin: null, stimaMax: null, attivo: true,
+    });
+  }
+
+  st.config.mig2608 = true;
+  st.metaUp = Date.now();
 }
 
 /* ----------------------------------------------------------- scritture -- */
@@ -340,6 +404,76 @@ export function salvaRicorrente(r) {
 
 export function eliminaRicorrente(id) {
   scriviMeta((s) => { s.ricorrenti = (s.ricorrenti || []).filter((x) => x.id !== id); });
+}
+
+/**
+ * Segna una scadenza come già pagata, senza toccare il ricorrente.
+ *
+ * `pagato` è l'ultima scadenza saldata, e `prossimaScadenza()` salta tutto
+ * ciò che non la supera. È così che una rata pagata tre giorni in anticipo
+ * sparisce da «In arrivo» invece di restarci a dire una cosa falsa fino al
+ * giorno giusto.
+ */
+export function segnaScadenzaPagata(id, quando) {
+  scriviMeta((s) => {
+    const r = (s.ricorrenti || []).find((x) => x.id === id);
+    if (r) r.pagato = quando;
+  });
+}
+
+/* =================================================== i pagamenti previsti ==
+   Una tantum futuri: la maxi rata d'agosto, il deposito, la caparra.
+
+   Non sono movimenti — non sono ancora usciti, e metterli fra i movimenti
+   falserebbe ogni totale del mese. Non sono ricorrenti — non tornano, e un
+   ricorrente «una volta sola» è una cadenza inventata che poi qualcuno deve
+   ricordarsi di spegnere. Sono la terza cosa, e stanno in una lista loro.
+
+   Ognuno dice DA DOVE uscirà (`pocket`), che è l'unica informazione che
+   permette di rispondere alla domanda vera: quando arriva, i soldi ci sono?
+   ========================================================================= */
+
+export const previsti = () => (stato().previsti || []).filter((p) => p && !p.del && !p.pagatoIl);
+
+/** Anche quelli già pagati: servono allo storico, non a «In arrivo». */
+export const previstiTutti = () => (stato().previsti || []).filter((p) => p && !p.del);
+
+export function previstiIniziali() {
+  return [{
+    id: "maxi-rata-set",
+    nome: "Maxi rata: 2 mesi di affitto + agenzia",
+    imp: 257600,
+    quando: "2026-08-28",
+    pocket: "ing",
+    cat: "fisse",
+    nota: "Copre settembre e ottobre. Da ottobre riparte l'affitto mensile.",
+    pagatoIl: null,
+    up: Date.now(),
+  }];
+}
+
+export function salvaPrevisto(p) {
+  scriviMeta((s) => {
+    s.previsti = s.previsti || [];
+    const i = s.previsti.findIndex((x) => x.id === p.id);
+    if (i >= 0) s.previsti[i] = { ...s.previsti[i], ...p, up: Date.now() };
+    else s.previsti.push({ pagatoIl: null, ...p, up: Date.now() });
+  });
+}
+
+/** Lapide, non rimozione: la lista si sincronizza fra due dispositivi. */
+export function eliminaPrevisto(id) {
+  scriviMeta((s) => {
+    const i = (s.previsti || []).findIndex((x) => x.id === id);
+    if (i >= 0) s.previsti[i] = { id, del: true, up: Date.now() };
+  });
+}
+
+export function segnaPrevistoPagato(id, quando) {
+  scriviMeta((s) => {
+    const p = (s.previsti || []).find((x) => x.id === id);
+    if (p) { p.pagatoIl = quando; p.up = Date.now(); }
+  });
 }
 
 /**

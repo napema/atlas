@@ -191,3 +191,32 @@ nessuno lo legge, non ci va — sta nell'archivio del modulo.
 Il caso che giustifica tutto il meccanismo: la sessione serale di mobilità è
 anche un'abitudine da spuntare. Senza lavagna, l'utente fa due gesti per un
 fatto solo e i due archivi si contraddicono.
+
+---
+
+## Finanze v5 — `da`, `pagato`, e i previsti (23 ago 2026)
+
+Tre aggiunte allo schema dei ricorrenti e una lista nuova accanto.
+
+| campo | dove | cosa dice |
+|---|---|---|
+| `da` | ricorrente | ISO. Prima di questa data il ricorrente **non esiste**. Per le cadenze non mensili fa anche da **ancora**: bimestrale da ottobre = ott, dic, feb — non gen, mar, mag. Quando c'è, `mese` non si usa. |
+| `pagato` | ricorrente | ISO dell'ultima scadenza saldata. `prossimaScadenza()` riparte dal giorno dopo. È quello che fa sparire da «In arrivo» una rata pagata in anticipo. |
+| `previsti[]` | radice | Una tantum futuri: `{ id, nome, imp, quando, pocket, cat, nota, pagatoIl, up, del? }`. |
+
+**Perché i previsti non sono movimenti**: non sono ancora usciti, e metterli
+fra i movimenti falserebbe ogni totale del mese.
+**Perché non sono ricorrenti**: non tornano, e un ricorrente «una volta sola»
+è una cadenza inventata che poi qualcuno deve ricordarsi di spegnere.
+
+`pocket` su un previsto non è decorativo: è l'unica informazione che permette
+di rispondere alla domanda vera prima di una spesa grossa già decisa — quando
+arriva, i soldi ci sono? Il conto lo fa `coperturaDi()`, pocket per pocket.
+
+### La trappola trovata scrivendolo
+
+`prossimaScadenza()` scandiva i mesi ma confrontava il candidato con `iso` —
+il parametro — invece che con la partenza calcolata. Con una scadenza appena
+saldata la partenza si spostava al giorno dopo, il candidato tornava quello di
+ieri, e passava lo stesso perché era comunque successivo a *oggi*. La rata
+pagata restava in «In arrivo» come se niente fosse.

@@ -19,7 +19,8 @@ import {
   salvaMovimento, eliminaMovimento, impara, normalizza, scriviMeta, casella,
   CATEGORIE_CASSA, TIPI_POCKET, SOGLIE_PREDEFINITE, pocketPerId, scriviPocket,
   salvaRicorrente, eliminaRicorrente, pendenti, metteInSospeso, togliDaSospeso,
-  segnaCheck,
+  segnaCheck, segnaScadenzaPagata,
+  previsti, salvaPrevisto, eliminaPrevisto, segnaPrevistoPagato,
 } from "./dati.js";
 import {
   statistiche, budgetTotale, cassaSettimana, avvisi, verdetto, proiezione,
@@ -29,7 +30,7 @@ import {
   movimentiSottocategoria, contestoMovimento, quadratura,
   cicloDi, spostaCiclo, nomeCiclo, movimentiDelCiclo, categorieDelCiclo,
   settimana, saldoPocket, pocketConSaldi, inArrivo, comeSpendi, sforamenti,
-  alert, spesoOggi, importoRicorrente, prossimaScadenza, esitoCheck,
+  alert, spesoOggi, importoRicorrente, prossimaScadenza, esitoCheck, coperturaDi,
 } from "./calcolo.js";
 import { graficoCumulato, graficoCiambella, graficoBarre } from "./grafici.js";
 import { preparaImport, eseguiImport } from "./importa.js";
@@ -61,7 +62,7 @@ export function vistaHome(mese, grafico, cambia, apriCat, azioni = {}) {
     bloccoCheck(oggi, () => cambia({})),
     av.length > 0 && blocchoAlert(av),
     blocchoSospese(() => cambia({})),
-    inArrivoBlocco(arrivo),
+    inArrivoBlocco(arrivo, () => cambia({})),
     dovSonoISoldi(azioni),
     categorieDelCicloBlocco(ciclo, apriCat),
     comeSpendiBlocco(ciclo),
@@ -278,12 +279,12 @@ function blocchoAlert(lista) {
    quattordici giorni, si vede subito. È l'errore che ha spaccato luglio.
 */
 
-function inArrivoBlocco(a) {
+function inArrivoBlocco(a, ridisegna) {
   if (!a.voci.length) {
     return el("section", { class: "scheda" }, [
       el("div", { class: "micro", testo: "In arrivo · prossimi 14 giorni" }),
       el("p", { class: "nota", stile: { marginTop: "8px", marginBottom: "0" },
-        testo: "Niente in scadenza. I ricorrenti si configurano in Impostazioni." }),
+        testo: "Niente in scadenza. I ricorrenti e i pagamenti previsti si configurano in Impostazioni." }),
     ]);
   }
 
@@ -293,29 +294,238 @@ function inArrivoBlocco(a) {
       el("span", { class: "cifra cifra-s negativo", html: euroGrande(a.totale, { centesimi: false }) }),
     ]),
 
-    el("ul", { class: "fi-arrivo-lista" }, a.voci.map((v) => el("li", {
-      class: "fi-arrivo-riga" + (v.fra <= 2 ? " vicina" : ""),
-    }, [
-      el("span", { class: "fi-arrivo-quando", testo: dataBreve(v.quando) }),
-      el("span", { class: "fi-arrivo-nome" }, [
-        el("span", { testo: v.nome }),
-        v.stimato && el("span", { class: "fi-tag ambra", testo: "stima" }),
+    // Ogni riga si apre. Prima era un elenco da guardare, e quando una di
+    // queste veniva pagata non c'era niente da toccare: restava lì a dire
+    // che stava per uscire una cosa già uscita.
+    el("ul", { class: "fi-arrivo-lista" }, a.voci.map((v) => el("li", {}, [
+      el("button", {
+        class: "fi-arrivo-riga" + (v.fra <= 2 ? " vicina" : ""),
+        type: "button", "aria-label": `${v.nome}, ${dataBreve(v.quando)}`,
+        onClick: () => apriInArrivo(v, ridisegna),
+      }, [
+        el("span", { class: "fi-arrivo-quando", testo: dataBreve(v.quando) }),
+        el("span", { class: "fi-arrivo-nome" }, [
+          el("span", { testo: v.nome }),
+          v.stimato && el("span", { class: "fi-tag ambra", testo: "stima" }),
+          v.origine === "previsto" && el("span", { class: "fi-tag", testo: "una tantum" }),
+        ]),
+        el("span", { class: "fi-arrivo-importo num", testo: v.stimato
+          ? `${euro(v.stimaMin, { tondo: true })}–${euro(v.stimaMax, { tondo: true })}`
+          : euro(v.importo) }),
+        el("span", { class: "fi-arrivo-pocket", testo: nomePocket(v.pocket) }),
+        el("span", { class: "fi-arrivo-freccia", html: icona("freccia", 15) }),
       ]),
-      el("span", { class: "fi-arrivo-importo num", testo: v.stimato
-        ? `${euro(v.stimaMin, { tondo: true })}–${euro(v.stimaMax, { tondo: true })}`
-        : euro(v.importo) }),
-      el("span", { class: "fi-arrivo-pocket", testo: nomePocket(v.pocket) }),
     ]))),
 
-    el("div", { class: `fi-arrivo-verifica ${a.coperte ? "ok" : "male"}` }, [
-      el("span", { testo: a.coperte
-        ? "Coperto da Spese fisse"
-        : "Le Spese fisse non bastano" }),
-      el("span", { class: "num", testo: a.coperte
-        ? `${euro(a.daFisse, { tondo: true })} / ${euro(a.saldoFisse, { tondo: true })}`
-        : `mancano ${euro(a.scoperto, { tondo: true })}` }),
-    ]),
+    // La verifica pocket per pocket. Con le sole Fisse bastava finché tutto
+    // usciva da lì: una maxi rata sulla riserva non la vedeva nessuno.
+    ...Object.entries(a.perPocket).map(([id, p]) =>
+      el("div", { class: `fi-arrivo-verifica ${p.coperto ? "ok" : "male"}` }, [
+        el("span", { testo: p.coperto
+          ? `Coperto da ${nomePocket(id)}`
+          : `${nomePocket(id)} non basta` }),
+        el("span", { class: "num", testo: p.coperto
+          ? `${euro(p.totale, { tondo: true })} / ${euro(p.saldo, { tondo: true })}`
+          : `mancano ${euro(p.scoperto, { tondo: true })}` }),
+      ])),
   ]);
+}
+
+/* ------------------------------------------------ il foglio di «in arrivo»
+   Una spesa che non è ancora un movimento.
+
+   Il pulsante è «Paga», e vuol dire una cosa sola: è uscita davvero, adesso.
+   Non muove i soldi al posto tuo — la banca l'ha già fatto o la farà — ma
+   registra il movimento e toglie la voce dall'elenco. Serve perché una rata
+   pagata tre giorni prima restava lì fino al giorno giusto a dire una cosa
+   falsa, e l'unico modo di zittirla era registrare la spesa a mano e poi
+   ignorare la riga.
+
+   L'importo si può correggere prima di confermare: le stime sbagliano, ed è
+   l'unico momento in cui si conosce il numero vero.                        */
+
+export function apriInArrivo(v, ridisegna) {
+  const oggi = oggiISO();
+  const cop = coperturaDi(v);
+  const bozza = { imp: v.importo || 0 };
+
+  const { corpo, chiudi } = apriFoglio({
+    titolo: v.nome,
+    sinistra: el("button", { class: "btn nudo", type: "button", testo: "Chiudi",
+      onClick: () => chiudiFoglio() }),
+  });
+
+  const quando = v.fra === 0 ? "oggi" : v.fra === 1 ? "domani"
+    : v.fra < 0 ? `${Math.abs(v.fra)} giorni fa` : `fra ${v.fra} giorni`;
+
+  aggiungi(corpo, [
+    el("div", { class: "fi-arrivo-eroe" }, [
+      el("div", { class: "cifra cifra-l", html: euroGrande(v.importo) }),
+      el("p", { class: "fi-arrivo-eroe-nota",
+        testo: `${dataUmana(v.quando)} · ${quando}` }),
+    ]),
+
+    el("ul", { class: "fi-dett-lista" }, [
+      rigaDett("Esce da", nomePocket(v.pocket)),
+      rigaDett("Tipo", v.origine === "previsto" ? "Una tantum" : etichettaCadenza(v)),
+      v.cat && rigaDett("Categoria", categoriaPerId(v.cat)?.nome || v.cat),
+      v.stimato && rigaDett("Importo", "stimato, da correggere quando lo sai"),
+      v.nota && rigaDett("Nota", v.nota),
+    ].filter(Boolean)),
+
+    // La copertura: la domanda vera davanti a una scadenza non è quanto
+    // costa, è se i soldi ci sono nel posto da cui deve uscire.
+    el("div", { class: `fi-copertura ${cop.coperto ? "ok" : "male"}` }, [
+      el("span", { class: "fi-copertura-segno",
+        html: icona(cop.coperto ? "fatto" : "allarme", 20) }),
+      el("div", {}, [
+        el("div", { class: "fi-copertura-titolo", testo: cop.coperto
+          ? "I soldi ci sono" : `Mancano ${euro(cop.manca, { tondo: true })}` }),
+        el("div", { class: "fi-copertura-nota",
+          testo: `${nomePocket(cop.pocket)}: ${euro(cop.saldo)} disponibili` }),
+      ]),
+    ]),
+
+    el("div", { class: "campo-gruppo" }, [
+      el("label", { class: "campo-etichetta", testo: "Quanto è uscito davvero" }),
+      campo({ tipo: "text", inputmode: "decimal",
+        valore: (bozza.imp / 100).toFixed(2).replace(".", ","),
+        alCambio: (t) => { bozza.imp = centesimi(t); } }),
+    ]),
+
+    el("button", {
+      class: "btn pieno grande", type: "button", testo: "Paga",
+      stile: { marginTop: "var(--s4)" },
+      onClick: () => {
+        if (bozza.imp <= 0) { avviso("Serve un importo.", { tono: "errore" }); return; }
+        paga(v, bozza.imp, oggi);
+        chiudi();
+        celebra(v.nome.length <= 22 ? v.nome : "Pagato");
+        ridisegna?.();
+      },
+    }),
+    el("p", { class: "nota", stile: { marginTop: "var(--s3)" }, testo:
+      "Registra il movimento di oggi e toglie la voce da «In arrivo». " +
+      (v.origine === "previsto"
+        ? "Il pagamento previsto non torna più."
+        : "Il ricorrente resta, e riparte dalla prossima scadenza.") }),
+  ]);
+}
+
+/* ------------------------------------------- il foglio di un previsto ----
+   Quattro campi e nient'altro: nome, quanto, quando, da dove.
+
+   «Da dove» è quello che lo distingue da un promemoria: senza il pocket non
+   si può rispondere alla sola domanda che conta prima di una spesa grossa
+   già decisa, cioè se quando arriva i soldi ci sono. Il conto lo si vede
+   qui sotto mentre lo si compila.                                          */
+
+function apriPrevisto(esistente, ridisegna) {
+  const b = esistente
+    ? { ...esistente }
+    : { id: nuovoId("p"), nome: "", imp: 0, quando: oggiISO(),
+        pocket: "ing", cat: "fisse", nota: "", pagatoIl: null };
+
+  const zonaCop = el("div", {});
+  const disegnaCop = () => {
+    zonaCop.replaceChildren();
+    if (!b.imp) return;
+    const cop = coperturaDi(b);
+    aggiungi(zonaCop, [el("div", { class: `fi-copertura ${cop.coperto ? "ok" : "male"}` }, [
+      el("span", { class: "fi-copertura-segno",
+        html: icona(cop.coperto ? "fatto" : "allarme", 20) }),
+      el("div", {}, [
+        el("div", { class: "fi-copertura-titolo", testo: cop.coperto
+          ? "I soldi ci sono" : `Mancano ${euro(cop.manca, { tondo: true })}` }),
+        el("div", { class: "fi-copertura-nota",
+          testo: `${nomePocket(cop.pocket)}: ${euro(cop.saldo)} disponibili` }),
+      ]),
+    ])]);
+  };
+  disegnaCop();
+
+  const { corpo } = apriFoglio({
+    titolo: esistente ? "Pagamento previsto" : "Nuovo pagamento previsto",
+    sinistra: el("button", { class: "btn nudo", type: "button", testo: "Annulla",
+      onClick: () => chiudiFoglio() }),
+    destra: el("button", {
+      class: "btn nudo", type: "button", testo: "Salva",
+      onClick: () => {
+        if (!b.nome.trim()) { avviso("Serve un nome.", { tono: "errore" }); return; }
+        if (!b.imp) { avviso("Serve un importo.", { tono: "errore" }); return; }
+        salvaPrevisto({ ...b, nome: b.nome.trim() });
+        chiudiFoglio();
+        avviso("Salvato.");
+      },
+    }),
+    alChiudi: ridisegna,
+  });
+
+  aggiungi(corpo, [
+    campo({ etichetta: "Nome", valore: b.nome, segnaposto: "Maxi rata affitto",
+      alCambio: (v) => { b.nome = v; } }),
+
+    el("div", { class: "campo-gruppo" }, [
+      el("label", { class: "campo-etichetta", testo: "Importo" }),
+      campo({ tipo: "text", inputmode: "decimal",
+        valore: b.imp ? (b.imp / 100).toFixed(2).replace(".", ",") : "",
+        alCambio: (v) => { b.imp = centesimi(v); disegnaCop(); } }),
+    ]),
+
+    el("div", { class: "campo-gruppo" }, [
+      el("label", { class: "campo-etichetta", testo: "Quando esce" }),
+      campo({ tipo: "date", valore: b.quando, alCambio: (v) => { b.quando = v || oggiISO(); } }),
+    ]),
+
+    el("div", { class: "campo-gruppo" }, [
+      el("label", { class: "campo-etichetta", testo: "Da quale pocket esce" }),
+      pillole((stato().pockets || []).map((p) => [p.id, p.nome]), b.pocket,
+        (v) => { b.pocket = v; disegnaCop(); }),
+    ]),
+    zonaCop,
+
+    el("div", { class: "campo-gruppo" }, [
+      el("label", { class: "campo-etichetta", testo: "Categoria" }),
+      pillole(stato().cats.map((c) => [c.id, c.nome, coloreCat(c.id)]), b.cat,
+        (v) => { b.cat = v; }, { unaRiga: true }),
+    ]),
+
+    campo({ etichetta: "Nota", valore: b.nota || "", segnaposto: "facoltativa",
+      alCambio: (v) => { b.nota = v; } }),
+
+    esistente && el("button", {
+      class: "btn distruttivo nudo pieno", type: "button", testo: "Elimina",
+      stile: { marginTop: "var(--s6)" },
+      onClick: (e) => {
+        const btn = e.currentTarget;
+        if (btn.dataset.sicuro !== "1") {
+          btn.dataset.sicuro = "1";
+          btn.textContent = "Tocca di nuovo per eliminare";
+          setTimeout(() => { btn.dataset.sicuro = ""; btn.textContent = "Elimina"; }, 3000);
+          return;
+        }
+        eliminaPrevisto(b.id);
+        chiudiFoglio();
+        avviso("Eliminato.");
+      },
+    }),
+  ]);
+}
+
+const rigaDett = (etichetta, valore) => el("li", { class: "fi-dett-riga" }, [
+  el("span", { class: "fi-dett-eti", testo: etichetta }),
+  el("span", { class: "fi-dett-val", testo: String(valore) }),
+]);
+
+/** Il movimento vero + la voce che sparisce. Le due cose insieme, sempre. */
+function paga(v, imp, oggi) {
+  salvaMovimento({
+    id: nuovoId("m"), data: oggi, tipo: "out", imp,
+    nota: v.nome, cat: v.cat || "fisse", sub: null,
+    pocket: v.pocket || "principale", ecc: false,
+  });
+  if (v.origine === "previsto") segnaPrevistoPagato(v.id, oggi);
+  else segnaScadenzaPagata(v.id, v.quando);
 }
 
 const NOMI_POCKET = { principale: "Principale", cassa: "Cassa", fisse: "Fisse", ing: "ING" };
@@ -1808,6 +2018,40 @@ export function vistaSetupV2(ridisegna) {
     zonaRic,
   ])]);
 
+  /* --- i pagamenti previsti -------------------------------------------- */
+  const zonaPrev = el("div", {});
+  const disegnaPrev = () => {
+    zonaPrev.replaceChildren();
+    const p = previsti();
+    aggiungi(zonaPrev, [
+      p.length === 0
+        ? el("p", { class: "nota", testo: "Nessun pagamento previsto." })
+        : lista(p.slice().sort((a, b) => a.quando.localeCompare(b.quando)).map((x) => {
+            const cop = coperturaDi(x);
+            return riga({
+              etichetta: x.nome,
+              valore: euro(x.imp, { tondo: true }),
+              dettaglio: `${dataBreve(x.quando)} · ${nomePocket(x.pocket)}` +
+                (cop.coperto ? "" : ` · mancano ${euro(cop.manca, { tondo: true })}`),
+              tono: cop.coperto ? "" : "male",
+              azione: () => apriPrevisto(x, () => { disegnaPrev(); ridisegna(); }),
+            });
+          })),
+      el("button", {
+        class: "btn tenue pieno", type: "button", testo: "Aggiungi un pagamento previsto",
+        onClick: () => apriPrevisto(null, () => { disegnaPrev(); ridisegna(); }),
+      }),
+    ]);
+  };
+  disegnaPrev();
+
+  aggiungi(fuori, [el("section", { class: "scheda" }, [
+    el("div", { class: "scheda-titolo", testo: "Pagamenti previsti" }),
+    el("p", { class: "nota", testo:
+      "Una tantum con una data: la maxi rata, una caparra, un acquisto già deciso. Entrano in «In arrivo» insieme ai ricorrenti, e il pocket che scegli qui è quello su cui viene fatto il conto se i soldi bastano." }),
+    zonaPrev,
+  ])]);
+
   /* --- le soglie ------------------------------------------------------- */
   aggiungi(fuori, [el("section", { class: "scheda" }, [
     el("div", { class: "scheda-titolo", testo: "Soglie" }),
@@ -1853,7 +2097,8 @@ function apriRicorrente(esistente, ridisegna) {
   const b = esistente
     ? { ...esistente }
     : { id: nuovoId("r"), nome: "", imp: 0, cat: "fisse", pocket: "fisse", tipo: "fissa",
-        cadenza: "mensile", giorno: 1, mese: 1, stimaMin: 0, stimaMax: 0, attivo: true };
+        cadenza: "mensile", giorno: 1, mese: 1, da: null, pagato: null,
+        stimaMin: 0, stimaMax: 0, attivo: true };
 
   const { corpo } = apriFoglio({
     titolo: esistente ? "Ricorrente" : "Nuovo ricorrente",
@@ -1904,12 +2149,45 @@ function apriRicorrente(esistente, ridisegna) {
       el("label", { class: "campo-etichetta", testo: "Giorno del mese" }),
       campo({ tipo: "number", min: "1", max: "31", valore: String(b.giorno),
         alCambio: (v) => { b.giorno = Math.min(31, Math.max(1, Number(v) || 1)); } }),
-      // Le cadenze non mensili hanno bisogno di un mese di ancoraggio: senza,
-      // un annuale cadrebbe ogni anno nel mese in cui lo stai guardando.
-      b.cadenza !== "mensile" && el("div", { class: "campo-gruppo" }, [
-        el("label", { class: "campo-etichetta", testo: "A partire da" }),
+
+      // LA PRIMA SCADENZA, con la data intera.
+      //
+      // Prima qui c'era solo il mese di ancoraggio, e non bastava: le utenze
+      // partono a settembre ma la prima bolletta arriva a fine ottobre, e
+      // l'unico modo di dirlo era tenere il ricorrente spento e ricordarsi
+      // di accenderlo. Con la data, la prima scadenza è quella e la cadenza
+      // conta da lì — bimestrale da ottobre vuol dire ottobre, dicembre,
+      // febbraio, e non gennaio, marzo, maggio.
+      el("div", { class: "campo-gruppo" }, [
+        el("label", { class: "campo-etichetta", testo: "Prima scadenza" }),
+        campo({ tipo: "date", valore: b.da || "",
+          alCambio: (v) => { b.da = v || null; } }),
+        el("p", { class: "nota", testo: b.da
+          ? (b.cadenza === "mensile"
+              ? "Prima di questa data il ricorrente non esiste."
+              : "Prima di questa data non esiste, e la cadenza conta da questo mese.")
+          : "Vuoto: vale da subito." }),
+      ]),
+
+      // Il mese di ancoraggio resta solo quando non c'è la data: senza uno
+      // dei due, un annuale cadrebbe ogni anno nel mese in cui lo stai
+      // guardando. Mostrarli tutti e due insieme è il modo di ritrovarsi
+      // due verità in disaccordo.
+      b.cadenza !== "mensile" && !b.da && el("div", { class: "campo-gruppo" }, [
+        el("label", { class: "campo-etichetta", testo: "Mese di riferimento" }),
         pillole(NOMI_MESI_LUNGHI.map((n, i) => [String(i + 1), n.slice(0, 3)]),
           String(b.mese || 1), (v) => { b.mese = Number(v); }, { unaRiga: true }),
+      ]),
+
+      // La scadenza già saldata: si vede e si può annullare, altrimenti un
+      // «Paga» dato per sbaglio resta senza rimedio.
+      b.pagato && el("div", { class: "campo-gruppo" }, [
+        el("label", { class: "campo-etichetta", testo: "Ultima scadenza saldata" }),
+        el("div", { class: "fi-riga-doppia" }, [
+          el("span", { class: "nota", testo: dataUmana(b.pagato) }),
+          el("button", { class: "btn piccolo morbido", type: "button", testo: "Annulla",
+            onClick: () => { b.pagato = null; disegnaQuando(); } }),
+        ]),
       ]),
     ]);
   };
