@@ -67,11 +67,14 @@
 .og-col { display: flex; flex-direction: column; gap: var(--s3); min-width: 0; }
 
 /* Su telefono l'ordine è quello dell'importanza, non quello delle colonne:
-   prima quello che si tocca, poi quello che decide la serata, poi il resto. */
-.og-col-centro { order: 1; }
-.og-col-sx     { order: 2; }
-.og-col-dx     { order: 3; }
-.og-col-sotto  { order: 4; }
+   prima quello che si tocca, poi quello che decide la serata, poi il resto.
+   La colonna di destra si apre e le sue due carte vanno una prima e una
+   dopo Finanze — su una colonna sola «colonna» non vuol dire niente. */
+.og-col-dx    { display: contents; }
+.og-col-sx    { order: 2; }
+.og-col-sotto { order: 4; }
+.og-col-dx > .og-resta, .og-col-dx > .og-vuota { order: 1; }
+.og-col-dx > .og-costanza { order: 3; }
 
 /* --------------------------------------------------------------- la carta */
 
@@ -318,30 +321,28 @@
 /* --------------------------------------------------------- da scrivania -- */
 
 @media (min-width: 1000px) {
-  /* Tre colonne e una striscia. `align-items: stretch` è la riga che conta:
-     senza, le tre carte finiscono a tre altezze diverse a seconda di quanto
-     testo hanno dentro, ed è quello che faceva sembrare la home «sparata a
-     caso». Con lo stretch la riga ha UN'altezza e il bordo inferiore è una
-     linea sola. */
+  /* DUE colonne, non tre, e una striscia sotto.
+     Con tre colonne le carte erano alte uguali — simmetriche — ma la
+     simmetria la pagava il contenuto: Finanze riempiva i suoi 400px e le
+     altre due ne riempivano 150, quindi due terzi della riga erano vuoto
+     stirato. Vuoto che è peggio dell'asimmetria, perché sembra che manchi
+     qualcosa.
+
+     Impilando «Adesso» e «Costanza» in una colonna sola le due altezze
+     naturali vanno quasi a pari (circa 390 contro 430): le colonne si
+     equilibrano da sé, e non c'è niente da stirare. */
   .og-griglia {
     display: grid;
-    grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.25fr) minmax(260px, 1fr);
+    grid-template-columns: minmax(320px, 1fr) minmax(320px, 1.05fr);
     grid-template-areas:
-      "sx centro dx"
-      "sotto sotto sotto";
+      "sx dx"
+      "sotto sotto";
     gap: var(--s4);
-    align-items: stretch;
+    align-items: start;
   }
-  .og-col-sx     { grid-area: sx; }
-  .og-col-centro { grid-area: centro; }
-  .og-col-dx     { grid-area: dx; }
-  .og-col-sotto  { grid-area: sotto; }
-
-  /* Le tre carte della riga alta si stirano; la striscia sotto no, sta alta
-     quanto le sue tre righe. */
-  .og-col-sx > .og-carta,
-  .og-col-centro > .og-carta,
-  .og-col-dx > .og-carta { flex: 1 1 auto; }
+  .og-col-sx    { grid-area: sx; }
+  .og-col-dx    { grid-area: dx; display: flex; }
+  .og-col-sotto { grid-area: sotto; }
 
   .og-carta { padding: var(--s5); }
   .og-carta-testa { margin-bottom: var(--s4); }
@@ -365,15 +366,7 @@
   .og-soldi-eroe { margin-bottom: var(--s4); }
   .og-soldi-riga { padding-top: var(--s4); }
   .og-nota { margin-top: var(--s4); }
-
-  /* La colonna di destra ha una carta sola contro le due carte impilate di
-     prima, quindi il corpo va distribuito invece che accumulato in alto:
-     serie in cima, settimana al centro, frase in fondo. Le caselle crescono
-     con lo spazio — è l'unica parte che può, ed è anche quella che ci
-     guadagna: sette barrette più alte si leggono come un grafico. */
-  .og-costanza .og-carta-corpo { justify-content: space-between; }
-  .og-costanza .og-sett { flex: 1; align-content: center; }
-  .og-costanza .og-sett-punto { height: 40px; }
+  .og-sett-punto { height: 30px; }
 
   /* I moduli diventano tre celle affiancate: il separatore gira di 90° e la
      striscia legge da sinistra a destra come la riga di carte sopra. */

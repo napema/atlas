@@ -99,8 +99,7 @@ async function disegna() {
     testa(q),
     el("div", { class: "og-griglia" }, [
       el("div", { class: "og-col og-col-sx" }, [cartaFinanze(q)]),
-      el("div", { class: "og-col og-col-centro" }, [cartaResta(q, () => disegna())]),
-      el("div", { class: "og-col og-col-dx" }, [cartaCostanza(q)]),
+      el("div", { class: "og-col og-col-dx" }, [cartaResta(q, () => disegna()), cartaCostanza(q)]),
       el("div", { class: "og-col og-col-sotto" }, [cartaModuli(q)]),
     ]),
   ]);

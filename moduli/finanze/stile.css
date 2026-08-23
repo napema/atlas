@@ -775,7 +775,12 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
   position: absolute;
   inset: -8px 0 0;
   border-radius: var(--r-scheda);
-  background: linear-gradient(180deg, var(--accento-tenue), transparent 78%);
+  /* La sfumatura arriva fino in fondo. Si fermava al 78%, e col blocco
+     cresciuto quel 78% cadeva sulla barra del consumo: il verde spariva
+     proprio lì, la barra sembrava il bordo inferiore di una scheda, e la
+     riga del ritmo restava fuori appoggiata sul nero. Non era spazio che
+     mancava — era che la scatola sembrava chiudersi prima del testo. */
+  background: linear-gradient(180deg, var(--accento-tenue), transparent 99%);
   pointer-events: none;
 }
 .fi-numero > * { position: relative; }
