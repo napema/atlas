@@ -293,9 +293,45 @@ export function apriFoglio({ titolo, sinistra, destra, mezzo = false, alChiudi }
   void foglio.offsetHeight;
   velo.classList.add("aperto");
   foglio.classList.add("aperto");
-  document.body.style.overflow = "hidden";
+  bloccaSfondo();
 
   return { elemento: foglio, corpo, chiudi: () => chiudiFoglio(foglio) };
+}
+
+/*
+   Il blocco dello sfondo, e perché non basta `overflow: hidden`.
+
+   Su iOS `overflow: hidden` sul body non ferma lo scorrimento del documento
+   sotto un pannello fisso: si trascina, e il foglio — che è fisso — resta
+   fermo mentre la pagina gli scivola dietro. Fuori dal tastierino a schermo
+   intero si vedeva la schermata di Finanze muoversi da sola.
+
+   L'unica cosa che lo ferma davvero è togliere il documento dal flusso
+   (`position: fixed`), e per non perdere il punto in cui si stava si salva
+   lo scorrimento e lo si riporta indietro alla chiusura. Senza il ripristino
+   si riapre sempre in cima, che è peggio del problema di partenza.
+*/
+
+let scorrimentoSalvato = 0;
+
+function bloccaSfondo() {
+  if (pila.length > 1) return;            // già bloccato da un foglio sotto
+  scorrimentoSalvato = globalThis.scrollY || 0;
+  const s = document.body.style;
+  s.position = "fixed";
+  s.top = `-${scorrimentoSalvato}px`;
+  s.left = "0";
+  s.right = "0";
+  s.width = "100%";
+  s.overflow = "hidden";
+}
+
+function sbloccaSfondo() {
+  const s = document.body.style;
+  s.position = ""; s.top = ""; s.left = ""; s.right = ""; s.width = ""; s.overflow = "";
+  // `instant`: con lo scorrimento animato si vede la pagina rincorrere il
+  // punto da cui era partita, e sembra che il foglio l'abbia spostata.
+  globalThis.scrollTo({ top: scorrimentoSalvato, behavior: "instant" });
 }
 
 /** Chiude il foglio indicato, o quello in cima alla pila. */
@@ -306,7 +342,7 @@ export function chiudiFoglio(quale) {
   voce.foglio.classList.remove("aperto");
   if (!pila.length) {
     veloCondiviso?.classList.remove("aperto");
-    document.body.style.overflow = "";
+    sbloccaSfondo();
   }
   setTimeout(() => { voce.foglio.remove(); voce.alChiudi?.(); }, 320);
 }

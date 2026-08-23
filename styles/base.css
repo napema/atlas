@@ -174,7 +174,13 @@ ul, ol { margin: 0; padding: 0; }
   align-items: center;
   justify-content: space-around;
   gap: var(--s1);
-  padding: var(--s2) var(--s3) calc(env(safe-area-inset-bottom) + var(--s2));
+  /* Sotto le etichette non ci vanno 8px PIÙ la safe area: la safe area è già
+     lo spazio dell'indicatore di Home, e sommarci un respiro fa una barra da
+     94px dove iOS ne usa 83. Si toglie quel respiro e altri 8, che restano
+     abbondanti — l'indicatore occupa i 13px in basso, qui gliene restano 26.
+     Il `max()` serve dove la safe area è zero: su Android e da scrivania
+     `env()` vale 0 e senza il minimo la barra resterebbe senza fondo. */
+  padding: 5px var(--s3) max(5px, calc(env(safe-area-inset-bottom) - 8px));
   background: color-mix(in srgb, var(--fondo-alto) 82%, transparent);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
@@ -632,6 +638,14 @@ select.campo { appearance: none; }
    appoggiato su una pagina che si muove. */
 .foglio-corpo {
   overflow-y: auto;
+  /* `overflow-x: hidden` non è pignoleria: le strisce di pillole a riga
+     unica escono di proposito dai margini del foglio (`margin-inline`
+     negativo) per andare a filo dello schermo, e un figlio più largo del
+     genitore che ha `overflow-y: auto` rende scorrevole ANCHE l'asse x. È
+     il motivo per cui il tastierino a schermo intero si poteva trascinare
+     di lato. Le pillole continuano a scorrere: quello è il loro overflow,
+     non questo. */
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   padding: 0 var(--s4) var(--s5);

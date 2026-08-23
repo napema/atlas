@@ -448,20 +448,12 @@
 .fi-azioni > * { pointer-events: auto; }
 .fi-azioni .btn { min-height: 46px; }
 
-/* La sfumatura sotto la barra. Il `padding-bottom` di #vista garantisce che
-   l'ULTIMA riga della schermata non finisca sotto i pulsanti, ma a metà
-   scorrimento sotto ci finisce per forza qualcosa — è quello che fa una
-   barra fissa. Senza la sfumatura si legge come due pulsanti appoggiati a
-   caso sopra una frase; con la sfumatura si legge come una barra, e la
-   frase sotto sfuma invece di scontrarsi. */
-.fi-azioni::before {
-  content: "";
-  position: absolute;
-  inset: -28px -16px calc(-1 * (env(safe-area-inset-bottom) + 78px));
-  z-index: -1;
-  background: linear-gradient(180deg, transparent, var(--fondo) 42%);
-  pointer-events: none;
-}
+/* Niente sfumatura dietro i pulsanti: provata e tolta.
+   Doveva far sfumare il contenuto sotto la barra, ma dipingeva `--fondo`
+   pieno sopra il velo d'accento del guscio (`body::before`), che fondo
+   pieno non è: veniva fuori una toppa scura rettangolare intorno ai due
+   pulsanti, più visibile del problema che risolveva. Il contenuto sotto lo
+   tiene già a distanza il `padding-bottom` di #vista. */
 
 .fi-uscita, .fi-entrata { flex: 1; font-weight: 600; }
 /* Il testo NON è `var(--male)` puro: su un fondo tinto al 20% del colore
