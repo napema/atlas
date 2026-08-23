@@ -1038,3 +1038,8 @@ button.fi-arrivo-riga:active { background: var(--scheda-alta); }
 .fi-copertura-segno { display: flex; flex: none; margin-top: 1px; color: var(--tinta); }
 .fi-copertura-titolo { font-size: var(--t-15); font-weight: 600; }
 .fi-copertura-nota { margin-top: 2px; font-size: var(--t-13); color: var(--testo-2); }
+
+/* Il campo dopo il riquadro della copertura ha bisogno del suo respiro: la
+   micro-etichetta finiva appiccicata al bordo del riquadro sopra e sembrava
+   la sua ultima riga invece del titolo di un campo. */
+.fi-campo-staccato { margin-top: var(--s5); }

@@ -386,11 +386,13 @@ export function apriInArrivo(v, ridisegna) {
       ]),
     ]),
 
-    el("div", { class: "campo-gruppo" }, [
-      el("label", { class: "campo-etichetta", testo: "Quanto è uscito davvero" }),
+    el("div", { class: "campo-gruppo fi-campo-staccato" }, [
+      el("label", { class: "campo-etichetta", testo: "Importo pagato" }),
       campo({ tipo: "text", inputmode: "decimal",
         valore: (bozza.imp / 100).toFixed(2).replace(".", ","),
         alCambio: (t) => { bozza.imp = centesimi(t); } }),
+      el("p", { class: "nota", testo:
+        "Prefilled con l'importo previsto. Correggilo se la cifra vera è un'altra." }),
     ]),
 
     el("button", {

@@ -9,7 +9,7 @@
 // Tre schermate: Riepilogo, Movimenti, Analisi. Il Setup è la sezione
 // "Finanze" di Impostazioni — tutte le impostazioni in un posto solo.
 
-import { el, aggiungi, intestazione, oggiISO, euro, plurale } from "../../core/ui.js";
+import { el, aggiungi, intestazione, oggiISO, euro, plurale, daISO } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
@@ -18,7 +18,7 @@ import { casella, stato, movimentiVivi, migra, checkFatto } from "./dati.js";
 import {
   statistiche, budgetTotale, cassaSettimana, verdetto, meseDi, spostaMese,
   nomeMese, importoEffettivo, proiezione,
-  cicloDi, settimana, inArrivo, spesoOggi, ricorrentiDiOggi, alert,
+  cicloDi, settimana, inArrivo, spesoOggi, ricorrentiDiOggi, alert, coperturaDi,
 } from "./calcolo.js";
 import {
   vistaHome, vistaMovimenti, vistaAnalisi, vistaSetup,
@@ -156,6 +156,46 @@ function prossimaUscita(iso) {
       : euro(v.importo, { tondo: true }),
   };
 }
+
+const GIORNI_BREVI = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
+const MESI_BREVI_IT = ["gen", "feb", "mar", "apr", "mag", "giu",
+  "lug", "ago", "set", "ott", "nov", "dic"];
+
+/**
+ * Le prossime uscite come voci di calendario, pronte da disegnare.
+ *
+ * Formattate qui e non nella home per la stessa ragione degli altri numeri:
+ * è il modulo a sapere che gli importi sono centesimi, e passarli grezzi
+ * vorrebbe dire insegnarlo alla home.
+ *
+ * `tono` non è decorazione: dice perché quella riga ti riguarda oggi.
+ * Rosso = il pocket da cui deve uscire non la copre. Ambra = esce entro due
+ * giorni. Altrimenti niente, ed è la maggioranza dei casi.
+ */
+function calendarioUscite(iso, quante = 3) {
+  const a = inArrivo(30, iso);
+  return a.voci.slice(0, quante).map((v) => {
+    const d = daISO(v.quando);
+    const cop = coperturaDi(v);
+    return {
+      chiave: `${v.origine}:${v.id}:${v.quando}`,
+      giornoNome: v.fra === 0 ? "Oggi" : v.fra === 1 ? "Domani" : GIORNI_BREVI[d.getDay()],
+      giornoData: `${d.getDate()} ${MESI_BREVI_IT[d.getMonth()]}`,
+      oggi: v.fra === 0,
+      nome: v.nome,
+      importo: v.stimato
+        ? `${euro(v.stimaMin, { tondo: true })}–${euro(v.stimaMax, { tondo: true })}`
+        : euro(v.importo, { tondo: true }),
+      dettaglio: cop.coperto
+        ? nomePocketBreve(v.pocket)
+        : `${nomePocketBreve(v.pocket)} · mancano ${euro(cop.manca, { tondo: true })}`,
+      tono: !cop.coperto ? "male" : v.fra <= 2 ? "avviso" : "",
+    };
+  });
+}
+
+const NOMI_POCKET_BREVI = { principale: "Principale", cassa: "Cassa", fisse: "Fisse", ing: "ING" };
+const nomePocketBreve = (id) => NOMI_POCKET_BREVI[id] || id;
 
 /**
  * Il check di oggi come voce della checklist della home, o niente.
@@ -331,6 +371,11 @@ export default {
       spesoOggi: euro(speso, { tondo: true }),
       alGiorno: s.finita ? "—" : euro(s.alGiorno, { tondo: true }),
       prossima: prossimaUscita(iso),
+      // Le prossime uscite come voci di calendario. Sono la cosa che riempie
+      // la carta di Finanze in home, ed è giusto che la riempia questa: «cosa
+      // esce nei prossimi giorni» è il dato che cambia la risposta a «posso
+      // spendere stasera», e prima stava tutto in una riga sola.
+      calendario: calendarioUscite(iso, 3),
 
       // Il check entra nella checklist della home solo dal pomeriggio: è un
       // gesto di chiusura, e chiederlo alle otto del mattino vuol dire

@@ -342,13 +342,16 @@ function cartaFinanze(q) {
         el("span", { class: "og-soldi-cifra", testo: f.valore ?? "—" }),
         el("span", { class: "og-soldi-eti", testo: "restano questa settimana" }),
       ]),
+      // Due numeri, non tre. Il terzo era «la prossima uscita» ridotta a una
+      // cifra, e adesso quella storia la racconta il calendario qui sotto —
+      // per intero, con la data e il nome, invece che in tre parole.
       el("div", { class: "og-soldi-riga" }, [
         soldiVoce("Oggi", f.spesoOggi ?? "0 €"),
         soldiVoce("Al giorno", f.alGiorno ?? "—"),
-        soldiVoce(f.prossima ? f.prossima.quando : "In arrivo",
-          f.prossima ? f.prossima.importo : "niente",
-          f.prossima ? f.prossima.nome : null),
       ]),
+
+      calendario(f.calendario),
+
       q.allarme && el("p", { class: "og-soldi-avviso" }, [
         el("span", { class: "og-soldi-punto" }),
         el("span", { testo: q.allarme }),
@@ -366,6 +369,41 @@ const soldiVoce = (eti, num, nota) => el("div", { class: "og-soldi-voce" }, [
   el("span", { class: "og-soldi-num", testo: num }),
   nota && el("span", { class: "og-soldi-nota", testo: nota }),
 ]);
+
+/**
+ * Le prossime uscite come voci di un calendario: data a sinistra, filo
+ * colorato, nome e importo.
+ *
+ * È la forma giusta per questa cosa, e non è una preferenza estetica: quando
+ * esce una spesa è un fatto di CALENDARIO, e un calendario si legge dalla
+ * colonna delle date. Ridotta a una riga di testo — «fra 2 gg · 400 € · Rata
+ * prestito» — bisogna rileggerla ogni volta per capire quale dei tre pezzi è
+ * la data.
+ *
+ * Il filo colorato dice perché quella riga ti riguarda oggi, e solo quando ti
+ * riguarda: rosso se il pocket da cui deve uscire non la copre, ambra se esce
+ * entro due giorni. Negli altri casi resta spento, che è la maggioranza dei
+ * casi ed è giusto che lo sia.
+ */
+function calendario(voci) {
+  if (!voci?.length) {
+    return el("p", { class: "og-cal-vuoto", testo: "Niente in uscita nei prossimi 30 giorni." });
+  }
+  return el("ul", { class: "og-cal" }, voci.map((v) => el("li", {
+    class: `og-cal-riga ${v.tono}`.trim(),
+  }, [
+    el("span", { class: "og-cal-data" + (v.oggi ? " oggi" : "") }, [
+      el("span", { class: "og-cal-giorno", testo: v.giornoNome }),
+      el("span", { class: "og-cal-mese", testo: v.giornoData }),
+    ]),
+    el("span", { class: "og-cal-filo" }),
+    el("span", { class: "og-cal-testo" }, [
+      el("span", { class: "og-cal-nome", testo: v.nome }),
+      el("span", { class: "og-cal-dett", testo: v.dettaglio }),
+    ]),
+    el("span", { class: "og-cal-importo", testo: v.importo }),
+  ])));
+}
 
 /**
  * La frase cambia con la lunghezza della serie.

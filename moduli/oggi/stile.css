@@ -199,7 +199,7 @@
    dell'eroe. Se pesassero uguale sarebbero quattro numeri e nessun titolo. */
 .og-soldi-riga {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--s3);
   padding-top: var(--s3);
   border-top: 1px solid var(--filo);
@@ -215,6 +215,77 @@
   font-size: var(--t-10);
   color: var(--testo-3);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ------------------------------------------ il calendario delle uscite -- */
+/*
+   Data a sinistra, filo, nome, importo. La forma di una voce di calendario,
+   perché quando esce una spesa è un fatto di calendario e un calendario si
+   legge dalla colonna delle date.
+
+   Il filo è spento quasi sempre. Si accende in ambra a due giorni dalla
+   scadenza e in rosso quando il pocket da cui deve uscire non la copre: sono
+   le due sole ragioni per cui una riga qui dentro riguarda OGGI.
+*/
+
+.og-cal {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--s4);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--filo);
+}
+.og-cal-riga {
+  display: grid;
+  grid-template-columns: 46px 3px 1fr auto;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+  --tinta: var(--filo);
+}
+.og-cal-riga.avviso { --tinta: var(--avviso); }
+.og-cal-riga.male   { --tinta: var(--male); }
+
+.og-cal-data { display: flex; flex-direction: column; line-height: 1.15; }
+.og-cal-giorno {
+  font-size: var(--t-11);
+  font-weight: 700;
+  text-transform: capitalize;
+  color: var(--testo-3);
+}
+.og-cal-data.oggi .og-cal-giorno { color: var(--accento); }
+.og-cal-mese { font-size: var(--t-10); color: var(--testo-3); white-space: nowrap; }
+
+/* Il filo va da bordo a bordo della riga, non solo dietro il testo: è quello
+   che lo fa leggere come la barra di un evento invece che come un trattino. */
+.og-cal-filo { align-self: stretch; min-height: 30px; border-radius: 999px; background: var(--tinta); }
+
+.og-cal-testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.og-cal-nome {
+  font-size: var(--t-15);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.og-cal-dett {
+  font-size: var(--t-11);
+  color: var(--testo-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.og-cal-riga.male .og-cal-dett { color: var(--male); }
+.og-cal-importo {
+  font-size: var(--t-15);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.og-cal-vuoto {
+  margin: var(--s4) 0 0;
+  padding-top: var(--s4);
+  border-top: 1px solid var(--filo);
+  font-size: var(--t-13);
+  color: var(--testo-3);
 }
 
 /* L'avviso: sotto i numeri, dentro la carta che li mostra. */
@@ -362,8 +433,13 @@
      Non è la stessa cosa di stirare una carta e lasciarle un buco in
      fondo: lì il vuoto è tutto in un punto e si vede, qui è diviso fra
      quattro stacchi e sembra respiro. */
+  /* Finanze si stira ma NON si distribuisce dentro. Con lo
+     `space-between` addosso, i 200px che avanzavano quando la colonna
+     accanto cresceva finivano spalmati fra cifra, numeri e pulsante: tre
+     voragini in mezzo al contenuto, e la carta sembrava rotta. Adesso il
+     contenuto sta compatto in cima e l'avanzo, quando c'è, è uno solo e
+     sta in fondo — dove un margine in più non dice niente di sbagliato. */
   .og-col-sx > .og-soldi { flex: 1; }
-  .og-col-sx > .og-soldi .og-carta-corpo { justify-content: space-between; }
   .og-col-dx > .og-costanza { flex: 1; }
   .og-col-dx > .og-costanza .og-carta-corpo { justify-content: space-between; }
   .og-costanza .og-serie-riga { margin-bottom: var(--s3); }
