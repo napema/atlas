@@ -447,6 +447,22 @@
 }
 .fi-azioni > * { pointer-events: auto; }
 .fi-azioni .btn { min-height: 46px; }
+
+/* La sfumatura sotto la barra. Il `padding-bottom` di #vista garantisce che
+   l'ULTIMA riga della schermata non finisca sotto i pulsanti, ma a metà
+   scorrimento sotto ci finisce per forza qualcosa — è quello che fa una
+   barra fissa. Senza la sfumatura si legge come due pulsanti appoggiati a
+   caso sopra una frase; con la sfumatura si legge come una barra, e la
+   frase sotto sfuma invece di scontrarsi. */
+.fi-azioni::before {
+  content: "";
+  position: absolute;
+  inset: -28px -16px calc(-1 * (env(safe-area-inset-bottom) + 78px));
+  z-index: -1;
+  background: linear-gradient(180deg, transparent, var(--fondo) 42%);
+  pointer-events: none;
+}
+
 .fi-uscita, .fi-entrata { flex: 1; font-weight: 600; }
 /* Il testo NON è `var(--male)` puro: su un fondo tinto al 20% del colore
    stesso dà 4,43, sotto i 4,5 che servono. Va schiarito quel tanto che basta
@@ -479,7 +495,7 @@
    scheda ma sul fondo nudo: è quello che la fa leggere come il titolo della
    schermata invece che come un dato fra gli altri. */
 
-.fi-numero { padding: var(--s2) var(--s1) var(--s6); }
+.fi-numero { padding: var(--s2) 0 var(--s6); }
 .fi-numero-testa {
   display: flex; align-items: center; justify-content: space-between;
   gap: var(--s3); margin-bottom: var(--s2);
@@ -740,10 +756,16 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
 /* Il velo sotto il numero grande, come sulle carte della home: dà un fondo
    alla cifra senza chiuderla in una scheda. */
 .fi-numero { position: relative; }
+/* Il velo NON sborda più di 16px ai lati. Sbordava, e faceva due danni: da
+   scrivania il suo bordo sinistro sporgeva di 16px rispetto a tutte le
+   schede sotto — l'unica cosa disallineata della schermata — e da telefono
+   usciva dal viewport, allargava il documento e mandava la terza scheda
+   («Analisi») mezza fuori dallo schermo. Un elemento assoluto che sfora è
+   sempre uno scorrimento orizzontale che non si vede dove nasce. */
 .fi-numero::before {
   content: "";
   position: absolute;
-  inset: -8px -16px auto;
+  inset: -8px 0 auto;
   height: 190px;
   border-radius: var(--r-scheda);
   background: linear-gradient(180deg, var(--accento-tenue), transparent 78%);
@@ -945,6 +967,9 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
     column-gap: var(--s6);
   }
   .fi-check-lista li:nth-last-child(2) { box-shadow: none; }
-  .fi-check-scelte { flex-direction: row; justify-content: center; }
-  .fi-check-scelte .btn { min-width: 220px; flex: none; }
 }
+/* I due pulsanti restano IMPILATI anche da scrivania. Affiancarli sembrava
+   ovvio e non lo è: il foglio è largo 600px anche su uno schermo da 1600, e
+   il media query guarda la finestra, non il foglio. Risultato: «Manca un
+   movimento» tagliato a metà fuori dal bordo. */
+.fi-check-scelte .btn { width: 100%; }

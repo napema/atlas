@@ -57,8 +57,8 @@ const staccatori = [];
 let gettoneDisegno = 0;
 
 const NOME = "Ema";
-const SALUTI = [[5, "buonanotte"], [13, "buongiorno"], [18, "buon pomeriggio"], [22, "buonasera"], [24, "buonanotte"]];
-const saluto = () => SALUTI.find(([h]) => new Date().getHours() < h)?.[1] || "ciao";
+const SALUTI = [[5, "Buonanotte"], [13, "Buongiorno"], [18, "Buon pomeriggio"], [22, "Buonasera"], [24, "Buonanotte"]];
+const saluto = () => SALUTI.find(([h]) => new Date().getHours() < h)?.[1] || "Ciao";
 const dataLunga = () =>
   new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
 
@@ -99,7 +99,7 @@ async function disegna() {
     el("div", { class: "og-griglia" }, [
       el("div", { class: "og-col og-col-sx" }, [cartaFinanze(q)]),
       el("div", { class: "og-col og-col-centro" }, [cartaResta(q, () => disegna())]),
-      el("div", { class: "og-col og-col-dx" }, [cartaSerie(q), cartaCostanza()]),
+      el("div", { class: "og-col og-col-dx" }, [cartaCostanza(q)]),
       el("div", { class: "og-col og-col-sotto" }, [cartaModuli(q)]),
     ]),
   ]);
@@ -175,8 +175,7 @@ function testa(q) {
       ]),
     ]),
     el("h1", { class: "og-saluto" }, [
-      el("span", { class: "og-saluto-parola", testo: `${saluto()}, ` }),
-      el("span", { testo: NOME }),
+      el("span", { testo: `${saluto()}, ${NOME}` }),
       el("span", { class: "og-punto", testo: "." }),
     ]),
     el("p", { class: "og-verdetto", testo: verdetto(q) }),
@@ -288,7 +287,13 @@ function voce(v, ridisegna) {
       // cerchietto si riempie da sé quando è finita.
       if (v.apre) { location.hash = v.apre; return; }
       const mod = await prendiModulo(v.mod.id);
-      mod?.spuntaParte?.(v.habitId, v.parteId) ?? mod?.spunta?.(v.habitId);
+      // Parte e abitudine intera sono due chiamate diverse. La versione
+      // precedente le univa con un `??`, e per un'abitudine senza parti
+      // finiva a spuntare la parte `null`: la spunta veniva scritta sotto
+      // la chiave `<id>#null`, che non è quella che nessuno rilegge. Il
+      // tocco sembrava non fare niente.
+      if (v.parteId) mod?.spuntaParte?.(v.habitId, v.parteId);
+      else mod?.spunta?.(v.habitId);
       tocco(12);
       ridisegna();
     },
@@ -357,22 +362,6 @@ const soldiVoce = (eti, num, nota) => el("div", { class: "og-soldi-voce" }, [
   nota && el("span", { class: "og-soldi-nota", testo: nota }),
 ]);
 
-/* -------------------------------------------------------------- 3. SERIE */
-
-function cartaSerie(q) {
-  const n = q.serie;
-  return carta({
-    emoji: "🔥", nome: "Serie", tinta: "var(--arancio)", classe: "og-serie",
-    corpo: [
-      el("div", { class: "og-serie-riga" }, [
-        el("div", { class: "og-serie-cifra", testo: String(n) }),
-        el("div", { class: "og-serie-eti", testo: n === 1 ? "giorno\ndi fila" : "giorni\ndi fila" }),
-      ]),
-      el("p", { class: "og-serie-frase", testo: fraseSerie(n, q.resta.length === 0) }),
-    ],
-  });
-}
-
 /**
  * La frase cambia con la lunghezza della serie.
  *
@@ -390,19 +379,36 @@ function fraseSerie(n, chiusa) {
   return "È l'inizio. I primi tre giorni sono i più cari.";
 }
 
-/* ----------------------------------------------------------- 4. COSTANZA */
+/* ----------------------------------------------------------- 3. COSTANZA */
+/*
+   Serie e settimana erano due carte, ed erano la stessa carta: «3 giorni di
+   fila» e «3 giorni su 7» rispondono tutte e due a «sto tenendo il ritmo?»,
+   con lo stesso numero, a due centimetri di distanza. Due riquadri che
+   dicono la stessa cosa non la dicono due volte più forte — si annullano,
+   perché chi legge si chiede in che cosa differiscono invece di leggerli.
 
-function cartaCostanza() {
+   Qui il numero è la serie, la striscia è la settimana, e la striscia
+   spiega il numero: le sette caselle sono il PERCHÉ della serie, non un
+   secondo dato. La frase sotto è l'unica cosa che cambia tono.
+*/
+
+function cartaCostanza(q) {
   const giorni = ultimiGiorni(7).reverse();
   const oggi = giornoCorrente();
   const attivi = giorni.filter(({ fatti }) => Object.keys(fatti).length).length;
+  const n = q.serie;
 
   return carta({
-    emoji: "📅", nome: "Costanza", valore: `${attivi}/7`, tinta: "var(--menta)",
+    emoji: "🔥", nome: "Costanza", valore: `${attivi}/7`, tinta: "var(--arancio)",
     classe: "og-costanza",
     corpo: [
+      el("div", { class: "og-serie-riga" }, [
+        el("span", { class: "og-serie-cifra", testo: String(n) }),
+        el("span", { class: "og-serie-eti",
+          testo: n === 1 ? "giorno di fila" : "giorni di fila" }),
+      ]),
       el("div", { class: "og-sett" }, giorni.map(({ giorno, fatti }) => {
-        const quanti = Object.values(fatti).reduce((n, m) => n + Object.keys(m).length, 0);
+        const quanti = Object.values(fatti).reduce((k, m) => k + Object.keys(m).length, 0);
         const d = new Date(`${giorno}T12:00:00`);
         return el("div", {
           class: "og-sett-g" + (quanti ? " pieno" : "") + (giorno === oggi ? " oggi" : ""),
@@ -412,9 +418,7 @@ function cartaCostanza() {
           el("span", { class: "og-sett-lettera", testo: GIORNI_INIZIALI[(d.getDay() + 6) % 7] }),
         ]);
       })),
-      el("p", { class: "og-nota", testo: attivi === 0
-        ? "Negli ultimi sette giorni non hai segnato niente."
-        : `Hai segnato qualcosa in ${plurale(attivi, "giorno", "giorni")} su 7.` }),
+      el("p", { class: "og-nota", testo: fraseSerie(n, q.resta.length === 0) }),
     ],
   });
 }

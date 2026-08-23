@@ -46,6 +46,27 @@ p  { margin: 0 0 var(--s3); }
 a  { color: inherit; text-decoration: none; }
 b, strong { font-weight: 600; }
 
+/* Il rientro di serie delle liste va tolto QUI, una volta sola.
+   ATLAS non ha una sola lista puntata: `ul` e `ol` sono l'impalcatura
+   semantica di elenchi disegnati a mano, e i 40px di padding del browser li
+   spostavano tutti a destra rispetto al titolo della propria carta. Toglierlo
+   dentro ogni singola `.og-lista`, `.og-modlista`, `.fi-check-lista` vuol
+   dire dimenticarselo alla prossima. */
+ul, ol { margin: 0; padding: 0; }
+
+/* L'icona-maschera: un bitmap ritagliato sopra un fondo di `currentColor`.
+   È il ripiego per le icone che arrivano da fuori già disegnate — vedi
+   `MASCHERE` in core/icone.js. Le misure le mette il JS in stile inline,
+   perché cambiano da un punto all'altro. */
+.icona-maschera {
+  display: inline-block;
+  flex: none;
+  background: currentColor;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center;  mask-position: center;
+  -webkit-mask-size: contain;     mask-size: contain;
+}
+
 /* La cifra. È l'elemento più importante dell'interfaccia: Display, tabellare,
    crenatura molto stretta. A questi corpi la crenatura di serie lascia buchi
    fra le cifre che si notano più del numero. */

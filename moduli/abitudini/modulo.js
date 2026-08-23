@@ -186,6 +186,20 @@ export default {
     if (contenitore) disegna();
   },
 
+  /**
+   * Come sopra, ma per un'abitudine intera — quelle senza parti.
+   *
+   * Mancava, e la home ripiegava su `spuntaParte(id, null)`: la spunta
+   * finiva sotto la chiave `<id>#null` invece che sotto `<id>`, quindi
+   * veniva scritta e sincronizzata ma non la rileggeva nessuno. Toccare la
+   * riga sembrava non fare niente, e il conteggio dei moduli restava fermo.
+   */
+  spunta(habitId) {
+    alterna(habitId, giornoCorrente());
+    pubblicaSullaLavagna();
+    if (contenitore) disegna();
+  },
+
   /** La sezione "Abitudini" di Impostazioni: elenco, archiviate, settimana. */
   impostazioni() {
     return vistaImpostazioni(() => { if (contenitore) disegna(); });

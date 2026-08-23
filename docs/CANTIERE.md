@@ -142,6 +142,19 @@ _(nessuna)_
   tutte e due blu. Ora Oggi è pesca, Finanze lime, Mobilità ciano, Abitudini
   viola. Finanze ha lasciato il verde perché il verde vuol dire "fatto" e un
   colore che significa due cose non ne significa nessuna.
+- **Un'icona può essere un bitmap in maschera** (23 ago) — la figura in
+  allungo di Mobilità viene da icons8 (`parakeet-line`, col permesso
+  dell'utente) e l'ho ricalcata a mano tre volte prendendo tre cose diverse.
+  Sta in `MASCHERE` dentro `core/icone.js` come PNG in base64, usato come
+  maschera CSS sopra un fondo di `currentColor`. Regge le due regole che
+  contano: non arriva dalla rete, ed eredita il colore come tutte le altre.
+  Vale solo per le icone che arrivano da fuori già disegnate — le nostre
+  restano tracciati sulla griglia 24×24.
+- **Serie e Costanza erano una carta sola** (23 ago) — «3 giorni di fila» e
+  «3 giorni su 7» rispondono alla stessa domanda con lo stesso numero. Due
+  riquadri che dicono la stessa cosa non la dicono più forte: chi legge si
+  chiede in che cosa differiscono. Fuse: il numero è la serie, la striscia
+  è la settimana e spiega il numero.
 - **Il tasto tondo unico: provato e ritirato** (22 ago) — le tre azioni
   principali in un solo pulsante fisso in basso a destra. Non funziona: un
   tondo solo non può rappresentare due gesti diversi. In Finanze "uscita" la

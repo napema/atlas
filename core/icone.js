@@ -7,6 +7,10 @@
 // Tutte sulla stessa griglia 24×24, tratto 1.7, estremi e giunzioni tonde —
 // è la geometria di SF Symbols, ed è ciò che le fa sembrare una famiglia
 // invece di un assortimento.
+//
+// Un'eccezione, e una sola: `MASCHERE`, qui sotto, per le icone che arrivano
+// da fuori già disegnate. Anche quelle stanno nel file e non nella rete, e
+// anche quelle ereditano `currentColor` — cambia solo come.
 
 const TRATTI = {
   // ---------------------------------------------------------- navigazione
@@ -19,26 +23,6 @@ const TRATTI = {
     '<path d="M3.6 8.6A2.6 2.6 0 0 1 6.2 6h11.2A2.6 2.6 0 0 1 20 8.6v8.8a2.6 2.6 0 0 1-2.6 2.6H6.2A2.6 2.6 0 0 1 3.6 17.4z"/>' +
     '<path d="M3.6 9.3V6.5a2 2 0 0 1 1.7-2l9.9-1.9"/>' +
     '<path d="M20 12.1h-3.3a1.95 1.95 0 0 0 0 3.9H20"/>',
-  // La figura del riferimento che mi è stato passato, tratto per tratto:
-  // testa in alto a sinistra, il corpo che si apre a destra in un arco solo
-  // — è il braccio e il busto insieme, non due segmenti che si incontrano —
-  // e poi la gamba che scende a sinistra e finisce nel piede.
-  //
-  // Tre tratti e non di più. I due tentativi che ho fatto prima ne avevano
-  // cinque e sei, e a 21px cinque tratti non sono una figura: sono trattini.
-  // Quello che tiene in piedi la sagoma alla misura della barra è l'arco
-  // grande, perché è l'unica cosa che a quella scala si legge ancora come
-  // una curva invece che come una macchia.
-  //
-  // Le coordinate sono spostate di 1,8 verso destra rispetto al primo tiro:
-  // il riquadro della figura andava da 4,9 a 15,5 e il suo centro cadeva a
-  // 10,2 invece che a 12. Un'icona fuori asse di quasi due unità nella barra
-  // sta più vicina all'icona accanto che alla propria etichetta, e si legge
-  // come se le schede fossero storte.
-  corpo:
-    '<circle cx="10.8" cy="4.9" r="2.6"/>' +
-    '<path d="M9.9 9.1c3.7-1 6.8.5 7.3 3.2.4 2.4-1.5 4.3-4.3 4.5"/>' +
-    '<path d="M12.9 16.8 10.3 21.2 6.7 21.7"/>',
   spunta:    '<path d="M4.4 12.5l4.5 4.5L19.6 6.4"/>',
   // Tre cursori, non un ingranaggio. La ruota dentata era un poligono a
   // mano libera: a 21px i denti si impastavano e sembrava un glifo rotto.
@@ -108,13 +92,49 @@ const TRATTI = {
   stella:    '<path d="M12 3.8l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>',
 };
 
+/* ======================================================== le maschere ==
+   Un'icona che non è un tracciato ma un bitmap ritagliato.
+
+   Serve per quelle che arrivano da fuori già disegnate — la figura in
+   allungo di Mobilità è di icons8, stile parakeet-line, usata col
+   permesso dell'utente. Ricalcarla a mano l'ho provato tre volte e tre
+   volte è venuta un'altra cosa.
+
+   Il PNG NON va messo come immagine: un'immagine non eredita
+   `currentColor`, e la scheda attiva della barra deve cambiare colore da
+   sola come fanno tutte le altre. Va usato come MASCHERA sopra un fondo
+   di `currentColor`: il colore resta quello del testo, il disegno resta
+   quello originale.
+
+   Il dato sta qui dentro e non in un file .png perché un'icona che si
+   scarica è un'icona che offline non c'è — vale per i tracciati e vale
+   per questa. 96px di sorgente per 21 di resa: regge il retina.
+   ========================================================================= */
+
+const MASCHERE = {
+  corpo: "data:image/png;base64,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",
+};
+
 /**
- * Un'icona come stringa SVG.
- * @param {string} nome    chiave in TRATTI
+ * Un'icona, come stringa di HTML.
+ *
+ * Quasi sempre è un SVG di tracciati. Per quelle in `MASCHERE` è invece uno
+ * `<span>` con il bitmap in maschera sopra `currentColor`: si comporta come
+ * le altre — eredita il colore, si misura in px — e chi la usa non deve
+ * sapere quale delle due è.
+ *
+ * @param {string} nome    chiave in TRATTI o in MASCHERE
  * @param {number} misura  lato in px
- * @param {number} [tratto]
+ * @param {number} [tratto]  spessore, solo per i tracciati
  */
 export function icona(nome, misura = 24, tratto = 1.7) {
+  const m = MASCHERE[nome];
+  if (m) {
+    return (
+      `<span class="icona-maschera" aria-hidden="true" style="width:${misura}px;height:${misura}px;` +
+      `-webkit-mask-image:url(${m});mask-image:url(${m})"></span>`
+    );
+  }
   const d = TRATTI[nome];
   if (!d) return "";
   return (
@@ -132,5 +152,5 @@ export function nodoIcona(nome, misura = 24) {
   return s;
 }
 
-export const nomiIcone = () => Object.keys(TRATTI);
-export const esisteIcona = (n) => n in TRATTI;
+export const nomiIcone = () => [...Object.keys(TRATTI), ...Object.keys(MASCHERE)];
+export const esisteIcona = (n) => n in TRATTI || n in MASCHERE;

@@ -250,15 +250,20 @@
    due cose contino uguale, e non contano uguale. */
 .og-apri-piano { background: none; padding: 0 2px; color: var(--testo-3); font-weight: 500; }
 
-/* --------------------------------------------------------------- serie -- */
+/* ------------------------------------------------------------ costanza -- */
 
-/* Numero ed etichetta affiancati, non impilati: la carta sta in due righe
-   invece di quattro, e su telefono sono due righe che non costano una
-   scorsa. */
-.og-serie-riga { display: flex; align-items: baseline; gap: var(--s3); }
+/* Numero ed etichetta sulla stessa riga, e l'etichetta NON va a capo: prima
+   andava, e «giorni / di fila» su due righe accanto a una cifra da 48px
+   sembrava un errore di impaginazione più che una didascalia. */
+.og-serie-riga {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: var(--s4);
+}
 .og-serie-cifra {
   font-family: var(--font-d);
-  font-size: clamp(42px, 11vw, 52px);
+  font-size: clamp(40px, 10vw, 48px);
   font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 0.95;
@@ -267,18 +272,9 @@
 }
 .og-serie-eti {
   font-size: var(--t-13);
-  line-height: 1.2;
   color: var(--testo-3);
-  white-space: pre-line;
+  white-space: nowrap;
 }
-.og-serie-frase {
-  margin: var(--s3) 0 0;
-  font-size: var(--t-13);
-  line-height: 1.45;
-  color: var(--testo-2);
-}
-
-/* ------------------------------------------------------------ costanza -- */
 
 .og-sett { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
 .og-sett-g { display: flex; flex-direction: column; align-items: center; gap: 6px; }
@@ -368,7 +364,16 @@
   .og-voce { min-height: 54px; }
   .og-soldi-eroe { margin-bottom: var(--s4); }
   .og-soldi-riga { padding-top: var(--s4); }
-  .og-serie-frase, .og-nota { margin-top: var(--s4); }
+  .og-nota { margin-top: var(--s4); }
+
+  /* La colonna di destra ha una carta sola contro le due carte impilate di
+     prima, quindi il corpo va distribuito invece che accumulato in alto:
+     serie in cima, settimana al centro, frase in fondo. Le caselle crescono
+     con lo spazio — è l'unica parte che può, ed è anche quella che ci
+     guadagna: sette barrette più alte si leggono come un grafico. */
+  .og-costanza .og-carta-corpo { justify-content: space-between; }
+  .og-costanza .og-sett { flex: 1; align-content: center; }
+  .og-costanza .og-sett-punto { height: 40px; }
 
   /* I moduli diventano tre celle affiancate: il separatore gira di 90° e la
      striscia legge da sinistra a destra come la riga di carte sopra. */
