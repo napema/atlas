@@ -5,31 +5,36 @@
    numero o niente. Cambia la tinta, e la tinta dice DI COSA parla la carta,
    non quanto è urgente.
 
-   È la regola che fa la differenza fra un cruscotto e sei riquadri disegnati
-   in sei momenti diversi: con carte uguali l'occhio impara a leggerle una
-   volta sola, con carte diverse deve ricominciare da ogni riquadro.
+   È la regola che fa la differenza fra un cruscotto e cinque riquadri
+   disegnati in cinque momenti diversi: con carte uguali l'occhio impara a
+   leggerle una volta sola, con carte diverse deve ricominciare da ogni
+   riquadro.
 
    Il colore entra solo in tre punti per carta — l'emoji, il filo in alto, il
    numero — e mai sotto il testo. Una carta colorata è una carta su cui il
    testo si legge peggio.
+
+   DUE MISURE, NON UNA. Il file è scritto compatto e il media query da 1000px
+   aggiunge aria: da telefono la prima schermata deve bastare — niente si
+   scopre scorrendo — e da scrivania lo spazio c'è, quindi si usa.
    ========================================================================= */
 
 /* ------------------------------------------------------- l'intestazione -- */
 
 .og-testa {
   position: relative;
-  padding: var(--s5) 0 var(--s6);
+  padding: var(--s2) 0 var(--s4);
   text-align: center;
 }
 
-/* Data e stato in alto a destra. Su telefono tornano sotto il saluto,
+/* Data e stato in alto a destra. Su telefono tornano sopra il saluto,
    centrati: in un angolo di uno schermo da 375px non ci sta niente. */
 .og-meta {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  margin-bottom: var(--s4);
+  justify-content: center;
+  gap: var(--s3);
+  margin-bottom: var(--s2);
   font-size: var(--t-11);
   color: var(--testo-3);
 }
@@ -38,7 +43,7 @@
 
 .og-saluto {
   font-family: var(--font-d);
-  font-size: clamp(32px, 9vw, 44px);
+  font-size: clamp(27px, 7.6vw, 40px);
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1.05;
@@ -46,50 +51,27 @@
 .og-saluto-parola { text-transform: lowercase; }
 .og-punto { color: var(--accento); }
 
-.og-riga-verdetto {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: var(--s2) var(--s4);
-  margin-top: var(--s3);
-}
+/* Una riga, e una sola. L'avviso di Finanze stava qui e diventava un secondo
+   titolo largo mezzo schermo: adesso sta dentro la carta di cui parla. */
 .og-verdetto {
-  margin: 0;
-  font-size: var(--t-17);
-  color: var(--testo-2);
-}
-/* L'avviso sta accanto al verdetto, non sotto: è una correzione a quella
-   frase, e messo su una riga sua diventava un secondo titolo. */
-.og-avviso {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 7px;
+  margin: var(--s2) auto 0;
   max-width: 46ch;
-  padding: 7px var(--s3);
-  border-radius: var(--r-interno);
-  background: var(--scheda);
-  font-size: var(--t-13);
+  font-size: var(--t-15);
   line-height: 1.4;
-  text-align: left;
   color: var(--testo-2);
-}
-.og-avviso-punto {
-  width: 7px; height: 7px; flex: none; margin-top: 6px;
-  border-radius: 50%;
-  background: var(--male);
 }
 
 /* ------------------------------------------------------------ la griglia */
 
 .og-griglia { display: flex; flex-direction: column; gap: var(--s3); }
-.og-col { display: flex; flex-direction: column; gap: var(--s3); }
+.og-col { display: flex; flex-direction: column; gap: var(--s3); min-width: 0; }
 
 /* Su telefono l'ordine è quello dell'importanza, non quello delle colonne:
-   prima quello che si tocca, poi quello che si guarda. */
+   prima quello che si tocca, poi quello che decide la serata, poi il resto. */
 .og-col-centro { order: 1; }
 .og-col-sx     { order: 2; }
 .og-col-dx     { order: 3; }
+.og-col-sotto  { order: 4; }
 
 /* --------------------------------------------------------------- la carta */
 
@@ -97,7 +79,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: var(--s5);
+  padding: var(--s4);
   border-radius: var(--r-scheda);
   background: var(--scheda);
   /* Il filo si vede appena e serve: sul nero pieno, senza, due carte
@@ -120,22 +102,26 @@
   display: flex;
   align-items: center;
   gap: var(--s2);
-  margin-bottom: var(--s4);
+  margin-bottom: var(--s3);
 }
-.og-carta-emoji { font-size: 17px; line-height: 1; flex: none; }
+.og-carta-emoji { font-size: 20px; line-height: 1; flex: none; }
+/* Il titolo è un titolo, non un'etichetta: 17px in tondo. La versione
+   precedente era una micro-maiuscoletta da 12,5px e spariva sotto il numero
+   grande della carta, che è esattamente il contrario di ciò che deve fare —
+   il numero non si capisce se prima non sai di che cosa è il numero. */
 .og-carta-nome {
   flex: 1;
   min-width: 0;
-  font-size: var(--t-11);
+  font-family: var(--font-d);
+  font-size: var(--t-17);
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--testo-2);
+  letter-spacing: -0.015em;
+  color: var(--testo);
 }
 .og-carta-valore {
   flex: none;
   font-family: var(--font-d);
-  font-size: var(--t-15);
+  font-size: var(--t-17);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--tinta, var(--accento));
@@ -144,13 +130,13 @@
 
 /* ------------------------------------------------------- resta da fare -- */
 
-.og-lista { list-style: none; display: flex; flex-direction: column; gap: var(--s2); }
+.og-lista { list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .og-voce {
   display: flex;
   align-items: center;
   gap: var(--s3);
   width: 100%;
-  min-height: 54px;
+  min-height: 48px;
   padding: 0 var(--s3);
   border: 0;
   border-radius: var(--r-interno);
@@ -165,7 +151,7 @@
 .og-voce.tardi { box-shadow: inset 2px 0 0 var(--avviso); }
 
 .og-voce-cerchio {
-  width: 26px; height: 26px;
+  width: 24px; height: 24px;
   flex: none;
   display: grid; place-items: center;
   border-radius: 50%;
@@ -192,10 +178,10 @@
 
 /* ------------------------------------------------------------- finanze -- */
 
-.og-soldi-eroe { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--s4); }
+.og-soldi-eroe { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--s3); }
 .og-soldi-cifra {
   font-family: var(--font-d);
-  font-size: clamp(34px, 8vw, 44px);
+  font-size: clamp(30px, 8vw, 42px);
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1;
@@ -209,7 +195,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--s3);
-  padding-top: var(--s4);
+  padding-top: var(--s3);
   border-top: 1px solid var(--filo);
 }
 .og-soldi-voce { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -219,11 +205,29 @@
   font-variant-numeric: tabular-nums;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.og-soldi-nota {
-  margin: var(--s2) 0 0;
-  font-size: var(--t-11);
+.og-soldi-voce .og-soldi-nota {
+  font-size: var(--t-10);
   color: var(--testo-3);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* L'avviso: sotto i numeri, dentro la carta che li mostra. */
+.og-soldi-avviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: var(--s3) 0 0;
+  padding: var(--s3);
+  border-radius: var(--r-interno);
+  background: var(--scheda-alta);
+  font-size: var(--t-13);
+  line-height: 1.4;
+  color: var(--testo-2);
+}
+.og-soldi-punto {
+  width: 7px; height: 7px; flex: none; margin-top: 6px;
+  border-radius: 50%;
+  background: var(--male);
 }
 
 .og-apri {
@@ -231,7 +235,7 @@
   align-items: center;
   gap: 6px;
   align-self: flex-start;
-  margin-top: var(--s4);
+  margin-top: var(--s3);
   min-height: 40px;
   padding: 0 var(--s4);
   border-radius: var(--r-pillola);
@@ -241,21 +245,34 @@
   font-weight: 600;
 }
 .og-apri svg { width: 14px; height: 14px; }
+/* Il rimando alle altre cose di oggi non è un'azione: è una nota che si può
+   toccare. Con lo stesso peso del pulsante «Apri Finanze» sembrerebbe che le
+   due cose contino uguale, e non contano uguale. */
+.og-apri-piano { background: none; padding: 0 2px; color: var(--testo-3); font-weight: 500; }
 
 /* --------------------------------------------------------------- serie -- */
 
+/* Numero ed etichetta affiancati, non impilati: la carta sta in due righe
+   invece di quattro, e su telefono sono due righe che non costano una
+   scorsa. */
+.og-serie-riga { display: flex; align-items: baseline; gap: var(--s3); }
 .og-serie-cifra {
   font-family: var(--font-d);
-  font-size: clamp(48px, 12vw, 60px);
+  font-size: clamp(42px, 11vw, 52px);
   font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 0.95;
   color: var(--arancio);
   font-variant-numeric: tabular-nums;
 }
-.og-serie-eti { font-size: var(--t-13); color: var(--testo-3); margin-top: 2px; }
+.og-serie-eti {
+  font-size: var(--t-13);
+  line-height: 1.2;
+  color: var(--testo-3);
+  white-space: pre-line;
+}
 .og-serie-frase {
-  margin: var(--s4) 0 0;
+  margin: var(--s3) 0 0;
   font-size: var(--t-13);
   line-height: 1.45;
   color: var(--testo-2);
@@ -266,7 +283,7 @@
 .og-sett { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
 .og-sett-g { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .og-sett-punto {
-  width: 100%; height: 26px;
+  width: 100%; height: 24px;
   border-radius: 7px;
   background: var(--scheda-viva);
   transition: background var(--normale) var(--curva);
@@ -275,7 +292,7 @@
 .og-sett-g.oggi .og-sett-punto { box-shadow: 0 0 0 1.5px var(--testo-3); }
 .og-sett-lettera { font-size: var(--t-10); font-weight: 700; letter-spacing: 0.05em; color: var(--testo-3); }
 .og-sett-g.oggi .og-sett-lettera { color: var(--testo); }
-.og-nota { margin: var(--s4) 0 0; font-size: var(--t-13); color: var(--testo-2); line-height: 1.4; }
+.og-nota { margin: var(--s3) 0 0; font-size: var(--t-13); color: var(--testo-2); line-height: 1.4; }
 
 /* -------------------------------------------------------------- moduli -- */
 
@@ -300,34 +317,72 @@
 }
 .og-modstato.ok { color: var(--ok); }
 .og-modstato.avviso { color: var(--avviso); }
+.og-modfreccia { flex: none; display: none; color: var(--testo-3); }
 
 /* --------------------------------------------------------- da scrivania -- */
 
 @media (min-width: 1000px) {
-  /* Le tre colonne dello sketch. La centrale è la più larga perché è quella
-     che si usa: le laterali si guardano e basta. */
+  /* Tre colonne e una striscia. `align-items: stretch` è la riga che conta:
+     senza, le tre carte finiscono a tre altezze diverse a seconda di quanto
+     testo hanno dentro, ed è quello che faceva sembrare la home «sparata a
+     caso». Con lo stretch la riga ha UN'altezza e il bordo inferiore è una
+     linea sola. */
   .og-griglia {
     display: grid;
-    grid-template-columns: minmax(220px, 0.8fr) minmax(360px, 1.6fr) minmax(220px, 0.9fr);
+    grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.25fr) minmax(260px, 1fr);
+    grid-template-areas:
+      "sx centro dx"
+      "sotto sotto sotto";
     gap: var(--s4);
-    align-items: start;
+    align-items: stretch;
   }
-  .og-col-sx { order: 0; }
-  .og-col-centro { order: 0; }
-  .og-col-dx { order: 0; }
+  .og-col-sx     { grid-area: sx; }
+  .og-col-centro { grid-area: centro; }
+  .og-col-dx     { grid-area: dx; }
+  .og-col-sotto  { grid-area: sotto; }
 
-  /* Data e stato tornano nell'angolo, dove lo sketch li vuole. */
+  /* Le tre carte della riga alta si stirano; la striscia sotto no, sta alta
+     quanto le sue tre righe. */
+  .og-col-sx > .og-carta,
+  .og-col-centro > .og-carta,
+  .og-col-dx > .og-carta { flex: 1 1 auto; }
+
+  .og-carta { padding: var(--s5); }
+  .og-carta-testa { margin-bottom: var(--s4); }
+  .og-carta-nome { font-size: var(--t-19); }
+  .og-carta-valore { font-size: var(--t-19); }
+
+  /* Data e stato nell'angolo, dove lo sketch li vuole. */
   .og-meta {
     position: absolute;
-    top: var(--s5); right: 0;
+    top: var(--s4); right: 0;
+    flex-direction: column;
     align-items: flex-end;
+    gap: 2px;
     margin: 0;
     text-align: right;
   }
-  .og-testa { padding-top: var(--s6); }
+  .og-testa { padding: var(--s5) 0 var(--s6); }
 
-  /* La serie riempie la sua colonna: da sola in una carta bassa sembrava
-     un ritaglio avanzato. */
-  .og-col-sx .og-carta { min-height: 260px; }
-  .og-serie-cifra { font-size: 68px; }
+  .og-lista { gap: var(--s2); }
+  .og-voce { min-height: 54px; }
+  .og-soldi-eroe { margin-bottom: var(--s4); }
+  .og-soldi-riga { padding-top: var(--s4); }
+  .og-serie-frase, .og-nota { margin-top: var(--s4); }
+
+  /* I moduli diventano tre celle affiancate: il separatore gira di 90° e la
+     striscia legge da sinistra a destra come la riga di carte sopra. */
+  .og-modlista {
+    flex-direction: row;
+    gap: 0;
+  }
+  .og-modlista li { flex: 1; min-width: 0; }
+  .og-modriga {
+    min-height: 52px;
+    padding: 0 var(--s4);
+    box-shadow: inset -1px 0 0 var(--filo);
+  }
+  .og-modlista li:first-child .og-modriga { padding-left: 0; }
+  .og-modlista li:last-child .og-modriga { padding-right: 0; box-shadow: none; }
+  .og-modfreccia { display: flex; }
 }

@@ -19,19 +19,26 @@ const TRATTI = {
     '<path d="M3.6 8.6A2.6 2.6 0 0 1 6.2 6h11.2A2.6 2.6 0 0 1 20 8.6v8.8a2.6 2.6 0 0 1-2.6 2.6H6.2A2.6 2.6 0 0 1 3.6 17.4z"/>' +
     '<path d="M3.6 9.3V6.5a2 2 0 0 1 1.7-2l9.9-1.9"/>' +
     '<path d="M20 12.1h-3.3a1.95 1.95 0 0 0 0 3.9H20"/>',
-  // La figura in allungo laterale, dal riferimento che mi è stato passato:
-  // testa, braccio che passa sopra la testa, braccio piegato al fianco, due
-  // gambe divaricate. I due tentativi precedenti li ho fatti io e facevano
-  // pena entrambi.
+  // La figura del riferimento che mi è stato passato, tratto per tratto:
+  // testa in alto a sinistra, il corpo che si apre a destra in un arco solo
+  // — è il braccio e il busto insieme, non due segmenti che si incontrano —
+  // e poi la gamba che scende a sinistra e finisce nel piede.
   //
-  // La differenza rispetto a quelli: il braccio alto e la schiena sono UN
-  // arco solo invece di due segmenti che si incontrano. È quello che a 21px
-  // tiene insieme la sagoma invece di sbriciolarla in trattini.
+  // Tre tratti e non di più. I due tentativi che ho fatto prima ne avevano
+  // cinque e sei, e a 21px cinque tratti non sono una figura: sono trattini.
+  // Quello che tiene in piedi la sagoma alla misura della barra è l'arco
+  // grande, perché è l'unica cosa che a quella scala si legge ancora come
+  // una curva invece che come una macchia.
+  //
+  // Le coordinate sono spostate di 1,8 verso destra rispetto al primo tiro:
+  // il riquadro della figura andava da 4,9 a 15,5 e il suo centro cadeva a
+  // 10,2 invece che a 12. Un'icona fuori asse di quasi due unità nella barra
+  // sta più vicina all'icona accanto che alla propria etichetta, e si legge
+  // come se le schede fossero storte.
   corpo:
-    '<circle cx="10.2" cy="5.6" r="2.1"/>' +
-    '<path d="M7.4 9.9c-.9-3 1-5.6 4-5.2 2.6.3 4 2.5 3.7 5l-.7 3.6"/>' +
-    '<path d="M12.1 9c.3 1.4.1 2.6-.6 3.6-.6.8-1.5 1.3-2.6 1.5"/>' +
-    '<path d="M14.4 13.3 12 20.6M14.4 13.3l2.6 7.3"/>',
+    '<circle cx="10.8" cy="4.9" r="2.6"/>' +
+    '<path d="M9.9 9.1c3.7-1 6.8.5 7.3 3.2.4 2.4-1.5 4.3-4.3 4.5"/>' +
+    '<path d="M12.9 16.8 10.3 21.2 6.7 21.7"/>',
   spunta:    '<path d="M4.4 12.5l4.5 4.5L19.6 6.4"/>',
   // Tre cursori, non un ingranaggio. La ruota dentata era un poligono a
   // mano libera: a 21px i denti si impastavano e sembrava un glifo rotto.

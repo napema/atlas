@@ -14,7 +14,7 @@ import { icona } from "../../core/icone.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { annuncia, ascolta } from "../../core/bus.js";
-import { casella, stato, movimentiVivi, migra } from "./dati.js";
+import { casella, stato, movimentiVivi, migra, checkFatto } from "./dati.js";
 import {
   statistiche, budgetTotale, cassaSettimana, verdetto, meseDi, spostaMese,
   nomeMese, importoEffettivo, proiezione,
@@ -155,6 +155,25 @@ function prossimaUscita(iso) {
       ? `${euro(v.stimaMin, { tondo: true })}–${euro(v.stimaMax, { tondo: true })}`
       : euro(v.importo, { tondo: true }),
   };
+}
+
+/**
+ * Il check di oggi come voce della checklist della home, o niente.
+ *
+ * Dalle 18 in poi, e solo se non è già stato fatto. Prima di quell'ora la
+ * giornata non è ancora andata come andrà, e un check fatto a metà pomeriggio
+ * dice di una giornata che non c'è ancora: sarebbe una spunta comprata a
+ * poco, e le spunte comprate a poco svuotano di senso la serie.
+ */
+function checkDaFare(iso) {
+  const ora = new Date().getHours();
+  if (ora < 18 || checkFatto(iso)) return [];
+  return [{
+    chiave: "finanze:check", apre: "#/finanze",
+    nome: "Check di oggi", dentro: "Finanze", emoji: "💶", tint: "lime",
+    nomeFascia: "Sera", fascia: "sera",
+    quando: ora >= 22 ? "tardi" : "adesso",
+  }];
 }
 
 /* ------------------------------------------------------------- lavagna -- */
@@ -312,6 +331,11 @@ export default {
       spesoOggi: euro(speso, { tondo: true }),
       alGiorno: s.finita ? "—" : euro(s.alGiorno, { tondo: true }),
       prossima: prossimaUscita(iso),
+
+      // Il check entra nella checklist della home solo dal pomeriggio: è un
+      // gesto di chiusura, e chiederlo alle otto del mattino vuol dire
+      // chiederlo su una giornata che non è ancora successa.
+      resta: checkDaFare(iso),
 
       azione: { rotta: "#/finanze" },
     };

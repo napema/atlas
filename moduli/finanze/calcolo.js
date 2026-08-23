@@ -18,7 +18,7 @@
 
 import {
   movimentiVivi, stato, profiloDi, CATEGORIE_CASSA,
-  classeDi, SOGLIE_PREDEFINITE,
+  classeDi, SOGLIE_PREDEFINITE, pendenti, checkFatto, serieCheck,
 } from "./dati.js";
 import { isoDi, daISO, oggiISO, MESI_BREVI } from "../../core/ui.js";
 
@@ -892,3 +892,126 @@ export function categorieDelCiclo(ciclo) {
     budget: Math.round((p.b[c.id] || 0) * 100),
   }));
 }
+
+/* ================================================== il check giornaliero ==
+   Le quattro domande che si fanno guardando i conti la sera, ridotte a
+   quattro esiti. Sta qui e non nella vista perché è calcolo: la vista deve
+   poterle disegnare senza sapere che cosa vuol dire «sopra ritmo».
+
+   Ogni voce ha un `esito` — "ok", "attenzione", "male" — e una frase già
+   fatta. La frase la scrive il calcolo e non la vista per una ragione sola:
+   la soglia e le parole devono cambiare insieme. Con la soglia qui e la
+   frase là, la prima volta che si sposta una delle due l'app comincia a
+   dire «in linea» a un numero che ha appena classificato come alto.
+   ========================================================================= */
+
+/**
+ * Il quadro del check di oggi.
+ *
+ * Il verdetto è la voce peggiore, non una media: tre cose a posto e una
+ * fuori fanno una giornata con una cosa fuori, e mediarle vorrebbe dire
+ * nascondere proprio quella che va guardata.
+ */
+export function esitoCheck(iso = oggiISO()) {
+  const s = settimana(iso);
+  const speso = spesoOggi(iso);
+  const arrivo = inArrivo(14, iso);
+  const oggiRic = ricorrentiDiOggi(iso);
+  const sospese = pendenti();
+  const voci = [];
+
+  // 1. IL RITMO DI OGGI. Il confronto non è col budget della settimana ma
+  //    con quello che resta diviso i giorni che restano: è l'unica misura
+  //    che risponde a «oggi ho esagerato o no».
+  if (!s.budget) {
+    voci.push({ id: "ritmo", esito: "neutro", titolo: "Ritmo di oggi",
+      testo: "Non c'è ancora una cassa settimanale: il ritmo non si può misurare." });
+  } else if (s.finita) {
+    voci.push({ id: "ritmo", esito: "male", titolo: "Ritmo di oggi",
+      testo: `Il settimanale è a zero e mancano ${plur(s.giorniRimasti, "giorno", "giorni")} a lunedì.` });
+  } else {
+    // Il ritmo di riferimento è quello di ieri sera, prima delle spese di
+    // oggi: `alGiorno` è già calcolato sul residuo attuale, quindi se hai
+    // speso molto oggi il metro si è già abbassato da solo e il confronto
+    // direbbe sempre «sopra». Va ricostruito il metro di partenza.
+    const base = Math.floor((s.resta + speso) / Math.max(1, s.giorniRimasti));
+    const esito = speso <= base ? "ok" : speso <= base * 1.5 ? "attenzione" : "male";
+    voci.push({
+      id: "ritmo", esito, titolo: "Ritmo di oggi",
+      valore: eu(speso),
+      testo: esito === "ok"
+        ? `${eu(speso)} contro ${eu(base)} al giorno. Sei dentro.`
+        : esito === "attenzione"
+          ? `${eu(speso)} contro ${eu(base)} al giorno. Poco sopra, si recupera.`
+          : `${eu(speso)} contro ${eu(base)} al giorno. Oggi è andata larga.`,
+    });
+  }
+
+  // 2. LA SETTIMANA. Non «quanto hai speso» ma «quanto hai speso rispetto a
+  //    dove dovresti essere»: al mercoledì il 60% consumato è un problema,
+  //    al sabato no, e senza il confronto col giorno non si distingue.
+  if (s.budget) {
+    const scarto = s.speso - s.atteso;
+    const esito = scarto <= 0 ? "ok" : scarto <= s.budget * 0.12 ? "attenzione" : "male";
+    voci.push({
+      id: "settimana", esito, titolo: "La settimana",
+      valore: eu(s.resta),
+      testo: esito === "ok"
+        ? `${eu(s.resta)} per ${plur(s.giorniRimasti, "giorno", "giorni")}. Sei avanti sul piano.`
+        : `${eu(s.resta)} per ${plur(s.giorniRimasti, "giorno", "giorni")}. Sei ${eu(scarto)} sopra il ritmo.`,
+    });
+  }
+
+  // 3. COSA ESCE. Prima quello che esce oggi — è l'unica cosa che può
+  //    rendere sbagliato il numero grande nel giro di poche ore — poi il
+  //    buco sulle fisse, che è l'errore che ha spaccato luglio.
+  if (arrivo.scoperto > 0) {
+    voci.push({ id: "arrivo", esito: "male", titolo: "In arrivo",
+      valore: eu(arrivo.scoperto),
+      testo: `Alle Spese fisse mancano ${eu(arrivo.scoperto)} per coprire i prossimi 14 giorni.` });
+  } else if (oggiRic.length) {
+    voci.push({ id: "arrivo", esito: "attenzione", titolo: "In arrivo",
+      valore: eu(oggiRic.reduce((t, r) => t + r.importo, 0)),
+      testo: oggiRic.length === 1
+        ? `Oggi esce ${oggiRic[0].nome.toLowerCase()}. Controlla che sia passato.`
+        : `Oggi escono ${oggiRic.length} addebiti. Controlla che siano passati.` });
+  } else {
+    const p = arrivo.voci[0];
+    voci.push({ id: "arrivo", esito: "ok", titolo: "In arrivo",
+      valore: p ? eu(arrivo.totale) : "—",
+      testo: p
+        ? `${eu(arrivo.totale)} nei prossimi 14 giorni, e i pocket li coprono.`
+        : "Niente in scadenza nei prossimi 14 giorni." });
+  }
+
+  // 4. I MOVIMENTI IN SOSPESO. L'unica voce su cui il check chiede di fare
+  //    qualcosa invece che di sapere qualcosa.
+  voci.push(sospese.length
+    ? { id: "sospese", esito: "attenzione", titolo: "Da sistemare",
+        valore: String(sospese.length),
+        testo: `${plur(sospese.length, "movimento", "movimenti")} in sospeso da chiudere.` }
+    : { id: "sospese", esito: "ok", titolo: "Da sistemare",
+        testo: "Niente in sospeso. Il registro è pulito." });
+
+  const peggiore = voci.some((v) => v.esito === "male") ? "male"
+    : voci.some((v) => v.esito === "attenzione") ? "attenzione" : "ok";
+
+  return {
+    iso, voci, esito: peggiore,
+    fatto: checkFatto(iso),
+    serie: serieCheck(iso),
+    speso, settimana: s, sospese: sospese.length,
+    titolo: peggiore === "ok" ? "Sei in pari"
+      : peggiore === "attenzione" ? "Quasi in pari" : "Fuori dal piano",
+    sottotitolo: peggiore === "ok"
+      ? "Il piano regge. Non devi fare niente."
+      : peggiore === "attenzione"
+        ? "Niente di rotto, ma c'è una cosa da tenere d'occhio."
+        : "C'è qualcosa che va sistemato adesso, non domani.",
+  };
+}
+
+// Due formattatori minuscoli, per non tirare dentro `plurale` da ui.js:
+// calcolo.js non deve dipendere dal modulo dell'interfaccia più di quanto
+// già faccia per le date.
+const plur = (n, s1, s2) => `${n} ${n === 1 ? s1 : s2}`;

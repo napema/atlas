@@ -331,6 +331,52 @@ export function avviso(testo, { durata = 2400, tono = "" } = {}) {
   return a;
 }
 
+/**
+ * La conferma grande: una patina sullo schermo e una spunta che si disegna.
+ *
+ * Serve per il gesto che si ripete ogni giorno e che nessuno è obbligato a
+ * fare — il check delle finanze, per ora. Un `avviso()` in basso è la
+ * ricevuta di un'operazione; questo è il premio di un'abitudine, ed è una
+ * cosa diversa: deve arrivare al centro dello sguardo e finire da sola.
+ *
+ * Niente coriandoli, per scelta: una cosa che festeggia troppo la prima
+ * volta imbarazza la decima. La patina dura mezzo secondo e sparisce.
+ *
+ * Con `prefers-reduced-motion` resta solo la dissolvenza — la spunta c'è
+ * comunque, disegnata tutta insieme. `--veloce` e `--normale` vanno già a
+ * zero da tokens.css, quindi qui basta non animare il tratto.
+ *
+ * @param {string} [testo]  la riga sotto la spunta. Corta: si legge di sfuggita.
+ * @param {string} [tinta]  il token del colore. Verde di suo.
+ */
+export function celebra(testo = "", { tinta = "var(--ok)" } = {}) {
+  const velo = el("div", { class: "celebra", "aria-hidden": "true" }, [
+    el("div", { class: "celebra-fondo" }),
+    el("div", { class: "celebra-centro" }, [
+      el("span", { class: "celebra-spunta", html:
+        '<svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="currentColor" ' +
+        'stroke-width="6" stroke-linecap="round" stroke-linejoin="round">' +
+        '<circle cx="32" cy="32" r="27" class="celebra-anello"/>' +
+        '<path d="M19 33.5 28.5 43 45 22" class="celebra-tratto"/></svg>' }),
+      testo && el("p", { class: "celebra-testo", testo }),
+    ]),
+  ]);
+  velo.style.setProperty("--tinta", tinta);
+  document.body.append(velo);
+
+  // Stesso motivo di apriFoglio: senza leggere il layout il browser accorpa
+  // l'inserimento e la classe, e l'animazione non parte mai.
+  void velo.offsetHeight;
+  velo.classList.add("acceso");
+
+  tocco(18);
+  setTimeout(() => {
+    velo.classList.remove("acceso");
+    setTimeout(() => velo.remove(), 400);
+  }, 1250);
+  return velo;
+}
+
 /** Vibrazione breve. Su iOS in PWA spesso non c'è: fallisce in silenzio. */
 export function tocco(ms = 8) {
   try { navigator.vibrate?.(ms); } catch { /* niente */ }

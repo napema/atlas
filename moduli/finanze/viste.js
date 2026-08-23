@@ -8,7 +8,7 @@
 // posto sbagliato: sta in calcolo.js.
 
 import {
-  el, aggiungi, apriFoglio, chiudiFoglio, avviso, tocco, traccia, lista, riga, vuoto,
+  el, aggiungi, apriFoglio, chiudiFoglio, avviso, celebra, tocco, traccia, lista, riga, vuoto,
   campo, segmenti, pillole, euro, euroRicco, euroGrande, centesimi, nuovoId, plurale,
   tessera, spezzata, gettone, selettore,
   oggiISO, dataUmana, dataBreve, daISO, GIORNI, GIORNI_INIZIALI, MESI,
@@ -19,6 +19,7 @@ import {
   salvaMovimento, eliminaMovimento, impara, normalizza, scriviMeta, casella,
   CATEGORIE_CASSA, TIPI_POCKET, SOGLIE_PREDEFINITE, pocketPerId, scriviPocket,
   salvaRicorrente, eliminaRicorrente, pendenti, metteInSospeso, togliDaSospeso,
+  segnaCheck,
 } from "./dati.js";
 import {
   statistiche, budgetTotale, cassaSettimana, avvisi, verdetto, proiezione,
@@ -28,7 +29,7 @@ import {
   movimentiSottocategoria, contestoMovimento, quadratura,
   cicloDi, spostaCiclo, nomeCiclo, movimentiDelCiclo, categorieDelCiclo,
   settimana, saldoPocket, pocketConSaldi, inArrivo, comeSpendi, sforamenti,
-  alert, spesoOggi, importoRicorrente, prossimaScadenza,
+  alert, spesoOggi, importoRicorrente, prossimaScadenza, esitoCheck,
 } from "./calcolo.js";
 import { graficoCumulato, graficoCiambella, graficoBarre } from "./grafici.js";
 import { preparaImport, eseguiImport } from "./importa.js";
@@ -57,6 +58,7 @@ export function vistaHome(mese, grafico, cambia, apriCat, azioni = {}) {
 
   aggiungi(fuori, [
     ilNumero(set, azioni),
+    bloccoCheck(oggi, () => cambia({})),
     av.length > 0 && blocchoAlert(av),
     blocchoSospese(() => cambia({})),
     inArrivoBlocco(arrivo),
@@ -136,6 +138,122 @@ function ilNumero(s, azioni) {
       : "Meglio non spendere altro fino a lunedì" }),
   ]);
   return box;
+}
+
+/* -------------------------------------------------- 1bis. IL CHECK ------ */
+/*
+   Il gesto quotidiano di questo modulo.
+
+   Un registro non si rompe perché il calcolo sbaglia: si rompe quando smetti
+   di segnare, e smetti di segnare quando nessuno ti chiede se l'hai fatto.
+   Il check è quella domanda, e in cambio dà due cose che il resto della
+   schermata non dà: un verdetto in due parole e una serie da non spezzare.
+
+   Deve costare trenta secondi. Se diventa un modulo da compilare lo si salta
+   il terzo giorno, e un check che si salta è peggio di nessun check perché
+   lascia credere di avere una misura che non c'è più.
+*/
+
+function bloccoCheck(iso, ridisegna) {
+  const c = esitoCheck(iso);
+
+  // Già fatto: una riga bassa, non una carta. Ha già dato quello che doveva
+  // dare, e ripetere lo stesso invito a schermo pieno per il resto della
+  // giornata insegna a scavalcare quella zona con lo sguardo.
+  if (c.fatto) {
+    return el("button", {
+      class: "fi-check-fatto", type: "button",
+      onClick: () => apriCheck(iso, ridisegna),
+    }, [
+      el("span", { class: "fi-check-spunta", html: icona("fatto", 20) }),
+      el("span", { class: "fi-check-fatto-testo" }, [
+        el("span", { class: "fi-check-fatto-titolo", testo: "Check di oggi fatto" }),
+        el("span", { class: "fi-check-fatto-nota", testo: c.serie > 1
+          ? `${plurale(c.serie, "giorno", "giorni")} di fila`
+          : "Ci risentiamo domani" }),
+      ]),
+      el("span", { class: "fi-check-freccia", html: icona("freccia", 16) }),
+    ]);
+  }
+
+  const box = el("button", {
+    class: `fi-check ${c.esito}`, type: "button",
+    onClick: () => apriCheck(iso, ridisegna),
+  }, [
+    el("div", { class: "fi-check-testa" }, [
+      el("span", { class: "fi-check-eti", testo: "Check di oggi" }),
+      c.serie > 0 && el("span", { class: "fi-check-serie" }, [
+        el("span", { class: "emoji", testo: "🔥" }),
+        el("span", { testo: String(c.serie) }),
+      ]),
+    ]),
+    el("div", { class: "fi-check-titolo", testo: c.titolo }),
+    el("p", { class: "fi-check-sotto", testo: c.sottotitolo }),
+    // I quattro pallini: si legge l'esito senza aprire niente, e aprire
+    // serve a sapere PERCHÉ. Aprire per sapere COSA è un tocco sprecato.
+    el("div", { class: "fi-check-punti" }, c.voci.map((v) =>
+      el("span", { class: `fi-check-punto ${v.esito}`, title: v.titolo }))),
+    el("span", { class: "fi-check-azione" }, [
+      el("span", { testo: "Fai il check" }),
+      el("span", { html: icona("freccia", 15) }),
+    ]),
+  ]);
+  return box;
+}
+
+/**
+ * Il foglio del check: il verdetto, le quattro voci, la conferma.
+ *
+ * La conferma non è «i conti tornano» — quello lo dice il calcolo da solo e
+ * non c'è niente da confermare. È «ho segnato tutto», che è l'unica cosa che
+ * il calcolo non può sapere e l'unica che dipende da te.
+ */
+export function apriCheck(iso, ridisegna) {
+  const c = esitoCheck(iso);
+  const { corpo, chiudi } = apriFoglio({ titolo: "Check di oggi" });
+
+  aggiungi(corpo, [
+    el("div", { class: `fi-verdetto ${c.esito}` }, [
+      el("div", { class: "fi-verdetto-titolo", testo: c.titolo }),
+      el("p", { class: "fi-verdetto-sotto", testo: c.sottotitolo }),
+    ]),
+
+    el("ul", { class: "fi-check-lista" }, c.voci.map((v) => el("li", {
+      class: `fi-check-voce ${v.esito}`,
+    }, [
+      el("span", { class: "fi-check-segno", html: icona(
+        v.esito === "ok" ? "fatto" : v.esito === "attenzione" ? "info" : "allarme", 19) }),
+      el("div", { class: "fi-check-voce-testo" }, [
+        el("span", { class: "fi-check-voce-titolo", testo: v.titolo }),
+        el("span", { class: "fi-check-voce-nota", testo: v.testo }),
+      ]),
+      v.valore && el("span", { class: "fi-check-voce-num num", testo: v.valore }),
+    ]))),
+
+    el("p", { class: "fi-check-domanda", testo:
+      "Hai segnato tutto quello che è uscito oggi?" }),
+
+    el("div", { class: "fi-check-scelte" }, [
+      el("button", {
+        class: "btn pieno grande", type: "button",
+        testo: c.fatto ? "Sì, e l'ho già confermato" : "Sì, ho segnato tutto",
+        onClick: () => {
+          segnaCheck(iso);
+          chiudi();
+          // La serie che si vede è quella DOPO: `esitoCheck` l'ha letta
+          // prima della scrittura, e mostrare il numero vecchio sotto una
+          // spunta verde è il modo più veloce per farla sembrare rotta.
+          const n = c.serie + (c.fatto ? 0 : 1);
+          celebra(n > 1 ? `${plurale(n, "giorno", "giorni")} di fila` : "Giornata chiusa");
+          ridisegna?.();
+        },
+      }),
+      el("button", {
+        class: "btn morbido", type: "button", testo: "Manca un movimento",
+        onClick: () => { chiudi(); apriMovimento({ ridisegna, tipo: "out" }); },
+      }),
+    ]),
+  ]);
 }
 
 /* ---------------------------------------------------------- 2. ALERT ---- */

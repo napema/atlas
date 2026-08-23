@@ -329,7 +329,18 @@ b, strong { font-weight: 600; }
   font-size: 17px;
   line-height: 1;
 }
-.gettone.tinto { background: color-mix(in srgb, var(--tinta) 22%, transparent); color: var(--tinta); }
+/* Il glifo non è `--tinta` pura: su un fondo che è la stessa tinta al 22% si
+   ferma fra 4,0 e 4,3, sotto i 4,5. Con un'emoji non si vedrebbe — le emoji
+   a colori ignorano `color` — ma il ripiego di una categoria senza emoji è
+   un «!», e quello è testo a tutti gli effetti. */
+.gettone.tinto {
+  background: color-mix(in srgb, var(--tinta) 22%, transparent);
+  color: color-mix(in srgb, var(--tinta) 86%, #fff);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="scuro"]) .gettone.tinto { color: color-mix(in srgb, var(--tinta) 82%, #000); }
+}
+:root[data-tema="chiaro"] .gettone.tinto { color: color-mix(in srgb, var(--tinta) 82%, #000); }
 
 .gruppo-titolo {
   font-size: var(--t-11);
@@ -610,6 +621,89 @@ select.campo { appearance: none; }
 .bolla.errore { background: var(--male); color: #fff; }
 .bolla.via { opacity: 0; transition: opacity var(--normale) var(--curva); }
 @keyframes sali { from { opacity: 0; transform: translateY(14px) scale(0.94); } }
+
+/* ------------------------------------------------------- la conferma grande
+
+   `celebra()`: la patina e la spunta che si disegna. Sta qui e non in un
+   modulo perché è un gesto del guscio — chiunque abbia un'abitudine
+   quotidiana da chiudere la userà, e averne due versioni diverse sarebbe la
+   duplicazione che ATLAS esiste per togliere.
+
+   Niente coriandoli. Una cosa che festeggia troppo la prima volta imbarazza
+   la decima, e questa la si vede ogni giorno.                              */
+
+.celebra {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--normale) var(--curva);
+}
+.celebra.acceso { opacity: 1; }
+
+/* La patina: verde solo al centro e verso i bordi, non un lastrone. Un velo
+   pieno sopra lo schermo nasconde quello che si è appena fatto, e la prima
+   cosa che si guarda dopo aver confermato è proprio quella. */
+.celebra-fondo {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 45% at 50% 50%,
+      color-mix(in srgb, var(--tinta) 30%, transparent), transparent 70%),
+    color-mix(in srgb, var(--tinta) 10%, transparent);
+}
+
+.celebra-centro {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s3);
+}
+.celebra-spunta {
+  display: block;
+  color: var(--tinta);
+  filter: drop-shadow(0 6px 24px color-mix(in srgb, var(--tinta) 45%, transparent));
+  animation: celebra-entra 420ms var(--molla) both;
+}
+.celebra-testo {
+  margin: 0;
+  max-width: 22ch;
+  font-family: var(--font-d);
+  font-size: var(--t-19);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-align: center;
+  color: var(--testo);
+  animation: celebra-entra 420ms 90ms var(--molla) both;
+}
+
+/* L'anello si chiude e poi il tratto si disegna dentro. 175 è la
+   circonferenza del cerchio r=27 arrotondata per eccesso (169,6): sotto, un
+   pezzetto di anello resterebbe già visibile al primo fotogramma. */
+.celebra-anello {
+  stroke-dasharray: 175;
+  stroke-dashoffset: 175;
+  animation: celebra-traccia 520ms var(--curva) forwards;
+}
+.celebra-tratto {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: celebra-traccia 300ms 300ms var(--curva) forwards;
+}
+
+@keyframes celebra-entra { from { opacity: 0; transform: scale(0.72); } }
+@keyframes celebra-traccia { to { stroke-dashoffset: 0; } }
+
+/* Con il movimento ridotto resta la dissolvenza: la spunta c'è, disegnata
+   tutta insieme invece che tratto per tratto. */
+@media (prefers-reduced-motion: reduce) {
+  .celebra-anello, .celebra-tratto { animation: none; stroke-dashoffset: 0; }
+  .celebra-spunta, .celebra-testo { animation: none; }
+}
 
 /* ============================================================ stato sync = */
 

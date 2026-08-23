@@ -69,6 +69,39 @@ notifiche" in Impostazioni. Le iscrizioni delle vecchie app non si possono
 riusare — una subscription è legata all'origine e allo scope del service
 worker.
 
+### ✅ La home come cruscotto (23 ago)
+
+Rifatta sullo sketch dell'utente. Tre colonne che si stirano alla stessa
+altezza più una striscia sotto: `align-items: stretch` sulla griglia è la
+riga che fa la differenza fra un cruscotto e tre ritagli affiancati.
+
+Due regole nuove, che valgono anche per chi aggiunge una carta dopo:
+
+- **Nella checklist ci va solo quello che ha un'ora.** `prioritarie()` in
+  `moduli/oggi/modulo.js` tiene ciò che è in ritardo, ciò che tocca in
+  questa fascia e le sessioni; le abitudini senza fascia oraria restano in
+  Abitudini fino alle 20. Impilarle tutte faceva nove righe, e nove righe
+  non sono una priorità: sono un elenco, e un elenco lo si smette di
+  leggere.
+- **Da telefono la prima schermata basta.** Misurato su 375×812: testa,
+  «Adesso» e Finanze stanno dentro il primo scorrimento. Le misure compatte
+  sono il caso base di `stile.css`, ed è il media query da 1000px ad
+  aggiungere aria — non il contrario.
+
+### ✅ Il check giornaliero di Finanze (23 ago)
+
+Il gesto quotidiano del modulo: quattro voci (ritmo di oggi, la settimana,
+cosa esce, cosa è in sospeso), un verdetto in due parole, e una conferma che
+non è «i conti tornano» ma «ho segnato tutto» — l'unica cosa che il calcolo
+non può sapere da solo.
+
+`esitoCheck()` in `calcolo.js`, lo stato in `config.checks` come mappa
+`iso → ts` (nessuna lapide: due dispositivi che dicono che il 23 il check
+c'è stato non hanno un conflitto). La conferma chiama `celebra()` di
+`core/ui.js` — patina e spunta che si disegna, riusabile da chiunque abbia
+un'abitudine quotidiana da chiudere. Niente coriandoli: una cosa che
+festeggia troppo la prima volta imbarazza la decima.
+
 ---
 
 ## Richieste a core

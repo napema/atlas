@@ -1,15 +1,14 @@
 // moduli/oggi — la home.
 //
-// Struttura da uno sketch: intestazione centrata con data e stato in alto a
-// destra, e sotto TRE COLONNE — la centrale larga, le due laterali strette.
-//
 //   ┌──────── buongiorno, Ema. ────────┐        data
-//   │        il verdetto + avviso      │        stato
+//   │            il verdetto           │        stato
 //   ├─────────┬──────────────┬─────────┤
-//   │  serie  │ resta da fare│ costanza│
-//   │         ├──────────────┤         │
-//   │         │   finanze    │         │
-//   └─────────┴──────────────┴─────────┘
+//   │ finanze │ resta da fare│  serie  │
+//   │         │              ├─────────┤
+//   │         │              │ costanza│
+//   ├─────────┴──────────────┴─────────┤
+//   │            i moduli              │
+//   └──────────────────────────────────┘
 //
 // Le regole che tengono insieme il tutto:
 //
@@ -21,21 +20,32 @@
 //
 // 2. UNA COSA SOLA È GRANDE PER CARTA. Il numero, e il resto gli sta intorno.
 //
-// 3. LA COLONNA CENTRALE È QUELLA CHE SI USA. Le laterali si guardano; la
-//    centrale si tocca — è lì che si spuntano le cose senza cambiare
-//    schermata. Su telefono le tre colonne diventano una e l'ordine resta
-//    quello dell'importanza.
+// 3. LA RIGA DI CARTE HA UN'ALTEZZA SOLA. Le tre colonne si stirano alla più
+//    alta e la striscia dei moduli chiude sotto. Tre carte che finiscono a
+//    tre altezze diverse non sono un cruscotto, sono tre ritagli.
+//
+// 4. NELLA CHECKLIST CI VA SOLO QUELLO CHE HA UN'ORA. La prima versione
+//    impilava tutte le abitudini del giorno e faceva nove righe: una lista
+//    di nove cose non è una priorità, è un elenco, e un elenco lo si smette
+//    di leggere. Qui entra ciò che è in ritardo, ciò che tocca ADESSO e la
+//    sessione. Il resto sta in Abitudini, che è la schermata fatta per
+//    quello. → `prioritarie()`
+//
+// 5. DA TELEFONO LA PRIMA SCHERMATA BASTA. Niente si scopre scorrendo:
+//    l'intestazione è più bassa, le carte hanno meno aria e le righe sono
+//    più corte. Le misure compatte stanno tutte in stile.css sotto il
+//    media query del telefono, in un posto solo.
 //
 // Non ha dati propri: interroga gli altri moduli con `oggi()`.
 
 import { MODULI_DATI, prendiModulo } from "../../core/registro.js";
 import {
-  el, aggiungi, plurale, euro, tocco,
+  el, aggiungi, plurale, tocco,
   GIORNI_INIZIALI, dataUmana, oggiISO,
 } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
 import { ascolta } from "../../core/bus.js";
-import { fattiDelGiorno, ultimiGiorni, giornoCorrente } from "../../core/contesto.js";
+import { ultimiGiorni, giornoCorrente } from "../../core/contesto.js";
 
 let contenitore = null;
 const staccatori = [];
@@ -51,6 +61,13 @@ const SALUTI = [[5, "buonanotte"], [13, "buongiorno"], [18, "buon pomeriggio"], 
 const saluto = () => SALUTI.find(([h]) => new Date().getHours() < h)?.[1] || "ciao";
 const dataLunga = () =>
   new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+
+// Quante righe della checklist stanno in una carta prima che diventi un
+// elenco. Oltre, il resto si conta e si manda in Abitudini.
+const MAX_RIGHE = 5;
+
+// L'ora da cui «dopo» non esiste più: quello che resta è tutto prioritario.
+const ORA_SERA = 20;
 
 // Le tinte delle abitudini hanno nomi inglesi nei dati di partenza. La
 // tabella sta qui perché la home non importa Abitudini: legge `oggi()`.
@@ -80,12 +97,10 @@ async function disegna() {
   aggiungi(contenitore, [
     testa(q),
     el("div", { class: "og-griglia" }, [
-      el("div", { class: "og-col og-col-sx" }, [cartaSerie(q)]),
-      el("div", { class: "og-col og-col-centro" }, [
-        cartaResta(q, () => disegna()),
-        cartaFinanze(q),
-      ]),
-      el("div", { class: "og-col og-col-dx" }, [cartaCostanza(), cartaModuli(q)]),
+      el("div", { class: "og-col og-col-sx" }, [cartaFinanze(q)]),
+      el("div", { class: "og-col og-col-centro" }, [cartaResta(q, () => disegna())]),
+      el("div", { class: "og-col og-col-dx" }, [cartaSerie(q), cartaCostanza()]),
+      el("div", { class: "og-col og-col-sotto" }, [cartaModuli(q)]),
     ]),
   ]);
 }
@@ -93,8 +108,8 @@ async function disegna() {
 /** Tutto quello che serve a decidere cosa dire, calcolato una volta sola. */
 function quadro(schede) {
   const conDati = schede.filter((s) => s.dati);
-  const daFare = conDati.filter((s) => s.dati.fatto === false || s.dati.urgente);
   const fatti = conDati.filter((s) => s.dati.fatto === true);
+  const ora = new Date().getHours();
 
   // La checklist unica: le voci arrivano già pronte dai moduli, che sanno
   // cosa vuol dire «resta» per sé. La home le impila e basta.
@@ -103,26 +118,54 @@ function quadro(schede) {
   const peso = { tardi: 0, adesso: 1, presto: 2 };
   resta.sort((a, b) => (peso[a.quando] ?? 1) - (peso[b.quando] ?? 1));
 
+  const prio = prioritarie(resta, ora);
+
   return {
-    schede, conDati, daFare, fatti, resta,
-    inRitardo: resta.filter((v) => v.quando === "tardi"),
+    schede, conDati, fatti, resta, prio, ora,
+    // Quello che resta oggi ma non adesso: si conta, non si elenca.
+    dopo: resta.length - prio.length,
+    inRitardo: prio.filter((v) => v.quando === "tardi"),
     allarme: conDati.map((s) => s.dati.allarme).find(Boolean) || null,
     serie: Math.max(0, ...conDati.map((s) => s.dati.serie || 0)),
     finanze: conDati.find((s) => s.mod.id === "finanze")?.dati || null,
-    ora: new Date().getHours(),
   };
+}
+
+/**
+ * Cosa merita una riga adesso.
+ *
+ * Non tutto quello che è di oggi è di adesso. La distinzione la fanno già i
+ * moduli — una parte con una fascia oraria sa se è presto, se è il momento o
+ * se il momento è passato — e qui si sfrutta: la checklist della home è la
+ * fetta «adesso» di quella lista, non la lista.
+ *
+ * Restano fuori le abitudini senza un'ora: farle è una cosa che riguarda la
+ * giornata intera, e metterle qui accanto a un integratore in ritardo dice
+ * che pesano uguale. Non pesano uguale.
+ */
+function prioritarie(resta, ora) {
+  // Di sera non c'è più un «dopo» in cui rimandare: torna tutto.
+  if (ora >= ORA_SERA) return resta;
+  return resta.filter((v) =>
+    v.quando === "tardi" ||               // il momento è passato: è la voce che conta di più
+    Boolean(v.apre) ||                    // la sessione: si fa, e ha una durata
+    (Boolean(v.fascia) && v.quando === "adesso"), // l'integratore di questa fascia
+  );
 }
 
 /* ------------------------------------------------------- l'intestazione -- */
 /*
-   Saluto al centro, data e stato in alto a destra. Lo stato del sync vive
-   qui e in Impostazioni: in cima a ogni modulo cambiava colore da solo in
-   un punto diverso ogni volta, e un indicatore che lampeggia dove non te lo
-   aspetti distrae invece di informare.
+   Saluto al centro, data e stato in alto a destra, e sotto una riga sola di
+   verdetto. Niente altro: l'avviso di Finanze stava qui e finiva per essere
+   un secondo titolo largo mezzo schermo attaccato al saluto. Adesso sta
+   dentro la carta Finanze, che è la carta di cui parla.
+
+   Lo stato del sync vive qui e in Impostazioni: in cima a ogni modulo
+   cambiava colore da solo in un punto diverso ogni volta, e un indicatore
+   che lampeggia dove non te lo aspetti distrae invece di informare.
 */
 
 function testa(q) {
-  const { titolo, sotto, tono } = verdetto(q);
   return el("header", { class: "og-testa" }, [
     el("div", { class: "og-meta" }, [
       el("span", { class: "og-meta-data", testo: dataLunga() }),
@@ -136,52 +179,36 @@ function testa(q) {
       el("span", { testo: NOME }),
       el("span", { class: "og-punto", testo: "." }),
     ]),
-    el("div", { class: "og-riga-verdetto" }, [
-      el("p", { class: "og-verdetto", testo: titolo }),
-      sotto && el("span", { class: `og-avviso ${tono}`.trim() }, [
-        el("span", { class: "og-avviso-punto" }),
-        el("span", { testo: sotto }),
-      ]),
-    ]),
+    el("p", { class: "og-verdetto", testo: verdetto(q) }),
   ]);
 }
 
 /**
- * La frase che riassume la giornata, e l'avviso che la corregge.
+ * La frase che riassume la giornata.
  *
  * Vince la prima regola che si applica. Il tono non colpevolizza mai: «ti
  * mancano due cose» è un fatto, «non hai fatto niente» è un giudizio, e
  * un'app che giudica si smette di aprirla.
  */
 function verdetto(q) {
-  const { resta, inRitardo, fatti, conDati, allarme, ora } = q;
+  const { prio, resta, inRitardo, fatti, conDati, dopo, ora } = q;
 
-  if (!conDati.length) {
-    return { titolo: "Non c'è ancora niente da guardare.", sotto: null, tono: "" };
-  }
+  if (!conDati.length) return "Non c'è ancora niente da guardare.";
+
   if (!resta.length) {
-    return {
-      titolo: fatti.length ? "Hai chiuso tutto. Puoi staccare." : "Niente in programma oggi.",
-      sotto: allarme, tono: "male",
-    };
+    return fatti.length ? "Hai chiuso tutto. Puoi staccare." : "Niente in programma oggi.";
   }
   if (inRitardo.length) {
     const nomi = elenco(inRitardo.slice(0, 2).map((v) => v.nome.toLowerCase()));
-    return {
-      titolo: inRitardo.length === 1 ? `Ti è sfuggito ${nomi}.` : `Ti sono sfuggiti ${nomi}.`,
-      sotto: allarme, tono: "male",
-    };
+    return inRitardo.length === 1 ? `Ti è sfuggito ${nomi}.` : `Ti sono sfuggiti ${nomi}.`;
   }
-  if (ora >= 21) {
-    return {
-      titolo: `${plurale(resta.length, "cosa", "cose")} e hai chiuso la giornata.`,
-      sotto: allarme, tono: "male",
-    };
+  // Niente da fare adesso, ma la giornata non è chiusa: è una buona notizia
+  // e va detta come tale, senza far sparire il resto.
+  if (!prio.length) {
+    return `Adesso sei in pari. ${plurale(dopo, "cosa", "cose")} più avanti nella giornata.`;
   }
-  return {
-    titolo: `${plurale(resta.length, "cosa", "cose")} da fare, e c'è tutto il tempo.`,
-    sotto: allarme, tono: "male",
-  };
+  if (ora >= 21) return `${plurale(prio.length, "cosa", "cose")} e hai chiuso la giornata.`;
+  return `${plurale(prio.length, "cosa", "cose")} da fare adesso.`;
 }
 
 const elenco = (n) => n.length === 1 ? n[0] : `${n.slice(0, -1).join(", ")} e ${n[n.length - 1]}`;
@@ -189,8 +216,8 @@ const elenco = (n) => n.length === 1 ? n[0] : `${n.slice(0, -1).join(", ")} e ${
 /* -------------------------------------------------------------- la carta */
 /*
    Il mattone. Tutte le carte della home passano di qui, ed è quello che le
-   fa sembrare parte della stessa cosa invece che sei riquadri disegnati in
-   sei momenti diversi.
+   fa sembrare parte della stessa cosa invece che cinque riquadri disegnati
+   in cinque momenti diversi.
 */
 
 function carta({ emoji, nome, valore, tinta, classe = "", corpo }) {
@@ -209,55 +236,89 @@ function carta({ emoji, nome, valore, tinta, classe = "", corpo }) {
 /* ------------------------------------------------------- 1. RESTA DA FARE */
 /*
    La carta centrale, e l'unica su cui si tocca per FARE invece che per
-   andare. Abitudini, parti e sessione di mobilità nella stessa lista: «cosa
-   mi resta adesso» è una domanda sola, e finché la risposta stava in due
-   schermate diverse bisognava aprirle tutte e due.
+   andare. Integratori in ritardo, integratori di questa fascia e sessione
+   di mobilità nella stessa lista: «cosa mi resta adesso» è una domanda sola,
+   e finché la risposta stava in due schermate diverse bisognava aprirle
+   tutte e due.
 */
 
 function cartaResta(q, ridisegna) {
+  // Tutto fatto davvero: non resta niente, né adesso né dopo.
   if (!q.resta.length) {
     return carta({
       emoji: "✅", nome: "Resta da fare", tinta: "var(--ok)", classe: "og-vuota",
-      corpo: el("p", { class: "og-tuttofatto", testo: "Niente. Hai spuntato tutto quello che c'era oggi." }),
+      corpo: el("p", { class: "og-tuttofatto", testo:
+        "Niente. Hai spuntato tutto quello che c'era oggi." }),
     });
   }
 
+  // In pari adesso, ma la giornata continua. Non è la stessa cosa di sopra e
+  // non va detta allo stesso modo: qui c'è ancora roba, solo non ora.
+  if (!q.prio.length) {
+    return carta({
+      emoji: "🌤️", nome: "Resta da fare", tinta: "var(--ok)", classe: "og-vuota",
+      corpo: [
+        el("p", { class: "og-tuttofatto", testo:
+          `Adesso non ti tocca niente. ${plurale(q.dopo, "cosa aspetta", "cose aspettano")} più avanti.` }),
+        collegamentoAbitudini(q.dopo),
+      ],
+    });
+  }
+
+  const mostrate = q.prio.slice(0, MAX_RIGHE);
+  const nascoste = (q.prio.length - mostrate.length) + q.dopo;
+
   return carta({
-    emoji: "📋", nome: "Resta da fare", valore: q.resta.length,
+    emoji: "📋", nome: "Adesso", valore: q.prio.length,
     tinta: "var(--accento)", classe: "og-resta",
-    corpo: el("ul", { class: "og-lista" }, q.resta.map((v) => {
-      const b = el("button", {
-        class: `og-voce ${v.quando === "tardi" ? "tardi" : ""}`.trim(),
-        type: "button",
-        "aria-label": v.apre ? `Apri ${v.nome}` : `Segna ${v.nome}`,
-        onClick: async () => {
-          // Una sessione non si spunta, si fa: toccarla apre il player e il
-          // cerchietto si riempie da sé quando è finita.
-          if (v.apre) { location.hash = v.apre; return; }
-          const mod = await prendiModulo(v.mod.id);
-          mod?.spuntaParte?.(v.habitId, v.parteId) ?? mod?.spunta?.(v.habitId);
-          tocco(12);
-          ridisegna();
-        },
-      }, [
-        el("span", { class: "og-voce-cerchio", html: icona("spunta", 13, 3) }),
-        el("span", { class: "og-voce-testo" }, [
-          el("span", { class: "og-voce-nome", testo: v.nome }),
-          v.dentro && el("span", { class: "og-voce-dentro", testo: v.dentro }),
-        ]),
-        el("span", { class: "og-voce-quando", testo: v.quando === "tardi" ? "in ritardo" : (v.nomeFascia || "") }),
-        v.apre && el("span", { class: "og-voce-freccia", html: icona("freccia", 14) }),
-      ]);
-      b.style.setProperty("--tinta", tintaDi(v.tint));
-      return el("li", {}, [b]);
-    })),
+    corpo: [
+      el("ul", { class: "og-lista" }, mostrate.map((v) => voce(v, ridisegna))),
+      nascoste > 0 && collegamentoAbitudini(nascoste),
+    ],
   });
 }
+
+function voce(v, ridisegna) {
+  const b = el("button", {
+    class: `og-voce ${v.quando === "tardi" ? "tardi" : ""}`.trim(),
+    type: "button",
+    "aria-label": v.apre ? `Apri ${v.nome}` : `Segna ${v.nome}`,
+    onClick: async () => {
+      // Una sessione non si spunta, si fa: toccarla apre il player e il
+      // cerchietto si riempie da sé quando è finita.
+      if (v.apre) { location.hash = v.apre; return; }
+      const mod = await prendiModulo(v.mod.id);
+      mod?.spuntaParte?.(v.habitId, v.parteId) ?? mod?.spunta?.(v.habitId);
+      tocco(12);
+      ridisegna();
+    },
+  }, [
+    el("span", { class: "og-voce-cerchio", html: icona("spunta", 13, 3) }),
+    el("span", { class: "og-voce-testo" }, [
+      el("span", { class: "og-voce-nome", testo: v.nome }),
+      v.dentro && el("span", { class: "og-voce-dentro", testo: v.dentro }),
+    ]),
+    el("span", { class: "og-voce-quando",
+      testo: v.quando === "tardi" ? "in ritardo" : (v.nomeFascia || "") }),
+    v.apre && el("span", { class: "og-voce-freccia", html: icona("freccia", 14) }),
+  ]);
+  b.style.setProperty("--tinta", tintaDi(v.tint));
+  return el("li", {}, [b]);
+}
+
+const collegamentoAbitudini = (n) => el("a", { class: "og-apri og-apri-piano", href: "#/abitudini" }, [
+  el("span", { testo: `Altre ${n} in Abitudini` }),
+  el("span", { html: icona("freccia", 14) }),
+]);
 
 /* ------------------------------------------------------------ 2. FINANZE */
 /*
    Tre numeri e nient'altro: quanto è uscito oggi, quanto resta, cosa sta per
    uscire. Sono le tre domande che si fanno davanti a una cena fuori.
+
+   L'avviso sta qui e non nell'intestazione: parla di soldi, e messo sotto il
+   saluto era un cartello grigio largo mezzo schermo che si leggeva prima del
+   numero di cui è la nota a piè di pagina.
 */
 
 function cartaFinanze(q) {
@@ -272,20 +333,16 @@ function cartaFinanze(q) {
         el("span", { class: "og-soldi-eti", testo: "restano questa settimana" }),
       ]),
       el("div", { class: "og-soldi-riga" }, [
-        el("div", { class: "og-soldi-voce" }, [
-          el("span", { class: "og-soldi-eti", testo: "Oggi" }),
-          el("span", { class: "og-soldi-num", testo: f.spesoOggi ?? "0 €" }),
-        ]),
-        el("div", { class: "og-soldi-voce" }, [
-          el("span", { class: "og-soldi-eti", testo: "Al giorno" }),
-          el("span", { class: "og-soldi-num", testo: f.alGiorno ?? "—" }),
-        ]),
-        el("div", { class: "og-soldi-voce" }, [
-          el("span", { class: "og-soldi-eti", testo: f.prossima ? f.prossima.quando : "In arrivo" }),
-          el("span", { class: "og-soldi-num", testo: f.prossima ? f.prossima.importo : "niente" }),
-        ]),
+        soldiVoce("Oggi", f.spesoOggi ?? "0 €"),
+        soldiVoce("Al giorno", f.alGiorno ?? "—"),
+        soldiVoce(f.prossima ? f.prossima.quando : "In arrivo",
+          f.prossima ? f.prossima.importo : "niente",
+          f.prossima ? f.prossima.nome : null),
       ]),
-      f.prossima && el("p", { class: "og-soldi-nota", testo: f.prossima.nome }),
+      q.allarme && el("p", { class: "og-soldi-avviso" }, [
+        el("span", { class: "og-soldi-punto" }),
+        el("span", { testo: q.allarme }),
+      ]),
       el("a", { class: "og-apri", href: "#/finanze" }, [
         el("span", { testo: "Apri Finanze" }),
         el("span", { html: icona("freccia", 14) }),
@@ -294,6 +351,12 @@ function cartaFinanze(q) {
   });
 }
 
+const soldiVoce = (eti, num, nota) => el("div", { class: "og-soldi-voce" }, [
+  el("span", { class: "og-soldi-eti", testo: eti }),
+  el("span", { class: "og-soldi-num", testo: num }),
+  nota && el("span", { class: "og-soldi-nota", testo: nota }),
+]);
+
 /* -------------------------------------------------------------- 3. SERIE */
 
 function cartaSerie(q) {
@@ -301,8 +364,10 @@ function cartaSerie(q) {
   return carta({
     emoji: "🔥", nome: "Serie", tinta: "var(--arancio)", classe: "og-serie",
     corpo: [
-      el("div", { class: "og-serie-cifra", testo: String(n) }),
-      el("div", { class: "og-serie-eti", testo: n === 1 ? "giorno di fila" : "giorni di fila" }),
+      el("div", { class: "og-serie-riga" }, [
+        el("div", { class: "og-serie-cifra", testo: String(n) }),
+        el("div", { class: "og-serie-eti", testo: n === 1 ? "giorno\ndi fila" : "giorni\ndi fila" }),
+      ]),
       el("p", { class: "og-serie-frase", testo: fraseSerie(n, q.resta.length === 0) }),
     ],
   });
@@ -356,8 +421,10 @@ function cartaCostanza() {
 
 /* ------------------------------------------------------------ 5. I MODULI */
 /*
-   Lo stato dei tre moduli, in tre righe. Non tessere grandi: qui non si
-   decide niente, si controlla soltanto, e il controllo costa una riga.
+   Lo stato dei tre moduli, in una striscia sola sotto le carte. Non tessere
+   grandi: qui non si decide niente, si controlla soltanto, e il controllo
+   costa una riga. Sta in fondo e larga quanto la griglia perché è la
+   chiusura del cruscotto, non uno dei suoi pannelli.
 */
 
 function cartaModuli(q) {
@@ -369,10 +436,11 @@ function cartaModuli(q) {
     corpo: el("ul", { class: "og-modlista" }, righe.map((s) => {
       const d = s.dati;
       const a = el("a", { class: "og-modriga", href: d?.azione?.rotta || `#/${s.mod.id}` }, [
-        el("span", { class: "og-modicona", html: icona(s.mod.icona, 17) }),
+        el("span", { class: "og-modicona", html: icona(s.mod.icona, 18) }),
         el("span", { class: "og-modnome", testo: s.mod.nome }),
         el("span", { class: `og-modstato ${d?.fatto === true ? "ok" : d?.fatto === false ? "avviso" : ""}`.trim(),
           testo: d ? String(d.valore ?? "—") : "—" }),
+        el("span", { class: "og-modfreccia", html: icona("freccia", 14) }),
       ]);
       a.style.setProperty("--tinta", s.mod.accento);
       return el("li", {}, [a]);

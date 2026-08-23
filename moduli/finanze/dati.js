@@ -364,3 +364,50 @@ export function togliDaSospeso(id) {
     s.config.pendenti = (s.config.pendenti || []).filter((p) => p.id !== id);
   });
 }
+
+/* ================================================== il check giornaliero ==
+   Un giorno chiuso è un giorno in cui hai guardato i conti e hai detto «sì,
+   è tutto segnato». Non è un dato contabile — non sposta un centesimo — ma è
+   l'unica cosa che tiene in piedi il registro: un registro si rompe quando
+   smetti di segnare, e smetti di segnare quando nessuno ti chiede se l'hai
+   fatto.
+
+   Sta in `config.checks` come mappa `iso → timestamp` e non come lista di
+   record perché non ha bisogno di lapidi: se un dispositivo dice che il 23
+   il check c'è stato, il 23 il check c'è stato, e due dispositivi che dicono
+   la stessa cosa non hanno un conflitto da risolvere. Si pota a 120 giorni:
+   la serie più lunga che ha senso mostrare è molto più corta di così.
+   ========================================================================= */
+
+const GIORNI_CHECK = 120;
+
+export const checkFatto = (iso) => Boolean((stato().config?.checks || {})[iso]);
+
+export function segnaCheck(iso) {
+  scriviMeta((s) => {
+    const c = { ...(s.config.checks || {}), [iso]: Date.now() };
+    const taglio = new Date(Date.now() - GIORNI_CHECK * 86400000).toISOString().slice(0, 10);
+    s.config.checks = Object.fromEntries(Object.entries(c).filter(([g]) => g >= taglio));
+  });
+}
+
+/**
+ * Da quanti giorni di fila chiudi il check.
+ *
+ * Oggi non conta finché non l'hai fatto: partire da 1 la mattina prima di
+ * aver guardato niente sarebbe una serie regalata, e una serie regalata non
+ * la si difende. Se oggi è ancora aperto la serie è quella di ieri, che è
+ * quella che stai per allungare o per perdere.
+ */
+export function serieCheck(oggi) {
+  const checks = stato().config?.checks || {};
+  const giorno = (n) => new Date(new Date(`${oggi}T12:00:00`).getTime() - n * 86400000)
+    .toISOString().slice(0, 10);
+
+  let n = 0;
+  for (let k = checks[oggi] ? 0 : 1; k < GIORNI_CHECK; k++) {
+    if (!checks[giorno(k)]) break;
+    n++;
+  }
+  return n;
+}
