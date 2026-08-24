@@ -16,7 +16,7 @@
 // `weekly` è l'unico che non si risolve guardando il solo giorno: per
 // sapere se è attesa oggi bisogna contare i log della settimana.
 
-import { abitudiniVive, eFatta, stato, partiDi, parteFatta, FASCE, statoFascia } from "./dati.js";
+import { abitudiniVive, eFatta, eSaltata, stato, partiDi, parteFatta, FASCE, statoFascia } from "./dati.js";
 import { isoDi, daISO, piuGiorni, oggiISO } from "../../core/ui.js";
 
 const PREDEFINITA = { type: "daily", days: [1, 2, 3, 4, 5, 6, 0], times: 3 };
@@ -128,9 +128,19 @@ export function fattaIl(h, iso) {
   return eFatta(h.id, iso);
 }
 
-/** Le abitudini ancora da spuntare oggi. */
+/**
+ * Chiusa: fatta o dichiarata saltata. In un modo o nell'altro, oggi non ha
+ * più niente da chiedere.
+ *
+ * Un'abitudine con parti non si può saltare in blocco — si saltano le
+ * singole parti — quindi per lei conta solo l'essere fatta.
+ */
+export const chiusaIl = (h, iso) =>
+  fattaIl(h, iso) || (!partiDi(h).length && eSaltata(h.id, iso));
+
+/** Le abitudini ancora da spuntare oggi. Le saltate non mancano più. */
 export const mancantiOggi = (iso = oggiISO()) =>
-  abitudiniVive().filter((h) => eAttesa(h, iso) && !fattaIl(h, iso));
+  abitudiniVive().filter((h) => eAttesa(h, iso) && !chiusaIl(h, iso));
 
 /**
  * La serie in corso.
@@ -290,7 +300,9 @@ export function restaOggi(iso = oggiISO(), ora = new Date().getHours()) {
     const parti = partiDi(h);
 
     if (!parti.length) {
-      if (eFatta(h.id, iso)) continue;
+      // Saltata vuol dire chiusa: sparisce da qui esattamente come una
+      // fatta. È tutto il punto di poterla dichiarare.
+      if (eFatta(h.id, iso) || eSaltata(h.id, iso)) continue;
       out.push({
         chiave: h.id, habitId: h.id, parteId: null,
         nome: h.name, emoji: h.emoji, tint: h.tint,

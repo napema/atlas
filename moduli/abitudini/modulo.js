@@ -96,10 +96,13 @@ function spuntaDaSessione() {
     alterna(h.id, oggi);
     spuntate++;
   }
-  if (spuntate) {
-    avviso(spuntate === 1 ? "Abitudine spuntata dalla sessione." : `${spuntate} abitudini spuntate.`);
-    disegna();
-  }
+  if (!spuntate) return;
+  avviso(spuntate === 1 ? "Abitudine spuntata dalla sessione." : `${spuntate} abitudini spuntate.`);
+  // La lavagna prima del disegno: la home legge quella, e se il modulo è
+  // chiuso — cioè quasi sempre, quando finisci una sessione — è l'unica
+  // cosa che le arriva.
+  pubblicaSullaLavagna();
+  if (contenitore) disegna();
 }
 
 /* ---------------------------------------------------------------- sync -- */
@@ -144,6 +147,20 @@ export function avviaSync() {
   pubblicaSullaLavagna();
 
   casella.osserva((_, origine) => { if (origine !== "sync") canale.segnalaModifica(); });
+
+  // L'ASCOLTO DELLA SESSIONE STA QUI, NON IN `monta()`.
+  //
+  // Stava lì, ed è per questo che l'auto-spunta non è mai scattata: gli
+  // ascoltatori di `monta()` vivono finché la schermata è aperta, e quando
+  // finisci una sessione di Mobilità la schermata Abitudini è chiusa —
+  // sempre, per definizione. L'annuncio partiva e non lo sentiva nessuno.
+  //
+  // `avviaSync()` invece gira all'avvio dell'app per ogni modulo, e non si
+  // stacca mai: è il posto degli ascolti che devono funzionare anche a
+  // modulo chiuso. Non serve staccarlo — non ce n'è una seconda copia,
+  // perché avviaSync viene chiamata una volta sola.
+  ascolta("mobilita:sessione-completata", spuntaDaSessione);
+
   canale.avvia();
   return canale;
 }
@@ -165,7 +182,6 @@ export default {
     // Chi ascolta DEVE staccarsi in smonta(): senza, ogni visita alla
     // schermata lascia dietro una copia dell'ascoltatore, e i ridisegni
     // raddoppiano a ogni giro.
-    staccatori.push(ascolta("mobilita:sessione-completata", spuntaDaSessione));
     staccatori.push(ascolta("giorno:cambiato", () => { giornoScelto = oggiISO(); disegna(); }));
   },
 

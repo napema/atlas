@@ -10,7 +10,7 @@ import {
 } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
 import {
-  abitudiniVive, abitudinePerId, eFatta, alterna, stato, scriviMeta,
+  abitudiniVive, abitudinePerId, eFatta, eSaltata, alterna, alternaSaltata, stato, scriviMeta,
   salvaAbitudine, eliminaAbitudine, coloreTinta, TINTE,
   FASCE, partiDi, parteFatta, alternaParte,
 } from "./dati.js";
@@ -147,8 +147,30 @@ function rigaAbitudine(h, giorno, ridisegna, { spenta = false } = {}) {
     ]),
   ]);
 
-  const li = el("li", { class: "ab-li" + (spenta ? " spenta" : "") }, [
-    el("div", { class: "ab-riga-fuori" }, [spunta, corpo]),
+  // «Oggi no»: il terzo stato, e sta a destra come azione secondaria.
+  //
+  // Serve per le abitudini in negativo — quelle che si tengono NON facendo
+  // qualcosa. Se oggi è andata storta, spuntarla è una bugia e lasciarla
+  // aperta fino a mezzanotte è un promemoria di una cosa su cui non si può
+  // più fare niente. Dichiararla la chiude: sparisce da «Adesso» in home e
+  // resta nello storico per quella che è stata.
+  const saltata = eSaltata(h.id, giorno);
+  const salta = parti.length === 0 && el("button", {
+    class: "ab-salta" + (saltata ? " attiva" : ""),
+    type: "button",
+    "aria-pressed": String(saltata),
+    "aria-label": saltata ? `Riapri ${h.name}` : `Segna ${h.name} come saltata oggi`,
+    title: saltata ? "Riaprila" : "Oggi no",
+    onClick: (e) => {
+      e.stopPropagation();
+      alternaSaltata(h.id, giorno);
+      tocco(6);
+      ridisegna();
+    },
+  }, [el("span", { html: icona("chiudi", 15, 2.4) })]);
+
+  const li = el("li", { class: "ab-li" + (spenta ? " spenta" : "") + (saltata ? " saltata" : "") }, [
+    el("div", { class: "ab-riga-fuori" }, [spunta, corpo, salta].filter(Boolean)),
     parti.length > 0 && el("ul", { class: "ab-parti" }, parti.map((p) => {
       const pf = parteFatta(h.id, p.id, giorno);
       const b = el("button", {

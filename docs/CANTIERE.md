@@ -180,3 +180,35 @@ _(nessuna)_
   che una foto esiste ma non la vede.
 - **`legacy/`.** Si cancella quando le tre app di partenza sono spente e i
   moduli hanno retto un mese.
+
+---
+
+## Richiesta aperta ad `atlas-dati` — le notifiche dei pagamenti (23 ago)
+
+Il lato client è fatto: `orari.finanze` in `notifiche.json` ora porta
+
+```json
+"pagamenti": true,
+"pagamentiOra": "08:30",
+"pagamentiGiorni": [3, 1, 0]
+```
+
+e l'interruttore sta in Impostazioni → Notifiche.
+
+**Manca la metà che sta nell'altro repo.** Chi manda è `notifiche.js` dentro
+`atlas-dati`, lanciato da `promemoria.yml`: deve leggere anche `finanze.json`,
+calcolare le scadenze e mandare il push. La logica è la stessa che usa l'app:
+
+- i **ricorrenti** stanno in `ricorrenti[]` (fuori da `meta` dalla v5, con
+  ripiego su `meta.ricorrenti` per i file vecchi). La prossima scadenza si
+  calcola come in `moduli/finanze/calcolo.js` → `prossimaScadenza()`: passo
+  della cadenza, ancora su `da` (o `mese`), giorno tagliato sulla lunghezza
+  del mese, e si salta tutto ciò che non supera `pagato`;
+- i **previsti** stanno in `previsti[]`: una data secca in `quando`, e si
+  ignorano quelli con `pagatoIl` valorizzato o `del`;
+- per ogni voce, `giorniMancanti` deve stare in `pagamentiGiorni`;
+- il testo utile è nome + importo + pocket, e a tre giorni conviene dire
+  anche se il pocket copre — è l'unica delle tre occasioni in cui c'è ancora
+  tempo per rimediare.
+
+Gli importi sono in **centesimi**.

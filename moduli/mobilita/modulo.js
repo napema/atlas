@@ -290,6 +290,7 @@ export default {
       };
     }
 
+    const ora = new Date().getHours();
     const haCorso = s.giornoCorrente?.data === giorno ? Boolean(s.giornoCorrente.haCorso) : false;
     const tipo = tipoDelGiorno(s, haCorso);
     const { passi } = costruisciSessione(s, tipo);
@@ -305,11 +306,23 @@ export default {
       mancaTesto: `la sessione di mobilità`,
       // La sessione entra nella checklist della home come le abitudini. Non
       // si spunta però: una sessione si FA, e toccarla apre il player.
+      // LA SESSIONE È UNA COSA DELLA SERA, e adesso lo dice.
+      //
+      // Prima era «adesso» dalle sette del mattino: compariva in cima alla
+      // checklist della home per tutto il giorno, quando è una cosa che si
+      // fa dopo cena. Una voce che chiede attenzione dodici ore prima del
+      // momento in cui la farai è una voce che si impara a scavalcare, e
+      // quando poi arriva l'ora giusta non la vedi più.
+      //
+      // Stessa fascia degli integratori della sera, così la home la tratta
+      // come tratta loro: prima delle 18 è «presto» e resta fuori da
+      // «Adesso», dalle 18 tocca, dalle 22 è in ritardo.
       resta: [{
         chiave: "mobilita:sessione", apre: "#/mobilita/inizia",
         nome: TIPI_SESSIONE[tipo]?.nome || "Sessione",
         dentro: "Mobilità", emoji: "🤸", tint: "ciano",
-        nomeFascia: `${minuti} min`, quando: new Date().getHours() >= 21 ? "tardi" : "adesso",
+        fascia: "sera", nomeFascia: `${minuti} min`,
+        quando: ora < 18 ? "presto" : ora < 22 ? "adesso" : "tardi",
       }],
       serie: n,
       // Urgente di sera: è l'ora in cui la sessione salta davvero.

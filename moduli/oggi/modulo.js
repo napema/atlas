@@ -147,9 +147,9 @@ function prioritarie(resta, ora) {
   // Di sera non c'è più un «dopo» in cui rimandare: torna tutto.
   if (ora >= ORA_SERA) return resta;
   return resta.filter((v) =>
-    v.quando === "tardi" ||               // il momento è passato: è la voce che conta di più
-    Boolean(v.apre) ||                    // la sessione: si fa, e ha una durata
-    (Boolean(v.fascia) && v.quando === "adesso"), // l'integratore di questa fascia
+    v.quando === "tardi" ||                          // il momento è passato: conta più di tutto
+    (Boolean(v.fascia) && v.quando === "adesso") ||  // quello che tocca in questa fascia
+    (!v.fascia && Boolean(v.apre)),                  // una sessione senza un'ora sua
   );
 }
 

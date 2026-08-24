@@ -460,3 +460,33 @@
   .ab-eroe, .ab-settimana { max-width: none; }
 }
 
+
+/* ------------------------------------------------------- «oggi no» ------ */
+/*
+   Il terzo stato. Il bersaglio è pieno (44px) ma il segno è piccolo e
+   grigio: è un'azione che si usa di rado e che non deve competere con la
+   spunta, che è il gesto vero della schermata.
+*/
+
+.ab-salta {
+  width: 44px;
+  min-height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-interno);
+  background: none;
+  color: var(--testo-4);
+  cursor: pointer;
+  transition: color var(--veloce) var(--curva), background var(--veloce) var(--curva);
+}
+.ab-salta:active { background: var(--scheda-alta); }
+.ab-salta.attiva { color: var(--avviso); background: var(--scheda-alta); }
+.ab-salta svg { display: block; }
+
+/* Una riga saltata è chiusa, non sbagliata: si spegne, non si accende di
+   rosso. Il rosso qui vorrebbe dire «hai un problema», e un giorno saltato
+   dichiarato è il contrario di un problema — è averlo guardato in faccia. */
+.ab-li.saltata .ab-nome { text-decoration: line-through; color: var(--testo-3); }
+.ab-li.saltata .ab-emoji { opacity: 0.45; }

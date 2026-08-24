@@ -147,6 +147,17 @@ async function avvia() {
   applicaTemaSalvato();
   costruisciBarra();
 
+  // La scheda si accende SUBITO, sull'`hashchange`, non quando il modulo ha
+  // finito di montarsi.
+  //
+  // Gli ascoltatori del router girano in fondo a `disegna()`, cioè dopo il
+  // caricamento pigro del modulo e del suo CSS. Fra il tocco e
+  // l'illuminazione della scheda ci passava tutto quel tempo, e su una rete
+  // lenta erano secondi in cui il tocco sembrava non essere arrivato: da lì
+  // il toccare due o tre volte. Il contenuto ci mette quello che ci mette,
+  // ma la barra deve rispondere all'istante.
+  globalThis.addEventListener("hashchange", () => evidenziaBarra(rottaCorrente()));
+
   osservaRotta((r) => {
     evidenziaBarra(r);
     allineaBarraDiStato();

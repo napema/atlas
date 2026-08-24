@@ -59,14 +59,55 @@ let indiceDi = null;
 export function indiceSpunte() {
   const s = stato();
   if (indice && indiceDi === s.logs) return indice;
-  indice = new Set();
-  for (const l of s.logs) if (l && !l.del) indice.add(l.id);
+  indice = { fatte: new Set(), saltate: new Set() };
+  for (const l of s.logs) {
+    if (!l || l.del) continue;
+    (l.x ? indice.saltate : indice.fatte).add(l.id);
+  }
   indiceDi = s.logs;
   return indice;
 }
 
 export const idLog = (habitId, data) => `${habitId}|${data}`;
-export const eFatta = (habitId, data) => indiceSpunte().has(idLog(habitId, data));
+export const eFatta = (habitId, data) => indiceSpunte().fatte.has(idLog(habitId, data));
+
+/* ------------------------------------------------------------- saltate ---
+   Il terzo stato: né fatta né in sospeso — CHIUSA COME NON FATTA.
+
+   Serve per le abitudini in negativo, quelle che si tengono non facendo
+   qualcosa: se oggi è andata storta, spuntarle sarebbe una bugia e
+   lasciarle lì aperte fino a mezzanotte è un promemoria di una cosa su cui
+   non si può più fare niente. Nessuna delle due è utile. Un giorno saltato
+   si dichiara, sparisce dalla lista di oggi e resta nello storico come
+   quello che è.
+
+   Sta nello STESSO record della spunta, con un flag `x`. Un record separato
+   vorrebbe dire poter essere fatta e saltata insieme, che non vuol dire
+   niente, e due chiavi diverse da tenere allineate nel sync.
+   ========================================================================= */
+
+export const eSaltata = (habitId, data) => indiceSpunte().saltate.has(idLog(habitId, data));
+
+/** Dichiarata saltata, o annullata se lo era già. Torna il nuovo stato. */
+export function alternaSaltata(habitId, data) {
+  const id = idLog(habitId, data);
+  const eraSaltata = eSaltata(habitId, data);
+  casella.aggiorna((s) => {
+    const i = s.logs.findIndex((l) => l.id === id);
+    // Come per la spunta: annullare mette la lapide, non toglie il record.
+    // Senza, l'altro dispositivo la rimanderebbe indietro.
+    const rec = eraSaltata
+      ? { id, h: habitId, d: data, up: Date.now(), del: true }
+      : { id, h: habitId, d: data, up: Date.now(), x: true };
+    if (i >= 0) s.logs[i] = rec; else s.logs.push(rec);
+  });
+  indice = null;
+  return !eraSaltata;
+}
+
+/** Lo stato di oggi in una parola: "fatta" | "saltata" | "aperta". */
+export const statoDi = (habitId, data) =>
+  eFatta(habitId, data) ? "fatta" : eSaltata(habitId, data) ? "saltata" : "aperta";
 
 // ------------------------------------------------------------- scritture --
 
@@ -86,6 +127,8 @@ export function alterna(habitId, data) {
     const rec = { id, h: habitId, d: data, up: Date.now() };
     // De-spuntare non toglie il record: mette la lapide. Senza, l'altro
     // dispositivo rimanderebbe indietro la spunta e la toglierebbe di nuovo.
+    // `x` non si porta dietro: spuntare una saltata la rende fatta, ed è
+    // giusto — è il modo di correggere un «oggi no» dato troppo presto.
     if (eraFatta) rec.del = true;
     if (i >= 0) s.logs[i] = rec; else s.logs.push(rec);
   });

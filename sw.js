@@ -14,7 +14,7 @@
  * che stanno in core/app.js. Il perché è scritto lì.
  */
 
-const VERSIONE = "atlas-v30";
+const VERSIONE = "atlas-v31";
 const GUSCIO = `guscio-${VERSIONE}`;
 
 const DA_PRECARICARE = [
@@ -135,18 +135,48 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // IL CODICE DELL'APP — html, css, js — si prende dalla rete, e la cache è
-  // solo la riserva per quando la rete non c'è.
+  // IL CODICE DELL'APP — html, css, js — dalla cache SUBITO, e intanto si
+  // rinfresca in sottofondo.
   //
-  // Prima era il contrario: cache prima, e aggiornamento silenzioso in
-  // sottofondo "perché il prossimo avvio trovi la versione nuova". Il difetto
-  // di quella frase è "il prossimo": vuol dire che dopo ogni rilascio la
-  // prima apertura mostra sempre la versione precedente. Sommato a un
-  // service worker che il browser si teneva in cache, la versione precedente
-  // era quella di sempre — e chi guardava lo schermo aveva ragione a dire che
-  // non era cambiato niente.
-  e.respondWith(reteConRiserva(req));
+  // Era rete-prima, e l'avevo scelto io per un motivo che sembrava buono:
+  // dopo un rilascio la prima apertura mostrava la versione precedente. Il
+  // prezzo però lo pagava ogni singolo tocco della barra. I moduli si
+  // caricano pigramente, quindi aprire Finanze vuol dire scaricare
+  // `modulo.js` più i suoi import più `stile.css`: con una tacca di segnale
+  // sono secondi in cui non succede niente, e chi guarda lo schermo tocca
+  // di nuovo. «La barra è lenta e devo cliccare più volte» era questo.
+  //
+  // Il problema della versione vecchia non torna, perché nel frattempo è
+  // stato risolto dove andava risolto: `updateViaCache: "none"` fa
+  // ricontrollare sw.js a ogni avvio, il cambio di `VERSIONE` fa installare
+  // il nuovo guscio e cancellare quello vecchio, e il ricaricamento su
+  // `controllerchange` porta l'app alla versione nuova entro un giro. La
+  // cache non è più «la versione di sempre»: è la versione di adesso, già
+  // pronta.
+  e.respondWith(cacheSubitoPoiRete(req));
 });
+
+/**
+ * Cache subito, rete in sottofondo.
+ *
+ * La risposta parte dalla copia salvata senza aspettare niente; la rete
+ * viene interrogata comunque e aggiorna la cache per la volta dopo. Se in
+ * cache non c'è nulla si aspetta la rete, che è il primo avvio.
+ *
+ * L'aggiornamento in sottofondo NON deve far fallire la risposta: se la rete
+ * non c'è, `catch` e via — la copia salvata è già partita.
+ */
+async function cacheSubitoPoiRete(req) {
+  const c = await caches.open(GUSCIO);
+  const salvata = await c.match(req);
+
+  const dallaRete = fetch(req)
+    .then((res) => { if (res.ok) c.put(req, res.clone()); return res; })
+    .catch(() => null);
+
+  if (salvata) return salvata;
+  return (await dallaRete) || new Response("", { status: 504, statusText: "offline" });
+}
 
 /** Rete, e se non risponde la copia in cache (`riserva` o la richiesta stessa). */
 async function reteConRiserva(req, riserva = null) {

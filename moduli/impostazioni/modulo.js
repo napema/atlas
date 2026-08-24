@@ -109,6 +109,15 @@ async function bloccoNotifiche(ridisegna) {
     if (s.orari.finanze.attiva) {
       corpo.push(el("div", { class: "gruppo-titolo", testo: "Orari · Finanze" }));
       corpo.push(oraCampo("Riepilogo serale", s.orari.finanze.riepilogo, (v) => notifiche.scriviOrari("finanze", { riepilogo: v })));
+      corpo.push(lista([interruttore("Pagamenti in arrivo", s.orari.finanze.pagamenti !== false,
+        (v) => { notifiche.scriviOrari("finanze", { pagamenti: v }); ridisegna(); },
+        "Tre giorni prima, il giorno prima, la mattina stessa")]));
+      if (s.orari.finanze.pagamenti !== false) {
+        corpo.push(oraCampo("Ora dell'avviso", s.orari.finanze.pagamentiOra || "08:30",
+          (v) => notifiche.scriviOrari("finanze", { pagamentiOra: v })));
+        corpo.push(el("p", { class: "nota", testo:
+          "Tre avvisi e non uno perché servono a tre cose diverse: a tre giorni fai in tempo a spostare i soldi nel pocket giusto, a un giorno a rinunciare a qualcosa, la mattina stessa a non trovare il conto più magro senza sapere perché." }));
+      }
     }
     corpo.push(el("button", {
       class: "btn tenue pieno", type: "button", testo: "Manda una notifica di prova",

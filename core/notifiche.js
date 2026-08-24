@@ -46,6 +46,15 @@ export const PREDEFINITO = {
     finanze: {
       attiva: false,
       riepilogo: "21:30",    // "hai segnato le spese di oggi?"
+      // I pagamenti in arrivo. Tre avvisi e non uno solo, perché servono a
+      // tre cose diverse: a tre giorni fai in tempo a spostare i soldi nel
+      // pocket giusto, a un giorno fai in tempo a rinunciare a qualcosa, la
+      // mattina stessa serve solo a non trovarti il conto più magro senza
+      // sapere perché. Un avviso solo dovrebbe fare tutti e tre i lavori e
+      // non ne farebbe bene nessuno.
+      pagamenti: true,
+      pagamentiOra: "08:30",   // l'ora dell'avviso, per tutti e tre gli anticipi
+      pagamentiGiorni: [3, 1, 0],
     },
   },
   up: 0,
