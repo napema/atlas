@@ -183,32 +183,31 @@ _(nessuna)_
 
 ---
 
-## Richiesta aperta ad `atlas-dati` — le notifiche dei pagamenti (23 ago)
+## ✅ Notifiche dei pagamenti — fatte da tutte e due i lati (23 ago)
 
-Il lato client è fatto: `orari.finanze` in `notifiche.json` ora porta
+Il lato client: `orari.finanze` in `notifiche.json` porta `pagamenti`,
+`pagamentiOra` e `pagamentiGiorni: [3, 1, 0]`, con l'interruttore in
+Impostazioni → Notifiche.
 
-```json
-"pagamenti": true,
-"pagamentiOra": "08:30",
-"pagamentiGiorni": [3, 1, 0]
-```
+Il lato mittente: `notifiche.js` dentro `atlas-dati` ha la sezione
+**FINANZE · PAGAMENTI IN ARRIVO**. Legge `ricorrenti[]` e `previsti[]`
+(con ripiego su `meta.ricorrenti` per i file scritti da un dispositivo
+vecchio), ricalcola la prossima scadenza con la stessa aritmetica di
+`prossimaScadenza()`, e per ogni voce a 3, 1 o 0 giorni manda un avviso.
 
-e l'interruttore sta in Impostazioni → Notifiche.
+Due dettagli che sembrano minuzie e non lo sono:
 
-**Manca la metà che sta nell'altro repo.** Chi manda è `notifiche.js` dentro
-`atlas-dati`, lanciato da `promemoria.yml`: deve leggere anche `finanze.json`,
-calcolare le scadenze e mandare il push. La logica è la stessa che usa l'app:
+- la **chiave** finisce con la data di scadenza — `fi:pag:<anticipo>:<id>:<data>`
+  — perché la potatura dello storico in `stato-notifiche.json` riconosce
+  le chiavi dall'ultimo segmento. Con l'anticipo in fondo non si
+  sarebbero mai pulite;
+- il **tag** invece identifica il pagamento e basta (`fi:pag:<id>`), così
+  l'avviso del giorno prima SOSTITUISCE quello di tre giorni prima sullo
+  schermo invece di affiancarglisi. È lo stesso conto.
 
-- i **ricorrenti** stanno in `ricorrenti[]` (fuori da `meta` dalla v5, con
-  ripiego su `meta.ricorrenti` per i file vecchi). La prossima scadenza si
-  calcola come in `moduli/finanze/calcolo.js` → `prossimaScadenza()`: passo
-  della cadenza, ancora su `da` (o `mese`), giorno tagliato sulla lunghezza
-  del mese, e si salta tutto ciò che non supera `pagato`;
-- i **previsti** stanno in `previsti[]`: una data secca in `quando`, e si
-  ignorano quelli con `pagatoIl` valorizzato o `del`;
-- per ogni voce, `giorniMancanti` deve stare in `pagamentiGiorni`;
-- il testo utile è nome + importo + pocket, e a tre giorni conviene dire
-  anche se il pocket copre — è l'unica delle tre occasioni in cui c'è ancora
-  tempo per rimediare.
+A tre giorni il testo dice anche se il pocket copre: è l'unica delle tre
+occasioni in cui c'è ancora tempo per rimediare, e dirlo il giorno stesso
+servirebbe solo a far sentire in colpa.
 
-Gli importi sono in **centesimi**.
+Il workflow non è stato toccato: `promemoria.yml` legge già tutti i file
+dei moduli e gira ogni dieci minuti.
