@@ -300,6 +300,18 @@
 
 /* Il video. È la ragione per cui questo modulo esiste in questa forma: un
    follow-along senza il filmato è una lista di istruzioni scritte. */
+/* ============================================================== il video ==
+   Il palco del video: fondo nero, niente ritaglio, un velo e un'etichetta.
+
+   `object-fit: contain` e non `cover`. Ritagliare per riempire il riquadro
+   sembra più ordinato finché non ti accorgi che a sparire sono i piedi, e
+   che i piedi sono metà degli esercizi. Meglio due bande nere.
+
+   Il velo in basso non è decorazione: l'etichetta ci sta sopra, e sul
+   fotogramma chiaro di una palestra il testo bianco senza velo non si
+   legge. Sfuma, così non taglia l'immagine con una riga.
+   ========================================================================= */
+
 .sess-media {
   position: relative;
   width: 100%;
@@ -307,8 +319,48 @@
   background: #000;
   overflow: hidden;
 }
-.sess-media:empty { display: none; }
-.sess-media iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.sess-media[hidden] { display: none; }
+
+.sess-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #000;
+}
+
+.sess-video-velo {
+  position: absolute;
+  inset: auto 0 0;
+  height: 56px;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.72));
+}
+.sess-video-eti {
+  position: absolute;
+  left: var(--s4); right: var(--s4); bottom: 10px;
+  font-size: var(--t-13);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  pointer-events: none;
+}
+
+/* IPHONE DI TAGLIO. In orizzontale l'altezza è tutto: il video si prende
+   quello che c'è meno lo spazio del timer e dei tasti, e le istruzioni
+   scorrono di fianco. Senza questo il riquadro 16/9 su uno schermo alto
+   400px lascia fuori sia i passi sia i comandi. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .sess-media { aspect-ratio: auto; height: 100%; max-height: none; }
+  .sess-layout { display: grid; grid-template-columns: 1.35fr 1fr; grid-template-rows: 1fr auto; }
+  .sess-testa { grid-column: 1; grid-row: 1; min-height: 0; }
+  .sess-scorre { grid-column: 2; grid-row: 1; border-left: 1px solid var(--filo); }
+  .sess-piede { grid-column: 1 / -1; grid-row: 2; }
+}
 
 .sess-riga-timer {
   display: flex;
@@ -551,7 +603,7 @@
   .sess-scorre, .assess-part { padding-inline: var(--s8); }
   .sess-piede, .assess-footer { padding-inline: var(--s8); }
   .sess-media { max-height: 46vh; aspect-ratio: auto; height: 46vh; }
-  .sess-media iframe { object-fit: contain; }
+  .sess-video { object-fit: contain; }
 }
 
 @media (min-width: 1120px) {

@@ -14,7 +14,7 @@
  * che stanno in core/app.js. Il perché è scritto lì.
  */
 
-const VERSIONE = "atlas-v31";
+const VERSIONE = "atlas-v32";
 const GUSCIO = `guscio-${VERSIONE}`;
 
 const DA_PRECARICARE = [
@@ -60,6 +60,7 @@ const DA_PRECARICARE = [
   "./moduli/mobilita/ponte.js",
   "./moduli/mobilita/foto.js",
   "./moduli/mobilita/esercizi.js",
+  "./moduli/mobilita/clip.js",
   "./moduli/mobilita/engine.js",
   "./moduli/mobilita/stile.css",
   "./moduli/abitudini/modulo.js",
@@ -118,6 +119,31 @@ self.addEventListener("fetch", (e) => {
   // rotta è index.html.
   if (req.mode === "navigate") {
     e.respondWith(reteConRiserva(req, "./index.html"));
+    return;
+  }
+
+  // I VIDEO DEGLI ESERCIZI: dalla cache, e ci restano.
+  //
+  // Non stanno nel precarico — sono sessanta megabyte, e scaricarli tutti
+  // alla prima apertura vorrebbe dire un'installazione che non finisce mai
+  // su una connessione da telefono. Si salvano uno alla volta, il giorno
+  // che quell'esercizio esce nella rotazione, e da lì in poi ci sono anche
+  // in aereo. Dopo una settimana di sessioni la libreria è completa da sé.
+  //
+  // `Range` a parte: Safari chiede i video a pezzi, e a una richiesta con
+  // Range si deve rispondere 206 con quel pezzo. Rispondere 200 con tutto,
+  // che è quello che fa `cache.match()`, manda in errore il player — video
+  // nero e nessun messaggio. Quelle richieste passano alla rete.
+  if (url.pathname.includes("/mobilita/clip/")) {
+    if (req.headers.has("range")) return;
+    e.respondWith((async () => {
+      const c = await caches.open(GUSCIO);
+      const salvata = await c.match(req);
+      if (salvata) return salvata;
+      const res = await fetch(req).catch(() => null);
+      if (res?.ok) c.put(req, res.clone());
+      return res || new Response("", { status: 504, statusText: "offline" });
+    })());
     return;
   }
 

@@ -13,6 +13,7 @@ class FollowAlongEngine {
     this.inPausa = true;
     this.intervalId = null;
     this.wakeLock = null;
+    this.audio = null;
 
     this.onTick = onTick ?? (() => {});
     this.onStepChange = onStepChange ?? (() => {});
@@ -33,6 +34,10 @@ class FollowAlongEngine {
 
   async avvia() {
     if (this.steps.length === 0) return;
+    // PRIMA di ogni altra cosa: `avvia()` parte dal tocco su «Inizia», ed
+    // è l'unico momento in cui il browser lascia sbloccare l'audio. Farlo
+    // dopo, o dentro il beep, vuol dire non farlo.
+    this._sbloccaAudio();
     this.inPausa = false;
     await this._richiediWakeLock();
     this._tick();
@@ -65,6 +70,11 @@ class FollowAlongEngine {
     this.secondiResidui -= 1;
     this.onTick(this.secondiResidui, this.stepCorrente());
 
+    // 3, 2, 1 — prima del segnale di fine, non insieme.
+    if (this.secondiResidui > 0 && this.secondiResidui <= 3) {
+      this._contoAllaRovescia(this.secondiResidui);
+    }
+
     if (this.secondiResidui <= 0) {
       // Il suono dipende da cosa sta per iniziare: doppio acuto quando parte
       // la tenuta vera (è il segnale di "vai"), singolo quando finisce.
@@ -84,31 +94,83 @@ class FollowAlongEngine {
     this.onStepChange(this.stepCorrente(), this.indiceCorrente, this.steps.length);
   }
 
-  _beep(tipo = "fine") {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const suona = (frequenza, ritardo, durata) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = frequenza;
-        gain.gain.setValueAtTime(0.22, ctx.currentTime + ritardo);
-        osc.start(ctx.currentTime + ritardo);
-        osc.stop(ctx.currentTime + ritardo + durata);
-      };
+  /* ============================================================= il suono ==
+     UN SOLO AudioContext, creato al primo tocco dell'utente.
 
-      if (tipo === "inizio") {
-        suona(1180, 0, 0.12);
-        suona(1180, 0.18, 0.12);
-        setTimeout(() => ctx.close(), 600);
-      } else {
-        suona(760, 0, 0.18);
-        setTimeout(() => ctx.close(), 500);
-      }
-    } catch {
-      // audio non disponibile: il follow-along resta comunque utilizzabile via schermo
+     Prima se ne creava uno nuovo dentro `_beep()`, a ogni segnale, e per
+     questo non si è mai sentito niente. Un AudioContext nato fuori da un
+     gesto dell'utente parte `suspended` — su iOS sempre, su Chrome quasi
+     sempre — e resta muto: il beep scade da un timer, non da un tocco,
+     quindi ogni contesto nasceva già zittito. Si aprivano decine di
+     contesti muti uno dopo l'altro, e il browser ne consente pochi: dopo
+     un po' fallivano anche di creare, in silenzio, dentro il `catch`.
+
+     Adesso il contesto è uno solo e viene SBLOCCATO da `avvia()`, che parte
+     dal tocco su «Inizia». Da lì in poi suona, anche a schermo bloccato.
+     ========================================================================= */
+
+  _sbloccaAudio() {
+    if (this.audio) { this.audio.resume?.().catch(() => {}); return; }
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      this.audio = new Ctx();
+      this.audio.resume?.().catch(() => {});
+      // Un campione muto lungo un istante: su iOS è il gesto che "arma"
+      // davvero il contesto, e senza il primo suono vero arriva tagliato.
+      const s = this.audio.createBufferSource();
+      s.buffer = this.audio.createBuffer(1, 1, 22050);
+      s.connect(this.audio.destination);
+      s.start(0);
+    } catch { /* niente audio: il follow-along resta leggibile a schermo */ }
+  }
+
+  /**
+   * Un tono. `guadagno` è il volume — è quello che rende i tre conteggi
+   * finali diversi fra loro anche a occhi chiusi.
+   */
+  _tono(frequenza, ritardo, durata, guadagno = 0.22) {
+    const ctx = this.audio;
+    if (!ctx || ctx.state === "closed") return;
+    const t = ctx.currentTime + ritardo;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(frequenza, t);
+    // Attacco e rilascio brevi invece di un gradino secco: un'onda che parte
+    // e si ferma di colpo fa "click", ed è quel click che si sente al posto
+    // della nota.
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(guadagno, t + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + durata);
+    osc.start(t);
+    osc.stop(t + durata + 0.02);
+  }
+
+  _beep(tipo = "fine") {
+    this._sbloccaAudio();
+    if (tipo === "inizio") {
+      this._tono(1180, 0, 0.12);
+      this._tono(1180, 0.18, 0.12);
+    } else {
+      this._tono(760, 0, 0.18);
     }
+  }
+
+  /**
+   * Gli ultimi tre secondi: tre bip che salgono di tono e di volume.
+   *
+   * Servono perché il segnale di fine arriva quando è già finita, e per
+   * arrivare in fondo a una tenuta con la posizione giusta bisogna sapere
+   * quanto manca senza guardare lo schermo — che durante metà di questi
+   * esercizi è per terra o dietro le spalle. Tre, non uno: uno solo dice
+   * «adesso», tre dicono «sta arrivando», ed è un'informazione diversa.
+   */
+  _contoAllaRovescia(n) {
+    this._sbloccaAudio();
+    const scala = { 3: [560, 0.10], 2: [700, 0.15], 1: [880, 0.22] }[n];
+    if (scala) this._tono(scala[0], 0, 0.09, scala[1]);
   }
 
   async _richiediWakeLock() {

@@ -12,6 +12,7 @@
 
 import { getState, updateState, salvaStatoSW } from "./ponte.js";
 import { FollowAlongEngine } from "./engine.js";
+import { CLIP } from "./clip.js";
 import { icona } from "../../core/icone.js";
 import {
   GRUPPI, G1, BACINO, LOADED, POST_CORSA, BLOCCO_ATTIVO, SOGLIA_COMPLETAMENTO,
@@ -442,15 +443,70 @@ function aggiornaStep(container, step, totale) {
   nota.hidden = !d.nota;
   if (d.nota) nota.textContent = d.nota;
 
-  const media = container.querySelector("#sess-media");
-  if (videoMontato !== d.video && d.video) {
-    media.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${d.video}?autoplay=1&mute=1&loop=1&playlist=${d.video}&rel=0&playsinline=1&controls=1"
-      title="${d.nome}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
-    videoMontato = d.video;
-  }
+  montaVideo(container, d);
 
   container.querySelector(".sess-scorre").scrollTop = 0;
   aggiornaAvanzamento(container);
+}
+
+/* ============================================================== il video ==
+   VIDEO LOCALI, non più YouTube.
+
+   L'iframe di YouTube era sbagliato per tre motivi che si sommavano proprio
+   nel momento in cui il video serve — a metà sessione, con le mani per
+   terra: offline non c'è, la pubblicità parte quando vuole lei, e gli
+   overlay «guarda anche» coprono esattamente la parte del corpo che stai
+   cercando di guardare.
+
+   Adesso è un `<video>` che sta nel repo. Quattro attributi e nessuno è
+   opzionale:
+
+   `muted` + `playsinline`  su iOS un video parte da solo SOLO se è muto e
+                            dichiara di non volersi prendere lo schermo.
+                            Senza uno dei due resta fermo sul primo
+                            fotogramma, e non lo dice.
+   `loop`                   sono clip da dieci secondi su una tenuta da
+                            quaranta: senza, guardi un fermo immagine per
+                            tre quarti dell'esercizio.
+   `preload="auto"`         il passo dopo arriva mentre stai ancora facendo
+                            questo, e deve essere già pronto.
+
+   `object-fit: contain` su fondo nero: nessun ritaglio. Un video ritagliato
+   in verticale taglia i piedi, e i piedi sono metà degli esercizi.
+   ========================================================================= */
+
+function montaVideo(container, d) {
+  const media = container.querySelector("#sess-media");
+  const id = d.idEsercizio;
+  const haClip = id && CLIP.has(id);
+
+  // Niente riquadro nero vuoto quando il video non c'è: lo spazio va alle
+  // istruzioni, che in quel caso sono l'unica cosa che spiega l'esercizio.
+  if (!haClip) {
+    if (videoMontato !== null) { media.innerHTML = ""; videoMontato = null; }
+    media.hidden = true;
+    return;
+  }
+
+  media.hidden = false;
+  if (videoMontato === id) return;
+
+  const lato = d.lato ? ` · lato ${nomeLato(d.lato).toLowerCase()}` : "";
+  media.innerHTML =
+    `<video class="sess-video" src="./moduli/mobilita/clip/${id}.mp4"` +
+    ` muted loop playsinline autoplay preload="auto" disablepictureinpicture></video>` +
+    `<div class="sess-video-velo"></div>` +
+    `<div class="sess-video-eti">${d.nome}${lato}</div>`;
+
+  const v = media.querySelector("video");
+  // Su iOS `autoplay` da solo non basta quando il video viene sostituito a
+  // schermo acceso: il play va richiesto, e se viene rifiutato non è un
+  // errore da propagare — resta il primo fotogramma, che è comunque la
+  // posizione dell'esercizio.
+  v.play?.().catch(() => {});
+  v.addEventListener("error", () => { media.hidden = true; }, { once: true });
+
+  videoMontato = id;
 }
 
 function aggiornaCountdown(container, r) {
@@ -499,6 +555,18 @@ function completaSessione(container, passiLavoro, tipo) {
 
   salvaStatoSW({ ultimaSessione: oggi });
   document.dispatchEvent(new CustomEvent("dati-cambiati"));
+
+  // L'ANNUNCIO CHE MANCAVA, ed è il motivo per cui l'abitudine «Mobilità»
+  // non si spuntava mai da sola.
+  //
+  // `modulo.js` ascolta `sessione-completata` sul document e lo ritrasmette
+  // sul bus, dove Abitudini lo aspetta. Solo che nessuno l'ha mai emesso:
+  // qui partiva `dati-cambiati`, che serve a ridisegnare le schermate di
+  // Mobilità e a nient'altro. Le due metà del ponte c'erano tutte e due, e
+  // in mezzo non c'era niente.
+  document.dispatchEvent(new CustomEvent("sessione-completata", {
+    detail: { data: oggi, tipo, durataMin: Math.round(durata / 60) },
+  }));
   engineAttivo = null;
   videoMontato = null;
   nascondiControlli();
