@@ -23,7 +23,7 @@ import {
 import {
   vistaHome, vistaMovimenti, vistaAnalisi, vistaSetup,
   apriMovimento, apriCategoria, apriSottocategoria, apriDettaglio,
-  apriRicarica, apriSaldoING, apriSetupPocket,
+  apriRicarica, apriRicaricaSettimanale, apriSaldoING, apriSetupPocket,
 } from "./viste.js";
 
 let contenitore = null;
@@ -296,6 +296,10 @@ export default {
     disegna();
 
     if (resto[0] === "nuovo") queueMicrotask(() => apriMovimento({ ridisegna: disegna }));
+    // La rotta su cui atterra la notifica del lunedì. Apre direttamente il
+    // foglio: dalla notifica alla conferma non deve esserci una schermata
+    // in mezzo, altrimenti il «un tap solo» ne diventano tre.
+    if (resto[0] === "ricarica") queueMicrotask(() => apriRicaricaSettimanale(disegna));
     staccatori.push(ascolta("giorno:cambiato", () => { vista.mese = meseDi(); disegna(); }));
   },
 

@@ -19,12 +19,12 @@ import {
   salvaMovimento, eliminaMovimento, impara, normalizza, scriviMeta, casella,
   CATEGORIE_CASSA, TIPI_POCKET, SOGLIE_PREDEFINITE, pocketPerId, scriviPocket,
   salvaRicorrente, eliminaRicorrente, pendenti, metteInSospeso, togliDaSospeso,
-  segnaCheck, segnaScadenzaPagata, ricorrentiVivi,
+  segnaCheck, segnaScadenzaPagata, ricorrentiVivi, riancoraPocket, segnaRicarica,
   previsti, salvaPrevisto, eliminaPrevisto, segnaPrevistoPagato,
 } from "./dati.js";
 import {
   statistiche, budgetTotale, cassaSettimana, avvisi, verdetto, proiezione,
-  cumulata, risparmioReale, movimentiDelMese, importoEffettivo, giorniDelMese,
+  cumulata, movimentiDelMese, importoEffettivo, giorniDelMese,
   nomeMese, autoCategoria, spostaMese, stessoGiornoMesePrima, statisticheDelMese,
   mediaPerGiornoSettimana, ultimiSeiMesi, sottocategorieDelMese, categoriaSuSeiMesi,
   movimentiSottocategoria, contestoMovimento, quadratura,
@@ -1317,11 +1317,51 @@ export function apriMovimento({ movimento = null, ridisegna, tipo = "out" } = {}
     }
   });
 
+  /* ------------------------------------------------- da quale pocket ----
+     Un tap, non un menù nascosto.
+
+     Prima era fisso — Principale per le uscite, ING per le entrate — e non
+     si poteva cambiare: una spesa pagata dalla carta delle Fisse finiva
+     comunque a scalare il Principale, e i due saldi divergevano dalla
+     realtà senza che niente lo dicesse. Adesso si sceglie, e il valore
+     predefinito resta quello giusto nove volte su dieci.
+
+     Per travasi e sforamenti i pocket sono due, e servono tutti e due:
+     senza la destinazione i soldi spariscono da una parte e non compaiono
+     dall'altra.                                                          */
+  const zonaPocket = el("div", {});
+  const disegnaPocket = () => {
+    zonaPocket.replaceChildren();
+    const elenco = (stato().pockets || []).map((p) => [p.id, p.nome]);
+    const doppio = b.tipo === "giro" || b.tipo === "extra";
+
+    aggiungi(zonaPocket, [
+      el("div", { class: "campo-gruppo" }, [
+        el("label", { class: "campo-etichetta",
+          testo: doppio ? "Da quale pocket esce" : b.tipo === "in" ? "Su quale pocket entra" : "Da quale pocket" }),
+        pillole(elenco, b.pocket || "principale",
+          (v) => { b.pocket = v; disegnaPocket(); disegnaSalva(); }, { unaRiga: true }),
+      ]),
+      doppio && el("div", { class: "campo-gruppo" }, [
+        el("label", { class: "campo-etichetta", testo: "E su quale entra" }),
+        pillole(elenco.filter(([id]) => id !== b.pocket), b.pocketTo || "principale",
+          (v) => { b.pocketTo = v; disegnaSalva(); }, { unaRiga: true }),
+      ]),
+    ]);
+  };
+
   const cambiaTipo = (v) => {
     b.tipo = v; b.cat = null; b.sub = null; b.rif = null;
     assegnataAuto = false; categoriaManuale = false;
+    // Il pocket predefinito cambia col tipo: un'entrata arriva su ING, uno
+    // sforamento esce da ING per finire sul Principale, tutto il resto si
+    // spende dal Principale.
+    if (v === "in") { b.pocket = "ing"; b.pocketTo = null; }
+    else if (v === "extra") { b.pocket = "ing"; b.pocketTo = "principale"; }
+    else if (v === "giro") { b.pocket = "cassa"; b.pocketTo = "principale"; }
+    else { b.pocket = "principale"; b.pocketTo = null; }
     campoNota.placeholder = SEGNAPOSTO[v];
-    disegnaCat(); disegnaRif(); disegnaSalva();
+    disegnaCat(); disegnaRif(); disegnaPocket(); disegnaSalva();
   };
 
   disegnaCat();
@@ -1356,10 +1396,13 @@ export function apriMovimento({ movimento = null, ridisegna, tipo = "out" } = {}
     zonaCat,
     zonaSub,
     zonaRif,
+    zonaPocket,
     campo({ etichetta: "Data", tipo: "date", valore: b.data,
       alCambio: (v) => { if (v) { b.data = v; disegnaSalva(); } } }),
     zonaSalva,
   ]);
+
+  disegnaPocket();
 }
 
 /** Il tastierino. Su iPhone è più veloce e non fa saltare la vista. */
@@ -1462,19 +1505,11 @@ export function vistaSetup(mese, ridisegna) {
     ]),
     el("p", { class: "nota", testo: "La cassa copre solo le categorie spuntate qui sopra: quelle che dipendono da una decisione giornaliera. Le fisse dentro un tetto settimanale lo farebbero sforare da sole il giorno dell'affitto." }),
 
-    el("div", { class: "gruppo-titolo", testo: "Regola del costo casa (€)" }),
-    lista([
-      el("li", {}, [el("div", { class: "riga" }, [
-        el("span", { testo: "Base risparmio" }),
-        el("input", { class: "campo fi-campo-corto", type: "number", inputmode: "numeric", value: String(s.config.casaBase),
-          onChange: (e) => scriviMeta((st_) => { st_.config.casaBase = Math.max(0, Number(e.target.value) || 0); }) }),
-      ])]),
-      el("li", {}, [el("div", { class: "riga" }, [
-        el("span", { testo: "Affitto mensile" }),
-        el("input", { class: "campo fi-campo-corto", type: "number", inputmode: "numeric", value: String(s.config.affitto),
-          onChange: (e) => scriviMeta((st_) => { st_.config.affitto = Math.max(0, Number(e.target.value) || 0); }) }),
-      ])]),
-    ]),
+    // La «regola del costo casa» stava qui. Serviva a confrontare gli
+    // affitti mentre cercavi casa; il contratto è firmato, e da allora quel
+    // calcolo non tornava più col resto del piano — mostrava un risparmio
+    // che non esiste. Un numero sbagliato nelle impostazioni è peggio di
+    // nessun numero, quindi via lui e via `risparmioReale()` che lo usava.
 
     bloccoImport(ridisegna),
 
@@ -1621,6 +1656,117 @@ function bloccoImport(ridisegna) {
    3. dalla seconda volta nello stesso ciclo, l'app lo dice.
 */
 
+/* ============================================ la ricarica del lunedì =====
+   Un tap, e la settimana riparte.
+
+   È la sola operazione ricorrente di tutto il modulo che si può fare senza
+   decidere niente: l'importo è quello di ogni lunedì, la sorgente è la
+   Cassa, la destinazione il Principale. Chiederla in quattro schermate
+   sarebbe chiedere quattro volte una cosa già decisa — quindi qui c'è un
+   numero modificabile e due pulsanti.
+
+   L'AVANZO NON SI AZZERA, ed è la riga che conta più di tutte. Se la
+   settimana scorsa hai speso meno, quei soldi restano sul Principale e si
+   sommano alla ricarica: lunedì ne hai 170 invece di 130. Azzerare
+   premierebbe chi arriva a domenica con zero, cioè insegnerebbe a spendere
+   tutto entro sabato — l'esatto contrario di quello a cui serve.
+   ========================================================================= */
+
+export function apriRicaricaSettimanale(ridisegna) {
+  const oggi = oggiISO();
+  const previsto = Number(stato().config?.cassaSettimanale) || 0;
+  const saldoCassa = saldoPocket("cassa");
+  const saldoPrinc = saldoPocket("principale");
+  const saldoIng = saldoPocket("ing");
+
+  // Da dove arrivano i soldi: dalla Cassa se ce ne sono, altrimenti da ING —
+  // e allora è uno sforamento, perché intaccare la riserva è esattamente il
+  // fatto che il contatore deve registrare.
+  const daIng = saldoCassa <= 0;
+  const massimo = daIng ? saldoIng : saldoCassa;
+  const b = { imp: Math.min(previsto, massimo) };
+
+  const { corpo, chiudi } = apriFoglio({
+    titolo: "Ricarica settimanale",
+    sinistra: el("button", { class: "btn nudo", type: "button", testo: "Non ora",
+      onClick: () => chiudiFoglio() }),
+  });
+
+  const dopo = el("p", { class: "fi-ric-dopo" });
+  const zonaTasto = el("div", {});
+
+  const aggiorna = () => {
+    const fonteDopo = massimo - b.imp;
+    dopo.textContent =
+      `Dopo: ${daIng ? "ING" : "Cassa"} ${euro(fonteDopo)} · Principale ${euro(saldoPrinc + b.imp)}`;
+
+    zonaTasto.replaceChildren(el("button", {
+      class: "btn pieno grande", type: "button",
+      disabled: b.imp <= 0 || b.imp > massimo,
+      testo: b.imp > 0 ? `Trasferisci ${euro(b.imp)}` : "Quanto?",
+      onClick: () => {
+        salvaMovimento({
+          id: nuovoId("m"), data: oggi,
+          // Dalla Cassa è un travaso fra pocket miei; da ING è uno
+          // sforamento, e la differenza è tutto il valore del contatore.
+          tipo: daIng ? "extra" : "giro", imp: b.imp,
+          pocket: daIng ? "ing" : "cassa", pocketTo: "principale",
+          cat: null, sub: null,
+          nota: daIng ? "Ricarica settimanale — Cassa vuota" : "Ricarica settimanale",
+        });
+        segnaRicarica(oggi);
+        tocco(14);
+        chiudi();
+        celebra("Settimana ricaricata");
+        ridisegna?.();
+      },
+    }));
+  };
+
+  aggiungi(corpo, [
+    // Prima i due numeri di partenza: senza, «trasferisci 130» è un numero
+    // senza contesto e non si sa se sia tanto o poco.
+    el("ul", { class: "fi-dett-lista" }, [
+      rigaDett(daIng ? "ING" : "Cassa", euro(massimo)),
+      rigaDett("Principale", euro(saldoPrinc)),
+    ]),
+
+    daIng && el("div", { class: "fi-copertura male" }, [
+      el("span", { class: "fi-copertura-segno", html: icona("allarme", 20) }),
+      el("div", {}, [
+        el("div", { class: "fi-copertura-titolo", testo: "Cassa vuota" }),
+        el("div", { class: "fi-copertura-nota", testo:
+          "La ricarica arriva da ING e viene contata come sforamento. Succede dopo il 21, quando lo stipendio non è ancora entrato." }),
+      ]),
+    ]),
+    !daIng && saldoCassa < previsto && el("div", { class: "fi-copertura male" }, [
+      el("span", { class: "fi-copertura-segno", html: icona("allarme", 20) }),
+      el("div", {}, [
+        el("div", { class: "fi-copertura-titolo", testo: `In Cassa ci sono solo ${euro(saldoCassa)}` }),
+        el("div", { class: "fi-copertura-nota", testo:
+          "Puoi trasferire quello che c'è, oppure chiudere e prendere il resto da ING — quello sì conta come sforamento." }),
+      ]),
+    ]),
+
+    el("div", { class: "campo-gruppo fi-campo-staccato" }, [
+      el("label", { class: "campo-etichetta", testo: "Trasferisci" }),
+      campo({ tipo: "text", inputmode: "decimal",
+        valore: (b.imp / 100).toFixed(2).replace(".", ","),
+        alCambio: (t) => { b.imp = Math.min(centesimi(t), massimo); aggiorna(); } }),
+      dopo,
+    ]),
+
+    zonaTasto,
+
+    el("p", { class: "nota", stile: { marginTop: "var(--s3)" }, testo:
+      saldoPrinc > 0
+        ? `Sul Principale ci sono ancora ${euro(saldoPrinc)} della settimana scorsa: non si azzerano, si sommano.`
+        : "Quello che avanza a fine settimana resta sul Principale e si somma alla prossima ricarica." }),
+  ]);
+
+  aggiorna();
+}
+
 export function apriRicarica(ridisegna) {
   const oggi = oggiISO();
   const ciclo = cicloDi(oggi);
@@ -1674,8 +1820,13 @@ export function apriRicarica(ridisegna) {
           ? { id: nuovoId("m"), data: oggi, tipo: "giro", imp: b.imp,
               pocket: "cassa", pocketTo: "principale", cat: null, sub: null,
               nota: `Anticipo — ${perche}` }
+          // Anche lo sforamento ha due estremi: ESCE da ING ed ENTRA nel
+          // Principale. Prima aveva solo `pocket: principale` e nessuna
+          // destinazione, quindi i soldi comparivano nel Principale senza
+          // sparire da nessuna parte — la riserva restava intatta a
+          // schermo mentre nella realtà si era svuotata.
           : { id: nuovoId("m"), data: oggi, tipo: "extra", imp: b.imp,
-              pocket: "principale", pocketTo: null, cat: null, sub: null,
+              pocket: "ing", pocketTo: "principale", cat: null, sub: null,
               nota: perche });
         tocco(14);
         avviso(b.fonte === "cassa" ? "Anticipo registrato." : "Sforamento registrato.");
@@ -1886,7 +2037,7 @@ export function apriSetupPocket(ridisegna) {
 
   aggiungi(corpo, [
     el("p", { class: "nota", testo:
-      "Copia i quattro saldi come sono adesso. I movimenti già in archivio non li toccano: contano da oggi in avanti." }),
+      "Copia i quattro saldi come sono adesso. Non li stai correggendo: stai dicendo all'app da quale numero ricominciare a contare. Da oggi in avanti li muovono i movimenti, e non li tocchi più." }),
 
     ...pocketConSaldi().map((p) => el("div", { class: "campo-gruppo fi-setup-pocket" }, [
       el("label", { class: "campo-etichetta", testo: p.nome }),
@@ -1915,14 +2066,12 @@ export function apriSetupPocket(ridisegna) {
       class: "btn pieno grande", type: "button", testo: "Salva i saldi",
       stile: { marginTop: "var(--s5)" },
       onClick: () => {
-        for (const [id, saldo] of Object.entries(b)) scriviPocket(id, { saldo });
-        scriviMeta((s) => {
-          s.config.cassaSettimanale = cassaSett;
-          // La data spartiacque si sposta a oggi: i saldi appena inseriti
-          // sono di oggi, e i movimenti di ieri non devono riscalarli.
-          s.config.pocketDa = oggiISO();
-        });
-        avviso("Saldi salvati.");
+        // NON si scrive un saldo: si riscrive l'ANCORA, con la data di oggi.
+        // Da qui in poi il saldo lo fanno i movimenti, e questo numero non
+        // viene più toccato finché non lo si riancora di nuovo.
+        for (const [id, saldo] of Object.entries(b)) riancoraPocket(id, saldo);
+        scriviMeta((s) => { s.config.cassaSettimanale = cassaSett; });
+        avviso("Ancore riscritte.");
         chiudiFoglio();
       },
     }),
@@ -1957,6 +2106,27 @@ export function vistaSetupV2(ridisegna) {
     ]),
   ])]);
 
+  /* --- il travaso del lunedì ------------------------------------------- */
+  const ric = s.config?.ricarica || { giorno: 1, ora: "08:00" };
+  const GIORNI_SETT = [["1", "Lun"], ["2", "Mar"], ["3", "Mer"], ["4", "Gio"],
+    ["5", "Ven"], ["6", "Sab"], ["0", "Dom"]];
+  aggiungi(fuori, [el("section", { class: "scheda" }, [
+    el("div", { class: "scheda-titolo", testo: "La ricarica settimanale" }),
+    el("p", { class: "nota", testo:
+      "Il promemoria che ti chiede di travasare dalla Cassa al Principale. Un tap conferma, e l'importo si può correggere prima. Se non rispondi te lo ricorda una volta il giorno dopo, poi basta." }),
+    el("div", { class: "campo-gruppo", stile: { marginTop: "var(--s3)" } }, [
+      el("label", { class: "campo-etichetta", testo: "Che giorno" }),
+      pillole(GIORNI_SETT, String(ric.giorno ?? 1),
+        (v) => scriviMeta((st) => { st.config.ricarica = { ...ric, giorno: Number(v) }; }),
+        { unaRiga: true }),
+    ]),
+    el("div", { class: "campo-gruppo" }, [
+      el("label", { class: "campo-etichetta", testo: "A che ora" }),
+      campo({ tipo: "time", valore: ric.ora || "08:00",
+        alCambio: (v) => { if (v) scriviMeta((st) => { st.config.ricarica = { ...ric, ora: v }; }); } }),
+    ]),
+  ])]);
+
   /* --- i pocket -------------------------------------------------------- */
   aggiungi(fuori, [el("section", { class: "scheda" }, [
     el("div", { class: "scheda-titolo", testo: "I pocket" }),
@@ -1970,7 +2140,7 @@ export function vistaSetupV2(ridisegna) {
       onClick: () => apriSetupPocket(ridisegna),
     }),
     el("p", { class: "nota", testo:
-      `I movimenti muovono i saldi da ${dataBreve(s.config?.pocketDa || oggiISO())} in avanti. Quelli precedenti restano nello storico e non li toccano.` }),
+      "Questi non sono numeri fermi: sono calcolati. Ogni pocket parte dalla sua ancora e ci somma i movimenti da quella data in poi, così non può andare in deriva. «Correggi i saldi» non scrive un saldo — sposta l'ancora a oggi." }),
   ])]);
 
   /* --- i ricorrenti ---------------------------------------------------- */

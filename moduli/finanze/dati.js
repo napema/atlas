@@ -114,7 +114,7 @@ export const PREDEFINITO = {
   cats: categorieIniziali(),
   profili: profiliIniziali(),
   rules: {},      // "testo normalizzato" → [cat, sub] — l'autocategorizzazione appresa
-  config: { casaBase: 870, affitto: 600, entrate: 2100 },
+  config: { entrate: 2100 },
   metaUp: 0,
 };
 
@@ -204,12 +204,18 @@ export const TIPI_POCKET = {
 
 export function pocketIniziali() {
   return [
-    { id: "principale", nome: "Principale",  tipo: "spendibile", saldo: 0, external: false },
-    { id: "cassa",      nome: "Cassa",       tipo: "parcheggio", saldo: 0, external: false },
-    { id: "fisse",      nome: "Spese fisse", tipo: "fisse",      saldo: 0, external: false },
-    // ING è `external`: il saldo non si deduce dai movimenti, lo si scrive a
-    // mano, perché è un conto che vive fuori dall'app.
-    { id: "ing",        nome: "ING",         tipo: "riserva",    saldo: 0, external: true },
+    // `saldo` NON è il saldo: è l'ANCORA, cioè quanto c'era il giorno di
+    // `ancoraDa`. Il saldo vero lo calcola `saldoPocket()` sommandoci i
+    // movimenti da quella data in poi, e non si salva da nessuna parte —
+    // un saldo scritto è un saldo che va in deriva al primo movimento che
+    // qualcuno registra in ritardo.
+    { id: "principale", nome: "Principale",  tipo: "spendibile", saldo: 0, ancoraDa: null, external: false },
+    { id: "cassa",      nome: "Cassa",       tipo: "parcheggio", saldo: 0, ancoraDa: null, external: false },
+    { id: "fisse",      nome: "Spese fisse", tipo: "fisse",      saldo: 0, ancoraDa: null, external: false },
+    // ING è `external`: vive fuori dall'app, quindi le spese non lo toccano
+    // e l'ancora la si riscrive a mano guardando l'estratto conto. Lo
+    // muovono SOLO i travasi espliciti verso gli altri pocket.
+    { id: "ing",        nome: "ING",         tipo: "riserva",    saldo: 0, ancoraDa: null, external: true },
   ];
 }
 
@@ -290,7 +296,7 @@ export function migra() {
   const s = stato();
   const serve =
     !Array.isArray(s.pockets) || !Array.isArray(s.ricorrenti) ||
-    !s.soglie || s.config?.giornoStipendio == null || (s.v || 0) < 5;
+    !s.soglie || s.config?.giornoStipendio == null || (s.v || 0) < 6;
   if (!serve) return;
 
   casella.aggiorna((st) => {
@@ -343,8 +349,34 @@ export function migra() {
     // dire «questo valore non l'ha mai scritto nessuno», e deve perdere
     // contro qualunque saldo scritto sul serio.
     for (const p of st.pockets || []) if (p.up === undefined) p.up = 0;
+
+    /* --------------------------------------------------------------- v6 --
+       L'ancora diventa PER POCKET.
+
+       Prima la data spartiacque era una sola per tutti (`config.pocketDa`):
+       correggere il saldo di ING spostava anche quella del Principale, e i
+       movimenti della settimana in corso smettevano di contare su un
+       pocket che nessuno aveva toccato. Adesso ogni pocket porta la SUA
+       data, e correggerne uno non tocca gli altri.
+
+       `config.pocketDa` resta come ripiego per i record che non hanno
+       ancora la loro: toglierlo vorrebbe dire che al primo avvio dopo
+       l'aggiornamento i saldi ripartono dalla notte dei tempi.          */
+    for (const p of st.pockets || []) {
+      if (p.ancoraDa === undefined) p.ancoraDa = st.config.pocketDa || null;
+    }
+
+    // La regola del costo casa: tolta. Serviva a confrontare gli affitti
+    // mentre si cercava casa, il contratto è firmato, e da allora mostrava
+    // un risparmio che non esiste. Un numero sbagliato nelle impostazioni
+    // è peggio di nessun numero.
+    delete st.config.casaBase;
+    delete st.config.affitto;
+
+    // Il travaso del lunedì: giorno e ora, configurabili.
+    if (st.config.ricarica == null) st.config.ricarica = { giorno: 1, ora: "08:00" };
     if (!Array.isArray(st.previsti)) st.previsti = previstiIniziali();
-    st.v = 5;
+    st.v = 6;
   });
 
   // Gli aggiustamenti chiesti il 23 agosto 2026. Stanno FUORI dal blocco dei
@@ -415,6 +447,21 @@ export function scriviPocket(id, patch) {
     const p = (s.pockets || []).find((x) => x.id === id);
     if (p) Object.assign(p, patch, { up: Date.now() });
   });
+}
+
+/**
+ * Riscrive l'ANCORA di un pocket: «al giorno d'oggi qui dentro c'è tanto».
+ *
+ * È l'unica scrittura che tocca un saldo, e non scrive un saldo: scrive il
+ * punto da cui ricominciare a contare. Da lì in poi lo muovono i movimenti,
+ * e nessuno lo corregge più a mano — un saldo corretto a mano è un saldo
+ * che va in deriva al primo movimento registrato in ritardo.
+ *
+ * La data è OGGI e non è un parametro: l'unico momento in cui si conosce il
+ * saldo vero di un conto è quando lo si sta guardando.
+ */
+export function riancoraPocket(id, saldo, quando = new Date().toISOString().slice(0, 10)) {
+  scriviPocket(id, { saldo, ancoraDa: quando });
 }
 
 /* =============================================== i ricorrenti si fondono ==
@@ -515,6 +562,38 @@ export function eliminaPrevisto(id) {
   scriviMeta((s) => {
     const i = (s.previsti || []).findIndex((x) => x.id === id);
     if (i >= 0) s.previsti[i] = { id, del: true, up: Date.now() };
+  });
+}
+
+/* ------------------------------------------- la ricarica della settimana --
+   Quale settimana è già stata ricaricata.
+
+   Serve a due cose che sembrano una sola e non lo sono: non far comparire
+   la schermata di ricarica se l'hai già fatta, e non far mandare al
+   mittente il promemoria del martedì. La chiave è il LUNEDÌ di quella
+   settimana, non la data in cui hai confermato: ricaricare martedì con un
+   giorno di ritardo resta la ricarica di quella settimana, e segnarla
+   sotto martedì la farebbe ricomparire il lunedì dopo come se niente fosse.
+*/
+
+/** Il lunedì della settimana che contiene `iso`. */
+export function lunediDi(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7));
+  return t.toISOString().slice(0, 10);
+}
+
+export const ricaricaFatta = (iso) =>
+  Boolean((stato().config?.ricariche || {})[lunediDi(iso)]);
+
+export function segnaRicarica(iso) {
+  scriviMeta((s) => {
+    const r = { ...(s.config.ricariche || {}), [lunediDi(iso)]: Date.now() };
+    // Dodici settimane bastano: servono a non ripetere l'avviso, non a fare
+    // archivio. Lo storico vero sono i movimenti.
+    const taglio = lunediDi(new Date(Date.now() - 84 * 86400000).toISOString().slice(0, 10));
+    s.config.ricariche = Object.fromEntries(Object.entries(r).filter(([g]) => g >= taglio));
   });
 }
 

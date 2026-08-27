@@ -251,23 +251,6 @@ export function cumulata(mese) {
   return perGiorno.map((v) => (acc += v));
 }
 
-/**
- * Il risparmio reale: quanto resta del budget casa dopo affitto e utenze.
- * È il numero che l'utente controlla più spesso, ed è l'unico che dice
- * qualcosa sul mese *prossimo* invece che su questo.
- */
-export function risparmioReale(mese) {
-  const { config } = stato();
-  const st = statistiche(mese);
-  const p = profiloDi(mese);
-  const affitto = Math.round((config.affitto || 0) * 100);
-  // Le utenze vere se superano il previsto, altrimenti il previsto: a metà
-  // mese le bollette non sono ancora arrivate e il risparmio sembrerebbe
-  // più alto di quello che sarà.
-  const utenze = Math.max(st.perCat.casa?.ord || 0, Math.round((p.b.casa || 0) * 100));
-  const base = Math.round((config.casaBase || 0) * 100);
-  return { valore: base - affitto - utenze, base, affitto, utenze };
-}
 
 /* ------------------------------------------------- autocategorizzazione -- */
 
@@ -633,29 +616,51 @@ export const movimentiDelCiclo = (ciclo) =>
    l'estratto conto vero.
 */
 
+/**
+ * Il saldo di un pocket, CALCOLATO.
+ *
+ *     saldo = ancora + Σ movimenti su quel pocket dalla data dell'ancora
+ *
+ * Non esiste da nessuna parte un campo «saldo corrente», ed è voluto: un
+ * saldo scritto è un saldo che va in deriva. Basta registrare in ritardo la
+ * spesa di ieri e il numero salvato è già sbagliato, senza che niente lo
+ * segnali. Così invece non può divergere: se i movimenti sono giusti il
+ * saldo è giusto, e se è sbagliato si sposta l'ancora e riparte da lì.
+ *
+ * LA DATA DELL'ANCORA è per pocket. I 165 movimenti già in archivio non
+ * hanno mai attraversato i pocket, e sommarli darebbe al Principale il netto
+ * di tutta la storia — meno quattromila euro, che non è un saldo, è un
+ * totale. Prima era una sola per tutti (`config.pocketDa`): correggere ING
+ * spostava anche quella del Principale e i movimenti della settimana in
+ * corso smettevano di contare su un pocket che nessuno aveva toccato.
+ *
+ * ING È DIVERSO. Vive fuori dall'app: le spese non lo attraversano e il suo
+ * numero lo si copia dall'estratto conto. Lo muovono SOLO i travasi
+ * espliciti verso gli altri pocket, perché quelli li fai tu dall'app e
+ * l'estratto conto li vedrà dopo.
+ */
 export function saldoPocket(id) {
   const p = (stato().pockets || []).find((x) => x.id === id);
   if (!p) return 0;
-  if (p.external) return p.saldo || 0;
 
-  // LA DATA SPARTIACQUE. I pocket sono nati dopo: i 161 movimenti già in
-  // archivio non li hanno mai attraversati, e sommarli darebbe al Principale
-  // il netto di tutta la storia — meno quattromila euro, che non è un saldo,
-  // è un totale. Da `pocketDa` in avanti i movimenti muovono i saldi; prima
-  // di quella data sono storico e basta.
-  const da = stato().config?.pocketDa || "9999-12-31";
-
+  const da = p.ancoraDa || stato().config?.pocketDa || "9999-12-31";
   let s = p.saldo || 0;
+
   for (const m of movimentiVivi()) {
     if (m.data < da) continue;
-    if (m.tipo === "giro") {
+
+    // Travasi e sforamenti hanno due estremi: escono da `pocket` ed entrano
+    // in `pocketTo`. Sono anche gli unici che toccano un pocket esterno.
+    if (m.tipo === "giro" || m.tipo === "extra") {
       if (m.pocket === id) s -= m.imp;
       if (m.pocketTo === id) s += m.imp;
       continue;
     }
+
+    if (p.external) continue;               // il resto non passa da ING
     if ((m.pocket || "principale") !== id) continue;
     if (m.tipo === "out") s -= importoEffettivo(m);
-    else s += m.imp;                       // in, extra, rimb, reso
+    else s += m.imp;                        // in, rimb, reso
   }
   return s;
 }
