@@ -151,9 +151,9 @@ function ilNumero(s, azioni) {
  * numeri «al giorno» sulla stessa scheda, calcolati su basi diverse, sono
  * il modo più rapido per rendere illeggibile la cosa che dovrebbe chiarire.
  *
- * Ambra e non rosso quando sei oltre: sforare di un giorno è normale e si
- * recupera, e un allarme che suona per una cosa normale insegna a ignorare
- * gli allarmi. Il rosso resta alla settimana, che è dove il guaio è vero.
+ * Il colore lo decide `giornata().livello`, non questa funzione: la soglia è
+ * una scelta di calcolo e non di disegno, e tenerla lì la rende provabile
+ * senza montare niente.
  */
 function zonaOggi(s) {
   const g = giornata();
@@ -162,13 +162,24 @@ function zonaOggi(s) {
     return el("p", { class: "fi-numero-ritmo", testo: "Meglio non spendere altro fino a lunedì" });
   }
 
-  const frase = g.speso === 0
-    ? `Oggi puoi spendere ${euro(g.quota)}.`
-    : g.oltre
-      ? `${euro(-g.resta)} oltre la quota di oggi · da qui a domenica ${euro(s.alGiorno)} al giorno`
-      : `Restano ${euro(g.resta)} per oggi.`;
+  // Il ritmo che resta dopo oggi. Quando è molto sotto la quota è LUI la
+  // notizia: non «hai sforato», ma «da domani hai la metà».
+  const ritmo = `${euro(s.alGiorno)} al giorno fino a domenica`;
+  const giorni = g.giorni.toFixed(1).replace(".", ",");
 
-  return el("div", { class: `fi-oggi ${g.oltre ? "oltre" : ""}`.trim() }, [
+  const frase = {
+    sereno: g.speso === 0
+      ? `Oggi puoi spendere ${euro(g.quota)}.`
+      : `Restano ${euro(g.resta)} per oggi.`,
+    // Neutro apposta: essere finito di un euro non è un fatto, e dirlo con
+    // un colore insegna a non guardare più il colore.
+    limite: `Quota di oggi finita · ${euro(g.sforo)} oltre. Da qui ${ritmo}.`,
+    avviso: `${euro(g.sforo)} oltre la quota di oggi · da qui ${ritmo}`,
+    male: `Oggi hai speso quanto ${giorni} giorni. Da qui ${ritmo}.`,
+    grave: `Oggi hai speso quanto ${giorni} giorni. Il ritmo scende da ${euro(g.quota)} a ${euro(s.alGiorno)} al giorno fino a domenica.`,
+  }[g.livello];
+
+  return el("div", { class: `fi-oggi ${g.livello}` }, [
     el("div", { class: "fi-oggi-testa" }, [
       el("div", { class: "micro", testo: "Oggi" }),
       el("div", { class: "fi-oggi-cifra", testo: `${euro(g.speso)} di ${euro(g.quota)}` }),

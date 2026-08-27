@@ -748,10 +748,38 @@ export function giornata(iso = oggiISO()) {
 
   const disponibile = s.resta + speso;
   const quota = s.giorniRimasti > 0 ? Math.floor(Math.max(0, disponibile) / s.giorniRimasti) : 0;
+  const sforo = Math.max(0, speso - quota);
+
+  /* LA SCALA, e serve perché la prima versione era un interruttore: ambra al
+     primo centesimo oltre. 1,17 € di sforo su 57,66 dipingeva lo schermo
+     come 40 €, e accanto a un'altra carta ambra faceva mezza schermata in
+     allarme per niente. Un colore che si accende sempre non dice più niente.
+
+     La tolleranza ha un fondo in euro oltre che una percentuale: l'8 % di
+     una quota da 20 € è 1,60 €, e sotto quella cifra non è successo niente
+     che valga un colore. Cinque euro è la soglia sotto cui non cambi idea
+     su come finire la giornata.
+
+     Poi si misura in GIORNI, che è l'unità in cui il danno è vero: lo sforo
+     vale una quota intera = hai speso due giorni, due quote = tre giorni.
+     Ambra fino a due giorni, rosso oltre i due, battito oltre i tre — un
+     giorno che ne mangia più di tre è raro, ed è giusto che quando capita si
+     veda da lontano senza doverlo leggere. */
+  const tolleranza = Math.max(Math.round(quota * 0.08), 500);
+  const livello =
+    sforo === 0            ? "sereno"
+    : sforo <= tolleranza  ? "limite"
+    : sforo <= quota       ? "avviso"
+    : sforo <= quota * 2   ? "male"
+    :                        "grave";
+
   return {
-    speso, quota,
+    speso, quota, sforo, livello,
     resta: quota - speso,
-    oltre: speso > quota,
+    oltre: sforo > 0,
+    // Quanti giorni è costata la giornata: 1 = in quota, 2,5 = due giorni e
+    // mezzo. È il numero che si capisce senza fare conti.
+    giorni: quota > 0 ? speso / quota : 0,
     frazione: quota > 0 ? Math.min(1, speso / quota) : (speso > 0 ? 1 : 0),
   };
 }
