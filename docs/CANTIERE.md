@@ -240,3 +240,32 @@ La regola era: l'avanzo **non si azzera**. Chi arriva a domenica con 40 €
 lunedì ne ha 170. Azzerare premierebbe chi spende tutto entro sabato.
 
 **Tolta la regola del costo casa** e `risparmioReale()` che la usava.
+
+---
+
+## 27 agosto — lo stallo a `up` pari (finanze)
+
+Sintomo: sull'iPhone una scadenza già pagata continuava a comparire, su
+Windows no. Sembrava «l'iPhone non sincronizza». Non lo era.
+
+`segnaScadenzaPagata` scriveva `pagato` dentro il record **senza alzare
+`up`**. Premere «Paga» fa due cose — il movimento e la spunta — e solo la
+prima viaggiava: il movimento nasce con il suo `up`, la spunta no.
+
+Da lì il guasto vero, che non è una perdita di dato ma un **conflitto
+perpetuo**: `fondiRecord` a parità di `up` dà ragione al locale, quindi ogni
+dispositivo teneva la propria versione e la rimandava indietro al giro dopo.
+Nella storia di `atlas-dati` si vede a occhio — `pagato` che alterna `null`
+e la data ogni pochi secondi, con l'`up` del record **costante**.
+
+È il modo di guardare che conta: *un campo che alterna mentre il suo `up`
+non si muove* è sempre questo guasto.
+
+Lo stesso schema c'era sui pocket, per via del backfill di `ancoraDa` nella
+migrazione a v6. Lì però `up` **non** va alzato, ed è scritto nel codice: il
+backfill è una supposizione locale che su un dispositivo senza `pocketDa`
+vale `null`, e alzandogli `up` quel `null` vincerebbe sull'ancora vera.
+Deve perdere. Si esce con un tocco su «Salva i saldi», che riancora davvero.
+
+**Regola:** chi scrive dentro un record che si fonde per `up` deve alzarlo.
+Il modello è `salvaRicorrente`. Le eccezioni vanno motivate sul posto.
