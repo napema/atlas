@@ -29,7 +29,7 @@ import {
   mediaPerGiornoSettimana, ultimiSeiMesi, sottocategorieDelMese, categoriaSuSeiMesi,
   movimentiSottocategoria, contestoMovimento, quadratura,
   cicloDi, spostaCiclo, nomeCiclo, movimentiDelCiclo, categorieDelCiclo,
-  settimana, saldoPocket, pocketConSaldi, inArrivo, comeSpendi, sforamenti,
+  settimana, saldoPocket, deltaPocket, pocketConSaldi, inArrivo, comeSpendi, sforamenti,
   alert, spesoOggi, importoRicorrente, prossimaScadenza, esitoCheck, coperturaDi, comeEvento,
 } from "./calcolo.js";
 import { graficoCumulato, graficoCiambella, graficoBarre } from "./grafici.js";
@@ -2018,8 +2018,12 @@ function blocchoSospese(ridisegna) {
    vorrebbe dire compilarne metà e non capire perché il conto non parte. */
 
 export function apriSetupPocket(ridisegna) {
+  // Il saldo VERO, quello che si vede ovunque nell'app — non `p.saldo`, che
+  // è l'ancora. I due coincidono solo finché nessun movimento ha toccato quel
+  // pocket dalla data dell'ancora in poi: il Principale, che li prende tutti,
+  // era l'unico a mostrare qui un numero diverso da tutte le altre schermate.
   const b = {};
-  for (const p of pocketConSaldi()) b[p.id] = p.saldo || 0;
+  for (const p of pocketConSaldi()) b[p.id] = p.saldoVero || 0;
   let cassaSett = Number(stato().config?.cassaSettimanale) || 0;
 
   const { corpo } = apriFoglio({
@@ -2037,12 +2041,12 @@ export function apriSetupPocket(ridisegna) {
 
   aggiungi(corpo, [
     el("p", { class: "nota", testo:
-      "Copia i quattro saldi come sono adesso. Non li stai correggendo: stai dicendo all'app da quale numero ricominciare a contare. Da oggi in avanti li muovono i movimenti, e non li tocchi più." }),
+      "Qui sotto c'è quello che l'app crede di avere. Apri il conto e confronta: se combacia, non toccare niente. Se non combacia, scrivi il numero che vedi sul conto adesso — alle spese che hai già segnato oggi ci pensa l'app." }),
 
     ...pocketConSaldi().map((p) => el("div", { class: "campo-gruppo fi-setup-pocket" }, [
       el("label", { class: "campo-etichetta", testo: p.nome }),
       campo({
-        tipo: "text", valore: p.saldo ? (p.saldo / 100).toFixed(2).replace(".", ",") : "",
+        tipo: "text", valore: p.saldoVero ? (p.saldoVero / 100).toFixed(2).replace(".", ",") : "",
         segnaposto: "0,00",
         inputmode: "decimal",
         alCambio: (v) => { b[p.id] = centesimi(v); },
@@ -2069,7 +2073,24 @@ export function apriSetupPocket(ridisegna) {
         // NON si scrive un saldo: si riscrive l'ANCORA, con la data di oggi.
         // Da qui in poi il saldo lo fanno i movimenti, e questo numero non
         // viene più toccato finché non lo si riancora di nuovo.
-        for (const [id, saldo] of Object.entries(b)) riancoraPocket(id, saldo);
+        //
+        // E qui il numero scritto NON è quello digitato, perché le due cose
+        // sono diverse: tu digiti quanto c'è sul conto ADESSO, l'ancora vale
+        // quanto c'era all'INIZIO di oggi. In mezzo ci sono le spese che hai
+        // già segnato stamattina, e il calcolo del saldo le sottrae comunque.
+        //
+        // Scrivendo il numero digitato così com'era, quelle spese venivano
+        // tolte una seconda volta: digitare i 63,01 € letti su Revolut, con
+        // 108,83 € già segnati oggi, dava −45,82 €. Si toglie il delta prima
+        // di scrivere, e il conto torna: 63,01 − (−108,83) = 171,84 di
+        // ancora, che meno le spese di oggi fa di nuovo 63,01.
+        //
+        // Ne viene anche che salvare senza toccare niente non cambia niente,
+        // ed è la prova che il giro è giusto.
+        const oggi = oggiISO();
+        for (const [id, saldo] of Object.entries(b)) {
+          riancoraPocket(id, saldo - deltaPocket(id, oggi), oggi);
+        }
         scriviMeta((s) => { s.config.cassaSettimanale = cassaSett; });
         avviso("Ancore riscritte.");
         chiudiFoglio();

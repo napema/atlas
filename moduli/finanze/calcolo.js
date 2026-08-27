@@ -642,9 +642,26 @@ export const movimentiDelCiclo = (ciclo) =>
 export function saldoPocket(id) {
   const p = (stato().pockets || []).find((x) => x.id === id);
   if (!p) return 0;
-
   const da = p.ancoraDa || stato().config?.pocketDa || "9999-12-31";
-  let s = p.saldo || 0;
+  return (p.saldo || 0) + deltaPocket(id, da);
+}
+
+/**
+ * Quanto i movimenti hanno spostato un pocket da `da` (compreso) in poi.
+ *
+ * È la seconda metà di `saldoPocket`, tirata fuori perché serve anche a
+ * riancorare: per far sì che il saldo mostrato diventi il numero che hai
+ * letto sul conto, l'ancora da scrivere è `quel numero meno questo delta`.
+ *
+ * Il confronto è `>= da`, cioè i movimenti del giorno stesso dell'ancora
+ * contano. Deve essere così: l'ancora vale «quanto c'era all'inizio di quel
+ * giorno», altrimenti una spesa segnata nel pomeriggio dello stesso giorno
+ * in cui hai riancorato non verrebbe mai sottratta.
+ */
+export function deltaPocket(id, da) {
+  const p = (stato().pockets || []).find((x) => x.id === id);
+  if (!p) return 0;
+  let s = 0;
 
   for (const m of movimentiVivi()) {
     if (m.data < da) continue;
