@@ -500,19 +500,31 @@ function cartaCostanza() {
 
   return carta({
     emoji: "🔥", nome: "Costanza", tinta: "var(--arancio)",
-    valore: tot.at > 0 ? `${tot.sp}/${tot.at}` : "—",
     classe: "og-costanza",
     corpo: [
       el("div", { class: "og-serie-riga" }, [
         el("span", { class: `og-serie-cifra${serie > 0 && pieni === 0 ? " magra" : ""}`, testo: String(serie) }),
         el("span", { class: "og-serie-eti",
           testo: serie === 1 ? "giorno di fila" : "giorni di fila" }),
+        // Il rapporto della settimana stava nell'angolo in alto, nudo:
+        // «14/36» senza una parola accanto non si capisce che cosa conti.
+        // Un numero che ha bisogno di essere indovinato è peggio che assente.
+        tot.at > 0 && el("span", { class: "og-serie-sett" }, [
+          el("b", { testo: `${tot.sp}/${tot.at}` }),
+          el("span", { testo: "spunte in 7 giorni" }),
+        ]),
       ]),
       el("div", { class: "og-sett" }, letti.map((g) => {
         const d = new Date(`${g.giorno}T12:00:00`);
         const quota = g.attese > 0 ? Math.min(1, g.spuntate / g.attese) : 0;
         return el("div", {
-          class: `og-sett-g ${g.stato}` + (g.giorno === oggi ? " oggi" : ""),
+          // Lo stato va in un attributo, non in una classe: `vuoto` e `pieno`
+          // sono nomi che in `base.css` vogliono già dire altro — `.vuoto` è
+          // lo stato vuoto di una lista, con un padding enorme — e la casella
+          // se lo prendeva, sfondando la striscia. È la collisione contro cui
+          // mette in guardia DESIGN.md; con un attributo non può succedere.
+          class: "og-sett-g" + (g.giorno === oggi ? " oggi" : ""),
+          dataset: { stato: g.stato },
           title: `${dataUmana(g.giorno)} · ` + (
             g.stato === "ignoto" ? "nessun dato"
             : g.stato === "riposo" ? "niente in programma"

@@ -372,7 +372,7 @@ export default {
       // la carta di Finanze in home, ed è giusto che la riempia questa: «cosa
       // esce nei prossimi giorni» è il dato che cambia la risposta a «posso
       // spendere stasera», e prima stava tutto in una riga sola.
-      calendario: calendarioUscite(iso, 3),
+      calendario: calendarioUscite(iso, 6),
 
       // Il check entra nella checklist della home solo dal pomeriggio: è un
       // gesto di chiusura, e chiederlo alle otto del mattino vuol dire

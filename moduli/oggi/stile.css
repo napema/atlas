@@ -248,12 +248,20 @@
   background: var(--male);
 }
 
+/* Il calendario si prende lo spazio che avanza, e «Apri Finanze» sta in
+   fondo. La riga di carte ha un'altezza sola — le tre colonne si stirano
+   alla più alta — e quando la colonna di destra era la più alta la carta
+   Finanze finiva col contenuto in cima e un buco sotto il pulsante. Un buco
+   dopo l'ultimo elemento si legge come una cosa che manca; lo stesso spazio
+   davanti a un pulsante in fondo si legge come margine. */
+.og-cal { flex: 1; align-content: start; }
+
 .og-apri {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   align-self: flex-start;
-  margin-top: var(--s3);
+  margin-top: auto;
   min-height: 40px;
   padding: 0 var(--s4);
   border-radius: var(--r-pillola);
@@ -293,6 +301,25 @@
   color: var(--testo-3);
   white-space: nowrap;
 }
+/* Il rapporto della settimana, con la sua etichetta sotto. */
+.og-serie-sett { margin-left: auto; text-align: right; }
+.og-serie-sett b {
+  display: block;
+  font-family: var(--font-d);
+  font-size: var(--t-19);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--arancio);
+}
+.og-serie-sett span {
+  display: block; margin-top: 1px;
+  font-size: var(--t-10);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--testo-3);
+}
 
 .og-sett { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
 .og-sett-g { display: flex; flex-direction: column; align-items: center; gap: 6px; }
@@ -316,9 +343,13 @@
 }
 /* Un giorno senza niente in programma non è un fallimento: non hai mancato
    nulla. Resta lì, spento e più tenue, e non spezza la serie. Uguale per un
-   giorno di cui non sappiamo niente. */
-.og-sett-g.riposo .og-sett-punto,
-.og-sett-g.ignoto .og-sett-punto { opacity: 0.4; }
+   giorno di cui non sappiamo niente.
+
+   Gli stati stanno in `data-stato` e non in una classe: `.vuoto` e `.pieno`
+   in base.css vogliono già dire altro, e la casella «vuoto» si prendeva il
+   padding dello stato vuoto di una lista sfondando la striscia. */
+.og-sett-g[data-stato="riposo"] .og-sett-punto,
+.og-sett-g[data-stato="ignoto"] .og-sett-punto { opacity: 0.4; }
 .og-sett-g.oggi .og-sett-punto { box-shadow: 0 0 0 1.5px var(--testo-3); }
 
 /* Una serie fatta di sole giornate parziali non merita l'arancio pieno: è
