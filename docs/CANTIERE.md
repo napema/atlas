@@ -211,3 +211,32 @@ servirebbe solo a far sentire in colpa.
 
 Il workflow non è stato toccato: `promemoria.yml` legge già tutti i file
 dei moduli e gira ogni dieci minuti.
+
+---
+
+## ✅ I saldi calcolati e la ricarica del lunedì (27 ago)
+
+**I saldi non si scrivono più.** `saldo = ancora + Σ movimenti dalla data
+dell'ancora`, con l'ancora **per pocket**. Non esiste un campo «saldo
+corrente», e la prova che sia davvero derivato è che cancellando dei
+movimenti i quattro saldi tornano al centesimo ai valori di partenza.
+
+«Correggi i saldi» non scrive un saldo: chiama `riancoraPocket()`, che
+sposta l'ancora a oggi.
+
+ING resta a parte: le spese non lo attraversano, lo muovono **solo** i
+travasi espliciti. E lo sforamento ha due estremi (`pocket: ing` →
+`pocketTo: principale`): prima ne aveva uno, quindi i soldi comparivano nel
+Principale senza sparire dalla riserva.
+
+**La ricarica del lunedì** è in `#/finanze/ricarica`, e la notifica ci
+atterra sopra diretta. Il mittente in `atlas-dati` manda il promemoria il
+giorno scelto (`config.ricarica`) e **una volta sola** il giorno dopo se non
+hai confermato. Lo stato sta in `config.ricariche`, con chiave il **lunedì**
+della settimana e non il giorno della conferma — altrimenti ricaricare in
+ritardo martedì farebbe ricomparire l'avviso il lunedì successivo.
+
+La regola era: l'avanzo **non si azzera**. Chi arriva a domenica con 40 €
+lunedì ne ha 170. Azzerare premierebbe chi spende tutto entro sabato.
+
+**Tolta la regola del costo casa** e `risparmioReale()` che la usava.
