@@ -701,19 +701,52 @@ export function settimana(iso = oggiISO()) {
 
   const resta = saldoPocket("principale");
   const budget = Number(stato().config?.cassaSettimanale) || 0;
-  const speso = Math.max(0, budget - resta);
   const giorniRimasti = 7 - dow;                    // oggi compreso
+
+  /* QUANTO HAI SPESO SI CONTA, non si deduce dal budget.
+
+     Prima era `budget - resta`, e con l'avanzo della settimana prima che si
+     somma sul Principale dava numeri assurdi: 130 - 171,84 è negativo,
+     quindi «0% consumato» stampato sopra una giornata da 108 €. Il
+     denominatore era sbagliato — i soldi che hai non sono i 130 di questa
+     settimana, sono i 130 più quello che ti era avanzato.
+
+     Adesso si sommano le uscite vere e il totale disponibile si ricava da
+     quelle: `disponibile = resta + speso`. Ne viene che le due parti tornano
+     sempre — quello che resta più quello che hai speso fa quello che avevi —
+     ed è la proprietà che mancava. */
+
+  // Da quando l'app può contare: il lunedì, oppure l'ancora se è più
+  // recente. Riancorando a metà settimana i movimenti precedenti non
+  // toccano più il saldo, e sommarli qui gonfierebbe il disponibile con
+  // soldi già spesi prima che l'app cominciasse a guardare.
+  const p = (stato().pockets || []).find((x) => x.id === "principale");
+  const ancora = p?.ancoraDa || stato().config?.pocketDa || null;
+  const daQuando = ancora && ancora > isoDi(lunedi) ? ancora : isoDi(lunedi);
+
+  const speso = movimentiVivi()
+    .filter((m) => m.data >= daQuando && m.data <= iso && m.tipo === "out" && !m.ecc
+      && (m.pocket || "principale") === "principale")
+    .reduce((acc, m) => acc + importoEffettivo(m), 0);
+
+  const disponibile = resta + speso;
+
+  // La finestra su cui si misura il ritmo: da `daQuando` a domenica. Con
+  // l'ancora vecchia — il caso normale — sono i sette giorni della settimana.
+  const giorniFinestra = Math.max(1,
+    Math.round((daISO(isoDi(domenica)) - daISO(daQuando)) / 86400000) + 1);
+  const trascorsi = Math.max(1, giorniFinestra - giorniRimasti + 1);
 
   return {
     da: isoDi(lunedi), a: isoDi(domenica),
-    resta, budget, speso,
-    frazione: budget > 0 ? Math.min(1, Math.max(0, speso / budget)) : 0,
+    resta, budget, speso, disponibile,
+    frazione: disponibile > 0 ? Math.min(1, Math.max(0, speso / disponibile)) : 0,
     giorniRimasti,
     alGiorno: giorniRimasti > 0 ? Math.floor(Math.max(0, resta) / giorniRimasti) : 0,
     finita: resta <= 0,
-    // Il ritmo lineare atteso a questo punto della settimana: serve
+    // Il ritmo lineare atteso a questo punto della finestra: serve
     // all'avviso «a questo ritmo la settimana finisce prima di domenica».
-    atteso: budget > 0 ? Math.round(budget * ((8 - giorniRimasti) / 7)) : 0,
+    atteso: Math.round(disponibile * (trascorsi / giorniFinestra)),
   };
 }
 
@@ -1144,20 +1177,21 @@ export function esitoCheck(iso = oggiISO()) {
     voci.push({ id: "ritmo", esito: "male", titolo: "Ritmo di oggi",
       testo: `Il settimanale è a zero e mancano ${plur(s.giorniRimasti, "giorno", "giorni")} a lunedì.` });
   } else {
-    // Il ritmo di riferimento è quello di ieri sera, prima delle spese di
-    // oggi: `alGiorno` è già calcolato sul residuo attuale, quindi se hai
-    // speso molto oggi il metro si è già abbassato da solo e il confronto
-    // direbbe sempre «sopra». Va ricostruito il metro di partenza.
-    const base = Math.floor((s.resta + speso) / Math.max(1, s.giorniRimasti));
-    const esito = speso <= base ? "ok" : speso <= base * 1.5 ? "attenzione" : "male";
+    // La misura la fa `giornata()`, non questa funzione. Era ricalcolata qui
+    // con una soglia sua — «attenzione» appena sopra la quota — e la carta
+    // del check si accendeva d'ambra per un euro proprio mentre la riga di
+    // OGGI, con la sua scala, diceva che non era successo niente. Due
+    // verdetti diversi sullo stesso fatto nella stessa schermata.
+    const g = giornata(iso);
+    const esito = { sereno: "ok", limite: "ok", avviso: "attenzione", male: "male", grave: "male" }[g.livello];
     voci.push({
       id: "ritmo", esito, titolo: "Ritmo di oggi",
-      valore: eu(speso),
+      valore: eu(g.speso),
       testo: esito === "ok"
-        ? `${eu(speso)} contro ${eu(base)} al giorno. Sei dentro.`
+        ? `${eu(g.speso)} contro ${eu(g.quota)} al giorno. Sei dentro.`
         : esito === "attenzione"
-          ? `${eu(speso)} contro ${eu(base)} al giorno. Poco sopra, si recupera.`
-          : `${eu(speso)} contro ${eu(base)} al giorno. Oggi è andata larga.`,
+          ? `${eu(g.speso)} contro ${eu(g.quota)} al giorno. Poco sopra, si recupera.`
+          : `${eu(g.speso)} contro ${eu(g.quota)} al giorno. Oggi è andata larga.`,
     });
   }
 
@@ -1166,7 +1200,7 @@ export function esitoCheck(iso = oggiISO()) {
   //    al sabato no, e senza il confronto col giorno non si distingue.
   if (s.budget) {
     const scarto = s.speso - s.atteso;
-    const esito = scarto <= 0 ? "ok" : scarto <= s.budget * 0.12 ? "attenzione" : "male";
+    const esito = scarto <= 0 ? "ok" : scarto <= s.disponibile * 0.12 ? "attenzione" : "male";
     voci.push({
       id: "settimana", esito, titolo: "La settimana",
       valore: eu(s.resta),

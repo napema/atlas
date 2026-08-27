@@ -528,6 +528,34 @@
   gap: var(--s3);
 }
 .fi-oggi-cifra { font-size: var(--t-17); font-variant-numeric: tabular-nums; }
+
+/* Il fondo: due numeri, e sotto una parola sola ciascuno. */
+.fi-oggi-fondo {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: var(--s3); margin-top: var(--s3);
+}
+.fi-oggi-stat:last-child { text-align: right; }
+.fi-oggi-stat b {
+  display: block;
+  font-family: var(--font-d);
+  font-size: var(--t-19);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.fi-oggi-stat span {
+  display: block; margin-top: 1px;
+  font-size: var(--t-11);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--testo-3);
+}
+/* Solo il numero di sinistra prende il tono: è quello che dice come è andata
+   oggi. Il ritmo a destra resta bianco — è un dato, non un giudizio. */
+.fi-oggi.avviso .fi-oggi-stat:first-child b { color: var(--avviso); }
+.fi-oggi.male .fi-oggi-stat:first-child b,
+.fi-oggi.grave .fi-oggi-stat:first-child b { color: var(--male); }
 .fi-oggi .fi-consumo { height: 6px; margin-top: var(--s3); }
 
 /* La barra di oggi vive dentro `.fi-numero`, quindi senza questa riga si

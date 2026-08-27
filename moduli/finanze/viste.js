@@ -162,22 +162,22 @@ function zonaOggi(s) {
     return el("p", { class: "fi-numero-ritmo", testo: "Meglio non spendere altro fino a lunedì" });
   }
 
-  // Il ritmo che resta dopo oggi. Quando è molto sotto la quota è LUI la
-  // notizia: non «hai sforato», ma «da domani hai la metà».
-  const ritmo = `${euro(s.alGiorno)} al giorno fino a domenica`;
-  const giorni = g.giorni.toFixed(1).replace(".", ",");
+  // Due numeri e due parole, non una frase. La frase la leggevi una volta e
+  // poi mai più: questa riga la si guarda di sfuggita venti volte al giorno,
+  // e di sfuggita si leggono le cifre, non il testo intorno.
+  const stat = (valore, etichetta) => el("div", { class: "fi-oggi-stat" }, [
+    el("b", { testo: valore }),
+    el("span", { testo: etichetta }),
+  ]);
 
-  const frase = {
-    sereno: g.speso === 0
-      ? `Oggi puoi spendere ${euro(g.quota)}.`
-      : `Restano ${euro(g.resta)} per oggi.`,
-    // Neutro apposta: essere finito di un euro non è un fatto, e dirlo con
-    // un colore insegna a non guardare più il colore.
-    limite: `Quota di oggi finita · ${euro(g.sforo)} oltre. Da qui ${ritmo}.`,
-    avviso: `${euro(g.sforo)} oltre la quota di oggi · da qui ${ritmo}`,
-    male: `Oggi hai speso quanto ${giorni} giorni. Da qui ${ritmo}.`,
-    grave: `Oggi hai speso quanto ${giorni} giorni. Il ritmo scende da ${euro(g.quota)} a ${euro(s.alGiorno)} al giorno fino a domenica.`,
-  }[g.livello];
+  // Oltre i due giorni il delta in euro smette di dire quanto è grosso: «140 €
+  // oltre» va pesato contro la quota per capirlo. I giorni no — «3,2 giorni»
+  // si capisce senza confronti, ed è quello che è successo davvero.
+  const sinistra = g.sforo > 0
+    ? (g.livello === "male" || g.livello === "grave"
+        ? stat(`${g.giorni.toFixed(1).replace(".", ",")} giorni`, "spesi oggi")
+        : stat(`−${euro(g.sforo)}`, "oltre"))
+    : stat(euro(g.resta), g.speso === 0 ? "puoi spendere" : "restano oggi");
 
   return el("div", { class: `fi-oggi ${g.livello}` }, [
     el("div", { class: "fi-oggi-testa" }, [
@@ -187,7 +187,10 @@ function zonaOggi(s) {
     el("div", { class: "fi-consumo" }, [
       el("i", { stile: { width: `${Math.round(g.frazione * 100)}%` } }),
     ]),
-    el("p", { class: "fi-numero-ritmo", testo: frase }),
+    el("div", { class: "fi-oggi-fondo" }, [
+      sinistra,
+      stat(euro(s.alGiorno), "al giorno"),
+    ]),
   ]);
 }
 
