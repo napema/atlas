@@ -99,7 +99,7 @@ async function disegna() {
     testa(q),
     el("div", { class: "og-griglia" }, [
       el("div", { class: "og-col og-col-sx" }, [cartaFinanze(q)]),
-      el("div", { class: "og-col og-col-dx" }, [cartaResta(q, () => disegna()), cartaCostanza(q)]),
+      el("div", { class: "og-col og-col-dx" }, [cartaResta(q, () => disegna()), cartaCostanza()]),
       el("div", { class: "og-col og-col-sotto" }, [cartaModuli(q)]),
     ]),
   ]);
@@ -126,7 +126,12 @@ function quadro(schede) {
     dopo: resta.length - prio.length,
     inRitardo: prio.filter((v) => v.quando === "tardi"),
     allarme: conDati.map((s) => s.dati.allarme).find(Boolean) || null,
-    serie: Math.max(0, ...conDati.map((s) => s.dati.serie || 0)),
+    // `serie` non sta più qui. Era il massimo fra le serie di TUTTI i moduli
+    // e finiva nella carta Costanza: la striscia di Mobilità si travestiva da
+    // costanza delle abitudini, e bastava una sessione per far dire alla
+    // carta «5 giorni di fila» in una settimana di abitudini mancate. La
+    // costanza adesso se la calcola `cartaCostanza()` dalla lavagna, sulle
+    // sole abitudini, che sono le uniche ad avere un denominatore.
     finanze: conDati.find((s) => s.mod.id === "finanze")?.dati || null,
   };
 }
@@ -392,13 +397,26 @@ function calendario(voci) {
  * dopo tre giorni: è il difetto di tutte le app che gamificano con una
  * stringa sola.
  */
-function fraseSerie(n, chiusa) {
-  if (n === 0) return "Nessuna serie aperta. Ne parte una appena spunti qualcosa.";
-  if (chiusa) return `Giornata chiusa. La serie sale a ${n + 1} domani.`;
-  if (n >= 30) return "Non è più una prova, è come vivi.";
-  if (n >= 14) return "Sarebbe un peccato spezzarla stasera.";
-  if (n >= 7) return "Una settimana piena. Tienila.";
-  if (n >= 3) return "Adesso comincia a contare. Non mollare.";
+function fraseSerie(serie, pieni, vuotiDiFila) {
+  // Prima la verità scomoda, e solo dopo l'incoraggiamento. Al contrario —
+  // che è come stava prima — la carta faceva i complimenti a una settimana
+  // in cui non era stato spuntato quasi niente.
+  if (serie === 0) {
+    if (vuotiDiFila >= 2) return `${vuotiDiFila} giorni senza spuntare niente.`;
+    if (vuotiDiFila === 1) return "Ieri non hai spuntato niente.";
+    return "Nessuna serie aperta. Ne parte una appena spunti qualcosa.";
+  }
+  if (pieni === 0) {
+    return `${plurale(serie, "giorno", "giorni")} di fila, ma nessuno completo.`;
+  }
+  if (pieni < serie) {
+    return `${plurale(serie, "giorno", "giorni")} di fila, ${pieni} ${pieni === 1 ? "completo" : "completi"}.`;
+  }
+  // Da qui in giù la serie è tutta piena, e i complimenti sono guadagnati.
+  if (serie >= 30) return "Non è più una prova, è come vivi.";
+  if (serie >= 14) return "Sarebbe un peccato spezzarla stasera.";
+  if (serie >= 7) return "Una settimana piena. Tienila.";
+  if (serie >= 3) return "Adesso comincia a contare. Non mollare.";
   return "È l'inizio. I primi tre giorni sono i più cari.";
 }
 
@@ -415,33 +433,100 @@ function fraseSerie(n, chiusa) {
    secondo dato. La frase sotto è l'unica cosa che cambia tono.
 */
 
-function cartaCostanza(q) {
-  const giorni = ultimiGiorni(7).reverse();
+function cartaCostanza() {
   const oggi = giornoCorrente();
-  const attivi = giorni.filter(({ fatti }) => Object.keys(fatti).length).length;
-  const n = q.serie;
+
+  /* SI CONTANO LE ABITUDINI, non «il giorno in cui è successo qualcosa».
+
+     Prima una casella si accendeva se la lavagna di quel giorno aveva un
+     fatto QUALSIASI — anche una spesa segnata, anche di un altro modulo — e
+     il numero grande era il massimo fra le serie di tutti i moduli. Ne
+     usciva una carta che il 24 agosto mostrava il verde pieno su una
+     giornata da 0 abitudini su 6, perché quel giorno era stata segnata una
+     spesa, e annunciava «5 giorni di fila. Non mollare» dopo cinque giorni
+     buttati.
+
+     Le abitudini sono le uniche con un denominatore — `attese` — ed è il
+     denominatore a rendere misurabile la costanza. Senza, «ho fatto
+     qualcosa» è vero tutti i giorni e non vuol dire niente. */
+  const letti = ultimiGiorni(7).reverse().map(({ giorno, fatti }) => {
+    const a = fatti.abitudini || {};
+    const noto = typeof a.attese === "number";
+    const attese = noto ? a.attese : 0;
+    const spuntate = a.spuntate || 0;
+    return {
+      giorno, spuntate, attese,
+      stato: !noto ? "ignoto"
+        : attese === 0 ? "riposo"
+        : spuntate === 0 ? "vuoto"
+        : spuntate >= attese ? "pieno"
+        : "parziale",
+    };
+  });
+
+  // La serie: giorni di fila in cui hai spuntato almeno qualcosa. Un giorno
+  // senza niente da fare non la spezza — non hai mancato niente. Un giorno
+  // a zero sì, ed è il punto: dichiarare «non lo faccio» non è farlo.
+  //
+  // Oggi non spezza mai: alle otto di mattina non hai ancora mancato nulla,
+  // e azzerare la serie ogni notte per poi ricostruirla a colazione
+  // renderebbe il numero inguardabile per metà giornata.
+  let i = letti.length - 1;
+  const oggiAncoraVuoto = letti[i]?.giorno === oggi
+    && (letti[i].stato === "vuoto" || letti[i].stato === "ignoto");
+  if (oggiAncoraVuoto) i--;
+
+  let serie = 0, pieni = 0;
+  for (; i >= 0; i--) {
+    const g = letti[i];
+    if (g.stato === "riposo") continue;
+    if (g.stato !== "pieno" && g.stato !== "parziale") break;
+    serie++;
+    if (g.stato === "pieno") pieni++;
+  }
+
+  // Quanti giorni di fila senza spuntare niente, oggi compreso.
+  let vuotiDiFila = 0;
+  for (let k = letti.length - 1; k >= 0; k--) {
+    if (letti[k].stato === "riposo") continue;
+    if (letti[k].stato === "pieno" || letti[k].stato === "parziale") break;
+    vuotiDiFila++;
+  }
+
+  // In alto a destra il rapporto vero della settimana: spuntate su attese.
+  // Era «giorni in cui l'app ha registrato qualcosa su 7», che dava 7/7 a
+  // una settimana da 14 spunte su 36.
+  const tot = letti.reduce((s, g) => ({ sp: s.sp + g.spuntate, at: s.at + g.attese }), { sp: 0, at: 0 });
 
   return carta({
-    emoji: "🔥", nome: "Costanza", valore: `${attivi}/7`, tinta: "var(--arancio)",
+    emoji: "🔥", nome: "Costanza", tinta: "var(--arancio)",
+    valore: tot.at > 0 ? `${tot.sp}/${tot.at}` : "—",
     classe: "og-costanza",
     corpo: [
       el("div", { class: "og-serie-riga" }, [
-        el("span", { class: "og-serie-cifra", testo: String(n) }),
+        el("span", { class: `og-serie-cifra${serie > 0 && pieni === 0 ? " magra" : ""}`, testo: String(serie) }),
         el("span", { class: "og-serie-eti",
-          testo: n === 1 ? "giorno di fila" : "giorni di fila" }),
+          testo: serie === 1 ? "giorno di fila" : "giorni di fila" }),
       ]),
-      el("div", { class: "og-sett" }, giorni.map(({ giorno, fatti }) => {
-        const quanti = Object.values(fatti).reduce((k, m) => k + Object.keys(m).length, 0);
-        const d = new Date(`${giorno}T12:00:00`);
+      el("div", { class: "og-sett" }, letti.map((g) => {
+        const d = new Date(`${g.giorno}T12:00:00`);
+        const quota = g.attese > 0 ? Math.min(1, g.spuntate / g.attese) : 0;
         return el("div", {
-          class: "og-sett-g" + (quanti ? " pieno" : "") + (giorno === oggi ? " oggi" : ""),
-          title: `${dataUmana(giorno)} · ${quanti ? plurale(quanti, "cosa segnata", "cose segnate") : "niente"}`,
+          class: `og-sett-g ${g.stato}` + (g.giorno === oggi ? " oggi" : ""),
+          title: `${dataUmana(g.giorno)} · ` + (
+            g.stato === "ignoto" ? "nessun dato"
+            : g.stato === "riposo" ? "niente in programma"
+            : `${g.spuntate} su ${g.attese}`),
         }, [
-          el("span", { class: "og-sett-punto" }),
+          el("span", { class: "og-sett-punto" }, [
+            // Riempimento proporzionale: un giorno da 1 su 6 non deve
+            // somigliare a un giorno pieno, e nemmeno a uno vuoto.
+            el("i", { stile: { height: `${Math.round(quota * 100)}%` } }),
+          ]),
           el("span", { class: "og-sett-lettera", testo: GIORNI_INIZIALI[(d.getDay() + 6) % 7] }),
         ]);
       })),
-      el("p", { class: "og-nota", testo: fraseSerie(n, q.resta.length === 0) }),
+      el("p", { class: "og-nota", testo: fraseSerie(serie, pieni, vuotiDiFila) }),
     ],
   });
 }

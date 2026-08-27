@@ -300,3 +300,35 @@ rosso resta alla settimana, dove il guaio è vero.
 l'avanzo della settimana prima riportato sul Principale dice `0%` anche in
 un giorno da 108 €. Non è falso — quei soldi non sono i 130 di questa
 settimana — ma accanto alla riga di oggi si legge come una contraddizione.
+
+## 27 agosto — la Costanza diceva il contrario della verità
+
+La carta annunciava «5 giorni di fila» e «7/7» su una settimana in cui le
+abitudini erano state quasi tutte dichiarate «non la faccio». Due difetti,
+e nessuno dei due nel modulo Abitudini: `fattaIl()` è sempre stato corretto.
+
+1. Il numero grande era `Math.max` fra le serie di **tutti** i moduli: la
+   striscia di Mobilità si travestiva da costanza delle abitudini.
+2. Le sette caselle si accendevano se la lavagna di quel giorno aveva un
+   fatto QUALSIASI. Lunedì 24, zero abitudini su sei, era verde pieno
+   perché quel giorno era stata segnata una spesa.
+
+Adesso la carta legge `abitudini.spuntate` e `abitudini.attese` dalla
+lavagna — le abitudini sono le uniche con un **denominatore**, ed è il
+denominatore a rendere misurabile la costanza. Senza, «ho fatto qualcosa»
+è vero tutti i giorni e non vuol dire niente.
+
+Quattro stati per giorno invece di due: pieno, parziale (riempimento
+proporzionale: 1 su 6 si vede che è un sesto), vuoto, e riposo — un giorno
+senza niente in programma non è un fallimento e non spezza la serie.
+
+La serie conta i giorni con **almeno una spunta**, perché non tutte le
+giornate saranno piene e un contatore che si azzera al primo giorno
+parziale si smette di guardare. Ma un giorno a zero la spezza: dichiarare
+«non lo faccio» non è farlo. Oggi non spezza mai — alle otto di mattina non
+hai ancora mancato niente.
+
+Se la serie è fatta di sole giornate parziali il numero è grigio e la frase
+lo dice («3 giorni di fila, ma nessuno completo»): i complimenti arrivano
+solo quando sono guadagnati. In alto a destra il rapporto vero della
+settimana, spuntate su attese — con i dati veri, 14/36 invece di 7/7.

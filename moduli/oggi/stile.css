@@ -297,13 +297,34 @@
 .og-sett { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
 .og-sett-g { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .og-sett-punto {
+  position: relative;
   width: 100%; height: 24px;
   border-radius: 7px;
   background: var(--scheda-viva);
-  transition: background var(--normale) var(--curva);
+  overflow: hidden;
 }
-.og-sett-g.pieno .og-sett-punto { background: var(--menta); }
+/* Il riempimento cresce dal basso ed è PROPORZIONALE: 1 abitudine su 6 si
+   vede che è un sesto. Prima la casella era accesa o spenta, e un giorno da
+   1 su 6 era indistinguibile da un 6 su 6 — anzi, si accendeva anche per un
+   fatto di un altro modulo. */
+.og-sett-punto > i {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: block;
+  border-radius: 7px;
+  background: var(--menta);
+  transition: height var(--lento) var(--curva);
+}
+/* Un giorno senza niente in programma non è un fallimento: non hai mancato
+   nulla. Resta lì, spento e più tenue, e non spezza la serie. Uguale per un
+   giorno di cui non sappiamo niente. */
+.og-sett-g.riposo .og-sett-punto,
+.og-sett-g.ignoto .og-sett-punto { opacity: 0.4; }
 .og-sett-g.oggi .og-sett-punto { box-shadow: 0 0 0 1.5px var(--testo-3); }
+
+/* Una serie fatta di sole giornate parziali non merita l'arancio pieno: è
+   vera, ma non è una vittoria, e il numero non deve dire il contrario di
+   quello che dicono la striscia e la frase sotto. */
+.og-serie-cifra.magra { color: var(--testo-3); }
 .og-sett-lettera { font-size: var(--t-10); font-weight: 700; letter-spacing: 0.05em; color: var(--testo-3); }
 .og-sett-g.oggi .og-sett-lettera { color: var(--testo); }
 .og-nota { margin: var(--s3) 0 0; font-size: var(--t-13); color: var(--testo-2); line-height: 1.4; }
