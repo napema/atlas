@@ -269,3 +269,34 @@ Deve perdere. Si esce con un tocco su «Salva i saldi», che riancora davvero.
 
 **Regola:** chi scrive dentro un record che si fonde per `up` deve alzarlo.
 Il modello è `salvaRicorrente`. Le eccezioni vanno motivate sul posto.
+
+## 27 agosto — la riga di OGGI (finanze)
+
+La scheda diceva solo la settimana, e la settimana si legge troppo tardi:
+«restano 171,84 € e 4 giorni» è vero anche il giovedì sera dopo aver
+bruciato metà budget. Sotto al numero c'è ora la giornata: quanto è uscito
+oggi dal Principale e quanto poteva uscirne.
+
+**La quota di oggi non si calcola su quello che resta ora.** Dividendo il
+saldo attuale per i giorni che restano, la quota scende insieme al saldo
+mentre spendi: spesi 100 €, si riabbassa da sé e resti sempre «in pari».
+Un metro che si accorcia mentre lo usi non misura niente. Si rimettono
+indietro le uscite del giorno, così il dividendo sta fermo dalla mattina
+alla sera.
+
+Indietro vanno **solo le uscite**, non l'effetto netto: la ricarica del
+lunedì arriva oggi, e togliendo anche le entrate il lunedì la quota
+risultava zero — «non spendere altro» nel giorno in cui hai appena
+ricaricato. Provato: lunedì con 130 appena arrivati dà 18,57 €.
+
+Prende il posto della vecchia riga del ritmo invece di aggiungersi. Due
+numeri «al giorno» sulla stessa scheda, calcolati su basi diverse, sono il
+modo più rapido per rendere illeggibile la cosa che dovrebbe chiarire.
+
+Ambra e non rosso quando sei oltre: sforare di un giorno si recupera, e il
+rosso resta alla settimana, dove il guaio è vero.
+
+**Aperta:** «% consumato» si calcola come `budget − resta`, quindi con
+l'avanzo della settimana prima riportato sul Principale dice `0%` anche in
+un giorno da 108 €. Non è falso — quei soldi non sono i 130 di questa
+settimana — ma accanto alla riga di oggi si legge come una contraddizione.

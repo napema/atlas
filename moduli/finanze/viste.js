@@ -29,7 +29,7 @@ import {
   mediaPerGiornoSettimana, ultimiSeiMesi, sottocategorieDelMese, categoriaSuSeiMesi,
   movimentiSottocategoria, contestoMovimento, quadratura,
   cicloDi, spostaCiclo, nomeCiclo, movimentiDelCiclo, categorieDelCiclo,
-  settimana, saldoPocket, deltaPocket, pocketConSaldi, inArrivo, comeSpendi, sforamenti,
+  settimana, giornata, saldoPocket, deltaPocket, pocketConSaldi, inArrivo, comeSpendi, sforamenti,
   alert, spesoOggi, importoRicorrente, prossimaScadenza, esitoCheck, coperturaDi, comeEvento,
 } from "./calcolo.js";
 import { graficoCumulato, graficoCiambella, graficoBarre } from "./grafici.js";
@@ -134,11 +134,50 @@ function ilNumero(s, azioni) {
     s.budget > 0 && el("div", { class: "fi-consumo" }, [
       el("i", { stile: { width: `${Math.round(s.frazione * 100)}%` } }),
     ]),
-    el("p", { class: "fi-numero-ritmo", testo: s.alGiorno > 0
-      ? `${euro(s.alGiorno)} al giorno fino a domenica`
-      : "Meglio non spendere altro fino a lunedì" }),
+    zonaOggi(s),
   ]);
   return box;
+}
+
+/* La riga di OGGI, sotto il numero della settimana.
+ *
+ * La settimana da sola si legge troppo tardi: «restano 171,84 € e 4 giorni»
+ * è vero anche il giovedì sera dopo aver bruciato metà budget, e il numero
+ * settimanale non ha modo di dirtelo prima di domenica. Qui c'è l'unica
+ * domanda che si può ancora usare per decidere qualcosa stasera: quanto è
+ * uscito oggi, e quanto poteva uscirne.
+ *
+ * Prende il posto della vecchia riga del ritmo invece di aggiungersi: due
+ * numeri «al giorno» sulla stessa scheda, calcolati su basi diverse, sono
+ * il modo più rapido per rendere illeggibile la cosa che dovrebbe chiarire.
+ *
+ * Ambra e non rosso quando sei oltre: sforare di un giorno è normale e si
+ * recupera, e un allarme che suona per una cosa normale insegna a ignorare
+ * gli allarmi. Il rosso resta alla settimana, che è dove il guaio è vero.
+ */
+function zonaOggi(s) {
+  const g = giornata();
+
+  if (g.quota <= 0) {
+    return el("p", { class: "fi-numero-ritmo", testo: "Meglio non spendere altro fino a lunedì" });
+  }
+
+  const frase = g.speso === 0
+    ? `Oggi puoi spendere ${euro(g.quota)}.`
+    : g.oltre
+      ? `${euro(-g.resta)} oltre la quota di oggi · da qui a domenica ${euro(s.alGiorno)} al giorno`
+      : `Restano ${euro(g.resta)} per oggi.`;
+
+  return el("div", { class: `fi-oggi ${g.oltre ? "oltre" : ""}`.trim() }, [
+    el("div", { class: "fi-oggi-testa" }, [
+      el("div", { class: "micro", testo: "Oggi" }),
+      el("div", { class: "fi-oggi-cifra", testo: `${euro(g.speso)} di ${euro(g.quota)}` }),
+    ]),
+    el("div", { class: "fi-consumo" }, [
+      el("i", { stile: { width: `${Math.round(g.frazione * 100)}%` } }),
+    ]),
+    el("p", { class: "fi-numero-ritmo", testo: frase }),
+  ]);
 }
 
 /* -------------------------------------------------- 1bis. IL CHECK ------ */

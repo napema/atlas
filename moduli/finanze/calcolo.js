@@ -717,6 +717,45 @@ export function settimana(iso = oggiISO()) {
   };
 }
 
+/**
+ * La giornata: quanto è uscito oggi dal Principale, e quanto poteva uscirne.
+ *
+ * Serve perché la settimana da sola si legge troppo tardi. «Restano 171,84 €
+ * e 4 giorni» è vero anche il giovedì sera dopo aver bruciato metà budget:
+ * il numero settimanale non ha modo di dirtelo finché non è domenica.
+ *
+ * LA QUOTA NON SI CALCOLA SU QUELLO CHE RESTA ORA, e qui sta tutto il senso
+ * della cosa. Dividendo il saldo attuale per i giorni che restano, la quota
+ * scende insieme al saldo mentre spendi: spesi 100 €, la quota si riabbassa
+ * da sé e resti sempre «in pari». Un metro che si accorcia mentre lo usi non
+ * misura niente. Si rimettono quindi indietro le uscite di oggi, così il
+ * dividendo resta fermo dalla mattina alla sera.
+ *
+ * Indietro vanno SOLO le uscite, non l'effetto netto della giornata, e la
+ * differenza si vede il lunedì: la ricarica arriva oggi, quindi togliendo
+ * anche le entrate il dividendo tornerebbe a zero e l'app direbbe «non
+ * spendere altro» proprio nel giorno in cui hai appena ricaricato. I soldi
+ * arrivati oggi sono disponibili oggi; quelli usciti oggi erano disponibili
+ * stamattina. Un travaso in uscita abbassa la quota, ed è giusto: quei soldi
+ * non sono più spendibili.
+ */
+export function giornata(iso = oggiISO()) {
+  const s = settimana(iso);
+  const speso = movimentiVivi()
+    .filter((m) => m.data === iso && m.tipo === "out" && !m.ecc
+      && (m.pocket || "principale") === "principale")
+    .reduce((acc, m) => acc + importoEffettivo(m), 0);
+
+  const disponibile = s.resta + speso;
+  const quota = s.giorniRimasti > 0 ? Math.floor(Math.max(0, disponibile) / s.giorniRimasti) : 0;
+  return {
+    speso, quota,
+    resta: quota - speso,
+    oltre: speso > quota,
+    frazione: quota > 0 ? Math.min(1, speso / quota) : (speso > 0 ? 1 : 0),
+  };
+}
+
 /** Quanto è uscito oggi. Il confronto col ritmo lo fa chi la mostra. */
 export function spesoOggi(iso = oggiISO()) {
   return movimentiVivi()

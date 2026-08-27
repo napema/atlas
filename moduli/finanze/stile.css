@@ -518,6 +518,28 @@
 .fi-numero.avviso .fi-consumo > i { background: var(--avviso); }
 .fi-numero.male   .fi-consumo > i { background: var(--male); }
 
+/* --------------------------------------------------------------- oggi --
+   La riga di oggi sotto il numero della settimana. Il filo che la separa
+   serve a dire che sono due misure diverse — la settimana e la giornata —
+   e non due modi di dire la stessa cosa. */
+.fi-oggi { margin-top: var(--s4); padding-top: var(--s4); border-top: 1px solid var(--filo); }
+.fi-oggi-testa {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--s3);
+}
+.fi-oggi-cifra { font-size: var(--t-17); font-variant-numeric: tabular-nums; }
+.fi-oggi .fi-consumo { height: 6px; margin-top: var(--s3); }
+/* La barra di oggi vive dentro `.fi-numero`, quindi senza queste due righe
+   si tingeva del tono della SETTIMANA: settimana messa male e giornata a
+   posto davano una barra rossa su una giornata in cui non avevi sbagliato
+   niente. Il selettore ripete `.fi-numero` per pareggiare la specificità di
+   `.fi-numero.male .fi-consumo > i` e vincere per ordine. */
+.fi-numero .fi-oggi .fi-consumo > i { background: var(--accento); }
+/* Ambra e non rosso: sforare di un giorno si recupera, e il rosso qui
+   toglierebbe forza al rosso della settimana, dove il guaio è vero. */
+.fi-numero .fi-oggi.oltre .fi-consumo > i { background: var(--avviso); }
+.fi-oggi.oltre .fi-oggi-cifra { color: var(--avviso); }
+
 .fi-numero-scelta { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); margin-top: var(--s5); }
 .fi-numero-scelta .btn { min-height: 52px; }
 
