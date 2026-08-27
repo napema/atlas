@@ -25,3 +25,6 @@ mobility_to_consider/
 # I sorgenti restano sul disco: servono a riconvertire, non a servire.
 moduli/mobilita/video/
 .mm/
+
+# La lista per lo scaricatore dei video: file di lavoro, non codice.
+links.txt

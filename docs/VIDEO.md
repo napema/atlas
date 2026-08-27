@@ -22,7 +22,7 @@ momento — a metà sessione, con le mani per terra:
 | misura | 480px di altezza (854×480 dai 1080p), 24 fps |
 | audio | **nessuno** — il player ha i suoi bip, e l'audio è metà del peso |
 | qualità | CRF 31 |
-| peso | ~60 MB in tutto, 50 clip |
+| peso | ~73 MB in tutto, 77 clip |
 
 Il nome del file **è l'id dell'esercizio**. Non c'è una tabella di
 corrispondenza da tenere allineata: se un esercizio si chiama `g5-9090`, il
@@ -30,8 +30,11 @@ suo video è `g5-9090.mp4`. `clip.js` elenca quali esistono, ed è generato.
 
 ## Rifare la conversione
 
-I sorgenti stanno in `moduli/mobilita/video/` e **non sono nel repo** (533 MB,
-esclusi da `.gitignore`). La corrispondenza fra sorgente ed esercizio è in
+I sorgenti stanno in `moduli/mobilita/video/` e **non sono nel repo** (326 MB,
+esclusi da `.gitignore`). Ci sono solo quelli che servono davvero: i 46
+scaricati che non corrispondevano a nessun esercizio sono stati tolti il 27
+agosto — quasi tutti GOWOD **con l'elastico**, che il catalogo esclude di
+proposito («servono un elastico, che non hai»). La corrispondenza fra sorgente ed esercizio è in
 `.mm/mappa.txt`, anch'essa fuori dal repo.
 
 ```bash
@@ -50,7 +53,7 @@ ls clip | sed 's/\.mp4$//' | sort   # → il contenuto di CLIP in clip.js
 
 ## Come li serve il service worker
 
-**Non sono nel precarico.** Sessanta megabyte alla prima apertura vorrebbero
+**Non sono nel precarico.** Settantatré megabyte alla prima apertura vorrebbero
 dire un'installazione che non finisce mai su una connessione da telefono. Si
 salvano uno alla volta, il giorno che quell'esercizio esce nella rotazione, e
 da lì in poi ci sono anche in aereo: dopo una settimana di sessioni la
@@ -61,51 +64,25 @@ pezzi, e a una richiesta con Range va risposto 206 con quel pezzo.
 `cache.match()` risponde 200 con tutto, e il player va in errore — video nero
 e nessun messaggio. Quelle richieste passano alla rete.
 
-## I 27 esercizi ancora senza video
 
-Il player li regge: dove il video non c'è, il riquadro non compare affatto e
-lo spazio va alle istruzioni. Ma sono 27 su 78, e vanno colmati.
+## Copertura
 
-```
-g1-trap              Trap stretch destro
-g2-ankle-mob         Mobilizzazione di caviglia
-g2-ankle-rolls       Ankle rolls
-g2-deep-squat        Active deep squat
-g2-dog-calf          Calf stretch nel cane a testa in giù
-g2-squat-stand       Squat to stand
-g3-ham-kneel         Kneeling hamstring stretch
-g3-ham               Hamstring stretch
-g3-ham-roll          Hamstring roll (foam roller)
-g3-forward-bend      Standing forward bend
-g3-hinge             Active hinge
-g4-lunge-twist       Lunge twist
-g4-quad-roll         Quad roll (foam roller)
-g5-frog              The frog
-g5-frog-att          Active frog
-g5-frog-rot          Frog rotation alternata
-g5-add-roll          Adductor roll (foam roller)
-g5-cossack           Cossack squat
-g5-half-lotus        Half lotus al muro
-g7-quad              Quad stretch
-g7-quad-att          Active quad stretch
-g7-quad-roll         Quad roll (foam roller)
-g8-prayer-lat        Prayer lat stretch
-g8-scap              Scap mobilization
-g8-cobra             Downward dog to cobra
-g8-thread            Thread the needle
-g8-supine-twist      Supine twist
+**77 esercizi su 77.** `g1-isometria` non ha video e non ne ha bisogno: è un
+protocollo di spinte isometriche descritto a parole, senza filmato anche
+nell'originale.
+
+Il controllo che vale la pena rifare dopo ogni aggiunta — l'id del catalogo
+deve coincidere con quello nel nome del sorgente:
+
+```bash
+while IFS='|' read -r id file; do
+  atteso=$(grep -oE "id: \"$id\", video: \"[^\"]+\"" esercizi.js |
+           sed -E 's/.*video: "([^"]+)".*/\1/' | head -1)
+  nel=$(echo "$file" | grep -oE '\[[A-Za-z0-9_-]{11}\]' | tr -d '[]')
+  [ -n "$nel" ] && [ "$nel" != "$atteso" ] && echo "SBAGLIATO $id"
+done < ../../.mm/mappa.txt
 ```
 
-`g1-isometria` non ne ha bisogno: è un protocollo di spinte isometriche
-descritto a parole, senza video anche nell'originale.
-
-Per aggiungerne uno basta mettere il file in `video/`, aggiungere la riga a
-`.mm/mappa.txt`, convertire e rigenerare `clip.js`.
-
-## I 28 sorgenti scaricati che non servono a nessun esercizio
-
-Sono nella cartella ma non corrispondono a niente del catalogo: quasi tutti
-sono i GOWOD **con l'elastico**, che il catalogo esclude di proposito
-(`esercizi.js`: «servono un elastico, che non hai»). Gli altri sono esercizi
-che nel programma non ci sono — `Inchworm`, `The_Ballerina`, `Plank_Toe_Taps`,
-`Press_In_Snatch`.
+Ha già trovato un errore vero: `l-cossack` puntava al video di
+`A3` — una abduzione sul fianco al posto di un cossack squat col goblet.
+L'abbinamento a mano sbaglia, questo controllo no.

@@ -14,7 +14,7 @@
  * che stanno in core/app.js. Il perché è scritto lì.
  */
 
-const VERSIONE = "atlas-v32";
+const VERSIONE = "atlas-v33";
 const GUSCIO = `guscio-${VERSIONE}`;
 
 const DA_PRECARICARE = [
