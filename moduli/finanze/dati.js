@@ -362,6 +362,21 @@ export function migra() {
        `config.pocketDa` resta come ripiego per i record che non hanno
        ancora la loro: toglierlo vorrebbe dire che al primo avvio dopo
        l'aggiornamento i saldi ripartono dalla notte dei tempi.          */
+    /* Qui `up` NON si alza, ed è voluto — al contrario di ogni altra
+       scrittura su un record.
+
+       Il backfill non è una decisione dell'utente: è una supposizione fatta
+       in locale, e su un dispositivo dove `pocketDa` non c'è vale `null`.
+       Alzando `up` quel `null` diventerebbe il record più recente e
+       vincerebbe sull'ancora vera scritta sull'altro dispositivo: i saldi
+       ripartirebbero da zero proprio sul telefono che ne sa meno.
+
+       Lasciandolo com'è, la supposizione perde sempre contro una scrittura
+       vera e non fa danni. Il prezzo è che due dispositivi possono restare
+       fermi allo stesso `up` con due valori diversi e rimandarseli a vicenda
+       — è successo il 27 agosto — ma da quello si esce con un tocco su
+       «Salva i saldi», che riancora davvero e alza `up`. Dal caso opposto,
+       cioè un saldo azzerato, non si esce. */
     for (const p of st.pockets || []) {
       if (p.ancoraDa === undefined) p.ancoraDa = st.config.pocketDa || null;
     }
@@ -512,8 +527,23 @@ export function eliminaRicorrente(id) {
  */
 export function segnaScadenzaPagata(id, quando) {
   scriviMeta((s) => {
-    const r = (s.ricorrenti || []).find((x) => x.id === id);
-    if (r) r.pagato = quando;
+    const i = (s.ricorrenti || []).findIndex((x) => x.id === id);
+    // `up: Date.now()`, e non è una formalità: senza, il gesto viaggia a metà.
+    //
+    // Premere «Paga» fa due cose — il movimento e la spunta sulla scadenza.
+    // Il movimento nasce con il suo `up` e arriva sull'altro dispositivo; la
+    // spunta finiva dentro il record senza alzarne l'`up`, e da lì in poi i
+    // due telefoni non riuscivano più a mettersi d'accordo: `fondiRecord`
+    // confronta gli `up` e a parità dà ragione al locale, quindi ognuno dei
+    // due teneva la propria versione e la rimandava indietro al giro dopo.
+    // Windows la vedeva pagata, l'iPhone la vedeva da pagare, e il repo
+    // rimbalzava fra le due per sempre. Il 26 agosto è successo con l'
+    // abbonamento Claude: i 18 € erano usciti davvero e la scadenza continuava
+    // a chiederli.
+    //
+    // Chi scrive dentro un record che si fonde per `up` DEVE alzarlo. Vale
+    // qui come in `scriviRicorrente` e `scriviPocket`.
+    if (i >= 0) s.ricorrenti[i] = { ...s.ricorrenti[i], pagato: quando, up: Date.now() };
   });
 }
 
