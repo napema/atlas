@@ -248,20 +248,13 @@
   background: var(--male);
 }
 
-/* Il calendario si prende lo spazio che avanza, e «Apri Finanze» sta in
-   fondo. La riga di carte ha un'altezza sola — le tre colonne si stirano
-   alla più alta — e quando la colonna di destra era la più alta la carta
-   Finanze finiva col contenuto in cima e un buco sotto il pulsante. Un buco
-   dopo l'ultimo elemento si legge come una cosa che manca; lo stesso spazio
-   davanti a un pulsante in fondo si legge come margine. */
-.og-cal { flex: 1; align-content: start; }
 
 .og-apri {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   align-self: flex-start;
-  margin-top: auto;
+  margin-top: var(--s3);
   min-height: 40px;
   padding: 0 var(--s4);
   border-radius: var(--r-pillola);
@@ -411,30 +404,37 @@
   .og-col-dx    { grid-area: dx; display: flex; }
   .og-col-sotto { grid-area: sotto; }
 
-  /* I bordi bassi delle due colonne devono cadere sulla stessa riga, ma
-     senza aprire un vuoto dentro nessuna carta. Due mosse insieme:
+  /* LE CARTE NON SI STIRANO PIÙ, e questa riga vale una spiegazione lunga
+     perché ne annulla tre di prima.
 
-     1. Costanza si stringe — barre più basse, margini più corti — così le
-        due altezze naturali partono già vicine invece che a 70px di
-        distanza.
-     2. Il poco che resta lo assorbe la colonna più corta, e lo assorbe la
-        carta che se lo può permettere: in Finanze si allarga lo spazio FRA
-        i blocchi (cifra, tre numeri, avviso, pulsante), che sono già
-        separati di loro; a destra cresce Costanza, dove a crescere sono le
-        sette barrette.
+     Le due colonne hanno contenuto indipendente e variabile: a sinistra
+     quante uscite hai in arrivo, a destra quante cose ti restano oggi. La
+     loro differenza di altezza cambia ogni giorno, e nessuno dei due sa
+     quanto sarà. Obbligarle a finire sulla stessa riga vuol dire che
+     l'avanzo — che a volte è 30px e a volte 300 — deve finire da qualche
+     parte dentro una carta.
 
-     Non è la stessa cosa di stirare una carta e lasciarle un buco in
-     fondo: lì il vuoto è tutto in un punto e si vede, qui è diviso fra
-     quattro stacchi e sembra respiro. */
-  /* Finanze si stira ma NON si distribuisce dentro. Con lo
-     `space-between` addosso, i 200px che avanzavano quando la colonna
-     accanto cresceva finivano spalmati fra cifra, numeri e pulsante: tre
-     voragini in mezzo al contenuto, e la carta sembrava rotta. Adesso il
-     contenuto sta compatto in cima e l'avanzo, quando c'è, è uno solo e
-     sta in fondo — dove un margine in più non dice niente di sbagliato. */
-  .og-col-sx > .og-soldi { flex: 1; }
-  .og-col-dx > .og-costanza { flex: 1; }
-  .og-col-dx > .og-costanza .og-carta-corpo { justify-content: space-between; }
+     Si è provato a metterlo in tre posti diversi, e ogni volta il difetto
+     si è solo spostato:
+       · `space-between` sul corpo di Finanze → tre voragini fra cifra,
+         numeri e pulsante, e la carta sembrava rotta;
+       · l'avanzo tutto in fondo → un buco sotto il pulsante, che si legge
+         come una cosa che manca;
+       · l'avanzo dentro la lista del calendario → quattro voci in una
+         lista alta 333px, che è la stessa cosa un po' più nascosta.
+
+     Non è una serie di sviste: è che il problema non ha soluzione in quella
+     forma. Con due colonne indipendenti l'avanzo esiste sempre, e l'unica
+     scelta è dove metterlo. Metterlo da nessuna parte vuol dire non
+     stirare: ogni carta è alta quanto il suo contenuto, e allora non può
+     esserci un vuoto dentro nessuna, qualunque cosa succeda al contenuto.
+
+     Il prezzo è che i bordi bassi delle due colonne non cadono più sulla
+     stessa riga. Si paga volentieri: sotto c'è «I moduli» a tutta larghezza
+     che chiude il cruscotto, quindi lo scalino resta fra due colonne e non
+     lascia la pagina aperta. Uno scalino si legge come due colonne di
+     lunghezza diversa; un buco dentro una carta si legge come un guasto. */
+  .og-griglia { align-items: start; }
   .og-costanza .og-serie-riga { margin-bottom: var(--s3); }
   .og-costanza .og-nota { margin-top: var(--s3); }
 

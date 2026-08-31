@@ -20,9 +20,22 @@
 //
 // 2. UNA COSA SOLA È GRANDE PER CARTA. Il numero, e il resto gli sta intorno.
 //
-// 3. LA RIGA DI CARTE HA UN'ALTEZZA SOLA. Le tre colonne si stirano alla più
-//    alta e la striscia dei moduli chiude sotto. Tre carte che finiscono a
-//    tre altezze diverse non sono un cruscotto, sono tre ritagli.
+// 3. NESSUNA CARTA SI STIRA. Ognuna è alta quanto il suo contenuto, e le due
+//    colonne finiscono dove capita; sotto, «I moduli» a tutta larghezza
+//    chiude il cruscotto.
+//
+//    La regola era il contrario — colonne stirate alla più alta — e per un
+//    po' ha retto. Non regge più perché il contenuto è diventato variabile:
+//    quante uscite hai in arrivo e quante cose ti restano oggi cambiano ogni
+//    giorno, e la differenza fra le due colonne con loro. L'avanzo, che a
+//    volte è 30px e a volte 300, deve finire dentro una carta, e lo si è
+//    provato a mettere in tre posti diversi — spalmato fra i blocchi, tutto
+//    in fondo, dentro la lista del calendario — ottenendo ogni volta lo
+//    stesso difetto in un punto nuovo.
+//
+//    Uno scalino fra due colonne si legge come due colonne di lunghezza
+//    diversa. Un vuoto dentro una carta si legge come un guasto. Fra i due
+//    si sceglie il primo, e si smette di spostarlo.
 //
 // 4. NELLA CHECKLIST CI VA SOLO QUELLO CHE HA UN'ORA. La prima versione
 //    impilava tutte le abitudini del giorno e faceva nove righe: una lista

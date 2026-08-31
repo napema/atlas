@@ -2312,25 +2312,29 @@ export function vistaSetupV2(ridisegna) {
     // il suo nodo, e i fogli in pagina sono tokens, base e quelli di Oggi e
     // Impostazioni. Una classe `fi-` qui dentro non ha stile e i due tasti
     // restavano uno lungo e uno corto, appiccicati.
-    el("button", {
-      class: "btn pieno", type: "button", testo: "Scarica il file",
-      stile: { marginTop: "var(--s3)" },
-      onClick: () => {
-        try { avviso(`File pronto · ${Math.round(scaricaAnalisi() / 1024)} KB`); }
-        catch (e) { avviso("Non è riuscito: " + (e.message || e), { tono: "errore" }); }
-      },
-    }),
-    // Su iPhone, da un'app installata sulla home, un file scaricato finisce
-    // in un posto che poi va cercato. Incollare in chat è un gesto solo, e
-    // il contenuto è identico.
-    el("button", {
-      class: "btn morbido pieno", type: "button", testo: "Copia negli appunti",
-      stile: { marginTop: "var(--s2)" },
-      onClick: async () => {
-        try { avviso(`Copiato · ${Math.round((await copiaAnalisi()) / 1024)} KB`); }
-        catch { avviso("Gli appunti non sono disponibili qui. Usa «Scarica il file».", { tono: "errore" }); }
-      },
-    }),
+    // Affiancati, non impilati: sono due strade per la stessa cosa, e uno
+    // sopra l'altro sembravano due azioni diverse in fila.
+    el("div", { stile: { display: "flex", gap: "var(--s2)", marginTop: "var(--s3)" } }, [
+      el("button", {
+        class: "btn", type: "button", testo: "Scarica il file",
+        stile: { flex: "1" },
+        onClick: () => {
+          try { avviso(`File pronto · ${Math.round(scaricaAnalisi() / 1024)} KB`); }
+          catch (e) { avviso("Non è riuscito: " + (e.message || e), { tono: "errore" }); }
+        },
+      }),
+      // Su iPhone, da un'app installata sulla home, un file scaricato
+      // finisce in un posto che poi va cercato. Incollare in chat è un gesto
+      // solo, e il contenuto è identico.
+      el("button", {
+        class: "btn morbido", type: "button", testo: "Copia",
+        stile: { flex: "1" },
+        onClick: async () => {
+          try { avviso(`Copiato · ${Math.round((await copiaAnalisi()) / 1024)} KB`); }
+          catch { avviso("Gli appunti non sono disponibili qui. Usa «Scarica il file».", { tono: "errore" }); }
+        },
+      }),
+    ]),
     el("p", { class: "nota-2", testo:
       "Contiene tutte le tue spese: dallo a un modello solo se ti sta bene che le legga." }),
   ])]);
