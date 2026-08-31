@@ -34,6 +34,7 @@ import {
 } from "./calcolo.js";
 import { graficoCumulato, graficoCiambella, graficoBarre } from "./grafici.js";
 import { preparaImport, eseguiImport } from "./importa.js";
+import { scaricaAnalisi, copiaAnalisi } from "./esporta.js";
 
 const ETICHETTA_TIPO = Object.fromEntries(Object.entries(TIPI).map(([k, v]) => [k, v.nome]));
 
@@ -2296,6 +2297,42 @@ export function vistaSetupV2(ridisegna) {
         (v) => scriviSoglia("catAvviso", Number(v))),
       el("p", { class: "nota", testo: "A che punto del budget di categoria compare l'avviso." }),
     ]),
+  ])]);
+
+  /* --- il pacchetto da far analizzare ---------------------------------- */
+
+  aggiungi(fuori, [el("section", { class: "scheda" }, [
+    el("div", { class: "scheda-titolo", testo: "Esporta per l'analisi" }),
+    el("p", { class: "nota", testo:
+      "Un file JSON con tutto: movimenti, categorie, ricorrenti, saldi, budget e i totali per mese già fatti. "
+      + "Gli importi sono in euro e non in centesimi, gli id sono risolti in nomi, e in cima c'è la legenda delle convenzioni — "
+      + "così chi lo legge non deve indovinare niente." }),
+    // Solo classi condivise, e non è un dettaglio: `moduli/finanze/stile.css`
+    // NON viene caricato nella schermata Impostazioni — lì il modulo dà solo
+    // il suo nodo, e i fogli in pagina sono tokens, base e quelli di Oggi e
+    // Impostazioni. Una classe `fi-` qui dentro non ha stile e i due tasti
+    // restavano uno lungo e uno corto, appiccicati.
+    el("button", {
+      class: "btn pieno", type: "button", testo: "Scarica il file",
+      stile: { marginTop: "var(--s3)" },
+      onClick: () => {
+        try { avviso(`File pronto · ${Math.round(scaricaAnalisi() / 1024)} KB`); }
+        catch (e) { avviso("Non è riuscito: " + (e.message || e), { tono: "errore" }); }
+      },
+    }),
+    // Su iPhone, da un'app installata sulla home, un file scaricato finisce
+    // in un posto che poi va cercato. Incollare in chat è un gesto solo, e
+    // il contenuto è identico.
+    el("button", {
+      class: "btn morbido pieno", type: "button", testo: "Copia negli appunti",
+      stile: { marginTop: "var(--s2)" },
+      onClick: async () => {
+        try { avviso(`Copiato · ${Math.round((await copiaAnalisi()) / 1024)} KB`); }
+        catch { avviso("Gli appunti non sono disponibili qui. Usa «Scarica il file».", { tono: "errore" }); }
+      },
+    }),
+    el("p", { class: "nota-2", testo:
+      "Contiene tutte le tue spese: dallo a un modello solo se ti sta bene che le legga." }),
   ])]);
 
   return fuori;
