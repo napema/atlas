@@ -2,13 +2,12 @@
 //
 //   ┌──────── buongiorno, Ema. ────────┐        data
 //   │            il verdetto           │        stato
-//   ├─────────┬──────────────┬─────────┤
-//   │ finanze │ resta da fare│  serie  │
-//   │         │              ├─────────┤
-//   │         │              │ costanza│
-//   ├─────────┴──────────────┴─────────┤
-//   │            i moduli              │
-//   └──────────────────────────────────┘
+//   ├────────────────┬─────────────────┤
+//   │    finanze     │  resta da fare  │
+//   │                │                 │
+//   ├ ─ ─ molla ─ ─ ─┼ ─ ─ molla ─ ─ ─ ┤
+//   │   i moduli     │    costanza     │
+//   └────────────────┴─────────────────┘
 //
 // Le regole che tengono insieme il tutto:
 //
@@ -20,22 +19,30 @@
 //
 // 2. UNA COSA SOLA È GRANDE PER CARTA. Il numero, e il resto gli sta intorno.
 //
-// 3. NESSUNA CARTA SI STIRA. Ognuna è alta quanto il suo contenuto, e le due
-//    colonne finiscono dove capita; sotto, «I moduli» a tutta larghezza
-//    chiude il cruscotto.
+// 3. NESSUNA CARTA SI STIRA, E L'AVANZO STA FRA DUE CARTE. Ogni carta è alta
+//    quanto il suo contenuto. Lo scarto fra le due colonne — misurato sulle
+//    giornate vere va da 26 a 319px, e cambia segno — finisce nella molla,
+//    che è lo spazio in mezzo alle due carte di una colonna.
 //
-//    La regola era il contrario — colonne stirate alla più alta — e per un
-//    po' ha retto. Non regge più perché il contenuto è diventato variabile:
-//    quante uscite hai in arrivo e quante cose ti restano oggi cambiano ogni
-//    giorno, e la differenza fra le due colonne con loro. L'avanzo, che a
-//    volte è 30px e a volte 300, deve finire dentro una carta, e lo si è
-//    provato a mettere in tre posti diversi — spalmato fra i blocchi, tutto
-//    in fondo, dentro la lista del calendario — ottenendo ogni volta lo
-//    stesso difetto in un punto nuovo.
+//    Ci sono voluti quattro tentativi perché il difetto era di forma, non di
+//    valvola. L'avanzo è stato messo dentro Finanze (tre voragini fra i
+//    blocchi), in fondo a Finanze (un buco sotto il pulsante), dentro la
+//    lista del calendario (quattro voci in una lista alta 333px) e infine da
+//    nessuna parte, con le carte alte quanto il contenuto: e lì è ricomparso
+//    sotto la colonna più corta, con la striscia dei moduli a fargli da riga
+//    sotto. Un buco a L.
 //
-//    Uno scalino fra due colonne si legge come due colonne di lunghezza
-//    diversa. Un vuoto dentro una carta si legge come un guasto. Fra i due
-//    si sceglie il primo, e si smette di spostarlo.
+//    Il punto è che la colonna di sinistra aveva UNA carta sola: lì l'avanzo
+//    può solo stare dentro quella carta o sotto di lei, e sono le due cose
+//    che si leggono come un guasto. Perciò «I moduli» è sceso da sotto la
+//    griglia dentro la colonna di sinistra. Due colonne di due carte, e lo
+//    spazio fra due carte è spazio che ci si aspetta di trovare.
+//
+//    La molla ha un tetto (76px). Oltre, si ferma e il resto torna a essere
+//    uno scalino in fondo alla colonna più corta — che però non ha più
+//    niente sotto a fargli da riga. Fra un vuoto di 200px in mezzo a una
+//    colonna e uno scalino di 130 in fondo alla pagina, si sceglie il
+//    secondo.
 //
 // 4. NELLA CHECKLIST CI VA SOLO QUELLO CHE HA UN'ORA. La prima versione
 //    impilava tutte le abitudini del giorno e faceva nove righe: una lista
@@ -110,10 +117,12 @@ async function disegna() {
   contenitore.replaceChildren();
   aggiungi(contenitore, [
     testa(q),
+    // Due colonne di DUE carte ciascuna, e in mezzo a ognuna una molla.
+    // Il perché sta nella regola 3 qui sopra e in stile.css: con una carta
+    // sola a sinistra l'avanzo non aveva dove andare se non sotto di lei.
     el("div", { class: "og-griglia" }, [
-      el("div", { class: "og-col og-col-sx" }, [cartaFinanze(q)]),
-      el("div", { class: "og-col og-col-dx" }, [cartaResta(q, () => disegna()), cartaCostanza()]),
-      el("div", { class: "og-col og-col-sotto" }, [cartaModuli(q)]),
+      colonna("og-col-sx", cartaFinanze(q), cartaModuli(q)),
+      colonna("og-col-dx", cartaResta(q, () => disegna()), cartaCostanza()),
     ]),
   ]);
 }
@@ -253,6 +262,22 @@ function carta({ emoji, nome, valore, tinta, classe = "", corpo }) {
   ]);
   if (tinta) c.style.setProperty("--tinta", tinta);
   return c;
+}
+
+/**
+ * Una colonna della griglia: due carte e, SOLO se ci sono tutte e due, una
+ * molla in mezzo.
+ *
+ * La molla è vuota di proposito: è il posto dove finisce l'avanzo fra le due
+ * colonne, e sta fuori dalle carte invece che dentro. Quanto si allunga e
+ * fin dove lo dice stile.css.
+ *
+ * Con una carta sola non va messa: si ritroverebbe in fondo o in cima alla
+ * colonna, e lì non è più una distanza fra due cose, è un buco.
+ */
+function colonna(classe, prima, seconda) {
+  const molla = prima && seconda && el("div", { class: "og-molla", "aria-hidden": "true" });
+  return el("div", { class: `og-col ${classe}` }, [prima, molla, seconda]);
 }
 
 /* ------------------------------------------------------- 1. RESTA DA FARE */
@@ -558,10 +583,13 @@ function cartaCostanza() {
 
 /* ------------------------------------------------------------ 5. I MODULI */
 /*
-   Lo stato dei tre moduli, in una striscia sola sotto le carte. Non tessere
-   grandi: qui non si decide niente, si controlla soltanto, e il controllo
-   costa una riga. Sta in fondo e larga quanto la griglia perché è la
-   chiusura del cruscotto, non uno dei suoi pannelli.
+   Lo stato dei tre moduli. Non tessere grandi: qui non si decide niente, si
+   controlla soltanto, e il controllo costa una riga.
+
+   Stava sotto la griglia, a tutta larghezza, come chiusura del cruscotto.
+   Adesso è la seconda carta della colonna di sinistra — vedi la regola 3 —
+   e resta l'ultima cosa che si legge, ma di una colonna invece che della
+   pagina. Da telefono non cambia niente: è sempre l'ultima delle quattro.
 */
 
 function cartaModuli(q) {

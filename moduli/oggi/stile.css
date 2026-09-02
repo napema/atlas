@@ -71,13 +71,24 @@
 
 /* Su telefono l'ordine è quello dell'importanza, non quello delle colonne:
    prima quello che si tocca, poi quello che decide la serata, poi il resto.
-   La colonna di destra si apre e le sue due carte vanno una prima e una
-   dopo Finanze — su una colonna sola «colonna» non vuol dire niente. */
-.og-col-dx    { display: contents; }
-.og-col-sx    { order: 2; }
-.og-col-sotto { order: 4; }
-.og-col-dx > .og-resta, .og-col-dx > .og-vuota { order: 1; }
-.og-col-dx > .og-costanza { order: 3; }
+   Le colonne si aprono tutte e due — su una colonna sola «colonna» non vuol
+   dire niente — e le quattro carte si rimettono in fila da sé.
+
+   Il blocco è chiuso in un max-width e non lasciato a cascata, perché da
+   scrivania questi `order` vanno spenti TUTTI e non basta rimetterli a 0
+   più sotto: `.og-col > *` pesa meno di `.og-col-dx > .og-resta` e perde.
+   Con le carte a 1 e 3 e la molla — che di suo non ha ordine — a 0, la
+   molla finiva sopra la prima carta invece che in mezzo alle due, e
+   l'avanzo si apriva fra l'intestazione e la carta. */
+@media (max-width: 999.98px) {
+  .og-col-sx, .og-col-dx { display: contents; }
+  .og-col-dx > .og-resta, .og-col-dx > .og-vuota { order: 1; }
+  .og-col-sx > .og-soldi    { order: 2; }
+  .og-col-dx > .og-costanza { order: 3; }
+  .og-col-sx > .og-moduli   { order: 4; }
+  /* La molla è roba da scrivania: qui le carte sono già in colonna unica. */
+  .og-molla { display: none; }
+}
 
 /* --------------------------------------------------------------- la carta */
 
@@ -394,47 +405,54 @@
   .og-griglia {
     display: grid;
     grid-template-columns: minmax(320px, 1fr) minmax(320px, 1.05fr);
-    grid-template-areas:
-      "sx dx"
-      "sotto sotto";
     gap: var(--s4);
     align-items: stretch;
   }
-  .og-col-sx    { grid-area: sx; }
-  .og-col-dx    { grid-area: dx; display: flex; }
-  .og-col-sotto { grid-area: sotto; }
+  /* Il gap della colonna è zero perché la distanza fra le due carte la
+     tiene la molla, che ha un minimo pari al gap di prima. Con tutti e due
+     si sommerebbero. */
+  .og-col-sx, .og-col-dx { display: flex; gap: 0; }
 
-  /* LE CARTE NON SI STIRANO PIÙ, e questa riga vale una spiegazione lunga
-     perché ne annulla tre di prima.
+  /* LA MOLLA, ovvero dove va l'avanzo. Vale una spiegazione lunga perché
+     ne annulla quattro di prima.
 
      Le due colonne hanno contenuto indipendente e variabile: a sinistra
-     quante uscite hai in arrivo, a destra quante cose ti restano oggi. La
-     loro differenza di altezza cambia ogni giorno, e nessuno dei due sa
-     quanto sarà. Obbligarle a finire sulla stessa riga vuol dire che
-     l'avanzo — che a volte è 30px e a volte 300 — deve finire da qualche
-     parte dentro una carta.
+     quante uscite hai in arrivo, a destra quante cose ti restano oggi.
+     Misurato sulle giornate vere, lo scalino fra le due va da 26 a 319px E
+     CAMBIA SEGNO: certi giorni è più alta la sinistra, altri la destra.
+     L'avanzo quindi esiste sempre, e l'unica scelta è dove metterlo.
 
-     Si è provato a metterlo in tre posti diversi, e ogni volta il difetto
-     si è solo spostato:
+     Si è provato a metterlo dentro le carte, in tre posti diversi, e ogni
+     volta il difetto si è solo spostato:
        · `space-between` sul corpo di Finanze → tre voragini fra cifra,
          numeri e pulsante, e la carta sembrava rotta;
-       · l'avanzo tutto in fondo → un buco sotto il pulsante, che si legge
-         come una cosa che manca;
+       · l'avanzo tutto in fondo → un buco sotto il pulsante;
        · l'avanzo dentro la lista del calendario → quattro voci in una
          lista alta 333px, che è la stessa cosa un po' più nascosta.
+     Poi si è provato a non metterlo da nessuna parte — carte alte quanto il
+     loro contenuto — e l'avanzo è ricomparso sotto la colonna più corta,
+     con la striscia dei moduli sotto a fargli da riga: un buco a L.
 
-     Non è una serie di sviste: è che il problema non ha soluzione in quella
-     forma. Con due colonne indipendenti l'avanzo esiste sempre, e l'unica
-     scelta è dove metterlo. Metterlo da nessuna parte vuol dire non
-     stirare: ogni carta è alta quanto il suo contenuto, e allora non può
-     esserci un vuoto dentro nessuna, qualunque cosa succeda al contenuto.
+     Il difetto non stava nella valvola, stava nella forma. La colonna di
+     sinistra aveva UNA carta sola: un avanzo dentro una colonna di una
+     carta può solo stare dentro quella carta o sotto di lei. Perciò «I
+     moduli» scende da sotto la griglia dentro la colonna di sinistra: due
+     colonne di due carte, e in mezzo a ognuna una molla.
 
-     Il prezzo è che i bordi bassi delle due colonne non cadono più sulla
-     stessa riga. Si paga volentieri: sotto c'è «I moduli» a tutta larghezza
-     che chiude il cruscotto, quindi lo scalino resta fra due colonne e non
-     lascia la pagina aperta. Uno scalino si legge come due colonne di
-     lunghezza diversa; un buco dentro una carta si legge come un guasto. */
-  .og-griglia { align-items: start; }
+     Adesso l'avanzo ha un posto suo, FUORI dalle carte e dentro la colonna:
+     lo spazio fra due carte è spazio che ci si aspetta di trovare, e non
+     somiglia a un guasto. Con un tetto, però. Fino a 76px le due colonne
+     finiscono sulla stessa riga e la molla si allunga; oltre, la molla si
+     ferma e il resto torna a essere uno scalino in fondo alla colonna più
+     corta — che lì non ha più niente sotto a fargli da riga, e si legge per
+     quello che è. Fra un gap di 200px in mezzo a una colonna e uno scalino
+     di 120 in fondo alla pagina, si sceglie il secondo. */
+  .og-molla {
+    display: block;
+    flex: 1 1 0;
+    min-height: var(--s4);
+    max-height: 76px;
+  }
   .og-costanza .og-serie-riga { margin-bottom: var(--s3); }
   .og-costanza .og-nota { margin-top: var(--s3); }
 
@@ -481,19 +499,32 @@
   .og-nota { margin-top: var(--s4); }
   .og-sett-punto { height: 30px; }
 
-  /* I moduli diventano tre celle affiancate: il separatore gira di 90° e la
-     striscia legge da sinistra a destra come la riga di carte sopra. */
+  /* Tre tessere, nome sopra e valore sotto.
+     Finché la striscia stava sotto la griglia era larga quanto la pagina e
+     le tre celle in fila ci stavano comode. Dentro mezza colonna no: a
+     1000px di finestra le celle scendono a 110px e il NOME viene compresso
+     a zero — resta il valore senza sapere di che cosa. Impilate in tre
+     righe si leggono, ma la carta arriva a 239px e da sola sbilancia la
+     colonna di 170. Mandando il valore a capo si torna a 166px e i nomi
+     restano interi: è l'unica delle tre forme che sta in mezza colonna
+     senza né rompersi né pesare. */
   .og-modlista {
-    flex-direction: row;
-    gap: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--s2);
   }
-  .og-modlista li { flex: 1; min-width: 0; }
   .og-modriga {
-    min-height: 52px;
-    padding: 0 var(--s4);
-    box-shadow: inset -1px 0 0 var(--filo);
+    flex-wrap: wrap;
+    align-content: center;
+    gap: 7px;
+    min-height: 0;
+    padding: var(--s3);
+    border-radius: var(--r-interno);
+    background: var(--scheda-alta);
+    box-shadow: none;
   }
-  .og-modlista li:first-child .og-modriga { padding-left: 0; }
-  .og-modlista li:last-child .og-modriga { padding-right: 0; box-shadow: none; }
-  .og-modfreccia { display: flex; }
+  /* Il valore su una riga tutta sua: è il numero della tessera, e in fila
+     col nome sarebbe il secondo di due testi corti che si contendono
+     novanta pixel. */
+  .og-modstato { flex: 1 0 100%; font-size: var(--t-17); }
 }
