@@ -332,3 +332,69 @@ Se la serie è fatta di sole giornate parziali il numero è grigio e la frase
 lo dice («3 giorni di fila, ma nessuno completo»): i complimenti arrivano
 solo quando sono guadagnati. In alto a destra il rapporto vero della
 settimana, spuntate su attese — con i dati veri, 14/36 invece di 7/7.
+
+---
+
+## 2 settembre — la home: l'avanzo ha un posto suo (chat ATLAS)
+
+`moduli/oggi/`. Il difetto per cui «ogni volta che cambia la roba nelle
+carte si sminchia» non era una serie di sviste: era che la colonna di
+sinistra aveva **una carta sola**.
+
+Le due colonne hanno contenuto indipendente e variabile. Misurato su sei
+scenari di contenuto, lo scarto fra le loro altezze va da 26 a 319px **e
+cambia segno**. Con una carta sola a sinistra quell'avanzo poteva solo
+finire dentro Finanze o sotto Finanze, cioè nei due punti in cui si legge
+come un guasto — e infatti in quattro tentativi si è solo spostato.
+
+Adesso: **due colonne di due carte**, `I moduli` scende da sotto la griglia
+dentro la colonna di sinistra, e in mezzo a ogni colonna c'è una **molla**
+che si allunga fino a 76px. Lo spazio fra due carte è spazio che ci si
+aspetta di trovare. Oltre il tetto, il resto torna a essere uno scalino in
+fondo alla colonna più corta, che però non ha più la striscia sotto a
+fargli da riga.
+
+Due cose emerse strada facendo, utili anche altrove:
+
+- **la striscia a tre celle non sta in mezza colonna.** A 1000px di finestra
+  le celle scendono a 110px e il *nome* del modulo viene compresso a zero:
+  restava il valore senza sapere di che cosa. Ora sono tessere col valore a
+  capo, e la carta passa da 239 a 158px.
+- **gli `order` del telefono restavano attivi da scrivania.** Rimetterli a 0
+  con `.og-col > *` non basta: pesa meno di `.og-col-dx > .og-resta` e
+  perde. Stanno in un `max-width`.
+
+Verificato su 6 scenari x 3 larghezze: colonne sempre allineate in cima,
+sotto l'ultimo contenuto di ogni carta sempre e solo i 20px del padding,
+scalino residuo fra 0 e 137px.
+
+## 2 settembre — i bip di Mobilità (chat ATLAS, **fuori perimetro**)
+
+⚠️ Ho toccato `moduli/mobilita/engine.js`, che è della chat Mobilità. Su
+richiesta diretta dell'utente («i suoni per mobilità non funzionano, fix
+permanente»). Nessun altro file di Mobilità è stato toccato, e `engine.js`
+non è fra quelli che il briefing dice di ricopiare da
+`mobility_to_consider/js/`, quindi la modifica non è a rischio di essere
+sovrascritta da un ricopiaggio.
+
+**Il commento nel file diceva il vero e la causa era un'altra.** Il percorso
+del gesto era corretto (`avvia()` parte dentro il click su «Inizia»,
+`AudioContext` in stato `running`), ma su iOS il Web Audio sta nella
+categoria audio "ambient", che **l'interruttore Silenzioso azzittisce**. Un
+contesto perfettamente sbloccato resta muto con la levetta su silenzioso —
+ed è così che si tiene il telefono mentre si fa mobilità.
+
+I bip passano da elementi `<audio>`, che stanno in "playback" e ignorano la
+levetta. Le clip sono cinque WAV **generati in JS** e tenuti come data URI
+(32 KB in tutto): un asset esterno voleva dire una fetch che offline può
+fallire e cinque file da versionare nel guscio. Il Web Audio resta come
+ripiego se il browser rifiuta il `play()`.
+
+Lo sblocco è in due passaggi perché il permesso su iOS è **per elemento**:
+al primo tocco sulla pagina le clip si armano **mute**, e al tocco su
+«Inizia» si riarmano non mute fermandole nello stesso istante — se si
+aspettasse la conferma del browser si sentirebbero cinque note in faccia.
+
+Non ho potuto provare su iPhone da qui. Verificato: i WAV si decodificano
+alle durate esatte, e in una sequenza 3-2-1-via partono 5 `play()` su 5,
+non muti, da timer.
