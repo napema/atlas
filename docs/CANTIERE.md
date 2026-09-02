@@ -435,3 +435,31 @@ verificato campo per campo.
    fondono per record. **Vanno portati fuori anche gli altri cinque**, o
    almeno `rules` e `config.checks`, che sono quelli che si accumulano nel
    tempo e che perderli fa più male. → richiesta aperta per la chat Finanze.
+
+## 2 settembre, tarda sera — «Questo mese» non era un mese (chat ATLAS)
+
+La carta delle categorie si intitolava «Questo mese» e mostrava il **ciclo
+dello stipendio** (21 → 20), mentre la carta subito sotto chiamava la stessa
+finestra «questo ciclo». Due nomi per la stessa cosa, e chi legge non ha modo
+di sapere quale sta guardando.
+
+Il 2 settembre la differenza non è un dettaglio: nel ciclo aperto il 21
+agosto ci sono **26 uscite su 27 datate agosto** (656,59 €) e una sola di
+settembre (12,46 €). «Questo mese: 168 € di cibo fuori» era agosto.
+
+Adesso la carta si chiama «Le categorie» e ha due viste, **Ciclo** (default)
+e **Mese solare**, con sotto la riga che dice quale conta e perché — più il
+nome del profilo di budget, che spiega da dove escono numeri come «50 €» su
+Casa e utenze. Aggiunte `categorieTra()` e `categorieDelMese()` in
+calcolo.js; `categorieDelCiclo()` è ora un involucro della prima.
+
+**Il profilo NON si tocca.** Il ciclo 21 ago–20 set usa il profilo Agosto
+perché `chiaveProfilo` guarda il mese d'inizio, e sembrava sbagliato — due
+terzi del ciclo sono settembre. Verificato sui dati veri: le spese di quel
+ciclo stanno quasi tutte negli undici giorni di agosto, cioè dove il profilo
+ferie ha senso. Passare a Regime avrebbe portato Auto da 238/300 a 238/120.
+Era una correzione plausibile e sbagliata, ed è la seconda della giornata
+che i dati veri hanno fermato prima che partisse.
+
+Spedito dentro il commit 20b8cd8 insieme al lavoro sull'icona: era da tenere
+separato, prefisso `finanze:`.
