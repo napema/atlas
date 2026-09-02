@@ -398,3 +398,50 @@ aspettasse la conferma del browser si sentirebbero cinque note in faccia.
 Non ho potuto provare su iPhone da qui. Verificato: i WAV si decodificano
 alle durate esatte, e in una sequenza 3-2-1-via partono 5 `play()` su 5,
 non muti, da timer.
+
+## 2 settembre — il saldo che non si muoveva (chat ATLAS, **fuori perimetro**)
+
+⚠️ Toccati `moduli/finanze/{calcolo,dati,viste,stile.css}`, perimetro della
+chat Finanze, su segnalazione diretta dell'utente: «mi dice che posso
+spendere tot su un saldo di sette giorni fa, e nel frattempo sono uscite
+robe da quel pocket che avevo pure segnato».
+
+**Il modello era giusto, il ripiego no.** `saldoPocket` è
+`ancora + movimenti da ancoraDa in poi`. Quando `ancoraDa` manca si
+ricadeva su `config.pocketDa`, che è **la data in cui QUEL dispositivo ha
+migrato**: un valore locale, diverso fra telefono e PC, che non c'entra
+niente con quando hai contato i soldi. Reinstallando l'app sul telefono
+`pocketDa` diventa oggi, e da lì in poi il saldo mostrato è l'ancora della
+settimana prima più i soli movimenti di oggi. Sotto ancora — senza nemmeno
+`pocketDa` — si finiva su `"9999-12-31"`, cioè nessun movimento conta più e
+il saldo resta fermo per sempre.
+
+Misurato su uno stato di prova (ancora 265,43 € di sette giorni fa, 92 € di
+uscite segnate da allora):
+
+| caso | prima | dopo | errore |
+|---|---|---|---|
+| `ancoraDa` assente, dispositivo migrato oggi | 256,43 € | 173,43 € | **83 €** |
+| `ancoraDa` e `pocketDa` assenti | 265,43 € (congelato) | 173,43 € | **92 €** |
+| `ancoraDa` presente (caso sano) | 173,43 € | 173,43 € | — |
+
+`dataAncora(p)` è ora l'unico posto dove si decide da quando contare, e il
+ripiego è **il giorno in cui il saldo è stato scritto**, che `up` registra
+già e che viaggia col record invece di dipendere dal dispositivo. Migrazione
+v7 che rende l'ancora esplicita dove manca, senza alzare `up` (stessa
+ragione del v6: una supposizione locale deve perdere contro una scrittura
+vera).
+
+Due cose trovate per strada:
+
+- **il saldo di ING si scriveva senza spostare l'ancora**
+  (`scriviPocket("ing", { saldo })`), quindi i giroconti fatti dall'ancora
+  in poi venivano risottratti sopra il numero appena copiato dall'estratto
+  conto. Ora passa da `riancoraPocket` come il foglio dei saldi.
+- **«Dove sono i soldi» adesso mostra da dove viene il numero**: ancora,
+  data, e quanto si è mosso da allora. Finché le due metà restavano
+  invisibili non c'era modo di accorgersi che la seconda era ferma.
+
+Resta da confermare **sui dati veri** quale dei due casi fosse il suo: nel
+JSON di «Esporta per l'analisi» i campi sono `pockets[].ancora` e
+`ancoraDal`.

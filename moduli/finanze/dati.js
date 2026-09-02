@@ -292,11 +292,24 @@ export const SOGLIE_PREDEFINITE = {
  * record che non sono cambiati. È l'unico modo sicuro di far evolvere uno
  * schema quando i dati veri sono già su due dispositivi.
  */
+/**
+ * La data LOCALE di un timestamp.
+ *
+ * `toISOString()` da solo dà l'UTC: un saldo scritto alle 00:30 di martedì
+ * in Italia è ancora lunedì per l'UTC, e l'ancora finirebbe un giorno
+ * indietro — cioè conterebbe un giorno di movimenti di troppo.
+ */
+const isoLocale = (ms) => {
+  const d = new Date(ms);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
+
 export function migra() {
   const s = stato();
   const serve =
     !Array.isArray(s.pockets) || !Array.isArray(s.ricorrenti) ||
-    !s.soglie || s.config?.giornoStipendio == null || (s.v || 0) < 6;
+    !s.soglie || s.config?.giornoStipendio == null || (s.v || 0) < 7;
   if (!serve) return;
 
   casella.aggiorna((st) => {
@@ -392,6 +405,27 @@ export function migra() {
     if (st.config.ricarica == null) st.config.ricarica = { giorno: 1, ora: "08:00" };
     if (!Array.isArray(st.previsti)) st.previsti = previstiIniziali();
     st.v = 6;
+
+    /* --------------------------------------------------------------- v7 --
+       L'ancora mancante vale il giorno in cui il SALDO è stato scritto.
+
+       Il v6 la faceva valere `config.pocketDa`, che è la data in cui QUEL
+       dispositivo ha migrato: un valore locale, diverso fra telefono e PC,
+       che non c'entra niente con quando hai contato i soldi. Reinstallando
+       l'app sul telefono `pocketDa` diventa oggi, e da lì in poi il saldo
+       mostrato è l'ancora della settimana prima più i soli movimenti di
+       oggi — tutto quello che avevi segnato nel mezzo smette di contare, in
+       silenzio, e l'app ti dice che puoi spendere soldi che non ci sono.
+
+       `up` quella data ce l'ha già: è il momento in cui il saldo è stato
+       scritto, e viaggia col record invece di dipendere dal dispositivo.
+
+       Come nel v6, `up` NON si alza: è una supposizione fatta in locale e
+       deve perdere contro qualunque ancora scritta davvero. */
+    for (const p of st.pockets || []) {
+      if (!p.ancoraDa && p.up) p.ancoraDa = isoLocale(p.up);
+    }
+    st.v = 7;
   });
 
   // Gli aggiustamenti chiesti il 23 agosto 2026. Stanno FUORI dal blocco dei

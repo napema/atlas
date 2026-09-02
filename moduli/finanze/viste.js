@@ -29,7 +29,7 @@ import {
   mediaPerGiornoSettimana, ultimiSeiMesi, sottocategorieDelMese, categoriaSuSeiMesi,
   movimentiSottocategoria, contestoMovimento, quadratura,
   cicloDi, spostaCiclo, nomeCiclo, movimentiDelCiclo, categorieDelCiclo,
-  settimana, giornata, saldoPocket, deltaPocket, pocketConSaldi, inArrivo, comeSpendi, sforamenti,
+  settimana, giornata, saldoPocket, deltaPocket, dataAncora, pocketConSaldi, inArrivo, comeSpendi, sforamenti,
   alert, spesoOggi, importoRicorrente, prossimaScadenza, esitoCheck, coperturaDi, comeEvento,
 } from "./calcolo.js";
 import { graficoCumulato, graficoCiambella, graficoBarre } from "./grafici.js";
@@ -591,12 +591,28 @@ function dovSonoISoldi(azioni) {
     el("div", { class: "micro", testo: "Dove sono i soldi" }),
     el("ul", { class: "fi-pocket-lista" }, pk.map((p) => {
       const sotto = p.id === "ing" && p.saldoVero > 0 && p.saldoVero < soglie.ingMinimo;
+      /* DA DOVE VIENE IL NUMERO, scritto sotto il numero.
+
+         Il saldo è `ancora + movimenti da quella data`, e finché le due
+         parti restavano invisibili non c'era modo di accorgersi che la
+         seconda era ferma: si leggeva un saldo plausibile, vecchio di una
+         settimana, e l'app diceva di poter spendere soldi già usciti. Con
+         la data e il delta in chiaro, un'ancora che non si muove si vede
+         al primo sguardo. */
+      const da = dataAncora(p);
+      const mosso = p.saldoVero - (p.saldo || 0);
+      const provenienza = da >= "9999"
+        ? "saldo mai ancorato — tocca per sistemarlo"
+        : `${euro(p.saldo || 0, { tondo: true })} il ${dataUmana(da)}`
+          + (mosso ? ` · ${mosso < 0 ? "−" : "+"}${euro(Math.abs(mosso))} da allora` : " · nessun movimento da allora");
+
       const riga = el("li", { class: "fi-pocket-riga" + (sotto ? " sotto" : "") }, [
         el("span", { class: "fi-pocket-nome", testo: p.nome }),
         el("span", { class: "fi-pocket-saldo num", testo: euro(p.saldoVero) }),
         el("span", { class: "fi-pocket-nota", testo: sotto
           ? "sotto il minimo di sicurezza"
           : (nota[p.id] || TIPI_POCKET[p.tipo]?.nome || "") }),
+        el("span", { class: "fi-pocket-conto", testo: provenienza }),
       ]);
       // ING lo si aggiorna a mano: è l'unico saldo che l'app non può sapere.
       if (p.external) {
@@ -1973,7 +1989,17 @@ export function apriSaldoING(ridisegna) {
     }),
     el("button", {
       class: "btn pieno grande", type: "button", testo: "Salva",
-      onClick: () => { scriviPocket("ing", { saldo: centesimi(testo) }); avviso("Saldo aggiornato."); chiudiFoglio(); },
+      // Lo stesso giro del foglio dei saldi, e per la stessa ragione: qui si
+      // scriveva `saldo` e basta, lasciando l'ancora dov'era. Il saldo di un
+      // pocket però è `ancora + movimenti da quella data`, quindi i giroconti
+      // già fatti da allora venivano risottratti sopra il numero appena
+      // copiato dall'estratto conto. Si scrive l'ancora, non il saldo.
+      onClick: () => {
+        const oggi = oggiISO();
+        riancoraPocket("ing", centesimi(testo) - deltaPocket("ing", oggi), oggi);
+        avviso("Saldo aggiornato.");
+        chiudiFoglio();
+      },
     }),
   ]);
 }
