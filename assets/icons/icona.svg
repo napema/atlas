@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ATLAS">
+  <title>ATLAS</title>
+  <!--
+    Il marchio: la A di ATLAS, col vertice tagliato piatto.
+
+    QUESTO FILE CAMBIA DA SÉ COL TEMA. Il `prefers-color-scheme` sta qui
+    dentro e non nella pagina: una favicon SVG il browser la disegna col
+    CSS che si porta appresso, quindi il file è uno solo e si adatta anche
+    nella striscia delle schede, dove nessun foglio di stile nostro arriva.
+    I PNG accanto sono il ripiego per chi le SVG in favicon non le legge.
+
+    Perché una lettera e non un simbolo. Le prime prove erano tre archi che
+    chiudevano un anello — i tre moduli, un guscio solo, la frase con cui
+    comincia il CLAUDE.md. Disegnata però era la rotella del «sto
+    caricando», che è l'ultima cosa che deve sembrare l'icona di un'app, e
+    a 16px si impastava in una macchia. Una lettera a 16px si legge ancora.
+
+    Il vertice piatto non è un vezzo: una A con la punta acuta, a 16px e con
+    le punte tonde, diventa un triangolo. Il taglio le dà una silhouette
+    riconoscibile anche quando è alta otto pixel.
+
+    I due blu sono quelli dei token — #3fa9ff sul nero, #0964c2 sul chiaro:
+    l'icona è la prima cosa che si vede dell'app e non può essere di
+    un'altra famiglia.
+
+    L'ingombro dell'inchiostro sta entro 197px dal centro, contro i 205
+    della zona sicura di un ritaglio circolare: lo stesso disegno regge
+    anche come icona `maskable` di Android, che taglia un cerchio.
+  -->
+  <style>
+    .fondo { fill: #f2f2f5; }
+    .segno { stroke: #0964c2; }
+    @media (prefers-color-scheme: dark) {
+      .fondo { fill: #0f0f12; }
+      .segno { stroke: #3fa9ff; }
+    }
+  </style>
+
+  <rect class="fondo" width="512" height="512" rx="112"/>
+  <path class="segno"
+        d="M232 136 H280 L356 376 M232 136 L156 376 M192 312 H320"
+        fill="none"
+        stroke-width="58"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>

@@ -16,8 +16,21 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ATLAS">
+<!-- L'icona della scheda cambia col tema, e il lavoro lo fa il file, non
+     questa pagina: `icona.svg` si porta dentro il proprio
+     `prefers-color-scheme`. È l'unico modo perché funzioni davvero — nella
+     striscia delle schede il nostro CSS non arriva, e con il tema di
+     sistema che cambia il browser ridisegna la SVG da sé.
+     I due PNG sono per chi le SVG in favicon non le legge: lì la scelta la
+     fa il `media`, che è un ripiego più grezzo ma buono. L'ordine conta,
+     chi capisce la SVG si ferma alla prima riga. -->
+<link rel="icon" type="image/svg+xml" href="./assets/icons/icona.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon-chiara.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon-scura.png" media="(prefers-color-scheme: dark)">
+<!-- L'icona sulla home dell'iPhone invece è una sola e fissa: iOS non
+     guarda né SVG né `media`, e l'icona di un'app installata non cambia
+     col tema. Quella è la versione scura, che è l'identità dell'app. -->
 <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
-<link rel="icon" href="./assets/icons/icon-192.png">
 
 <!-- I fogli di stile sono due e in quest'ordine: i token prima, sempre. -->
 <link rel="stylesheet" href="./styles/tokens.css">
