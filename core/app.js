@@ -55,7 +55,39 @@ function allineaBarraDiStato() {
 function applicaTemaSalvato() {
   const t = localStorage.getItem("atlas.tema");
   if (t === "chiaro" || t === "scuro") document.documentElement.dataset.tema = t;
+  dipingiIcona();
 }
+
+/* L'ICONA DELLA SCHEDA LA CAMBIA IL JAVASCRIPT, e non è per capriccio.
+
+   La prima versione era una SVG sola con dentro il proprio
+   `prefers-color-scheme`. Sulla carta è la soluzione elegante — un file, e
+   si adatta da sé — ma non funziona: le SVG usate come favicon Chrome le
+   disegna UNA VOLTA e non le ridisegna quando il tema di sistema cambia,
+   quindi resta congelata sulla versione chiara. L'attributo `media` su
+   `<link rel="icon">` è supportato a macchia di leopardo e non copre
+   comunque il caso che conta di più qui, cioè il tema scelto DENTRO ATLAS,
+   che di `prefers-color-scheme` non sa niente.
+
+   Quindi due file gemelli e uno scambio esplicito. La sorgente della
+   verità è il tema effettivo dell'app: se hai scelto chiaro o scuro in
+   Impostazioni comanda quello, altrimenti il sistema. */
+const schemaScuro = window.matchMedia?.("(prefers-color-scheme: dark)");
+
+export function dipingiIcona() {
+  const link = document.getElementById("favicona");
+  if (!link) return;
+  const scelto = document.documentElement.dataset.tema;
+  const scuro = scelto === "scuro" ? true
+    : scelto === "chiaro" ? false
+    : Boolean(schemaScuro?.matches);
+  const voluto = `./assets/icons/icona-${scuro ? "scura" : "chiara"}.svg`;
+  // Riscrivere lo stesso href fa ricaricare l'icona a ogni ridisegno: la
+  // scheda sfarfalla e la rete lavora per niente.
+  if (!link.getAttribute("href").startsWith(voluto)) link.setAttribute("href", voluto);
+}
+
+schemaScuro?.addEventListener?.("change", dipingiIcona);
 
 // ------------------------------------------------------------- stato sync --
 

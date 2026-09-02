@@ -1126,10 +1126,22 @@ export function alert(iso = oggiISO()) {
 }
 
 /** Le categorie del ciclo con speso e budget, dal profilo del mese d'inizio. */
-export function categorieDelCiclo(ciclo) {
-  const p = profiloDi(ciclo.indice);
+/**
+ * Le categorie di una finestra qualunque, col budget del profilo che le
+ * compete.
+ *
+ * `chiaveProfilo` decide fra Agosto e Regime guardando il mese: per il mese
+ * solare è se stesso, per il ciclo è il mese in cui è COMINCIATO. Sembra
+ * discutibile — il ciclo 21 ago–20 set è per due terzi settembre — e invece
+ * regge, perché le spese non si distribuiscono uniformemente: in quel ciclo
+ * 26 uscite su 27 cadono negli undici giorni di agosto. Il profilo Agosto
+ * esiste per le ferie, e le ferie stanno lì.
+ */
+export function categorieTra(da, a, chiaveMese) {
+  const p = profiloDi(chiaveMese);
   const speso = {};
-  for (const m of movimentiDelCiclo(ciclo)) {
+  for (const m of movimentiVivi()) {
+    if (m.data < da || m.data > a) continue;
     if (m.tipo !== "out" || m.ecc) continue;
     speso[m.cat] = (speso[m.cat] || 0) + importoEffettivo(m);
   }
@@ -1138,6 +1150,15 @@ export function categorieDelCiclo(ciclo) {
     speso: speso[c.id] || 0,
     budget: Math.round((p.b[c.id] || 0) * 100),
   }));
+}
+
+export const categorieDelCiclo = (ciclo) => categorieTra(ciclo.da, ciclo.a, ciclo.indice);
+
+/** Le stesse categorie sul mese solare, per chi vuole guardarle così. */
+export function categorieDelMese(mese) {
+  const [y, m] = mese.split("-").map(Number);
+  const ultimo = new Date(y, m, 0).getDate();
+  return categorieTra(`${mese}-01`, `${mese}-${String(ultimo).padStart(2, "0")}`, mese);
 }
 
 /* ================================================== il check giornaliero ==

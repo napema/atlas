@@ -28,7 +28,7 @@ import {
   nomeMese, autoCategoria, spostaMese, stessoGiornoMesePrima, statisticheDelMese,
   mediaPerGiornoSettimana, ultimiSeiMesi, sottocategorieDelMese, categoriaSuSeiMesi,
   movimentiSottocategoria, contestoMovimento, quadratura,
-  cicloDi, spostaCiclo, nomeCiclo, movimentiDelCiclo, categorieDelCiclo,
+  cicloDi, spostaCiclo, nomeCiclo, movimentiDelCiclo, categorieDelCiclo, categorieDelMese,
   settimana, giornata, saldoPocket, deltaPocket, pocketConSaldi, inArrivo, comeSpendi, sforamenti,
   alert, spesoOggi, importoRicorrente, prossimaScadenza, esitoCheck, coperturaDi, comeEvento,
 } from "./calcolo.js";
@@ -37,6 +37,15 @@ import { preparaImport, eseguiImport } from "./importa.js";
 import { scaricaAnalisi, copiaAnalisi } from "./esporta.js";
 
 const ETICHETTA_TIPO = Object.fromEntries(Object.entries(TIPI).map(([k, v]) => [k, v.nome]));
+
+/* Ciclo o mese solare nella carta delle categorie.
+
+   Sta in una variabile di modulo e non nello stato salvato, di proposito: è
+   una preferenza di lettura, non un dato. In `config` si sincronizzerebbe e
+   si fonderebbe a blocchi insieme al resto della configurazione, e per una
+   cosa che si sceglie con un dito non vale quel rischio. Il prezzo è che
+   riparte da «ciclo» a ogni avvio — che è anche la vista giusta. */
+let modoCategorie = "ciclo";
 
 /* ==================================================================== HOME
    Una domanda sola: posso spendere oggi, e quanto.
@@ -649,20 +658,47 @@ function dovSonoISoldi(azioni) {
 */
 
 function categorieDelCicloBlocco(ciclo, apriCat) {
-  const tutte = categorieDelCiclo(ciclo).filter((c) => c.budget > 0 || c.speso > 0);
+  const sezione = el("section", { class: "scheda fi-cat-ciclo" });
+  disegnaCategorie(sezione, ciclo, apriCat);
+  return sezione.firstChild ? sezione : null;
+}
+
+function disegnaCategorie(sezione, ciclo, apriCat) {
+  const perCiclo = modoCategorie === "ciclo";
+  const mese = oggiISO().slice(0, 7);
+  const tutte = (perCiclo ? categorieDelCiclo(ciclo) : categorieDelMese(mese))
+    .filter((c) => c.budget > 0 || c.speso > 0);
   const dellaCassa = tutte.filter((c) => CATEGORIE_CASSA.includes(c.id));
+  // `speso > 0` e non solo `budget > 0`: ordinando per consumo, a inizio
+  // finestra le due «peggiori» sono due categorie a zero, e due righe da
+  // «0 € / 185 €» non dicono niente e occupano il posto di quelle che
+  // parlano.
   const altre = tutte
-    .filter((c) => !CATEGORIE_CASSA.includes(c.id) && c.budget > 0)
+    .filter((c) => !CATEGORIE_CASSA.includes(c.id) && c.budget > 0 && c.speso > 0)
     .sort((a, b) => (b.speso / b.budget) - (a.speso / a.budget))
     .slice(0, 2);
   const mostrate = [...dellaCassa, ...altre];
-  if (!mostrate.length) return null;
+  if (!mostrate.length) { sezione.replaceChildren(); return; }
 
-  return el("section", { class: "scheda fi-cat-ciclo" }, [
+  const profilo = profiloDi(perCiclo ? ciclo.indice : mese).nome;
+
+  sezione.replaceChildren(...[
     el("div", { class: "fi-arrivo-testa" }, [
-      el("span", { class: "micro", testo: "Questo mese" }),
-      el("span", { class: "nota", testo: nomeCiclo(ciclo) }),
+      el("span", { class: "micro", testo: "Le categorie" }),
+      el("span", { class: "nota", testo: perCiclo ? nomeCiclo(ciclo) : nomeMese(mese) }),
     ]),
+
+    /* DUE FINESTRE, E SI DICE QUALE. La carta diceva «Questo mese» e
+       mostrava il ciclo dello stipendio: due nomi per la stessa cosa, con
+       la carta sotto che la chiamava «questo ciclo». Chi legge non ha modo
+       di sapere quale delle due sta guardando, e il 2 settembre la
+       differenza non è un dettaglio — nel ciclo aperto il 21 agosto ci
+       sono 656 € di spese di agosto e 12 € di settembre. */
+    segmenti([["ciclo", "Ciclo"], ["mese", "Mese solare"]], modoCategorie, (v) => {
+      modoCategorie = v;
+      disegnaCategorie(sezione, ciclo, apriCat);
+    }),
+
     el("ul", { class: "fi-catlista" }, mostrate.map((c) => {
       const f = c.budget > 0 ? c.speso / c.budget : 0;
       const oltre = c.budget > 0 && c.speso > c.budget;
@@ -682,6 +718,11 @@ function categorieDelCicloBlocco(ciclo, apriCat) {
         oltre ? "var(--male)" : f >= 0.85 ? "var(--avviso)" : coloreCat(c.id));
       return b;
     })),
+
+    // Quale delle due conta, detto una volta e non lasciato indovinare.
+    el("p", { class: "nota", testo: perCiclo
+      ? `Dal 21, il giorno dello stipendio: è la finestra su cui l'app fa tutti i conti. Budget del profilo ${profilo}.`
+      : `Mese solare, per confronto. I conti dell'app seguono il ciclo, non questo. Budget del profilo ${profilo}.` }),
   ]);
 }
 
