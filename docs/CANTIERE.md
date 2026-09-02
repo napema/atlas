@@ -398,3 +398,40 @@ aspettasse la conferma del browser si sentirebbero cinque note in faccia.
 Non ho potuto provare su iPhone da qui. Verificato: i WAV si decodificano
 alle durate esatte, e in una sequenza 3-2-1-via partono 5 `play()` su 5,
 non muti, da timer.
+
+## 2 settembre, sera — una migrazione ha riportato indietro `meta` (chat ATLAS)
+
+**Il guasto peggiore finora, e l'ho causato io.** Alzando la soglia della
+migrazione a `v < 7` (commit 72fe67f) ho fatto **rieseguire l'intero blocco
+di `migra()` su ogni dispositivo**. Su uno dei due lo stato locale di `meta`
+era in gran parte quello di fabbrica, e nella fusione ha vinto lui.
+
+La firma è inequivocabile: `profili.ago.cassaCats` è tornata **esattamente**
+ai tre valori di `CATEGORIE_CASSA`, e `rules` a zero. Sono i valori di
+`PREDEFINITO`, non un troncamento casuale.
+
+Perso fra le 19:52 e le 20:52: 17 regole apprese, 6 check giornalieri,
+`cassaCats` da 9 a 3, `pocketDa` dal 27 ago a oggi, e `previsti[0].pagatoIl`
+(la maxi rata, che è ricomparsa in «In arrivo»). **Non** perso: 191
+movimenti, 10 lapidi, 10 ricorrenti, i quattro saldi e le quattro ancore —
+identici da ieri sera.
+
+Ripristinato con una scrittura chirurgica su `finanze.json` (commit
+`adf69d7d` in atlas-dati): presi da `29e9e02d` i cinque campi persi, tenuto
+tutto il resto della versione corrente, `meta.up` portato ad adesso perché
+vinca su entrambi i dispositivi alla prima lettura. Riletto dal repo e
+verificato campo per campo.
+
+### Le due lezioni, che valgono per tutte le chat
+
+1. **Una migrazione che riscrive lo stato condiviso non si spedisce senza
+   aver prima letto il repo dati.** Il codice di `migra()` è idempotente
+   campo per campo, ma *rieseguirlo* riapre la porta alla fusione di `meta`,
+   e `meta` si fonde a blocchi.
+2. **`meta` resta il punto debole.** `cats`, `profili`, `rules`, `config` e
+   `soglie` si fondono sul confronto di un solo `metaUp`: un dispositivo con
+   lo stato di fabbrica e un `metaUp` fresco cancella il lavoro dell'altro.
+   Movimenti, ricorrenti, previsti e pocket sono già usciti da lì e si
+   fondono per record. **Vanno portati fuori anche gli altri cinque**, o
+   almeno `rules` e `config.checks`, che sono quelli che si accumulano nel
+   tempo e che perderli fa più male. → richiesta aperta per la chat Finanze.
