@@ -639,38 +639,11 @@ export const movimentiDelCiclo = (ciclo) =>
  * espliciti verso gli altri pocket, perché quelli li fai tu dall'app e
  * l'estratto conto li vedrà dopo.
  */
-/**
- * Da quando contare i movimenti su un pocket. UN POSTO SOLO, e prima erano
- * due: `saldoPocket` e `settimana` avevano la stessa catena copiata, e una
- * catena copiata è una catena che prima o poi si scorda in un terzo posto.
- *
- * IL RIPIEGO ERA IL BUCO. Senza `ancoraDa` si ricadeva su
- * `config.pocketDa`, che è la data in cui QUEL dispositivo ha migrato: un
- * valore locale, diverso da telefono a PC, che non ha niente a che vedere
- * con quando hai contato i soldi. Reinstallando l'app sul telefono
- * `pocketDa` diventa oggi, e da lì in poi il saldo mostrato è l'ancora di
- * una settimana fa più i movimenti di oggi soltanto: tutto quello che avevi
- * segnato nel mezzo smette di contare, in silenzio. Sotto — senza nemmeno
- * `pocketDa` — si finiva su "9999-12-31", cioè nessun movimento conta mai
- * più e il saldo resta fermo per sempre.
- *
- * `up` invece dice esattamente quello che serve: è il momento in cui quel
- * saldo è stato scritto, viaggia col record e non dipende dal dispositivo.
- * Un'ancora senza data è un saldo scritto quel giorno lì.
- */
-export function dataAncora(p) {
-  if (!p) return "9999-12-31";
-  if (p.ancoraDa) return p.ancoraDa;
-  if (p.up) return isoDi(new Date(p.up));
-  // Mai scritto (`up: 0`): il saldo è zero e sommarci tutta la storia
-  // darebbe un totale, non un saldo. Meglio fermo che sbagliato.
-  return stato().config?.pocketDa || "9999-12-31";
-}
-
 export function saldoPocket(id) {
   const p = (stato().pockets || []).find((x) => x.id === id);
   if (!p) return 0;
-  return (p.saldo || 0) + deltaPocket(id, dataAncora(p));
+  const da = p.ancoraDa || stato().config?.pocketDa || "9999-12-31";
+  return (p.saldo || 0) + deltaPocket(id, da);
 }
 
 /**
@@ -748,7 +721,7 @@ export function settimana(iso = oggiISO()) {
   // toccano più il saldo, e sommarli qui gonfierebbe il disponibile con
   // soldi già spesi prima che l'app cominciasse a guardare.
   const p = (stato().pockets || []).find((x) => x.id === "principale");
-  const ancora = dataAncora(p);
+  const ancora = p?.ancoraDa || stato().config?.pocketDa || null;
   const daQuando = ancora && ancora > isoDi(lunedi) ? ancora : isoDi(lunedi);
 
   const speso = movimentiVivi()

@@ -1080,15 +1080,3 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
    micro-etichetta finiva appiccicata al bordo del riquadro sopra e sembrava
    la sua ultima riga invece del titolo di un campo. */
 .fi-campo-staccato { margin-top: var(--s5); }
-
-/* Da dove viene il saldo di un pocket: ancora, data, e quanto si è mosso da
-   allora. Sta sotto la nota, più tenue del nome ma leggibile — è la riga che
-   permette di accorgersi che l'ancora è vecchia senza aprire niente. */
-.fi-pocket-riga { grid-template-areas: "nome saldo" "nota nota" "conto conto"; }
-.fi-pocket-conto {
-  grid-area: conto;
-  margin-top: 1px;
-  font-size: var(--t-11);
-  color: var(--testo-4);
-  font-variant-numeric: tabular-nums;
-}
