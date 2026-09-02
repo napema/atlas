@@ -450,6 +450,35 @@ export function apriInArrivo(v, ridisegna) {
       (v.origine === "previsto"
         ? "Il pagamento previsto non torna più."
         : "Il ricorrente resta, e riparte dalla prossima scadenza.") }),
+
+    /* LA SECONDA VIA: segnare senza registrare.
+
+       «Paga» fa due cose insieme — il movimento e la spunta — ed è giusto
+       che le faccia insieme, perché nel caso normale sono lo stesso gesto.
+       Ma le due cose si possono anche scollare: una spunta persa in una
+       fusione fa ricomparire in «In arrivo» una scadenza il cui movimento è
+       già in archivio, e ripagarla dall'unico pulsante disponibile
+       significa contare la stessa uscita due volte.
+
+       Sta staccata e in basso, con l'aria di una riparazione e non di
+       un'azione di tutti i giorni: nel caso normale il pulsante giusto
+       resta quello sopra. */
+    el("div", { class: "fi-gia-pagata" }, [
+      el("button", {
+        class: "btn nudo", type: "button",
+        testo: "Era già pagata, non registrare niente",
+        onClick: () => {
+          if (v.origine === "previsto") segnaPrevistoPagato(v.id, v.quando);
+          else segnaScadenzaPagata(v.id, v.quando);
+          chiudi();
+          avviso("Segnata come pagata. Nessun movimento aggiunto.");
+          ridisegna?.();
+        },
+      }),
+      el("p", { class: "nota", testo:
+        "Toglie la voce da «In arrivo» e basta: il saldo non si muove. "
+        + "Da usare quando il movimento c'è già in archivio." }),
+    ]),
   ]);
 }
 

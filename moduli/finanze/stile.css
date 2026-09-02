@@ -1080,3 +1080,14 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
    micro-etichetta finiva appiccicata al bordo del riquadro sopra e sembrava
    la sua ultima riga invece del titolo di un campo. */
 .fi-campo-staccato { margin-top: var(--s5); }
+
+/* La riparazione in fondo al foglio di una scadenza: si vede solo se la si
+   cerca. Un filo sopra la stacca dal pulsante vero, che resta quello. */
+.fi-gia-pagata {
+  margin-top: var(--s5);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--filo);
+  text-align: center;
+}
+.fi-gia-pagata .btn { color: var(--testo-3); font-size: var(--t-13); }
+.fi-gia-pagata .nota { margin-top: 2px; }
