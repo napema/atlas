@@ -251,14 +251,41 @@ export function avviaSync() {
         }
 
         const rm = remoto.meta;
+
+        /* QUELLO CHE SI ACCUMULA SI SOMMA SEMPRE, FUORI DAL CANCELLO.
+
+           `metaUp` è un cancello per le impostazioni, e per quelle va bene:
+           il profilo, le categorie, le soglie sono valori che si
+           sostituiscono, e vince chi ha scritto per ultimo. Ma il
+           vocabolario appreso e i check giornalieri non sono impostazioni:
+           sono STORIA, si aggiungono e non si tolgono mai. Metterli dietro
+           lo stesso cancello vuol dire che basta un `metaUp` più fresco per
+           cancellarli, e un `metaUp` più fresco lo produce qualunque
+           scrittura — perfino salvare i saldi.
+
+           È successo il 2 settembre, due volte in un'ora. La seconda con
+           questa sequenza: alle 21:17 il repo aveva 17 regole e 6 check,
+           alle 21:22 il telefono ha salvato i saldi (che alza `metaUp` in
+           locale, prima ancora di leggere), alle 21:24 ha letto e ha
+           RIFIUTATO il blocco remoto perché «vecchio», alle 21:35 ha
+           rispedito il suo, che di regole ne aveva zero. Una gara che chi
+           ha i dati buoni perde sempre.
+
+           Sommandoli sempre, un dispositivo con la memoria vuota non può
+           più cancellare niente: al massimo non aggiunge. L'unione non
+           toglie mai una chiave, quindi non c'è un caso in cui questo
+           faccia perdere qualcosa. */
+        if (rm?.rules) s.rules = { ...s.rules, ...rm.rules };
+        if (rm?.config?.checks) {
+          s.config.checks = { ...rm.config.checks, ...(s.config.checks || {}) };
+        }
+
         if (rm && (rm.up || 0) > (s.metaUp || 0)) {
           if (rm.cats?.length) s.cats = rm.cats;
           if (rm.profili) s.profili = rm.profili;
-          // Il vocabolario appreso si SOMMA invece di essere sostituito:
-          // quello che insegni su un dispositivo deve saperlo anche l'altro,
-          // e vince chi ha scritto per ultimo solo sulle chiavi in comune.
-          if (rm.rules) s.rules = { ...s.rules, ...rm.rules };
-          if (rm.config) s.config = { ...s.config, ...rm.config };
+          // `checks` sopravvive allo spread: l'ha appena unito la riga di
+          // sopra, e qui il blocco remoto lo riporterebbe a quelli suoi.
+          if (rm.config) s.config = { ...s.config, ...rm.config, checks: s.config.checks };
           if (rm.soglie) s.soglie = { ...s.soglie, ...rm.soglie };
           s.metaUp = rm.up;
         }
