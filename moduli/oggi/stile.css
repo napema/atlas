@@ -439,19 +439,27 @@
      moduli» scende da sotto la griglia dentro la colonna di sinistra: due
      colonne di due carte, e in mezzo a ognuna una molla.
 
-     Adesso l'avanzo ha un posto suo, FUORI dalle carte e dentro la colonna:
-     lo spazio fra due carte è spazio che ci si aspetta di trovare, e non
-     somiglia a un guasto. Con un tetto, però. Fino a 76px le due colonne
-     finiscono sulla stessa riga e la molla si allunga; oltre, la molla si
-     ferma e il resto torna a essere uno scalino in fondo alla colonna più
-     corta — che lì non ha più niente sotto a fargli da riga, e si legge per
-     quello che è. Fra un gap di 200px in mezzo a una colonna e uno scalino
-     di 120 in fondo alla pagina, si sceglie il secondo. */
+     Adesso l'avanzo ha un posto suo, FUORI dalle carte e dentro la colonna.
+     Con un tetto BASSO, però, ed è la lezione di tre giri di correzioni.
+
+     Il tetto è stato 76, poi 120 per far quadrare le colonne dopo che la
+     carta di Finanze si è accorciata alla settimana. A 120 le colonne
+     finiscono quasi pari — ma fra «Resta da fare» e «Costanza» si apre una
+     fascia vuota più alta della carta piccola, e a quel punto non sembra
+     spazio: sembra una carta che manca. Il pareggio l'aveva pagato la
+     leggibilità.
+
+     A 28 la molla fa quello per cui serve — assorbe gli scarti piccoli, che
+     sono la maggior parte — e lascia che i grossi diventino uno scalino in
+     fondo alla colonna più corta. Sotto non c'è più niente a fargli da
+     riga, quindi si legge per quello che è: due colonne di lunghezza
+     diversa. Fra un vuoto in mezzo a una colonna e uno scalino in fondo
+     alla pagina si sceglie sempre il secondo. */
   .og-molla {
     display: block;
     flex: 1 1 0;
     min-height: var(--s4);
-    max-height: 120px;
+    max-height: 28px;
   }
   .og-costanza .og-serie-riga { margin-bottom: var(--s3); }
   .og-costanza .og-nota { margin-top: var(--s3); }
@@ -527,4 +535,14 @@
      col nome sarebbe il secondo di due testi corti che si contendono
      novanta pixel. */
   .og-modstato { flex: 1 0 100%; font-size: var(--t-17); }
+}
+
+/* Il calendario delle uscite, pieno o vuoto, sta staccato dai due numeri che
+   ha sopra. Senza, la riga «Niente in uscita entro domenica» si incolla a
+   «0 €» e si legge come la sua didascalia invece che come una voce a sé. */
+.og-soldi .og-cal { margin-top: var(--s3); }
+.og-cal-vuoto {
+  margin: var(--s3) 0 0;
+  font-size: var(--t-13);
+  color: var(--testo-3);
 }

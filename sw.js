@@ -14,8 +14,32 @@
  * che stanno in core/app.js. Il perché è scritto lì.
  */
 
-const VERSIONE = "atlas-v53";
+const VERSIONE = "atlas-v54";
 const GUSCIO = `guscio-${VERSIONE}`;
+
+/* I FILE PESANTI STANNO IN UNA CACHE CHE NON PORTA LA VERSIONE.
+   =========================================================================
+   `GUSCIO` ha il numero di versione nel nome, e all'attivazione si cancella
+   tutto ciò che non è il guscio corrente. È giusto per html, css e js — è
+   proprio così che il codice vecchio se ne va — ma lì dentro finivano anche
+   le due cose grosse dell'app:
+
+     · AppleColorEmoji.woff, 45 MB
+     · i video degli esercizi, una sessantina di MB messi da parte una
+       sessione alla volta
+
+   Cioè: OGNI RILASCIO le buttava via. Il 3 settembre ne ho fatti cinque in
+   una giornata, e da fuori si vedeva così — le emoji tornavano quelle di
+   Segoe, perché finché i 45 MB non erano riscaricati il `font-display:
+   swap` mostrava il ripiego. Non le avevo tolte: le stavo buttando via
+   cinque volte al giorno.
+
+   Questi file non cambiano mai a parità di nome, e quando cambiano cambia
+   il nome (`?v=` sulle icone). Quindi vivono in una cache loro, che
+   sopravvive ai rilasci.
+   ========================================================================= */
+const PESANTI = "atlas-pesanti-v1";
+const ePesante = (p) => /\.(woff2?|png|jpe?g|svg|ico|mp4|mkv|webp|avif)$/i.test(p);
 
 const DA_PRECARICARE = [
   "./",
@@ -89,10 +113,12 @@ const DA_PRECARICARE = [
 
 self.addEventListener("install", (e) => {
   e.waitUntil((async () => {
-    const c = await caches.open(GUSCIO);
+    const guscio = await caches.open(GUSCIO);
+    const pesanti = await caches.open(PESANTI);
     // addAll fallisce in blocco se un solo file manca: qui si va a uno a uno,
     // così un'icona rinominata non impedisce l'installazione.
-    await Promise.allSettled(DA_PRECARICARE.map((u) => c.add(new Request(u, { cache: "reload" }))));
+    await Promise.allSettled(DA_PRECARICARE.map((u) =>
+      (ePesante(u) ? pesanti : guscio).add(new Request(u, { cache: "reload" }))));
     self.skipWaiting();
   })());
 });
@@ -100,7 +126,7 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil((async () => {
     for (const k of await caches.keys()) {
-      if (k !== GUSCIO) await caches.delete(k);
+      if (k !== GUSCIO && k !== PESANTI) await caches.delete(k);
     }
     await self.clients.claim();
   })());
@@ -138,7 +164,7 @@ self.addEventListener("fetch", (e) => {
   if (url.pathname.includes("/mobilita/clip/")) {
     if (req.headers.has("range")) return;
     e.respondWith((async () => {
-      const c = await caches.open(GUSCIO);
+      const c = await caches.open(PESANTI);
       const salvata = await c.match(req);
       if (salvata) return salvata;
       const res = await fetch(req).catch(() => null);
@@ -152,7 +178,7 @@ self.addEventListener("fetch", (e) => {
   // i file pesanti ed è lì che l'offline si gioca davvero.
   if (/\.(woff2?|png|jpe?g|svg|ico)$/.test(url.pathname)) {
     e.respondWith((async () => {
-      const c = await caches.open(GUSCIO);
+      const c = await caches.open(PESANTI);
       const salvata = await c.match(req);
       if (salvata) return salvata;
       const res = await fetch(req).catch(() => null);
