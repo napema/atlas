@@ -423,7 +423,9 @@ const soldiVoce = (eti, num, nota) => el("div", { class: "og-soldi-voce" }, [
  */
 function calendario(voci) {
   if (!voci?.length) {
-    return el("p", { class: "og-cal-vuoto", testo: "Niente in uscita nei prossimi 30 giorni." });
+    // La finestra la decide Finanze — oggi è «fino a domenica» — e la home
+    // non la ricalcola: si limita a dirla con le stesse parole.
+    return el("p", { class: "og-cal-vuoto", testo: "Niente in uscita entro domenica." });
   }
   return el("ul", { class: "eventi og-cal" }, voci.map(voceEvento));
 }

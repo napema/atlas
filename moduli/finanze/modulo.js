@@ -18,7 +18,7 @@ import { casella, stato, movimentiVivi, migra, checkFatto } from "./dati.js";
 import {
   statistiche, budgetTotale, cassaSettimana, verdetto, meseDi, spostaMese,
   nomeMese, importoEffettivo, proiezione,
-  cicloDi, settimana, inArrivo, spesoOggi, ricorrentiDiOggi, alert, calendarioUscite,
+  cicloDi, settimana, inArrivo, spesoOggi, ricorrentiDiOggi, alert, calendarioUscite, giorniADomenica,
 } from "./calcolo.js";
 import {
   vistaHome, vistaMovimenti, vistaAnalisi, vistaSetup,
@@ -395,11 +395,17 @@ export default {
       spesoOggi: euro(speso, { tondo: true }),
       alGiorno: s.finita ? "—" : euro(s.alGiorno, { tondo: true }),
       prossima: prossimaUscita(iso),
-      // Le prossime uscite come voci di calendario. Sono la cosa che riempie
-      // la carta di Finanze in home, ed è giusto che la riempia questa: «cosa
-      // esce nei prossimi giorni» è il dato che cambia la risposta a «posso
-      // spendere stasera», e prima stava tutto in una riga sola.
-      calendario: calendarioUscite(iso, 6),
+      // Le uscite di QUESTA SETTIMANA, fino a domenica. Sono la cosa che
+      // riempie la carta di Finanze in home, ed è giusto che la riempia
+      // questa: «cosa esce prima di lunedì» è il dato che cambia la risposta
+      // a «posso spendere stasera».
+      //
+      // La settimana e non trenta giorni, perché la carta sta accanto al
+      // numero della settimana: due finestre diverse nella stessa carta
+      // fanno sembrare che i conti non tornino. I trenta giorni restano
+      // dentro Finanze, in «In arrivo», che è la schermata fatta per
+      // guardare più in là.
+      calendario: calendarioUscite(iso, 6, giorniADomenica(iso)),
 
       // Il check entra nella checklist della home solo dal pomeriggio: è un
       // gesto di chiusura, e chiederlo alle otto del mattino vuol dire

@@ -1006,8 +1006,18 @@ const euEvento = (c) => (c || 0) % 100 === 0
       { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 
 /** Le prossime `quante` uscite, già pronte da disegnare. Per la home. */
-export const calendarioUscite = (iso = oggiISO(), quante = 3) =>
-  inArrivo(30, iso).voci.slice(0, quante).map(comeEvento);
+/**
+ * Quanti giorni mancano a domenica, oggi compreso.
+ *
+ * Serve alla carta della home, che guarda LA SETTIMANA e non un numero
+ * fisso di giorni: «cosa esce prima di lunedì» è una domanda che ha una
+ * risposta, «cosa esce nei prossimi 14 giorni» è una finestra che scivola e
+ * non coincide mai con niente.
+ */
+export const giorniADomenica = (iso = oggiISO()) => 6 - ((daISO(iso).getDay() + 6) % 7);
+
+export const calendarioUscite = (iso = oggiISO(), quante = 3, giorni = 30) =>
+  inArrivo(giorni, iso).voci.slice(0, quante).map(comeEvento);
 
 /** Basta il pocket per sapere se una singola voce è coperta. */
 export function coperturaDi(voce) {

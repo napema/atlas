@@ -62,7 +62,10 @@ export function vistaHome(mese, grafico, cambia, apriCat, azioni = {}) {
   const oggi = oggiISO();
   const ciclo = cicloDi(oggi);
   const set = settimana(oggi);
-  const arrivo = inArrivo(14, oggi);
+  // Trenta giorni e non quattordici: le uscite che contano davvero — affitto,
+  // rata, assicurazione — cadono una volta al mese, e con due settimane di
+  // finestra si vedono solo quando è tardi per spostare qualcosa.
+  const arrivo = inArrivo(30, oggi);
   const av = alert(oggi);
 
   const fuori = el("div", {});
@@ -345,7 +348,7 @@ function blocchoAlert(lista) {
 function inArrivoBlocco(a, ridisegna) {
   if (!a.voci.length) {
     return el("section", { class: "scheda" }, [
-      el("div", { class: "micro", testo: "In arrivo · prossimi 14 giorni" }),
+      el("div", { class: "micro", testo: "In arrivo · prossimi 30 giorni" }),
       el("p", { class: "nota", stile: { marginTop: "8px", marginBottom: "0" },
         testo: "Niente in scadenza. I ricorrenti e i pagamenti previsti si configurano in Impostazioni." }),
     ]);
@@ -353,7 +356,7 @@ function inArrivoBlocco(a, ridisegna) {
 
   return el("section", { class: "scheda fi-arrivo" }, [
     el("div", { class: "fi-arrivo-testa" }, [
-      el("span", { class: "micro", testo: "In arrivo · prossimi 14 giorni" }),
+      el("span", { class: "micro", testo: "In arrivo · prossimi 30 giorni" }),
       el("span", { class: "cifra cifra-s negativo", html: euroGrande(a.totale, { centesimi: false }) }),
     ]),
 

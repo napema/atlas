@@ -43,6 +43,11 @@
   --scheda-viva:  #292930;   /* premuto, selezionato */
   --traccia:      #2b2b31;   /* il fondo di una barra di avanzamento */
   --filo:         rgba(255, 255, 255, 0.07);
+  /* L'elevazione. Sul nero non serve — una superficie più chiara del fondo
+     è già staccata — e resta un'ombra nulla, così le regole che la usano
+     possono comporla senza doversi riscrivere per tema. Sul chiaro invece è
+     l'unica cosa che distingue una carta bianca da un fondo quasi bianco. */
+  --ombra: 0 0 0 0 rgba(0, 0, 0, 0);
 
   /* ------------------------------------------------------------ etichette --
      I quattro livelli restano sopra 4,5:1 sul fondo più chiaro su cui possono
@@ -143,10 +148,11 @@
     --fondo:        #f2f2f5;
     --fondo-alto:   #fbfbfd;
     --scheda:       #ffffff;
-    --scheda-alta:  #f0f0f4;
-    --scheda-viva:  #e4e4ea;
-    --traccia:      #e2e2e8;
-    --filo:         rgba(0, 0, 0, 0.06);
+    --scheda-alta:  #eceef3;
+    --scheda-viva:  #dfe1e9;
+    --traccia:      #e3e5ec;
+    --filo:         rgba(16, 18, 27, 0.10);
+    --ombra: 0 1px 2px rgba(16, 18, 27, 0.05), 0 8px 20px -6px rgba(16, 18, 27, 0.10);
 
     --testo:    #0c0c0d;
     --testo-2:  #57575f;
@@ -178,10 +184,11 @@
   --fondo:        #f2f2f5;
   --fondo-alto:   #fbfbfd;
   --scheda:       #ffffff;
-  --scheda-alta:  #f0f0f4;
-  --scheda-viva:  #e4e4ea;
-  --traccia:      #e2e2e8;
-  --filo:         rgba(0, 0, 0, 0.06);
+  --scheda-alta:  #eceef3;
+  --scheda-viva:  #dfe1e9;
+  --traccia:      #e3e5ec;
+  --filo:         rgba(16, 18, 27, 0.10);
+  --ombra: 0 1px 2px rgba(16, 18, 27, 0.05), 0 8px 20px -6px rgba(16, 18, 27, 0.10);
   --testo:    #0c0c0d;
   --testo-2:  #57575f;
   --testo-3:  #64646f;

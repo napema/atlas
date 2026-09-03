@@ -219,6 +219,10 @@ ul, ol { margin: 0; padding: 0; }
   padding: var(--s4);
   margin-bottom: var(--s3);
   overflow: hidden;
+  /* Sul chiaro una carta bianca su un fondo quasi bianco non si vede: la
+     separazione la fa l'ombra, non il colore. Sul scuro `--ombra` è nulla e
+     questa riga non fa niente — è il fondo più chiaro a staccare. */
+  box-shadow: var(--ombra);
 }
 .scheda-titolo {
   display: flex;
