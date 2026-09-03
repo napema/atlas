@@ -463,3 +463,32 @@ che i dati veri hanno fermato prima che partisse.
 
 Spedito dentro il commit 20b8cd8 insieme al lavoro sull'icona: era da tenere
 separato, prefisso `finanze:`.
+
+## 3 settembre — la gara che il ripristino perdeva sempre (chat ATLAS)
+
+Il ripristino del 2 sera (`adf69d7d`) è stato cancellato di nuovo dopo
+diciotto minuti. La sequenza, leggibile nei commit di atlas-dati:
+
+| ora (UTC) | cosa |
+|---|---|
+| 21:17 | ripristino: il repo ha 17 regole e 6 check |
+| 21:22–21:24 | il telefono salva i saldi → `metaUp` LOCALE sale, prima di leggere |
+| 21:24 | legge, e rifiuta il blocco remoto perché «vecchio» |
+| 21:35 | rispedisce il suo, che di regole ne ha zero |
+
+Non era sfortuna: **è una gara che chi ha i dati buoni perde sempre**,
+perché qualunque scrittura locale — perfino salvare i saldi — alza
+`metaUp` e chiude il cancello in faccia al blocco remoto.
+
+Risolto alla radice: `rules` e `config.checks` **si uniscono sempre, fuori
+dal cancello**. Sono storia, non impostazioni: si aggiungono e non si
+tolgono mai, e l'unione non può far perdere una chiave. Un dispositivo con
+la memoria vuota adesso al massimo non aggiunge.
+
+Ripristino rifatto sopra lo stato corrente (`d760ef65`), così i saldi
+riancorati il 2 set restano: Principale 109,22 · Cassa 190,71 · Fisse 0 ·
+ING 1169,59, tutti ancorati al 2026-09-02.
+
+**Resta aperto `profili`.** È ancora un blocco unico dietro `metaUp`, ed è
+il motivo per cui `cassaCats` è passata da 9 a 3 due volte. Stessa cura dei
+ricorrenti: farne record con `up` proprio. → richiesta per la chat Finanze.
