@@ -18,7 +18,6 @@ import { ultimiEventi, chiAscolta } from "../../core/bus.js";
 import { MODULI_DATI, prendiModulo, mappaEventi } from "../../core/registro.js";
 import { fattiDelGiorno, giornoCorrente } from "../../core/contesto.js";
 import * as notifiche from "../../core/notifiche.js";
-import { dipingiIcona } from "../../core/app.js";
 
 let contenitore = null;
 let sezione = "atlas";
@@ -36,8 +35,6 @@ function bloccoAspetto() {
     segmenti([["auto", "Sistema"], ["chiaro", "Chiaro"], ["scuro", "Scuro"]], attuale, (v) => {
       if (v === "auto") { localStorage.removeItem("atlas.tema"); delete document.documentElement.dataset.tema; }
       else { localStorage.setItem("atlas.tema", v); document.documentElement.dataset.tema = v; }
-      // La favicon segue il tema scelto qui dentro, non solo quello di sistema.
-      dipingiIcona();
     }),
     el("p", { class: "nota", testo: "«Sistema» segue l'impostazione del telefono, e cambia da sola al tramonto se l'hai attivata lì." }),
   ]);

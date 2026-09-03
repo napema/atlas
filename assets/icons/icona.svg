@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ATLAS">
+  <title>ATLAS</title>
+  <!--
+    L'ago della bussola. Un atlante è un libro di mappe, e ATLAS è la cosa
+    che dice da che parte sta la giornata: è l'unico marchio delle sei prove
+    che significhi qualcosa e non somigli a nient'altro.
+
+    NIENTE FONDO. Le versioni prima avevano un quadrato arrotondato dietro,
+    e su Windows — nella barra e nella striscia delle schede, dove il
+    quadrato non viene ritagliato da nessuna maschera — diventava una
+    piastrella scura appiccicata in mezzo a icone che non ce l'hanno. Senza
+    fondo l'ago sta su qualunque superficie.
+
+    UNA SOLA VERSIONE, e per questo il blu è #0a6ed1: sta sopra 4,5:1 sul
+    bianco e resta leggibile anche su una barra scura, quindi non serve il
+    gemello per il tema scuro né il JavaScript che li scambiava.
+
+    La metà destra è la stessa forma con sopra un bianco al 42%: è
+    l'ombreggiatura di un ago vero, ed è quello che gli dà volume a 96px
+    senza sporcarlo a 16.
+  -->
+  <path d="M256 88 L340 256 L256 424 L172 256 Z" fill="#0a6ed1"/>
+  <path d="M256 88 L340 256 L256 424 Z" fill="#ffffff" opacity="0.42"/>
+</svg>

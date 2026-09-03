@@ -16,19 +16,17 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ATLAS">
-<!-- L'icona della scheda la sceglie `dipingiIcona()` in core/app.js, che
-     legge il tema EFFETTIVO dell'app: qui c'è solo il punto di partenza.
-     Il perché sta lì: una SVG con dentro il proprio `prefers-color-scheme`
-     Chrome la disegna una volta sola e non la ridisegna mai più, e
-     l'attributo `media` sul link non sa niente del tema scelto dentro
-     ATLAS. L'`id` è il gancio, non toglierlo. -->
-<link rel="icon" id="favicona" type="image/svg+xml" href="./assets/icons/icona-chiara.svg">
-<!-- L'icona sulla home dell'iPhone invece è una sola e fissa: iOS non
-     guarda né SVG né `media`, e l'icona di un'app installata non cambia
-     col tema. Quella è la versione scura, che è l'identità dell'app.
+<!-- UNA SOLA ICONA, senza fondo. Prima erano due gemelle scambiate da
+     JavaScript al cambio di tema: complicazione inutile una volta che il
+     marchio non ha più un quadrato dietro — un ago blu si legge sia su una
+     barra chiara sia su una scura, e non c'è niente da scambiare.
      Il `?v` c'è perché i browser tengono le icone in una cache tutta loro,
      che non guarda gli header: senza, la vecchia resta lì per giorni. -->
-<link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png?v=50">
+<link rel="icon" type="image/svg+xml" href="./assets/icons/icona.svg?v=53">
+<link rel="icon" type="image/png" sizes="64x64" href="./assets/icons/favicon-64.png?v=53">
+<!-- iOS le SVG non le guarda, e un PNG trasparente sulla home lo mette su
+     fondo nero: qui il fondo c'è, ed è chiaro. -->
+<link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png?v=53">
 
 <!-- I fogli di stile sono due e in quest'ordine: i token prima, sempre. -->
 <link rel="stylesheet" href="./styles/tokens.css">
