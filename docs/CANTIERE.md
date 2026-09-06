@@ -492,3 +492,42 @@ ING 1169,59, tutti ancorati al 2026-09-02.
 **Resta aperto `profili`.** È ancora un blocco unico dietro `metaUp`, ed è
 il motivo per cui `cassaCats` è passata da 9 a 3 due volte. Stessa cura dei
 ricorrenti: farne record con `up` proprio. → richiesta per la chat Finanze.
+
+## 5 settembre — la maxi rata che ricompariva (chat ATLAS)
+
+Quattro volte in tre giorni. Le prime tre le ho attribuite ad altro — alla
+migrazione v7, poi alla gara su `metaUp` — ed erano guasti veri, ma non
+questo. La causa vera è una riga in `previstiIniziali()`:
+
+```js
+up: Date.now(),   // era così
+up: 0,            // è così adesso
+```
+
+Quel record è un valore di FABBRICA: lo scrive la migrazione quando
+`st.previsti` non è un array, cioè su ogni dispositivo che riparte con la
+memoria vuota. Timbrato con l'ora di adesso vince **sempre** la fusione, e
+riporta `pagatoIl: null` sopra il «pagata il 30 agosto» che stava nel repo.
+Non è un dato che torna: è un dato che ogni volta vince.
+
+La regola era già scritta due volte nello stesso file — per i ricorrenti
+(«`up` a zero e non a `Date.now()`: un record senza timestamp è un record
+che non ha mai vinto un confronto») e per i pocket. Su `previsti` mancava.
+
+**Lezione per tutte le chat: qualunque valore di fabbrica va scritto con
+`up: 0`.** Se un default può battere una scrittura dell'utente, prima o poi
+la batte.
+
+### Cosa resta rotto, in ordine di rischio
+
+1. **`profili` è ancora un blocco dietro `metaUp`.** `cassaCats` è passata
+   da 9 a 3 tre volte. Va spezzato in record con `up` proprio, come i
+   ricorrenti.
+2. **`aggiustamenti2608` fa `st.metaUp = Date.now()`.** Gira su ogni
+   dispositivo dove `config.mig2608` manca — cioè proprio su quello con la
+   configurazione più povera — e gli regala il cancello. Oggi è dormiente
+   (`mig2608` è true nel repo) ma è una mina.
+3. **A monte c'è un dispositivo che perde la memoria locale** e riparte dai
+   default. Finché succede, ogni valore di fabbrica è un candidato a
+   sovrascrivere il dato vero: è il motivo per cui il punto 1 e il punto 2
+   contano davvero.
