@@ -16,6 +16,7 @@ import {
 import { icona } from "../../core/icone.js";
 import {
   stato, movimentiVivi, categoriaPerId, profiloDi, chiaveProfilo, coloreCat, emojiCat, TIPI,
+  scriviProfili,
   salvaMovimento, eliminaMovimento, impara, normalizza, scriviMeta, casella,
   CATEGORIE_CASSA, TIPI_POCKET, SOGLIE_PREDEFINITE, pocketPerId, scriviPocket,
   salvaRicorrente, eliminaRicorrente, pendenti, metteInSospeso, togliDaSospeso,
@@ -1582,7 +1583,7 @@ export function vistaSetup(mese, ridisegna) {
       el("label", { class: "fi-cassa-check" }, [
         el("input", {
           type: "checkbox", checked: p.cassaCats.includes(c.id),
-          onChange: (e) => scriviMeta((st_) => {
+          onChange: (e) => scriviProfili((st_) => {
             const cc = new Set(st_.profili[chiave].cassaCats);
             e.target.checked ? cc.add(c.id) : cc.delete(c.id);
             st_.profili[chiave].cassaCats = [...cc];
@@ -1594,7 +1595,7 @@ export function vistaSetup(mese, ridisegna) {
         class: "campo fi-campo-corto", type: "number", inputmode: "numeric",
         value: String(p.b[c.id] ?? 0), min: "0",
         onChange: (e) => {
-          scriviMeta((st_) => { st_.profili[chiave].b[c.id] = Math.max(0, Number(e.target.value) || 0); });
+          scriviProfili((st_) => { st_.profili[chiave].b[c.id] = Math.max(0, Number(e.target.value) || 0); });
           disegnaQuadra();
         },
       }),
@@ -1620,14 +1621,14 @@ export function vistaSetup(mese, ridisegna) {
         el("span", { testo: "Tetto settimanale" }),
         el("input", { class: "campo fi-campo-corto", type: "number", inputmode: "numeric",
           value: String(p.cassa),
-          onChange: (e) => scriviMeta((st_) => { st_.profili[chiave].cassa = Math.max(0, Number(e.target.value) || 0); }) }),
+          onChange: (e) => scriviProfili((st_) => { st_.profili[chiave].cassa = Math.max(0, Number(e.target.value) || 0); }) }),
       ])]),
       el("li", {}, [el("div", { class: "riga" }, [
         el("span", { testo: "Finestra (giorni del mese)" }),
         el("input", { class: "campo fi-campo-mini", type: "number", inputmode: "numeric", value: String(p.dal), min: "1", max: "31",
-          onChange: (e) => scriviMeta((st_) => { st_.profili[chiave].dal = Math.max(1, Number(e.target.value) || 1); }) }),
+          onChange: (e) => scriviProfili((st_) => { st_.profili[chiave].dal = Math.max(1, Number(e.target.value) || 1); }) }),
         el("input", { class: "campo fi-campo-mini", type: "number", inputmode: "numeric", value: String(p.al), min: "1", max: "31",
-          onChange: (e) => scriviMeta((st_) => { st_.profili[chiave].al = Math.max(1, Number(e.target.value) || 31); }) }),
+          onChange: (e) => scriviProfili((st_) => { st_.profili[chiave].al = Math.max(1, Number(e.target.value) || 31); }) }),
       ])]),
     ]),
     el("p", { class: "nota", testo: "La cassa copre solo le categorie spuntate qui sopra: quelle che dipendono da una decisione giornaliera. Le fisse dentro un tetto settimanale lo farebbero sforare da sole il giorno dell'affitto." }),

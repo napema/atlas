@@ -116,6 +116,10 @@ export const PREDEFINITO = {
   rules: {},      // "testo normalizzato" → [cat, sub] — l'autocategorizzazione appresa
   config: { entrate: 2100 },
   metaUp: 0,
+  // I profili hanno un timestamp LORO, staccato da `metaUp`. Vedi
+  // `scriviProfili()`. Zero di partenza: un profilo di fabbrica non deve
+  // poter vincere contro uno che hai davvero impostato.
+  profiliUp: 0,
 };
 
 export const casella = apriCasella("finanze", PREDEFINITO);
@@ -155,6 +159,27 @@ export function eliminaMovimento(id) {
 
 export function scriviMeta(fn) {
   casella.aggiorna((s) => { fn(s); s.metaUp = Date.now(); });
+}
+
+/**
+ * Come `scriviMeta`, ma alza anche `profiliUp`.
+ *
+ * I PROFILI ESCONO DAL CANCELLO DI `metaUp`, ed è la terza volta che questo
+ * schema si ripete: prima i ricorrenti, poi i pocket, adesso i profili.
+ *
+ * Dentro il blocco `meta` bastava che un dispositivo con la configurazione
+ * di fabbrica avesse un `metaUp` più fresco — e gliene bastava uno
+ * qualunque, anche il check della sera — per sostituire i profili
+ * dell'altro coi suoi. Nella cronologia di atlas-dati `cassaCats` rimbalza
+ * fra 9 e 3 dal 26 agosto: non era un valore perso, erano due dispositivi
+ * che se lo rimandavano.
+ *
+ * Con un timestamp suo, il confronto è fra le due versioni DEI PROFILI e
+ * non fra due configurazioni qualsiasi. Chi li ha toccati per ultimo vince,
+ * che è l'unica regola che qui abbia senso.
+ */
+export function scriviProfili(fn) {
+  casella.aggiorna((s) => { fn(s); s.metaUp = Date.now(); s.profiliUp = Date.now(); });
 }
 
 /** Impara una corrispondenza nota → categoria. La usa autoCategoria(). */
@@ -435,7 +460,13 @@ function aggiustamenti2608(st) {
   }
 
   st.config.mig2608 = true;
-  st.metaUp = Date.now();
+  // NIENTE `st.metaUp = Date.now()` qui, e la riga tolta vale una nota.
+  // Questo blocco gira su ogni dispositivo dove manca `config.mig2608`,
+  // cioè proprio su quello che ha la configurazione più povera: alzargli
+  // `metaUp` voleva dire consegnargli il cancello del blocco meta e fargli
+  // sovrascrivere quella buona dell'altro. Gli aggiustamenti sono valori di
+  // fabbrica e ogni dispositivo se li applica da sé: non hanno bisogno di
+  // vincere un confronto per propagarsi.
 }
 
 /* ----------------------------------------------------------- scritture -- */

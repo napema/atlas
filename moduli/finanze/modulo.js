@@ -224,6 +224,9 @@ export function avviaSync() {
           cats: s.cats, profili: s.profili, rules: s.rules, config: s.config,
           pockets: s.pockets, ricorrenti: s.ricorrenti, soglie: s.soglie,
           up: s.metaUp || 0,
+          // Il timestamp dei PROFILI, staccato da quello del blocco: vedi
+          // `applica` qui sotto.
+          profiliUp: s.profiliUp || 0,
         },
       };
     },
@@ -280,9 +283,27 @@ export function avviaSync() {
           s.config.checks = { ...rm.config.checks, ...(s.config.checks || {}) };
         }
 
+        /* I PROFILI HANNO UN CONFRONTO LORO, FUORI DAL CANCELLO.
+
+           Dentro, bastava un `metaUp` più fresco per un motivo qualunque —
+           il check della sera, un saldo salvato — perché un dispositivo con
+           i profili di fabbrica sostituisse quelli veri dell'altro. Nella
+           cronologia di atlas-dati `cassaCats` rimbalza fra 9 e 3 dal 26
+           agosto: non era un valore perso, erano due dispositivi che se lo
+           rimandavano.
+
+           È la terza volta che questo schema si ripete — prima i ricorrenti,
+           poi i pocket, adesso i profili — e la cura è sempre la stessa: un
+           `up` per la cosa, e il confronto fra le due versioni DI QUELLA
+           COSA. Un `profiliUp` a zero è la fabbrica, e non vince mai. */
+        const profUp = rm?.profiliUp || 0;
+        if (rm?.profili && profUp > (s.profiliUp || 0)) {
+          s.profili = rm.profili;
+          s.profiliUp = profUp;
+        }
+
         if (rm && (rm.up || 0) > (s.metaUp || 0)) {
           if (rm.cats?.length) s.cats = rm.cats;
-          if (rm.profili) s.profili = rm.profili;
           // `checks` sopravvive allo spread: l'ha appena unito la riga di
           // sopra, e qui il blocco remoto lo riporterebbe a quelli suoi.
           if (rm.config) s.config = { ...s.config, ...rm.config, checks: s.config.checks };
