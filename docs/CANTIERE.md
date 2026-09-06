@@ -531,3 +531,33 @@ la batte.
    default. Finché succede, ogni valore di fabbrica è un candidato a
    sovrascrivere il dato vero: è il motivo per cui il punto 1 e il punto 2
    contano davvero.
+
+## 6 settembre — i contanti sono un pocket (chat ATLAS, fuori perimetro)
+
+Richiesta: «aggiungi come metodo di pagamento anche contanti». Fatto come
+**pocket**, non come metodo, ed è la stessa distinzione dei pocket: i soldi
+non li paghi «in contanti», li paghi CON i contanti che hai in tasca, e
+quelli sono un posto dove il denaro sta. Prelevare è un giroconto
+Principale → Contanti, spendere è un'uscita dai Contanti. Così il Principale
+cala il giorno del prelievo — quando quei soldi smettono di essere
+disponibili per altro — e non due settimane dopo.
+
+`tipo: "spendibile"` come il Principale, e la settimana e la giornata adesso
+sommano **tutte** le tasche spendibili invece del solo Principale
+(`pocketSpendibili()` legge dal tipo, non da un elenco di id). Con più ancore
+vale la più recente.
+
+Verificato:
+- senza movimenti in contanti i numeri non cambiano di un centesimo —
+  «resta questa settimana» era e resta 109,22 €;
+- prelievo 50 + spesa 12 in contanti → Principale 59,22, Contanti 38,00,
+  somma 97,22, `speso` 12,00, e l'invariante `resta + speso = disponibile`
+  tiene (97,22 + 12 = 109,22).
+
+**Il pocket si aggiunge FUORI dal blocco di `migra()`**, con una guardia sua
+(«esiste?») e `up: 0`. Alzare la soglia della migrazione è quello che il 2
+settembre ha cancellato regole e check: un campo nuovo si aggiunge da solo
+senza svegliare il resto. Nota: `migra()` aveva un `return` anticipato che
+saltava tutto ciò che veniva dopo — è diventato un `if`, ma gli
+`aggiustamenti2608` restano legati a `serve` esattamente com'erano, perché
+lì dentro ci sono importi di fabbrica che a `up` pari batterebbero i veri.

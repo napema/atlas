@@ -685,6 +685,27 @@ export function deltaPocket(id, da) {
 export const pocketConSaldi = () =>
   (stato().pockets || []).map((p) => ({ ...p, saldoVero: saldoPocket(p.id) }));
 
+/**
+ * I pocket da cui si spende davvero: Principale e Contanti.
+ *
+ * Era uno solo, e «principale» stava scritto a mano in quattro punti. Coi
+ * contanti diventano due tasche dello stesso portafoglio — i soldi in tasca
+ * sono spendibili quanto quelli sulla carta — e la domanda «quanto posso
+ * spendere» ha una risposta sola soltanto se li sommi.
+ *
+ * Si legge dal TIPO e non da un elenco di id: il giorno che ne aggiungi un
+ * terzo entra da sé, senza un quinto posto da ricordarsi. `external` resta
+ * fuori, perché ING vive fuori dall'app.
+ */
+export const pocketSpendibili = () =>
+  (stato().pockets || [])
+    .filter((p) => p.tipo === "spendibile" && !p.external)
+    .map((p) => p.id);
+
+/** Se un movimento esce da una tasca spendibile. */
+export const daSpendibile = (m, elenco = pocketSpendibili()) =>
+  elenco.includes(m.pocket || "principale");
+
 /* --------------------------------------------------------- la settimana -- */
 /*
    IL NUMERO. È il saldo del pocket Principale, non un calcolo di budget:
@@ -699,7 +720,11 @@ export function settimana(iso = oggiISO()) {
   const domenica = new Date(lunedi);
   domenica.setDate(lunedi.getDate() + 6);
 
-  const resta = saldoPocket("principale");
+  // Tutte le tasche spendibili, non solo il Principale: cinquanta euro
+  // prelevati non sono spariti, sono in tasca, e continuano a essere soldi
+  // che puoi spendere questa settimana.
+  const spendibili = pocketSpendibili();
+  const resta = spendibili.reduce((s, id) => s + saldoPocket(id), 0);
   const budget = Number(stato().config?.cassaSettimanale) || 0;
   const giorniRimasti = 7 - dow;                    // oggi compreso
 
@@ -720,13 +745,19 @@ export function settimana(iso = oggiISO()) {
   // recente. Riancorando a metà settimana i movimenti precedenti non
   // toccano più il saldo, e sommarli qui gonfierebbe il disponibile con
   // soldi già spesi prima che l'app cominciasse a guardare.
-  const p = (stato().pockets || []).find((x) => x.id === "principale");
-  const ancora = p?.ancoraDa || stato().config?.pocketDa || null;
+  // Con più tasche spendibili le ancore sono più d'una: vale la PIÙ RECENTE.
+  // Prendere la più vecchia vorrebbe dire contare, su una tasca riancorata
+  // ieri, movimenti che il suo saldo non porta più — e gonfiare il
+  // disponibile con soldi già usciti.
+  const ancore = spendibili
+    .map((id) => (stato().pockets || []).find((x) => x.id === id)?.ancoraDa)
+    .filter(Boolean);
+  const ancora = ancore.length ? ancore.sort().at(-1) : (stato().config?.pocketDa || null);
   const daQuando = ancora && ancora > isoDi(lunedi) ? ancora : isoDi(lunedi);
 
   const speso = movimentiVivi()
     .filter((m) => m.data >= daQuando && m.data <= iso && m.tipo === "out" && !m.ecc
-      && (m.pocket || "principale") === "principale")
+      && daSpendibile(m, spendibili))
     .reduce((acc, m) => acc + importoEffettivo(m), 0);
 
   const disponibile = resta + speso;
@@ -775,8 +806,7 @@ export function settimana(iso = oggiISO()) {
 export function giornata(iso = oggiISO()) {
   const s = settimana(iso);
   const speso = movimentiVivi()
-    .filter((m) => m.data === iso && m.tipo === "out" && !m.ecc
-      && (m.pocket || "principale") === "principale")
+    .filter((m) => m.data === iso && m.tipo === "out" && !m.ecc && daSpendibile(m))
     .reduce((acc, m) => acc + importoEffettivo(m), 0);
 
   const disponibile = s.resta + speso;

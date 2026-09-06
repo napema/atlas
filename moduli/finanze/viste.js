@@ -611,7 +611,7 @@ function paga(v, imp, oggi) {
   else segnaScadenzaPagata(v.id, v.quando);
 }
 
-const NOMI_POCKET = { principale: "Principale", cassa: "Cassa", fisse: "Fisse", ing: "ING" };
+const NOMI_POCKET = { principale: "Principale", contanti: "Contanti", cassa: "Cassa", fisse: "Fisse", ing: "ING" };
 const nomePocket = (id) => NOMI_POCKET[id] || id;
 
 /* --------------------------------------------------- 4. DOVE SONO I SOLDI */
@@ -623,7 +623,8 @@ function dovSonoISoldi(azioni) {
   const totale = pk.reduce((s, p) => s + p.saldoVero, 0);
 
   const nota = {
-    principale: "spendibile",
+    principale: "spendibile · carta",
+    contanti: "spendibile · in tasca",
     cassa: "parcheggio · non spendere",
     fisse: "addebiti automatici",
     ing: "riserva · non toccare",

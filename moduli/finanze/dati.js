@@ -235,6 +235,21 @@ export function pocketIniziali() {
     // un saldo scritto è un saldo che va in deriva al primo movimento che
     // qualcuno registra in ritardo.
     { id: "principale", nome: "Principale",  tipo: "spendibile", saldo: 0, ancoraDa: null, external: false },
+    // I CONTANTI SONO UN POCKET, non un metodo di pagamento.
+    //
+    // È la stessa distinzione dei pocket: i soldi non li paghi «in
+    // contanti», li paghi CON i contanti che hai in tasca, e quelli sono un
+    // posto dove il denaro sta. Prelevare è un giroconto Principale →
+    // Contanti; spendere è un'uscita dai Contanti. Così il Principale cala
+    // il giorno del prelievo — che è il giorno in cui quei soldi smettono
+    // di essere disponibili per altro — e non due settimane dopo, quando
+    // finisci di spenderli.
+    //
+    // È anche `spendibile` come il Principale, quindi entra nei conti della
+    // settimana e della giornata insieme a lui: sono due tasche dello
+    // stesso portafoglio, e sommarle è l'unica cosa che risponde alla
+    // domanda «quanto posso spendere».
+    { id: "contanti",   nome: "Contanti",    tipo: "spendibile", saldo: 0, ancoraDa: null, external: false },
     { id: "cassa",      nome: "Cassa",       tipo: "parcheggio", saldo: 0, ancoraDa: null, external: false },
     { id: "fisse",      nome: "Spese fisse", tipo: "fisse",      saldo: 0, ancoraDa: null, external: false },
     // ING è `external`: vive fuori dall'app, quindi le spese non lo toccano
@@ -322,9 +337,9 @@ export function migra() {
   const serve =
     !Array.isArray(s.pockets) || !Array.isArray(s.ricorrenti) ||
     !s.soglie || s.config?.giornoStipendio == null || (s.v || 0) < 6;
-  if (!serve) return;
-
-  casella.aggiorna((st) => {
+  // L'uscita anticipata è diventata un `if`: sotto c'è roba che deve girare
+  // SEMPRE — `aggiungiContanti()` — e con il `return` non ci arrivava mai.
+  if (serve) casella.aggiorna((st) => {
     if (!Array.isArray(st.pockets)) st.pockets = pocketIniziali();
     if (!Array.isArray(st.ricorrenti)) st.ricorrenti = ricorrentiIniziali();
     if (!st.soglie) st.soglie = { ...SOGLIE_PREDEFINITE };
@@ -423,7 +438,39 @@ export function migra() {
   // campi nuovi e hanno un flag loro perché non sono una migrazione di
   // struttura ma un cambio di dati: se un domani l'affitto cambia ancora, lo
   // si cambia dall'interfaccia e questo non deve rimetterlo a 850.
-  if (!stato().config?.mig2608) casella.aggiorna(aggiustamenti2608);
+  // Gli aggiustamenti restano legati a `serve`, esattamente com'erano.
+  // Slegarli vorrebbe dire rimetterli in circolo su ogni avvio, e lì dentro
+  // ci sono importi di fabbrica che a `up` pari batterebbero i tuoi.
+  if (serve && !stato().config?.mig2608) casella.aggiorna(aggiustamenti2608);
+
+  aggiungiContanti();
+}
+
+/* Il pocket Contanti, aggiunto agli archivi che non ce l'hanno.
+     =======================================================================
+     Sta FUORI dal blocco della migrazione e ha una guardia sua — «esiste?» —
+     e non è pignoleria: alzare la soglia di `migra()` rimanda in esecuzione
+     TUTTO il blocco su ogni dispositivo, e il 2 settembre è così che sono
+     sparite le regole apprese e i check di due settimane. Un campo nuovo si
+     aggiunge da solo, senza svegliare il resto.
+
+     `up: 0` perché è un valore di fabbrica: nasce vuoto e deve perdere
+     contro qualunque scrittura vera. Se il pocket arriva dall'altro
+     dispositivo con un saldo dentro, quello vince e questo non lo tocca.
+
+   I pocket si fondono per record, quindi basta che un dispositivo lo
+   aggiunga: l'altro se lo trova alla prima lettura. */
+function aggiungiContanti() {
+  if (!(stato().pockets || []).some((p) => p.id === "contanti")) {
+    casella.aggiorna((st) => {
+      if (!Array.isArray(st.pockets)) return;
+      if (st.pockets.some((p) => p.id === "contanti")) return;
+      st.pockets.splice(1, 0, {
+        id: "contanti", nome: "Contanti", tipo: "spendibile",
+        saldo: 0, ancoraDa: null, external: false, up: 0,
+      });
+    });
+  }
 }
 
 /** Vedi sopra: una tantum, e mai più ripetuta. */
