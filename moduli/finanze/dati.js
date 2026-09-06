@@ -574,7 +574,20 @@ export function previstiIniziali() {
     cat: "fisse",
     nota: "Copre settembre e ottobre. Da ottobre riparte l'affitto mensile.",
     pagatoIl: null,
-    up: Date.now(),
+    // `up: 0`, NON `Date.now()`, ed è la riga che ha fatto ricomparire la
+    // maxi rata in «In arrivo» quattro volte in tre giorni.
+    //
+    // Questo record è un valore di FABBRICA: lo scrive la migrazione, non
+    // l'utente. Timbrandolo con l'ora di adesso, ogni dispositivo che
+    // riparte con la memoria vuota lo rigenera `pagatoIl: null` col
+    // timestamp più fresco che esista, e nella fusione batte quello vero
+    // che dice «pagata il 30 agosto». Non è un dato che torna: è un dato
+    // che ogni volta vince.
+    //
+    // `up: 0` vuol dire «questo valore non l'ha mai scritto nessuno», e
+    // deve perdere contro qualunque scrittura vera. È la stessa regola che
+    // vale già per i ricorrenti e per i pocket — qui era stata dimenticata.
+    up: 0,
   }];
 }
 
