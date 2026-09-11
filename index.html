@@ -16,17 +16,26 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ATLAS">
-<!-- UNA SOLA ICONA, senza fondo. Prima erano due gemelle scambiate da
-     JavaScript al cambio di tema: complicazione inutile una volta che il
-     marchio non ha più un quadrato dietro — un ago blu si legge sia su una
-     barra chiara sia su una scura, e non c'è niente da scambiare.
+<!-- UNA SOLA ICONA, SENZA FONDO, ovunque — anche quelle dell'app
+     installata, che prima il fondo ce l'avevano.
+
+     Era l'ultimo posto dove restava un quadrato, e su Windows si vedeva:
+     nella barra delle applicazioni la piastrella non viene arrotondata da
+     nessuna maschera, quindi il marchio arrivava dentro un quadrato bianco
+     con gli angoli vivi. Trasparente il problema non esiste, e lo stesso
+     file va bene sul tema chiaro e su quello scuro: non c'è più niente da
+     scegliere in base al tema.
+
+     Il prezzo: iOS un PNG trasparente sulla schermata Home lo appoggia sul
+     nero. Per un marchio blu va bene, ed è il compromesso giusto — il
+     quadrato lo vedevi ogni giorno sul PC, il fondo nero su iPhone si nota
+     molto meno.
+
      Il `?v` c'è perché i browser tengono le icone in una cache tutta loro,
      che non guarda gli header: senza, la vecchia resta lì per giorni. -->
-<link rel="icon" type="image/svg+xml" href="./assets/icons/icona.svg?v=53">
-<link rel="icon" type="image/png" sizes="64x64" href="./assets/icons/favicon-64.png?v=53">
-<!-- iOS le SVG non le guarda, e un PNG trasparente sulla home lo mette su
-     fondo nero: qui il fondo c'è, ed è chiaro. -->
-<link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png?v=53">
+<link rel="icon" type="image/svg+xml" href="./assets/icons/icona.svg?v=59">
+<link rel="icon" type="image/png" sizes="64x64" href="./assets/icons/favicon-64.png?v=59">
+<link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png?v=59">
 
 <!-- I fogli di stile sono due e in quest'ordine: i token prima, sempre. -->
 <link rel="stylesheet" href="./styles/tokens.css">

@@ -1091,3 +1091,14 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
 }
 .fi-gia-pagata .btn { color: var(--testo-3); font-size: var(--t-13); }
 .fi-gia-pagata .nota { margin-top: 2px; }
+
+/* Il confronto col piano, sotto il numero grande. Compare solo quando il
+   ritmo che ti puoi permettere è sotto quello previsto: una riga che c'è
+   sempre non la legge nessuno. */
+.fi-numero-piano {
+  margin: var(--s2) 0 0;
+  font-size: var(--t-13);
+  color: var(--testo-2);
+}
+.fi-numero-piano.avviso { color: var(--avviso); }
+.fi-numero-piano.male   { color: var(--male); font-weight: 600; }

@@ -706,6 +706,47 @@ export const pocketSpendibili = () =>
 export const daSpendibile = (m, elenco = pocketSpendibili()) =>
   elenco.includes(m.pocket || "principale");
 
+/* ---------------------------------------------------------- l'orizzonte -- */
+/*
+   FIN DOVE DEVONO ARRIVARE QUESTI SOLDI.
+
+   È la domanda che mancava, e senza di lei il numero grande mentiva pur
+   essendo giusto. «Restano 137,40 €, 3 giorni a lunedì» dava 45,80 al
+   giorno — ma lunedì non arriva niente: la ricarica settimanale esce dalla
+   Cassa, e nella Cassa c'erano 72 centesimi. Quei 137,40 dovevano bastare
+   fino al 20, cioè dieci giorni, cioè 13,74 al giorno. L'app ne annunciava
+   più del triplo.
+
+   L'orizzonte non è la domenica: è il giorno prima del prossimo stipendio,
+   perché è lì che entrano soldi nuovi. La settimana resta — serve a dire
+   come stai andando DENTRO il piano — ma il numero che decide se puoi
+   cenare fuori stasera si misura su questo.
+
+   `rapporto` confronta quello che ti puoi permettere con quello che il
+   piano prevedeva: sotto 1 stai stringendo, ed è una cosa da sapere prima
+   di averla scoperta col bancomat.
+*/
+export function orizzonte(iso = oggiISO()) {
+  const ciclo = cicloDi(iso);
+  const fine = ciclo.a > iso ? ciclo.a : iso;
+  const giorni = Math.max(1, Math.round((daISO(fine) - daISO(iso)) / 86400000) + 1);
+
+  const disponibile = pocketSpendibili().reduce((s, id) => s + saldoPocket(id), 0);
+  const alGiorno = giorni > 0 ? Math.floor(Math.max(0, disponibile) / giorni) : 0;
+
+  // Il ritmo che il piano prevedeva, per settimana diviso sette.
+  const piano = Math.round((Number(stato().config?.cassaSettimanale) || 0) / 7);
+  const rapporto = piano > 0 ? alGiorno / piano : 1;
+
+  return {
+    fine, giorni, disponibile, alGiorno, piano, rapporto,
+    livello: disponibile <= 0 ? "finito"
+      : rapporto >= 1   ? "sereno"
+      : rapporto >= 0.6 ? "stretto"
+      :                   "grave",
+  };
+}
+
 /* --------------------------------------------------------- la settimana -- */
 /*
    IL NUMERO. È il saldo del pocket Principale, non un calcolo di budget:
@@ -804,13 +845,24 @@ export function settimana(iso = oggiISO()) {
  * non sono più spendibili.
  */
 export function giornata(iso = oggiISO()) {
-  const s = settimana(iso);
+  /* LA QUOTA SI MISURA SULL'ORIZZONTE, non sulla settimana.
+
+     Era `resta / giorni-a-lunedì`, e il lunedì non porta niente: la ricarica
+     settimanale esce dalla Cassa, e quando la Cassa è vuota quel giorno non
+     succede nulla. Con 137,40 € e tre giorni a lunedì la quota risultava
+     45,80 — mentre quei soldi dovevano bastare dieci giorni, cioè 13,74 al
+     giorno. L'app autorizzava a spendere più del triplo del vero.
+
+     Ed è anche l'unico modo perché le due righe della scheda non si
+     contraddicano: il numero grande e la quota di oggi adesso escono dallo
+     stesso conto. */
+  const o = orizzonte(iso);
   const speso = movimentiVivi()
     .filter((m) => m.data === iso && m.tipo === "out" && !m.ecc && daSpendibile(m))
     .reduce((acc, m) => acc + importoEffettivo(m), 0);
 
-  const disponibile = s.resta + speso;
-  const quota = s.giorniRimasti > 0 ? Math.floor(Math.max(0, disponibile) / s.giorniRimasti) : 0;
+  const disponibile = o.disponibile + speso;
+  const quota = o.giorni > 0 ? Math.floor(Math.max(0, disponibile) / o.giorni) : 0;
   const sforo = Math.max(0, speso - quota);
 
   /* LA SCALA, e serve perché la prima versione era un interruttore: ambra al

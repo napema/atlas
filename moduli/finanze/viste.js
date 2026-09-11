@@ -30,7 +30,7 @@ import {
   mediaPerGiornoSettimana, ultimiSeiMesi, sottocategorieDelMese, categoriaSuSeiMesi,
   movimentiSottocategoria, contestoMovimento, quadratura,
   cicloDi, spostaCiclo, nomeCiclo, movimentiDelCiclo, categorieDelCiclo, categorieDelMese,
-  settimana, giornata, saldoPocket, deltaPocket, pocketConSaldi, inArrivo, comeSpendi, sforamenti,
+  settimana, giornata, orizzonte, saldoPocket, deltaPocket, pocketConSaldi, inArrivo, comeSpendi, sforamenti,
   alert, spesoOggi, importoRicorrente, prossimaScadenza, esitoCheck, coperturaDi, comeEvento,
 } from "./calcolo.js";
 import { graficoCumulato, graficoCiambella, graficoBarre } from "./grafici.js";
@@ -136,15 +136,41 @@ function ilNumero(s, azioni) {
     return box;
   }
 
+  /* IL NUMERO DICE FIN DOVE DEVE ARRIVARE, e prima non lo diceva.
+
+     C'era scritto «Questa settimana · 137,40 € · restano · 3 giorni a
+     lunedì», e la domanda giusta era: restano rispetto a cosa? 137,40 non
+     era il resto di un budget, era la somma di quello che c'è in tasca e
+     sulla carta — e doveva bastare fino al 20, non fino a lunedì. Il numero
+     era esatto e l'etichetta lo faceva leggere al contrario.
+
+     Adesso l'intestazione dice la data a cui i soldi devono arrivare, la
+     nota dice da dove escono e quanto fanno al giorno, e il colore lo
+     decide il rapporto fra quel ritmo e quello che il piano prevedeva. */
+  const o = orizzonte();
+  const tonoOr = o.livello === "grave" || o.livello === "finito" ? "male"
+    : o.livello === "stretto" ? "avviso" : "";
+
+  box.className = `fi-numero ${tonoOr || tono}`.trim();
+
   aggiungi(box, [
     el("div", { class: "fi-numero-testa" }, [
-      el("div", { class: "micro", testo: "Questa settimana" }),
-      s.budget > 0 && el("div", { class: `micro ${tono}`,
-        testo: `${Math.round(s.frazione * 100)}% consumato` }),
+      el("div", { class: "micro", testo: `Fino al ${dataBreve(o.fine)}` }),
+      el("div", { class: `micro ${tonoOr}`.trim(),
+        testo: plurale(o.giorni, "giorno", "giorni") }),
     ]),
-    el("div", { class: "cifra cifra-xl", html: euroGrande(s.resta) }),
+    el("div", { class: "cifra cifra-xl", html: euroGrande(o.disponibile) }),
     el("p", { class: "fi-numero-nota", testo:
-      `restano · ${plurale(s.giorniRimasti, "giorno", "giorni")} a lunedì` }),
+      `in tasca e sulla carta · ${euro(o.alGiorno)} al giorno` }),
+
+    // Il confronto col piano, e solo quando serve dirlo. Sopra il piano non
+    // si scrive niente: un'app che parla anche quando va tutto bene insegna
+    // a non leggerla.
+    o.piano > 0 && o.rapporto < 1 && el("p", { class: `fi-numero-piano ${tonoOr}`.trim(), testo:
+      o.livello === "finito"
+        ? `Le tasche spendibili sono a zero, e allo stipendio mancano ${plurale(o.giorni, "giorno", "giorni")}.`
+        : `Il piano ne prevedeva ${euro(o.piano)} al giorno: ci sei sotto di ${euro(o.piano - o.alGiorno)}.` }),
+
     s.budget > 0 && el("div", { class: "fi-consumo" }, [
       el("i", { stile: { width: `${Math.round(s.frazione * 100)}%` } }),
     ]),

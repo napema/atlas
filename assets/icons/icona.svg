@@ -1,24 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ATLAS">
   <title>ATLAS</title>
   <!--
-    L'ago della bussola. Un atlante è un libro di mappe, e ATLAS è la cosa
-    che dice da che parte sta la giornata: è l'unico marchio delle sei prove
-    che significhi qualcosa e non somigli a nient'altro.
+    Una vetta. Sono le montagne dell'Atlante — il nome viene da lì — ed è la
+    prima forma di questa serie che sia una COSA e non una figura
+    geometrica: il rombo prima, il cerchio col punto, la A, i tre archi.
+    Una cosa si riconosce di sfuggita, una figura geometrica si confonde.
 
-    NIENTE FONDO. Le versioni prima avevano un quadrato arrotondato dietro,
-    e su Windows — nella barra e nella striscia delle schede, dove il
-    quadrato non viene ritagliato da nessuna maschera — diventava una
-    piastrella scura appiccicata in mezzo a icone che non ce l'hanno. Senza
-    fondo l'ago sta su qualunque superficie.
+    NIENTE FONDO, MAI. Le versioni con il quadrato dietro su Windows
+    diventavano una piastrella — bianca sull'ultima, scura su quella prima —
+    perché lì nessuna maschera la ritaglia. Senza fondo il marchio sta su
+    qualunque superficie e non c'è un tema da indovinare: il file è uno solo
+    e va bene su chiaro e su scuro.
 
-    UNA SOLA VERSIONE, e per questo il blu è #0a6ed1: sta sopra 4,5:1 sul
-    bianco e resta leggibile anche su una barra scura, quindi non serve il
-    gemello per il tema scuro né il JavaScript che li scambiava.
+    IL BLU È #2b86f0 per questo: 3,3:1 sul bianco e 5,6:1 sul nero. Per un
+    testo il primo non basterebbe, per una forma piena sì — e cercare un
+    colore che superi 4,5 su TUTTI E DUE i fondi vuol dire un blu spento che
+    non si vede bene da nessuna parte.
 
-    La metà destra è la stessa forma con sopra un bianco al 42%: è
-    l'ombreggiatura di un ago vero, ed è quello che gli dà volume a 96px
-    senza sporcarlo a 16.
+    L'inchiostro sta entro 179px dal centro, contro i 205 della zona sicura:
+    regge anche un ritaglio circolare.
   -->
-  <path d="M256 88 L340 256 L256 424 L172 256 Z" fill="#0a6ed1"/>
-  <path d="M256 88 L340 256 L256 424 Z" fill="#ffffff" opacity="0.42"/>
+  <path d="M118 332 L216 172 L286 278 L324 222 L396 332 Z"
+        fill="#2b86f0" stroke="#2b86f0" stroke-width="32" stroke-linejoin="round"/>
 </svg>

@@ -591,3 +591,32 @@ manca, prima o poi la fabbrica vince.
 Restano da controllare con lo stesso metro gli altri moduli: ovunque ci sia
 un blocco che si fonde su un `up` solo, verificare che chi lo modifica lo
 alzi e chi lo adotta se lo prenda.
+
+## 11 settembre, sera — l'orizzonte, e il numero che mentiva pur essendo giusto
+
+«Questa settimana · 137,40 € · restano · 3 giorni a lunedì». Il numero era
+esatto — 67,40 sul Principale più 70,00 in Contanti — ma l'etichetta lo
+faceva leggere al contrario, e il «al giorno» era **45,80**.
+
+Il difetto vero non era il testo: era il **denominatore**. La quota si
+calcolava sui giorni che mancano a lunedì, come se lunedì arrivassero soldi.
+Non arrivano: la ricarica settimanale esce dalla Cassa, e nella Cassa c'erano
+72 centesimi. Quei 137,40 dovevano bastare fino al **20**, cioè dieci giorni,
+cioè **13,74 al giorno**. L'app ne autorizzava più del triplo.
+
+`orizzonte(iso)` in calcolo.js: fine del ciclo dello stipendio, giorni che
+mancano, somma delle tasche spendibili, quanto fa al giorno, e il rapporto
+con il ritmo che il piano prevedeva (`cassaSettimanale / 7`). Da lì escono
+**sia** il numero grande **sia** la quota di `giornata()` — prima uscivano da
+due conti diversi e potevano contraddirsi sulla stessa scheda.
+
+Il colore segue il rapporto: sotto il piano ambra, sotto il 60% rosso, e una
+riga che dice di quanto sei sotto. Sopra il piano non si scrive niente.
+
+Sui dati veri dell'11 settembre: 137,40 € · fino al 20 set · 10 giorni ·
+13,74 al giorno · piano 18,57 · rapporto 0,74 → **stretto**. E la giornata:
+speso 60,84 su una quota di 19,82 → **grave**, 3,1 giorni bruciati in uno.
+
+**Da sistemare, ed è suo:** `config.giornoStipendio` vale 21, ma lui dice che
+lo stipendio arriva il 23. Finché resta 21 l'orizzonte è corto di due giorni.
+Si cambia in Impostazioni → Finanze.

@@ -9,7 +9,7 @@
 // Tre schermate: Riepilogo, Movimenti, Analisi. Il Setup è la sezione
 // "Finanze" di Impostazioni — tutte le impostazioni in un posto solo.
 
-import { el, aggiungi, intestazione, oggiISO, euro, plurale, daISO } from "../../core/ui.js";
+import { el, aggiungi, intestazione, oggiISO, euro, plurale, daISO, dataBreve } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
@@ -18,7 +18,7 @@ import { casella, stato, movimentiVivi, migra, checkFatto } from "./dati.js";
 import {
   statistiche, budgetTotale, cassaSettimana, verdetto, meseDi, spostaMese,
   nomeMese, importoEffettivo, proiezione,
-  cicloDi, settimana, inArrivo, spesoOggi, ricorrentiDiOggi, alert, calendarioUscite, giorniADomenica,
+  cicloDi, settimana, orizzonte, inArrivo, spesoOggi, ricorrentiDiOggi, alert, calendarioUscite, giorniADomenica,
 } from "./calcolo.js";
 import {
   vistaHome, vistaMovimenti, vistaAnalisi, vistaSetup,
@@ -379,6 +379,7 @@ export default {
     if (!st.nMovimenti && !budgetTotale(meseDi())) return null;
 
     const s = settimana(iso);
+    const o = orizzonte(iso);
     const oggiRic = ricorrentiDiOggi(iso);
     const speso = spesoOggi(iso);
     const av = alert(iso);
@@ -392,13 +393,20 @@ export default {
         : `Oggi escono ${oggiRic.length} addebiti · ${euro(oggiRic.reduce((t, r) => t + r.importo, 0), { tondo: true })}`);
     }
     if (speso > 0) pezzi.push(`Oggi ${euro(speso, { tondo: true })}`);
-    pezzi.push(s.finita
-      ? `settimana finita · ${plurale(s.giorniRimasti, "giorno", "giorni")} a lunedì`
-      : `${euro(s.alGiorno, { tondo: true })} al giorno fino a domenica`);
+    // L'orizzonte e non la domenica: è la finestra su cui quei soldi devono
+    // davvero arrivare, e su cui si misura il ritmo che ti puoi permettere.
+    pezzi.push(o.disponibile <= 0
+      ? `le tasche sono a zero · ${plurale(o.giorni, "giorno", "giorni")} allo stipendio`
+      : `${euro(o.alGiorno, { tondo: true })} al giorno per ${plurale(o.giorni, "giorno", "giorni")}`);
 
     return {
       titolo: "Finanze",
-      valore: euro(s.resta),
+      valore: euro(o.disponibile),
+      // L'etichetta la scrive il modulo, non la home: era «restano questa
+      // settimana» scritto a mano lì, e diceva una cosa falsa — quel numero
+      // è quanto hai nelle tasche spendibili, e deve bastare fino allo
+      // stipendio, non fino a domenica.
+      eti: `da far bastare fino al ${dataBreve(o.fine)}`,
       dettaglio: pezzi.join(" · "),
       // La home lo mette in una frase: «ti manca segnare le spese» non ha
       // senso — Finanze non è una cosa da fare, è una cosa da guardare. Solo
@@ -414,7 +422,7 @@ export default {
       // modulo e non la home perché è il modulo a sapere che gli importi
       // sono centesimi: passarli grezzi vorrebbe dire insegnarlo alla home.
       spesoOggi: euro(speso, { tondo: true }),
-      alGiorno: s.finita ? "—" : euro(s.alGiorno, { tondo: true }),
+      alGiorno: o.disponibile <= 0 ? "—" : euro(o.alGiorno, { tondo: true }),
       prossima: prossimaUscita(iso),
       // Le uscite di QUESTA SETTIMANA, fino a domenica. Sono la cosa che
       // riempie la carta di Finanze in home, ed è giusto che la riempia

@@ -383,7 +383,10 @@ function cartaFinanze(q) {
     corpo: [
       el("div", { class: "og-soldi-eroe" }, [
         el("span", { class: "og-soldi-cifra", testo: f.valore ?? "—" }),
-        el("span", { class: "og-soldi-eti", testo: "restano questa settimana" }),
+        // L'etichetta la manda Finanze: «restano questa settimana» era
+        // scritto qui a mano e diceva una cosa falsa — quel numero è quanto
+        // hai nelle tasche spendibili, e deve bastare fino allo stipendio.
+        el("span", { class: "og-soldi-eti", testo: f.eti || "spendibili" }),
       ]),
       // Due numeri, non tre. Il terzo era «la prossima uscita» ridotta a una
       // cifra, e adesso quella storia la racconta il calendario qui sotto —
