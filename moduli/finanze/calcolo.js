@@ -1107,10 +1107,24 @@ const PESO = { critico: 3, warn: 2, info: 1 };
 /** Un euro piano: gli alert sono testo, non markup. */
 const eu = (c) => `${Math.round((c || 0) / 100).toLocaleString("it-IT")} €`;
 
+/** Quanti giorni prima un'uscita scoperta diventa un allarme. */
+const GIORNI_ALLARME = 5;
+
 export function alert(iso = oggiISO()) {
   const ciclo = cicloDi(iso);
   const s = settimana(iso);
-  const arrivo = inArrivo(14, iso);
+  /* CINQUE GIORNI, non quattordici, e non è una preferenza.
+
+     Un allarme è tale solo se puoi ancora farci qualcosa E se il buco è
+     vero. A quattordici giorni non è né l'una né l'altra cosa: «il 25 esce
+     la rata da 250 € e nel pocket Fisse ce ne sono 0» è un allarme rosso il
+     giorno 11, quando lo stipendio arriva il 21 e quei soldi non sono
+     ancora arrivati. Non ti sta avvisando di un problema, ti sta dicendo
+     che non è ancora il 21.
+
+     A cinque giorni la finestra sta dentro il ciclo: se a quel punto la
+     copertura non c'è, è una cosa da sistemare davvero. */
+  const arrivo = inArrivo(GIORNI_ALLARME, iso);
   const soglie = { ...SOGLIE_PREDEFINITE, ...(stato().soglie || {}) };
   const out = [];
 
@@ -1123,7 +1137,7 @@ export function alert(iso = oggiISO()) {
       id: "fisse_scoperte", livello: "critico",
       testo: daFisse.length === 1
         ? `Il ${daISO(daFisse[0].quando).getDate()} esce ${daFisse[0].nome.toLowerCase()} da ${eu(daFisse[0].importo)} e nel pocket Fisse ce ne sono ${eu(arrivo.saldoFisse)}. Mancano ${eu(arrivo.scoperto)}.`
-        : `Nei prossimi 14 giorni dalle Spese fisse escono ${eu(arrivo.daFisse)} e nel pocket ce ne sono ${eu(arrivo.saldoFisse)}. Mancano ${eu(arrivo.scoperto)}.`,
+        : `Nei prossimi ${GIORNI_ALLARME} giorni dalle Spese fisse escono ${eu(arrivo.daFisse)} e nel pocket ce ne sono ${eu(arrivo.saldoFisse)}. Mancano ${eu(arrivo.scoperto)}.`,
     });
   }
 

@@ -104,17 +104,26 @@
      font di testo. */
   --font-e: "AppleColorEmoji", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 
-  --t-64: 64px; --t-48: 48px; --t-40: 40px; --t-34: 34px; --t-28: 28px;
-  --t-22: 22px; --t-19: 19px; --t-17: 17px; --t-15: 15px; --t-13: 13px;
-  /* I due gradini in fondo valgono più di quanto dice il nome: erano 11 e
-     10 veri, e a quei corpi le etichette maiuscoletto e le didascalie non si
-     leggevano — passavano il contrasto ed erano comunque illeggibili, che è
-     la prova che il contrasto da solo non basta a dire "si legge". */
-  --t-11: 12.5px; --t-10: 11.5px;
+  /* TUTTA LA SCALA È AL 110%, e i nomi dei gradini restano quelli di prima.
+     `--t-15` vale 17px, non 15: il nome è l'etichetta del gradino, non la
+     misura, e rinominarli tutti avrebbe voluto dire toccare ogni file per
+     cambiare una cosa che si decide qui.
+
+     Il 10% non è un vezzo: alla misura di prima le didascalie e i
+     maiuscoletti passavano il contrasto e non si leggevano lo stesso — che
+     è la prova che il contrasto da solo non basta a dire «si legge». I due
+     gradini in fondo erano già stati alzati una volta per quel motivo;
+     questo giro alza tutto insieme, tipografia e spazi, se no il testo
+     cresce dentro scatole rimaste ferme e l'aria sparisce. */
+  --t-64: 70px; --t-48: 53px; --t-40: 44px; --t-34: 37px; --t-28: 31px;
+  --t-22: 24px; --t-19: 21px; --t-17: 19px; --t-15: 17px; --t-13: 14px;
+  --t-11: 13.5px; --t-10: 12.5px;
 
   /* ---------------------------------------------------------- spaziatura -- */
-  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px; --s5: 20px;
-  --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px; --s16: 64px;
+  /* Anche questi al 110%, tranne `--s1`: quattro pixel sono un filo di
+     distacco, e 4,4 arrotondati restano 4. */
+  --s1: 4px;  --s2: 9px;  --s3: 13px; --s4: 18px; --s5: 22px;
+  --s6: 26px; --s8: 35px; --s10: 44px; --s12: 53px; --s16: 70px;
 
   /* --------------------------------------------------------------- forma --
      Raggi larghi. È la differenza più immediata fra "pannello" e "oggetto":

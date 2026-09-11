@@ -561,3 +561,33 @@ senza svegliare il resto. Nota: `migra()` aveva un `return` anticipato che
 saltava tutto ciò che veniva dopo — è diventato un `if`, ma gli
 `aggiustamenti2608` restano legati a `serve` esattamente com'erano, perché
 lì dentro ci sono importi di fabbrica che a `up` pari batterebbero i veri.
+
+## 11 settembre — le notifiche erano spente da un valore di fabbrica (chat ATLAS)
+
+**Quarta volta che si ripete lo stesso schema.** Le notifiche non arrivavano
+dal **1° settembre alle 10:09** — l'ultimo invio registrato in
+`stato-notifiche.json`. Il workflow `promemoria.yml` in atlas-dati gira
+regolarmente ogni dieci minuti: non aveva niente da mandare.
+
+In `notifiche.json` le tre levette erano **tutte spente**, con `up: 0`. La
+cronologia del file le mostra rimbalzare fra acceso e spento dal 25 agosto,
+e fermarsi su spento il 2 settembre alle 20:52 — lo stesso minuto in cui il
+dispositivo con lo stato di fabbrica ha appiattito anche `finanze.json`.
+
+Due difetti, tutti e due in `core/notifiche.js`:
+
+1. **`scriviOrari()` non alzava `up`.** Accendere una levetta cambiava
+   `orari` e lasciava il timestamp dov'era — zero, su un dispositivo che non
+   l'aveva mai avuto. La scelta dell'utente non poteva vincere un confronto,
+   e il valore di fabbrica la sostituiva al primo giro.
+2. **`applica()` adottava gli orari remoti senza prenderne il `up`.** Il
+   dispositivo si teneva i valori buoni ma restava convinto di avere
+   `up: 0`, quindi li rispediva marcati «mai scritti da nessuno».
+
+La regola, per la quarta volta: **un valore di fabbrica va scritto con
+`up: 0`, e una scelta dell'utente va SEMPRE timbrata.** Se una delle due
+manca, prima o poi la fabbrica vince.
+
+Restano da controllare con lo stesso metro gli altri moduli: ovunque ci sia
+un blocco che si fonde su un `up` solo, verificare che chi lo modifica lo
+alzi e chi lo adotta se lo prenda.

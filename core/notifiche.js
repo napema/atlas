@@ -176,9 +176,26 @@ function impronaDi(endpoint) {
   return `d_${h.toString(36)}`;
 }
 
-/** Cambia gli orari di un modulo. Il workflow li rilegge al giro dopo. */
+/**
+ * Cambia gli orari di un modulo. Il workflow li rilegge al giro dopo.
+ *
+ * `s.up = Date.now()` NON è una formalità, ed è costato dieci giorni di
+ * notifiche.
+ *
+ * Gli orari si fondono con `if (remoto.up > s.up)`, che è la regola giusta.
+ * Ma qui `up` non veniva alzato mai: accendere una levetta cambiava
+ * `orari` e lasciava `up` dov'era — zero, su un dispositivo che non l'aveva
+ * mai avuto. Il risultato è che la scelta dell'utente NON poteva vincere un
+ * confronto, e il valore di fabbrica — tutte le levette spente — la
+ * sostituiva al primo giro. Nella cronologia di atlas-dati `notifiche.json`
+ * rimbalza fra acceso e spento dal 25 agosto; il 2 settembre alle 20:52 si
+ * è fermato su spento, e da lì non è più arrivata una notifica.
+ */
 export function scriviOrari(modulo, patch) {
-  casella.aggiorna((s) => { s.orari[modulo] = { ...s.orari[modulo], ...patch }; });
+  casella.aggiorna((s) => {
+    s.orari[modulo] = { ...s.orari[modulo], ...patch };
+    s.up = Date.now();
+  });
 }
 
 /** Una notifica locale, per provare che la catena funzioni fin qui. */
@@ -212,6 +229,13 @@ export function avviaSync() {
           for (const k of Object.keys(s.orari)) {
             if (remoto.orari?.[k]) s.orari[k] = { ...s.orari[k], ...remoto.orari[k] };
           }
+          // E SI PRENDE ANCHE IL TIMESTAMP. Senza, il dispositivo adotta i
+          // valori buoni ma resta convinto di avere `up: 0`, quindi al giro
+          // dopo li rispedisce marcati come «mai scritti da nessuno» — e
+          // alla successiva reinstallazione li perde di nuovo. È la metà
+          // mancante del confronto: adottare un valore vuol dire adottare
+          // anche il momento in cui è stato scelto.
+          s.up = remoto.up;
         }
       }, { origine: "sync", tocca: false });
     },
