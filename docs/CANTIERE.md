@@ -620,3 +620,68 @@ speso 60,84 su una quota di 19,82 → **grave**, 3,1 giorni bruciati in uno.
 **Da sistemare, ed è suo:** `config.giornoStipendio` vale 21, ma lui dice che
 lo stipendio arriva il 23. Finché resta 21 l'orizzonte è corto di due giorni.
 Si cambia in Impostazioni → Finanze.
+
+---
+
+## 12 settembre — la skincare, e il mittente che non sapeva delle parti (chat ATLAS, perimetro Abitudini)
+
+Sei passaggi in due momenti: **Cleanser · Idratante · SPF** la mattina,
+**Cleanser · Benzac 5% · Idratante** la sera. Le parti c'erano già — sono
+nate per gli integratori — ma reggevano un elenco di pastiglie, non una
+routine. Mancavano tre cose.
+
+**Un promemoria per fascia.** `remind` era uno solo per abitudine. La
+skincare ne vuole due, a quattordici ore di distanza, e gli integratori tre.
+Ora sta in `h.orari = { mattina: "08:00", sera: "22:30" }`, e l'editor mostra
+un campo per ogni momento **che le parti usano davvero**: cinque orari di cui
+tre inutili sono un modo lento di nascondere i due che contano.
+
+**`h.sequenza`.** L'ordine è una regola solo per certe routine: il detergente
+prima di tutto e la protezione solare per ultima è chimica, mentre fra
+magnesio e creatina un ordine non c'è. Chi lo dichiara si prende i numeri dei
+passaggi; gli altri no, perché numerarli inventerebbe una precedenza falsa.
+
+**Le parti raccolte per momento**, con l'ora e il conto nell'intestazione.
+«2/3» dice a colpo d'occhio che una routine è cominciata e non finita, che è
+lo stato in cui si sbaglia. Vale anche per gli integratori.
+
+### Il guasto nel mittente, che era latente e non lo sarebbe rimasto
+
+`notifiche.js` in atlas-dati costruisce `fatte` dai log del giorno per `l.h`.
+Una parte però scrive il log sotto **`<habitId>#<parteId>`**: l'id nudo del
+genitore non compare mai. Quindi `fatte.has(h.id)` era **falso anche a
+routine completata**, e il primo `remind` messo su un'abitudine con parti
+avrebbe suonato ogni sera anche dopo averle fatte tutte. Nessuno l'aveva
+ancora visto solo perché nessuna abitudine con parti aveva un `remind`.
+
+Adesso chi ha le parti guarda **le parti**, una notifica per fascia con
+dentro i nomi di quello che manca — «Benzac 5%» si fa stando fermi dieci
+secondi, «2 cose da fare» va aperta per sapere cosa sono — e il `remind` del
+genitore non si guarda affatto. Chiave `ab:<id>:<fascia>:<data>` con la data
+in fondo, che è quello che la potatura riconosce; tag `ab:<id>:<fascia>`,
+perché la sera non deve sostituire sullo schermo il mattino ancora aperto.
+
+### La semina, e perché ha due lucchetti
+
+Sei passaggi da scrivere a dito sono mezz'ora per una cosa che si sa già,
+quindi l'app compone la routine. **Una volta.**
+
+`semi` è l'elenco di quello che è già stato composto e si fonde per
+**unione**, fuori dal cancello di `metaUp`: un insieme che cresce e basta non
+può perdere un confronto, mentre tutto ciò che sta dentro `meta` lo perde in
+blocco appena arriva un dispositivo di fabbrica — è il guasto del 2
+settembre. Il secondo lucchetto è l'**id fisso**: se l'abitudine c'è, viva o
+con la lapide sopra, non si ricrea. Cancellarla resta una decisione.
+
+E si semina **dopo la prima lettura**, mai all'avvio. Seminare prima di aver
+letto è lo stesso identico errore dello scrivere prima di aver letto, e
+produce lo stesso danno: il telefono appena installato rimette in vita
+l'abitudine cancellata dall'altro, con un `up` più fresco della lapide.
+
+**Da fare, ed è suo:** aprire ATLAS una volta perché la routine arrivi in
+`abitudini.json`. Prima che ci arrivi, il mittente non ha niente da mandare.
+
+**Resta aperto:** Mobilità non è mai stata passata al setaccio del «valore di
+fabbrica / `up`», e in Abitudini `meta` (tema e inizio settimana) sta ancora
+dietro il cancello di `metaUp`. Sono due voci, il danno possibile è piccolo,
+ma è lo stesso schema che ha già colpito quattro volte.
