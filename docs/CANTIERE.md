@@ -755,3 +755,39 @@ Va deciso, non lasciato lì. Le strade vere sono tre: tenerlo così
 sapendolo, mettere un piccolo proxy davanti (Cloudflare Worker gratuito) che
 tenga il token e parli lui con GitHub, oppure rendere privato anche il repo
 dell'app — che però richiede Pages su repo privato, cioè un piano a pagamento.
+
+### Risolto la sera stessa — l'orologio è uscito da GitHub
+
+La sveglia non è più `schedule`. Un cron esterno (cron-job.org, fuso
+Europe/Rome) chiama `workflow_dispatch` con
+`0,10,20,30,40,50 7-9,20-23 * * *`: 42 chiamate al giorno, dieci minuti di
+precisione nelle due fasce che contengono tutti i promemoria — skincare 08:00
+e 22:30, pagamenti 08:30, meditazione 09:24, mobilità 21:00, finanze 21:30,
+recupero 22:15.
+
+Verificato dai due capi: la risposta del test dice `204 No Content` alle
+`21:01:47 GMT`, e su GitHub c'è un run `workflow_dispatch` partito a
+`2026-09-12T21:01:47Z`. Stesso secondo.
+
+Il token è un fine-grained con **`actions=write` e nient'altro**: legge
+`finanze.json` → **403**, lancia il workflow → **204**. Il primo tentativo
+aveva per sbaglio `contents` invece di `actions` — leggeva i dati e non
+sapeva lanciare niente — ed è stato revocato (→ 401).
+
+Lo `schedule` dentro atlas-dati è sceso a **quattro giri al giorno**
+(`30 6,7,19,20 * * *` UTC, dentro le fasce con entrambe le ore legali). Non è
+più l'orologio: è la rete che evita il buio totale se la sveglia esterna
+muore. È anche una questione di conto — 2000 minuti gratuiti al mese, ogni
+giro fatturato come un minuto intero: il cron esterno ne consuma ~1260, la
+rete ~120, e lasciare qui una frequenza alta avrebbe sforato il piano a metà
+mese, spegnendo le notifiche da sole.
+
+**E adesso il silenzio si fa sentire.** Su cron-job.org è acceso l'avviso di
+fallimento dopo due tentativi: la ragione per cui questo guasto è durato
+giorni è che quando la sveglia smette non lo dice nessuno — nessun errore,
+nessun log, solo notifiche che non arrivano mentre tu pensi di aver già fatto
+tutto.
+
+Nota per il futuro: GitHub risponde con `Deprecation: 10 Mar 2026` e
+`Sunset: 10 Mar 2028` sulla versione d'API `2022-11-28` scelta in automatico.
+Non è urgente, ma è la prossima cosa che romperà questa catena in silenzio.
