@@ -1102,3 +1102,25 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
 }
 .fi-numero-piano.avviso { color: var(--avviso); }
 .fi-numero-piano.male   { color: var(--male); font-weight: 600; }
+
+/* ------------------------------------------------- il piede della scheda --
+   I due numeri di contesto — quanto hai in tutto, a che ritmo può durare —
+   staccati da un filo dalla cifra grande.
+
+   Il filo qui non è decorazione: dice che sopra c'è la decisione di stasera
+   e sotto il quadro in cui sta. Senza, nove cifre della stessa dimensione
+   diventano un elenco, ed è quello che era diventata questa scheda. */
+.fi-numero-piede {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: var(--s3);
+  margin-top: var(--s4);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--filo);
+}
+/* Il piede resta NEUTRO anche quando la scheda è in allarme: il colore è la
+   voce della cifra grande, e se parlano tutti insieme non parla nessuno. */
+.fi-numero-piede .fi-oggi-stat b { color: var(--testo); }
+/* Il colore del piede sta sul RITMO, non sul totale: il totale è un fatto,
+   il ritmo è il giudizio. `.avviso` = sotto il piano, `.male` = molto sotto. */
+.fi-numero-piede.avviso .fi-oggi-stat:last-child b { color: var(--avviso); }
+.fi-numero-piede.male   .fi-oggi-stat:last-child b { color: var(--male); }

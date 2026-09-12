@@ -14,7 +14,7 @@
  * che stanno in core/app.js. Il perché è scritto lì.
  */
 
-const VERSIONE = "atlas-v59";
+const VERSIONE = "atlas-v60";
 const GUSCIO = `guscio-${VERSIONE}`;
 
 /* I FILE PESANTI STANNO IN UNA CACHE CHE NON PORTA LA VERSIONE.

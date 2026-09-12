@@ -136,103 +136,85 @@ function ilNumero(s, azioni) {
     return box;
   }
 
-  /* IL NUMERO DICE FIN DOVE DEVE ARRIVARE, e prima non lo diceva.
+  /* UNA DOMANDA SOLA, E UN NUMERO SOLO GRANDE.
 
-     C'era scritto «Questa settimana · 137,40 € · restano · 3 giorni a
-     lunedì», e la domanda giusta era: restano rispetto a cosa? 137,40 non
-     era il resto di un budget, era la somma di quello che c'è in tasca e
-     sulla carta — e doveva bastare fino al 20, non fino a lunedì. Il numero
-     era esatto e l'etichetta lo faceva leggere al contrario.
+     La versione prima ne metteva nove nella stessa scheda — totale, giorni,
+     al giorno, il piano, di quanto eri sotto, speso oggi, quota di oggi,
+     resto di oggi, e un secondo «al giorno» — con due barre di avanzamento
+     senza etichetta. Due di quei numeri erano lo stesso concetto calcolato
+     in due modi diversi (14,12 in alto, 63,54 in basso), il che è il modo
+     più rapido per far smettere di credere a tutta la scheda.
 
-     Adesso l'intestazione dice la data a cui i soldi devono arrivare, la
-     nota dice da dove escono e quanto fanno al giorno, e il colore lo
-     decide il rapporto fra quel ritmo e quello che il piano prevedeva. */
+     Adesso la gerarchia è una: in grande QUANTO PUOI ANCORA SPENDERE OGGI,
+     che è l'unica cifra su cui si decide qualcosa stasera. Sotto, una barra
+     sola — la giornata. In fondo, staccati da un filo, i due numeri di
+     contesto: quanto hai in tutto e a che ritmo può durare.
+
+     Il totale non è più il protagonista e non è una perdita: «quanto ho» lo
+     sai comunque, «quanto posso spendere adesso» no, ed è la differenza fra
+     un estratto conto e uno strumento. */
   const o = orizzonte();
+  const g = giornata();
+
+  const tonoOggi =
+    g.livello === "grave" || g.livello === "male" ? "male"
+    : g.livello === "avviso" ? "avviso" : "";
   const tonoOr = o.livello === "grave" || o.livello === "finito" ? "male"
     : o.livello === "stretto" ? "avviso" : "";
 
-  box.className = `fi-numero ${tonoOr || tono}`.trim();
+  box.className = `fi-numero ${tonoOggi}`.trim();
 
-  aggiungi(box, [
-    el("div", { class: "fi-numero-testa" }, [
-      el("div", { class: "micro", testo: `Fino al ${dataBreve(o.fine)}` }),
-      el("div", { class: `micro ${tonoOr}`.trim(),
-        testo: plurale(o.giorni, "giorno", "giorni") }),
-    ]),
-    el("div", { class: "cifra cifra-xl", html: euroGrande(o.disponibile) }),
-    el("p", { class: "fi-numero-nota", testo:
-      `in tasca e sulla carta · ${euro(o.alGiorno)} al giorno` }),
+  // Il numero grande cambia SIGNIFICATO quando hai sforato, non solo colore:
+  // sotto quota la domanda è «quanto resta», sopra è «di quanto sei oltre»,
+  // e sono due cose diverse che meritano due cifre diverse.
+  const eroe = g.quota <= 0 ? "—"
+    : g.sforo > 0 ? `−${euro(g.sforo)}`
+    : euro(g.resta);
 
-    // Il confronto col piano, e solo quando serve dirlo. Sopra il piano non
-    // si scrive niente: un'app che parla anche quando va tutto bene insegna
-    // a non leggerla.
-    o.piano > 0 && o.rapporto < 1 && el("p", { class: `fi-numero-piano ${tonoOr}`.trim(), testo:
-      o.livello === "finito"
-        ? `Le tasche spendibili sono a zero, e allo stipendio mancano ${plurale(o.giorni, "giorno", "giorni")}.`
-        : `Il piano ne prevedeva ${euro(o.piano)} al giorno: ci sei sotto di ${euro(o.piano - o.alGiorno)}.` }),
+  const sotto = g.quota <= 0
+    ? "niente da spendere oggi"
+    : g.sforo > 0
+      ? `oltre la quota di oggi · ${g.giorni.toFixed(1).replace(".", ",")} giorni spesi in uno`
+      : `ancora oggi · ${euro(g.speso)} di ${euro(g.quota)}`;
 
-    s.budget > 0 && el("div", { class: "fi-consumo" }, [
-      el("i", { stile: { width: `${Math.round(s.frazione * 100)}%` } }),
-    ]),
-    zonaOggi(s),
-  ]);
-  return box;
-}
-
-/* La riga di OGGI, sotto il numero della settimana.
- *
- * La settimana da sola si legge troppo tardi: «restano 171,84 € e 4 giorni»
- * è vero anche il giovedì sera dopo aver bruciato metà budget, e il numero
- * settimanale non ha modo di dirtelo prima di domenica. Qui c'è l'unica
- * domanda che si può ancora usare per decidere qualcosa stasera: quanto è
- * uscito oggi, e quanto poteva uscirne.
- *
- * Prende il posto della vecchia riga del ritmo invece di aggiungersi: due
- * numeri «al giorno» sulla stessa scheda, calcolati su basi diverse, sono
- * il modo più rapido per rendere illeggibile la cosa che dovrebbe chiarire.
- *
- * Il colore lo decide `giornata().livello`, non questa funzione: la soglia è
- * una scelta di calcolo e non di disegno, e tenerla lì la rende provabile
- * senza montare niente.
- */
-function zonaOggi(s) {
-  const g = giornata();
-
-  if (g.quota <= 0) {
-    return el("p", { class: "fi-numero-ritmo", testo: "Meglio non spendere altro fino a lunedì" });
-  }
-
-  // Due numeri e due parole, non una frase. La frase la leggevi una volta e
-  // poi mai più: questa riga la si guarda di sfuggita venti volte al giorno,
-  // e di sfuggita si leggono le cifre, non il testo intorno.
   const stat = (valore, etichetta) => el("div", { class: "fi-oggi-stat" }, [
     el("b", { testo: valore }),
     el("span", { testo: etichetta }),
   ]);
 
-  // Oltre i due giorni il delta in euro smette di dire quanto è grosso: «140 €
-  // oltre» va pesato contro la quota per capirlo. I giorni no — «3,2 giorni»
-  // si capisce senza confronti, ed è quello che è successo davvero.
-  const sinistra = g.sforo > 0
-    ? (g.livello === "male" || g.livello === "grave"
-        ? stat(`${g.giorni.toFixed(1).replace(".", ",")} giorni`, "spesi oggi")
-        : stat(`−${euro(g.sforo)}`, "oltre"))
-    : stat(euro(g.resta), g.speso === 0 ? "puoi spendere" : "restano oggi");
-
-  return el("div", { class: `fi-oggi ${g.livello}` }, [
-    el("div", { class: "fi-oggi-testa" }, [
+  aggiungi(box, [
+    el("div", { class: "fi-numero-testa" }, [
       el("div", { class: "micro", testo: "Oggi" }),
-      el("div", { class: "fi-oggi-cifra", testo: `${euro(g.speso)} di ${euro(g.quota)}` }),
+      // Neutro: quante notti mancano allo stipendio è contesto, non un
+      // allarme. Il colore sta sul ritmo qui sotto, che è la cosa che può
+      // essere sotto il piano.
+      el("div", { class: "micro",
+        testo: `${plurale(o.giorni, "giorno", "giorni")} al ${dataBreve(o.fine)}` }),
     ]),
-    el("div", { class: "fi-consumo" }, [
+
+    el("div", { class: "cifra cifra-xl", html: eroe === "—" ? "—" : euroGrande(g.sforo > 0 ? -g.sforo : g.resta) }),
+    el("p", { class: "fi-numero-nota", testo: sotto }),
+
+    g.quota > 0 && el("div", { class: "fi-consumo" }, [
       el("i", { stile: { width: `${Math.round(g.frazione * 100)}%` } }),
     ]),
-    el("div", { class: "fi-oggi-fondo" }, [
-      sinistra,
-      stat(euro(s.alGiorno), "al giorno"),
+
+    el("div", { class: `fi-numero-piede ${tonoOr}`.trim() }, [
+      stat(euro(o.disponibile), "in tasca e sulla carta"),
+      stat(euro(o.alGiorno), "al giorno"),
     ]),
+
+    // Il confronto col piano solo quando è grosso. Sotto il piano di poco lo
+    // dice già il ritmo qui sopra; ripeterlo a parole è la riga in più che
+    // rende la scheda un elenco.
+    o.piano > 0 && o.rapporto < 0.6 && el("p", { class: "fi-numero-piano male", testo:
+      o.disponibile <= 0
+        ? `Le tasche sono a zero e allo stipendio mancano ${plurale(o.giorni, "giorno", "giorni")}.`
+        : `Il piano ne prevedeva ${euro(o.piano)} al giorno.` }),
   ]);
+  return box;
 }
+
 
 /* -------------------------------------------------- 1bis. IL CHECK ------ */
 /*
