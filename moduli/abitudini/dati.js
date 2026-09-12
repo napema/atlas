@@ -29,6 +29,9 @@ export const PREDEFINITO = {
   // In ATLAS non ci sono più: le notifiche sono di core, una coppia VAPID
   // per tutti i moduli, e le iscrizioni stanno in notifiche.json. Un modulo
   // che tenesse le sue riporterebbe la duplicazione che ATLAS elimina.
+  // Le routine che ATLAS sa comporre da sé e che ha già composto su questo
+  // archivio. Si fonde per UNIONE: vedi `semina()` in fondo al file.
+  semi: [],
   meta: { theme: "auto", weekStart: 1 },
   metaUp: 0,
 };
@@ -185,6 +188,17 @@ export function scriviMeta(patch) {
    e fusione del sync funzionano già senza una riga in più.
 
    Un'abitudine con parti risulta fatta quando TUTTE le sue parti lo sono.
+
+   DUE CAMPI FACOLTATIVI sul genitore, e parlano tutti e due delle parti.
+
+     `orari`     un promemoria PER FASCIA — { mattina: "08:00", sera: "22:30" }.
+                 Con le parti il vecchio `remind`, che era uno solo per
+                 abitudine, non basta più: la skincare ne vuole due e gli
+                 integratori tre. Chi ha le parti usa questo e ignora quello.
+     `sequenza`  l'ordine dell'array non è una preferenza ma una regola.
+                 Vero per la skincare — il detergente prima di tutto, la
+                 protezione solare per ultima — falso per gli integratori,
+                 dove magnesio e creatina non hanno un ordine fra loro.
    ========================================================================= */
 
 export const FASCE = {
@@ -235,4 +249,134 @@ export function statoFascia(fascia, ora = new Date().getHours()) {
   if (ora < f.da) return "presto";
   if (ora < f.a) return "adesso";
   return "tardi";
+}
+
+/* =========================================================================
+   I GRUPPI: le parti raccolte per fascia.
+
+   Nasce dalla skincare, e migliora anche gli integratori. Con la lista
+   piatta ogni riga si portava dietro la sua etichetta — «Mattina»,
+   «Mattina», «Mattina» — che è rumore ripetuto tre volte, e la routine
+   della sera si mescolava a quella del mattino in un elenco solo. Raccolte,
+   diventano due blocchi con un'intestazione sola, che è come sono fatte
+   nella testa di chi le fa: due momenti, non sei caselle.
+
+   L'ordine DENTRO il gruppo è quello dell'array, non alfabetico né per id.
+   Per la skincare non è una preferenza ma chimica: il detergente prima di
+   tutto, la protezione solare per ultima.
+   ========================================================================= */
+
+export function gruppiParti(h) {
+  const gruppi = new Map();
+  for (const p of partiDi(h)) {
+    const f = p.fascia || "qualsiasi";
+    if (!gruppi.has(f)) gruppi.set(f, []);
+    gruppi.get(f).push(p);
+  }
+  return [...gruppi.entries()]
+    .map(([fascia, parti]) => ({
+      fascia,
+      nome: FASCE[fascia]?.nome || "",
+      ora: (h.orari || {})[fascia] || "",
+      parti,
+    }))
+    .sort((a, b) => (FASCE[a.fascia]?.ordine || 9) - (FASCE[b.fascia]?.ordine || 9));
+}
+
+/** Le fasce davvero usate dalle parti, in ordine di giornata. */
+export const fasceUsate = (h) => gruppiParti(h).map((g) => g.fascia);
+
+/* =========================================================================
+   I SEMI: le routine che ATLAS sa comporre da sé.
+
+   La skincare è sei passaggi in due momenti, sempre gli stessi. Farli
+   scrivere a mano uno per uno è mezz'ora di dita sul telefono per una cosa
+   che si sa già. Quindi l'app la compone — UNA VOLTA.
+
+   Due lucchetti, e servono tutti e due.
+
+   `semi` è l'elenco di quello che è già stato composto, e si fonde per
+   UNIONE: nessuno lo accorcia mai. È la forma che regge il guasto tipico
+   di questo archivio — il dispositivo appena installato, che semina prima
+   di aver letto. Un insieme che cresce e basta non può perdere un
+   confronto. Dentro `meta` invece l'avrebbe perso di sicuro: `meta` si
+   fonde a blocchi su un timestamp solo, e un `metaUp` di fabbrica butta via
+   l'intero blocco. È il guasto del 2 settembre, e non si ripete.
+
+   Il secondo lucchetto è l'ID FISSO. Se l'abitudine c'è — viva, archiviata
+   o con la lapide sopra — non si ricrea. Cancellarla deve restare una
+   decisione, non qualcosa che l'app annulla al riavvio dopo.
+   ========================================================================= */
+
+const ROUTINE_SKINCARE = {
+  id: "h_skincare",
+  name: "Skincare",
+  emoji: "💧",
+  tint: "mint",
+  sched: { type: "daily", days: [1, 2, 3, 4, 5, 6, 0], times: 3 },
+  // L'ordine conta: gli attivi prima della crema, la protezione per ultima.
+  sequenza: true,
+  orari: { mattina: "08:00", sera: "22:30" },
+  parti: [
+    { id: "pt_sk_m1", nome: "Cleanser",  fascia: "mattina" },
+    { id: "pt_sk_m2", nome: "Idratante", fascia: "mattina" },
+    { id: "pt_sk_m3", nome: "SPF",       fascia: "mattina" },
+    { id: "pt_sk_s1", nome: "Cleanser",  fascia: "sera" },
+    { id: "pt_sk_s2", nome: "Benzac 5%", fascia: "sera" },
+    { id: "pt_sk_s3", nome: "Idratante", fascia: "sera" },
+  ],
+};
+
+const ROUTINE = { skincare: ROUTINE_SKINCARE };
+
+/**
+ * Compone le routine che mancano. Si può chiamare quante volte si vuole.
+ *
+ * VA CHIAMATA DOPO LA PRIMA LETTURA del sync, non all'avvio: seminare prima
+ * di aver letto è lo stesso identico errore dello scrivere prima di aver
+ * letto, e produce lo stesso risultato — un'abitudine cancellata su un
+ * dispositivo che torna in vita dall'altro, con un `up` più fresco della
+ * lapide. La regola di `core/sync.js` vale anche qui.
+ *
+ * @returns {string[]} i nomi delle routine composte ora (vuoto se niente)
+ */
+export function semina() {
+  // IL CONTROLLO STA FUORI DALLA SCRITTURA, e non è pignoleria.
+  //
+  // `casella.aggiorna` avvisa comunque chi osserva, anche quando non
+  // cambia niente, e chi osserva qui chiede un giro di sync. Con la
+  // chiamata dentro `ridisegna` — cioè alla fine di ogni giro — bastava a
+  // far ripartire il giro successivo: due secondi e mezzo e daccapo, per
+  // sempre, senza che niente cambiasse mai.
+  const gia = Array.isArray(stato().semi) ? stato().semi : [];
+  const daFare = Object.keys(ROUTINE).filter((n) => !gia.includes(n));
+  if (!daFare.length) return [];
+
+  const nuove = [];
+  casella.aggiorna((s) => {
+    s.semi = Array.isArray(s.semi) ? s.semi : [];
+    for (const nome of daFare) {
+      const modello = ROUTINE[nome];
+      // Anche le lapidi contano: `s.habits` le contiene finché non scadono,
+      // e una lapide vuol dire che l'hai cancellata apposta.
+      const esiste = s.habits.some((h) => h && h.id === modello.id);
+      // Il seme si marca comunque: il lucchetto è «gliel'abbiamo già
+      // proposta», non «ce l'ha».
+      s.semi.push(nome);
+      if (esiste) continue;
+      const ora = Date.now();
+      const massimo = s.habits.reduce((m, h) => Math.max(m, h.order ?? 0), 0);
+      s.habits.push({
+        ...modello,
+        parti: modello.parti.map((p) => ({ ...p })),
+        archived: false,
+        created: ora,
+        order: massimo + 10,
+        up: ora,
+      });
+      nuove.push(nome);
+    }
+  });
+  if (nuove.length) indice = null;
+  return nuove;
 }

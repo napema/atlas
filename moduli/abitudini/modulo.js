@@ -10,7 +10,7 @@ import { icona } from "../../core/icone.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { annuncia, ascolta } from "../../core/bus.js";
-import { casella, stato, abitudiniVive, eFatta, alterna, idLog, alternaParte } from "./dati.js";
+import { casella, stato, abitudiniVive, eFatta, alterna, idLog, alternaParte, semina } from "./dati.js";
 import { progressoGiorno, mancantiOggi, serie, eAttesa, promemoriaAdesso, restaOggi } from "./calcolo.js";
 import { strisciaSettimana, riepilogo, elenco, apriModifica, vistaImpostazioni, vistaSerie } from "./viste.js";
 
@@ -119,6 +119,9 @@ export function avviaSync() {
         logs: s.logs,
         meta: s.meta,
         metaUp: s.metaUp || 0,
+        // Le routine già composte. Viaggia perché il suo scopo è proprio
+        // non ricomporle sul secondo dispositivo.
+        semi: s.semi || [],
       };
     },
     applica: (remoto) => {
@@ -133,12 +136,18 @@ export function avviaSync() {
           s.meta = { ...s.meta, ...remoto.meta };
           s.metaUp = remoto.metaUp;
         }
+        // I semi si fondono per UNIONE, e NON passano dal cancello di
+        // metaUp. È la forma che regge il guasto di questo archivio: un
+        // insieme che cresce e basta non può perdere un confronto, mentre
+        // tutto ciò che sta dentro meta lo perde in blocco appena un
+        // dispositivo arriva con un metaUp di fabbrica.
+        s.semi = [...new Set([...(s.semi || []), ...(remoto.semi || [])])];
       }, { origine: "sync", tocca: false });   // applicare il remoto NON è una
                                                // modifica locale: senza questo
                                                // i due dispositivi si rimbalzano
                                                // PUT a vicenda per sempre
     },
-    ridisegna: () => { pubblicaSullaLavagna(); if (contenitore) disegna(); },
+    ridisegna: () => { seminaQuandoPronto(); pubblicaSullaLavagna(); if (contenitore) disegna(); },
   });
 
   // La lavagna si aggiorna anche a modulo chiuso: la home la legge, e se si
@@ -161,7 +170,28 @@ export function avviaSync() {
   // perché avviaSync viene chiamata una volta sola.
   ascolta("mobilita:sessione-completata", spuntaDaSessione);
 
+
+  /* LE ROUTINE SI COMPONGONO DOPO LA PRIMA LETTURA, mai prima.
+     -------------------------------------------------------------------
+     Seminare all'avvio è lo stesso identico errore dello scrivere prima di
+     aver letto, e produce lo stesso danno: un dispositivo appena
+     installato ricrea l'abitudine che hai cancellato dall'altro, con un
+     `up` più fresco della lapide, e te la ritrovi indietro.
+
+     `core/sync.js` ha già la regola per le scritture volute. Questa è la
+     stessa regola applicata a una scrittura che parte da sé, che è il caso
+     in cui nessuno si ricorda di applicarla. */
+  const seminaQuandoPronto = () => {
+    // `off` vuol dire che il sync non è configurato: non c'è nessuna
+    // lettura da aspettare e continuare a rimandare non seminerebbe mai.
+    if (!canale.letturaFatta && canale.stato !== "off") return;
+    if (!semina().length) return;
+    pubblicaSullaLavagna();
+    if (contenitore) disegna();
+  };
+
   canale.avvia();
+  seminaQuandoPronto();   // il caso senza sync: qui non arriva nessuna lettura
   return canale;
 }
 

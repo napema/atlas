@@ -202,27 +202,74 @@
 }
 .ab-tinta:active { transform: scale(0.9); }
 .ab-tinta.scelta { box-shadow: 0 0 0 2px var(--fondo), 0 0 0 4px var(--testo); }
+/* --------------------------------------------- le parti, per momento --- */
+/*
+   Prima era una lista piatta con la fascia ripetuta su ogni riga. Con sei
+   passaggi in due momenti — la skincare — diventava un elenco unico in cui
+   la routine della sera si mescolava a quella del mattino.
 
-/* ---------------------------------------------------------- le parti ---- */
-/* Le sotto-voci di un'abitudine: quattro integratori in tre momenti della
-   giornata. Rientrate sotto il genitore e visibilmente più leggere — sono
-   figlie, e se pesassero come la riga sopra sembrerebbero cinque abitudini
-   invece di una con quattro parti. */
+   Raccolte, sono due blocchi con un'intestazione sola. La linea verticale a
+   sinistra è l'unica decorazione, e fa un lavoro: tiene insieme le righe di
+   un momento senza disegnargli intorno una scheda dentro la scheda.
+*/
+
+.ab-gruppi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin: var(--s2) 0 var(--s3) 56px;
+  padding-right: var(--s4);
+}
+.ab-gruppo { padding-left: var(--s3); border-left: 2px solid var(--traccia); }
+.ab-gruppo.completo { border-left-color: color-mix(in srgb, var(--accento) 55%, transparent); }
+
+.ab-gruppo-testa {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 22px;
+  padding: 0 var(--s3);
+}
+.ab-gruppo-nome {
+  font-size: var(--t-11);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--testo-3);
+}
+/* L'ora del promemoria: tabellare, così due orari incolonnati non ballano. */
+.ab-gruppo-ora {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--t-11);
+  font-variant-numeric: tabular-nums;
+  color: var(--testo-4);
+}
+.ab-gruppo-sveglia { display: inline-flex; opacity: 0.75; }
+.ab-gruppo-sveglia svg { display: block; }
+.ab-gruppo-conta {
+  margin-left: auto;
+  font-size: var(--t-11);
+  font-variant-numeric: tabular-nums;
+  color: var(--testo-4);
+}
+.ab-gruppo.completo .ab-gruppo-conta { color: var(--accento); }
 
 .ab-parti {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin: 2px 0 var(--s3) 56px;
-  padding-right: var(--s4);
+  gap: 2px;
+  margin: 2px 0 0;
+  padding: 0;
 }
 .ab-parte {
   display: flex;
   align-items: center;
   gap: var(--s3);
   width: 100%;
-  min-height: 44px;
+  min-height: 40px;
   padding: 0 var(--s3);
   border: 0;
   border-radius: var(--r-interno);
@@ -249,13 +296,23 @@
   box-shadow: none;
   color: var(--fondo);
 }
+/* Il numero del passaggio. Sta fra la spunta e il nome perché è parte del
+   nome — «2. Benzac» — e non un'etichetta appiccicata in fondo. */
+.ab-parte-numero {
+  flex: none;
+  min-width: 13px;
+  font-size: var(--t-11);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--testo-4);
+}
+.ab-parte.fatta .ab-parte-numero { opacity: 0.5; }
 .ab-parte-nome {
   flex: 1; min-width: 0;
   font-size: var(--t-15);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ab-parte.fatta .ab-parte-nome { color: var(--testo-3); text-decoration: line-through; text-decoration-thickness: 1.5px; }
-.ab-parte-fascia { flex: none; font-size: var(--t-11); color: var(--testo-3); }
 
 /* La spunta del genitore è disabilitata quando ci sono parti: è vera solo
    se lo sono tutte, e toccarla non deve sembrare possibile. */
@@ -275,6 +332,55 @@
   margin-bottom: var(--s2);
 }
 .ab-editor-parte .btn { align-self: flex-start; }
+
+/* Nome e frecce sulla stessa riga: lo spostamento è una proprietà del
+   nome — dove sta nella sequenza — non un'azione a parte. */
+.ab-editor-parte-testa { display: flex; align-items: center; gap: var(--s2); }
+.ab-editor-parte-testa .campo { flex: 1; min-width: 0; }
+.ab-editor-frecce { display: flex; flex: none; gap: 2px; }
+.ab-freccia {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border: 0;
+  border-radius: var(--r-interno);
+  background: var(--scheda);
+  color: var(--testo-2);
+  cursor: pointer;
+  transition: opacity var(--veloce) var(--curva), background var(--veloce) var(--curva);
+}
+.ab-freccia svg { display: block; }
+.ab-freccia:active { background: var(--scheda-viva); }
+/* La freccia in cima non sparisce, si spegne: una fila di pulsanti che
+   cambia numero a ogni spostamento si perde sotto il dito. */
+.ab-freccia[disabled] { opacity: 0.25; cursor: default; }
+
+/* ------------------------------------------- i promemoria nell'editor --- */
+
+.ab-editor-ora {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin-bottom: var(--s2);
+}
+.ab-editor-ora-nome {
+  flex: none;
+  width: 8.5em;
+  font-size: var(--t-15);
+  color: var(--testo-2);
+}
+.ab-editor-ora .campo { flex: 1; min-width: 0; }
+
+.ab-editor-sequenza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  min-height: var(--tocco);
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--filo);
+}
+.ab-editor-sequenza .nota { margin: 2px 0 0; }
 
 /* ================================================================ schede == */
 

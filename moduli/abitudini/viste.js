@@ -12,7 +12,7 @@ import { icona } from "../../core/icone.js";
 import {
   abitudiniVive, abitudinePerId, eFatta, eSaltata, alterna, alternaSaltata, stato, scriviMeta,
   salvaAbitudine, eliminaAbitudine, coloreTinta, TINTE,
-  FASCE, partiDi, parteFatta, alternaParte,
+  FASCE, partiDi, parteFatta, alternaParte, gruppiParti, fasceUsate,
 } from "./dati.js";
 import {
   progressoGiorno, eAttesa, serie, serieMigliore, costanza, fattaIl, ePrevista,
@@ -171,19 +171,50 @@ function rigaAbitudine(h, giorno, ridisegna, { spenta = false } = {}) {
 
   const li = el("li", { class: "ab-li" + (spenta ? " spenta" : "") + (saltata ? " saltata" : "") }, [
     el("div", { class: "ab-riga-fuori" }, [spunta, corpo, salta].filter(Boolean)),
-    parti.length > 0 && el("ul", { class: "ab-parti" }, parti.map((p) => {
-      const pf = parteFatta(h.id, p.id, giorno);
-      const b = el("button", {
-        class: "ab-parte" + (pf ? " fatta" : ""),
-        type: "button", "aria-pressed": String(pf),
-        onClick: () => { alternaParte(h.id, p.id, giorno); tocco(pf ? 6 : 12); ridisegna(); },
-      }, [
-        el("span", { class: "ab-parte-spunta", html: icona("spunta", 13, 3) }),
-        el("span", { class: "ab-parte-nome", testo: p.nome }),
-        el("span", { class: "ab-parte-fascia", testo: FASCE[p.fascia || "qualsiasi"]?.nome || "" }),
+    // LE PARTI, RACCOLTE PER FASCIA.
+    //
+    // Prima erano una lista piatta, e ogni riga si portava dietro la sua
+    // etichetta: «Mattina», «Mattina», «Mattina». Con la skincare — sei
+    // passaggi in due momenti — diventava un elenco di sei cose in cui le
+    // due routine si mescolavano. Raccolte, sono due blocchi con
+    // un'intestazione sola: è così che stanno in testa a chi le fa.
+    //
+    // L'intestazione porta anche l'ora del promemoria, perché è l'unico
+    // posto dove si vede senza aprire l'editor, e il conto del gruppo:
+    // «2/3» dice a colpo d'occhio che la routine è cominciata e non finita,
+    // che è lo stato in cui una routine sbaglia.
+    parti.length > 0 && el("div", { class: "ab-gruppi" }, gruppiParti(h).map((g) => {
+      const fatte = g.parti.filter((p) => parteFatta(h.id, p.id, giorno)).length;
+      const completo = fatte === g.parti.length;
+      return el("div", { class: "ab-gruppo" + (completo ? " completo" : "") }, [
+        el("div", { class: "ab-gruppo-testa" }, [
+          el("span", { class: "ab-gruppo-nome", testo: g.nome }),
+          g.ora && el("span", { class: "ab-gruppo-ora" }, [
+            el("span", { class: "ab-gruppo-sveglia", html: icona("campanella", 11, 2) }),
+            el("span", { testo: g.ora }),
+          ]),
+          el("span", { class: "ab-gruppo-conta", testo: `${fatte}/${g.parti.length}` }),
+        ]),
+        el("ul", { class: "ab-parti" }, g.parti.map((p, i) => {
+          const pf = parteFatta(h.id, p.id, giorno);
+          const b = el("button", {
+            class: "ab-parte" + (pf ? " fatta" : ""),
+            type: "button", "aria-pressed": String(pf),
+            onClick: () => { alternaParte(h.id, p.id, giorno); tocco(pf ? 6 : 12); ridisegna(); },
+          }, [
+            el("span", { class: "ab-parte-spunta", html: icona("spunta", 13, 3) }),
+            // Il numero c'è solo quando l'ordine è una regola e non una
+            // preferenza: per la skincare il detergente va prima di tutto e
+            // la protezione solare per ultima, per gli integratori magnesio
+            // e creatina non hanno un ordine fra loro e numerarli
+            // inventerebbe una precedenza che non esiste.
+            h.sequenza && el("span", { class: "ab-parte-numero", testo: String(i + 1) }),
+            el("span", { class: "ab-parte-nome", testo: p.nome }),
+          ]);
+          b.style.setProperty("--accento", colore);
+          return el("li", {}, [b]);
+        })),
       ]);
-      b.style.setProperty("--accento", colore);
-      return el("li", {}, [b]);
     })),
   ]);
   return li;
@@ -244,9 +275,16 @@ export function apriDettaglio(id, ridisegna) {
       el("div", { class: "cifra", testo: `${conteggioSettimana(h, oggiISO())} di ${p.times || 1}` }),
     ]),
 
-    h.remind && el("section", { class: "scheda" }, [
-      riga({ etichetta: "Promemoria", valore: h.remind, icona: "campanella" }),
-    ]),
+    // I promemoria. Con le parti sono uno per fascia, e vanno mostrati
+    // tutti: «Promemoria 08:00» su una routine che ne ha due dice una
+    // mezza verità, ed è quella che fa credere che la sera non suoni.
+    ...(partiDi(h).length
+      ? [gruppiParti(h).some((g) => g.ora) && el("section", { class: "scheda" },
+          gruppiParti(h).filter((g) => g.ora).map((g) =>
+            riga({ etichetta: g.nome, valore: g.ora, icona: "campanella" })))]
+      : [h.remind && el("section", { class: "scheda" }, [
+          riga({ etichetta: "Promemoria", valore: h.remind, icona: "campanella" }),
+        ])]),
   ]);
 }
 
@@ -331,7 +369,69 @@ export function apriModifica(id, ridisegna) {
      alle dieci di sera invece di «ti mancano gli integratori». */
 
   bozza.parti = Array.isArray(bozza.parti) ? bozza.parti.map((p) => ({ ...p })) : [];
+  bozza.orari = { ...(bozza.orari || {}) };
+
   const zonaParti = el("div", { class: "campo-gruppo ab-editor-parti" });
+  const zonaPromemoria = el("div", { class: "campo-gruppo", stile: { marginTop: "var(--s4)" } });
+
+  const muovi = (da, a) => {
+    if (a < 0 || a >= bozza.parti.length) return;
+    const [p] = bozza.parti.splice(da, 1);
+    bozza.parti.splice(a, 0, p);
+    disegnaParti();
+  };
+
+  /* I PROMEMORIA.
+
+     Senza parti è uno solo, ed è sempre stato così.
+
+     Con le parti diventa uno PER FASCIA, e non è un vezzo: la skincare ne
+     vuole due, perché la mattina e la sera sono due routine diverse a
+     quattordici ore di distanza, e un promemoria solo dovrebbe scegliere
+     quale delle due ricordare. Gli integratori ne vogliono tre.
+
+     Le fasce NON si scelgono qui: sono quelle che le parti usano davvero.
+     Cinque orari di cui tre non servono a niente sono un modo lento di
+     nascondere i due che contano. */
+  const disegnaPromemoria = () => {
+    zonaPromemoria.replaceChildren();
+    const fasce = fasceUsate(bozza);
+
+    if (!fasce.length) {
+      aggiungi(zonaPromemoria, [
+        campo({
+          etichetta: "Promemoria", tipo: "time", valore: bozza.remind || "",
+          alCambio: (v) => { bozza.remind = v; },
+        }),
+        el("p", { class: "nota", testo: "Vuoto = nessuna notifica. Arriva solo se non l'hai ancora segnata." }),
+      ]);
+      return;
+    }
+
+    aggiungi(zonaPromemoria, [
+      el("label", { class: "campo-etichetta", testo: "Promemoria" }),
+      el("p", { class: "nota", stile: { margin: "0 0 var(--s3)" },
+        testo: "Uno per momento. Arriva solo se a quel momento resta qualcosa di aperto." }),
+
+      ...fasce.map((f) => el("div", { class: "ab-editor-ora" }, [
+        el("span", { class: "ab-editor-ora-nome", testo: FASCE[f]?.nome || f }),
+        campo({
+          tipo: "time", valore: bozza.orari[f] || "",
+          alCambio: (v) => { bozza.orari[f] = v; },
+        }),
+      ])),
+
+      // L'ordine è una regola solo per certe routine — la skincare sì, gli
+      // integratori no — quindi si dichiara invece di darlo per scontato.
+      el("div", { class: "ab-editor-sequenza" }, [
+        el("span", {}, [
+          el("span", { testo: "L'ordine conta" }),
+          el("div", { class: "nota", testo: "Numera i passaggi, come in una ricetta." }),
+        ]),
+        levetta(Boolean(bozza.sequenza), (v) => { bozza.sequenza = v; }),
+      ]),
+    ]);
+  };
 
   const disegnaParti = () => {
     zonaParti.replaceChildren();
@@ -342,14 +442,34 @@ export function apriModifica(id, ridisegna) {
         : "Facoltative. Servono quando una spunta sola nasconde più cose in momenti diversi della giornata." }),
 
       ...bozza.parti.map((p, i) => el("div", { class: "ab-editor-parte" }, [
-        campo({
-          valore: p.nome, segnaposto: "Magnesio",
-          alCambio: (v) => { p.nome = v; },
-        }),
+        el("div", { class: "ab-editor-parte-testa" }, [
+          campo({
+            valore: p.nome, segnaposto: "Cleanser",
+            alCambio: (v) => { p.nome = v; },
+          }),
+          // Le frecce e non il trascinamento: dentro un foglio che scorre,
+          // il dito che trascina e il dito che scorre sono lo stesso gesto,
+          // e vince sempre lo scorrimento.
+          el("div", { class: "ab-editor-frecce" }, [
+            el("button", {
+              class: "ab-freccia", type: "button", "aria-label": "Sposta su",
+              disabled: i === 0, html: icona("su", 18, 2.4),
+              onClick: () => muovi(i, i - 1),
+            }),
+            el("button", {
+              class: "ab-freccia", type: "button", "aria-label": "Sposta giù",
+              disabled: i === bozza.parti.length - 1, html: icona("giu", 18, 2.4),
+              onClick: () => muovi(i, i + 1),
+            }),
+          ]),
+        ]),
         segmenti(
           Object.entries(FASCE).map(([k, f]) => [k, f.nome]),
           p.fascia || "qualsiasi",
-          (v) => { p.fascia = v; }
+          // Cambiare fascia cambia quali orari servono: il blocco dei
+          // promemoria si rifà, altrimenti resta quello di prima e l'ora
+          // che hai appena messo finisce su una fascia che non usi più.
+          (v) => { p.fascia = v; disegnaPromemoria(); }
         ),
         el("button", {
           class: "btn distruttivo nudo piccolo", type: "button", testo: "Togli",
@@ -362,9 +482,9 @@ export function apriModifica(id, ridisegna) {
         onClick: () => { bozza.parti.push({ id: nuovoId("pt"), nome: "", fascia: "qualsiasi" }); disegnaParti(); },
       }),
     ]);
+    disegnaPromemoria();
   };
   disegnaParti();
-
   aggiungi(corpo, [
     campo({
       etichetta: "Nome", valore: bozza.name, segnaposto: "Meditazione",
@@ -401,13 +521,7 @@ export function apriModifica(id, ridisegna) {
 
     zonaParti,
 
-    el("div", { class: "campo-gruppo", style: "margin-top:var(--s4)" }, [
-      campo({
-        etichetta: "Promemoria", tipo: "time", valore: bozza.remind || "",
-        alCambio: (v) => { bozza.remind = v; },
-      }),
-      el("p", { class: "nota", testo: "Vuoto = nessuna notifica. Arriva solo se non l'hai ancora segnata." }),
-    ]),
+    zonaPromemoria,
 
     esistente && el("button", {
       class: "btn distruttivo pieno", type: "button", testo: "Elimina abitudine",
@@ -672,4 +786,26 @@ function sceglieEmoji(bozza) {
     griglia,
     libero,
   ]);
+}
+
+/**
+ * Una levetta sola, senza la riga di lista che le sta intorno.
+ *
+ * Quella di Impostazioni torna un `<li>` già confezionato, e qui servirebbe
+ * dentro una riga sua. Importarla vorrebbe dire che Abitudini importa un
+ * altro modulo, che è la cosa che il bus esiste per evitare: le classi CSS
+ * stanno in base.css e sono di tutti, la riga di contorno no.
+ */
+function levetta(acceso, alCambio) {
+  const sw = el("button", {
+    class: "interruttore" + (acceso ? " acceso" : ""),
+    type: "button", role: "switch", "aria-checked": String(Boolean(acceso)),
+    onClick: () => {
+      acceso = !acceso;
+      sw.classList.toggle("acceso", acceso);
+      sw.setAttribute("aria-checked", String(acceso));
+      alCambio(acceso);
+    },
+  }, [el("span", { class: "interruttore-pallina" })]);
+  return sw;
 }
