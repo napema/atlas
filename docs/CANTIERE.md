@@ -685,3 +685,73 @@ l'abitudine cancellata dall'altro, con un `up` più fresco della lapide.
 fabbrica / `up`», e in Abitudini `meta` (tema e inizio settimana) sta ancora
 dietro il cancello di `metaUp`. Sono due voci, il danno possibile è piccolo,
 ma è lo stesso schema che ha già colpito quattro volte.
+
+---
+
+## 12 settembre, sera — le notifiche non arrivano perché il cron non gira (chat ATLAS)
+
+Il mittente è sano: un `workflow_dispatch` a mano ha consegnato «Mobilità» e
+«Due minuti bastano» a **2 dispositivi su 2**. VAPID, iscrizioni, service
+worker, la logica nuova delle parti: tutto funziona.
+
+**Il guasto è lo `schedule` di GitHub.** `promemoria.yml` chiedeva
+`*/10 * * * *`, cioè 144 giri al giorno. Ne arrivavano **sei**. I divari
+misurati fra un giro e l'altro, l'11 e il 12 settembre:
+
+```
+122 · 274 · 267 · 267 · 217 · 154 · 152 · 127 · 270 · 255 · 219 · 194 · 138 · 116   (minuti)
+```
+
+La finestra d'invio è **180 minuti** (`ora.minuti - n.quando > 180` →
+scartato). Sette di quei quattordici divari la superano: un promemoria che
+cade dentro uno di quelli non viene mandato **mai**, e nessuno se ne accorge
+perché il giro dopo lo considera già vecchio. Non è un ritardo, è una
+consegna persa — ed è la spiegazione di «a volte arrivano, a volte no».
+
+Lo `schedule` di GitHub non è una sveglia. La documentazione lo dice: gli
+eventi programmati vengono ritardati sotto carico e **possono essere
+scartati**, e più fitto è il cron più vengono scartati. In più 144 giri al
+giorno su un repo privato sono ~4300 minuti al mese contro i 2000 gratuiti:
+anche se fossero stati concessi, sarebbero finiti a metà mese.
+
+**Mitigazione applicata** (non risolutiva): il cron ora chiede poco ma nelle
+ore che contano — `*/10 5-8,18-21` in UTC, che copre Roma 07–11 e 20–24 sia
+con l'ora legale sia con quella solare, più una rete larga ogni due ore nel
+resto della giornata. 56 giri al giorno invece di 144: dentro il piano
+gratuito, e meno roba da scartare. **Alle 20:44 UTC, dentro la fascia, il
+giro delle 20:40 non era comunque arrivato.**
+
+**La correzione vera è un orologio esterno.** Un servizio di cron gratuito
+(cron-job.org e simili) che chiama
+`POST /repos/napema/atlas-dati/actions/workflows/promemoria.yml/dispatches`
+ogni dieci minuti nelle fasce utili. Preciso al minuto, indipendente da
+GitHub, e serve **un token fine-grained con il solo permesso «Actions: read
+and write» su atlas-dati** — che non può leggere nessun dato.
+
+Scartate, e perché:
+
+- **Una routine di Claude sul desktop**: gira solo mentre l'app è aperta sul
+  PC. Per una sveglia alle 08:00 è peggio di GitHub.
+- **Un job lungo che dorme** dentro Actions: su repo privato i minuti sono
+  contati (2000/mese), e un job che veglia 24 ore ne brucia 1440 al giorno.
+  Sul repo pubblico i minuti sono illimitati, ma il mittente andrebbe
+  spostato lì insieme alla chiave VAPID privata.
+- **Notifiche locali dal service worker**: su iOS non esistono. Senza push
+  da un server non c'è sveglia.
+
+## ⚠️ Il token di atlas-dati è pubblico, e non per errore
+
+`config.js` è **tracciato** nel repo `napema/atlas`, che è pubblico. Il token
+si legge senza autenticazione da `raw.githubusercontent.com` e da
+`napema.github.io/atlas/config.js` (HTTP 200 tutti e due).
+
+Non è una svista: una PWA statica senza backend deve avere la credenziale nel
+browser per parlare con l'API, e l'intestazione di `config.js` lo dice già.
+Ma il baratto è stato accettato quando i dati erano di prova. Oggi
+`atlas-dati` contiene stipendio, saldi, spese e **le iscrizioni push** — chi
+ha quel token legge le une e può mandare notifiche al telefono con le altre.
+
+Va deciso, non lasciato lì. Le strade vere sono tre: tenerlo così
+sapendolo, mettere un piccolo proxy davanti (Cloudflare Worker gratuito) che
+tenga il token e parli lui con GitHub, oppure rendere privato anche il repo
+dell'app — che però richiede Pages su repo privato, cioè un piano a pagamento.
