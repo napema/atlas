@@ -195,27 +195,32 @@ function prioritarie(resta, ora) {
 function testa(q) {
   const sync = statoSync();
   return el("header", { class: "og-testa" }, [
-    /* L'INGRANAGGIO STA QUI, e non nella barra in basso.
-       Non è un ritorno al passato: il guasto di allora era che le
-       impostazioni dei moduli stavano sparse dentro i moduli, e quello l'ha
-       risolto l'averle radunate in una schermata sola. La barra invece un
-       costo ce l'ha, e cresce: con Allenamenti sarebbero state sei schede su
-       un telefono. Qui è appoggiato in un angolo che era vuoto, fuori dal
-       flusso — la testata resta centrata esattamente com'era. */
-    el("a", {
-      class: "og-ingranaggio", href: "#/impostazioni",
-      "aria-label": "Impostazioni", title: "Impostazioni",
-      html: icona("ingranaggio", 21, 1.6),
-    }),
     el("div", { class: "og-meta" }, [
       el("span", { class: "og-meta-data", testo: dataLunga() }),
       // Colore e parola vengono dalla stessa fonte. Prima la parola era
       // scritta qui — «sincronizzato», sempre — mentre il pallino seguiva lo
       // stato vero: bastava un sync non ancora partito per avere un pallino
       // grigio accanto alla parola «sincronizzato».
-      el("span", { class: "og-meta-stato", title: sync.titolo }, [
-        el("span", { class: `sync-pallino is-${sync.stato}` }),
-        el("span", { class: "og-meta-parola", "data-ruolo": "sync-testo", testo: sync.etichetta }),
+      /* L'INGRANAGGIO STA ATTACCATO ALLO STATO DEL SYNC, in un gruppo che
+         non si spezza.
+         Due tentativi e due difetti, che vale la pena ricordare tutti e
+         due. Appoggiato con `position:absolute` in alto a destra finiva
+         SOPRA la data: da scrivania quell'angolo non è vuoto, è esattamente
+         dove `.og-meta` va a stare. Messo come terza voce della riga non si
+         sovrapponeva più, ma la colonna di destra è stretta e mandava a capo
+         tre volte: data, stato, e l'ingranaggio da solo su una riga sua.
+         Legato allo stato invece va a capo INSIEME a lui, e resta una cosa
+         sola in tutte e due le disposizioni. */
+      el("span", { class: "og-meta-fine" }, [
+        el("span", { class: "og-meta-stato", title: sync.titolo }, [
+          el("span", { class: `sync-pallino is-${sync.stato}` }),
+          el("span", { class: "og-meta-parola", "data-ruolo": "sync-testo", testo: sync.etichetta }),
+        ]),
+        el("a", {
+          class: "og-ingranaggio", href: "#/impostazioni",
+          "aria-label": "Impostazioni", title: "Impostazioni",
+          html: icona("ingranaggio", 18, 1.6),
+        }),
       ]),
     ]),
     el("h1", { class: "og-saluto" }, [

@@ -51,6 +51,14 @@
 .al-striscia {
   display: flex;
   gap: var(--s2);
+  /* `safe center`: da scrivania le tredici settimane ci stanno tutte e la
+     striscia va al centro come tutto il resto della colonna — prima restava
+     appiccicata a sinistra con mezzo schermo vuoto a destra, e sotto c'era
+     una carta larga quanto la pagina. Su telefono traboccano, e `safe` è la
+     parola che conta: senza, centrare un contenuto più largo del suo
+     contenitore taglia la PRIMA settimana e non la si raggiunge più
+     scorrendo. */
+  justify-content: safe center;
   overflow-x: auto;
   scroll-snap-type: x proximity;
   margin: 0 calc(-1 * var(--s4)) var(--s4);
@@ -67,8 +75,14 @@
   flex: none;
   scroll-snap-align: center;
   position: relative;
+  box-sizing: border-box;
   width: 48px; height: 54px;
-  padding: 0;
+  /* Il numero è centrato nello spazio SOPRA la barra, non nel riquadro
+     intero: centrarlo in tutti i 54px lo faceva sembrare basso, perché
+     sotto di lui c'erano tre pixel di barra che tiravano l'occhio giù. Il
+     padding toglie quella fascia dal conto; la barra è assoluta e non la
+     rioccupa. */
+  padding: 0 0 11px;
   display: grid;
   place-items: center;
   border: 0;
