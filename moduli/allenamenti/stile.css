@@ -1,0 +1,410 @@
+/* moduli/allenamenti/stile.css
+   ---------------------------------------------------------------------
+   Il foglio del piano era editoriale: maiuscoletto spaziato, fasi come
+   capitoli, numeri grandi. Quella voce qui resta — nei titoletti di fase e
+   nella cifra della testata — ma i colori, gli angoli e gli spazi sono i
+   token di ATLAS. Un modulo che si porta dietro la sua palette diventa
+   un'altra app dentro l'app.
+   ================================================================== */
+
+/* ============================================================ schede === */
+
+.al-schede { display: flex; gap: var(--s1); margin-bottom: var(--s4); }
+.al-scheda {
+  flex: 1;
+  min-height: 40px;
+  border: 0;
+  border-radius: var(--r-pillola);
+  background: var(--scheda);
+  color: var(--testo-2);
+  font-family: var(--font);
+  font-size: var(--t-13);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
+}
+.al-scheda.attiva { background: var(--accento); color: var(--fondo); }
+
+/* ========================================================= la striscia === */
+/* Tredici settimane in una riga che scorre: il blocco intero resta sempre
+   sotto il pollice. La fase si legge dal filo colorato in alto, che è il
+   modo di dirla tredici volte senza scriverla nemmeno una. */
+
+.al-striscia {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  margin: 0 calc(-1 * var(--s4)) var(--s4);
+  padding: 0 var(--s4) var(--s2);
+  scrollbar-width: none;
+}
+.al-striscia::-webkit-scrollbar { display: none; }
+
+.al-sett {
+  flex: none;
+  scroll-snap-align: center;
+  width: 54px;
+  padding: var(--s2) 0 7px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-top: 2px solid var(--traccia);
+  border-radius: 0 0 var(--r-interno) var(--r-interno);
+  background: var(--scheda);
+  color: var(--testo-3);
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
+}
+.al-sett[data-fase="ricostruzione"] { border-top-color: var(--ciano); }
+.al-sett[data-fase="soglia"]        { border-top-color: var(--arancio); }
+.al-sett[data-fase="specifico"]     { border-top-color: var(--rosa); }
+.al-sett[data-fase="taper"]         { border-top-color: var(--giallo); }
+
+.al-sett-n { font-size: var(--t-15); font-weight: 700; font-variant-numeric: tabular-nums; }
+.al-sett.scelta { background: var(--scheda-viva); color: var(--testo); }
+/* La settimana di OGGI si riconosce anche quando ne stai guardando un'altra:
+   senza, aprendo la settimana 7 a ottobre non si capisce più dove sei. */
+.al-sett.ora .al-sett-n { color: var(--accento); }
+.al-sett.chiusa .al-sett-n { color: var(--ok); }
+
+.al-sett-punti { display: flex; gap: 2px; }
+.al-punto {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--traccia);
+}
+.al-punto.pieno { background: var(--accento); }
+.al-sett.chiusa .al-punto.pieno { background: var(--ok); }
+
+/* ========================================================== la testata === */
+
+.al-testata {
+  padding: var(--s5) var(--s5) var(--s4);
+  border-radius: var(--r-scheda);
+  background: var(--scheda);
+  box-shadow: inset 0 0 0 1px var(--filo), var(--ombra);
+  margin-bottom: var(--s4);
+}
+.al-testata-alto {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: var(--s2);
+}
+.al-micro, .al-fase {
+  font-size: var(--t-11);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.al-micro { color: var(--testo-3); }
+.al-fase { color: var(--accento); }
+
+.al-cifra {
+  font-family: var(--font-d);
+  font-size: var(--t-64);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--testo);
+}
+.al-cifra.chiusa {
+  font-size: var(--t-40);
+  color: var(--ok);
+  letter-spacing: -0.02em;
+}
+.al-testata.avviso .al-cifra { color: var(--avviso); }
+.al-testata.male .al-cifra { color: var(--male); }
+
+.al-sotto { margin: var(--s2) 0 var(--s3); font-size: var(--t-13); color: var(--testo-2); }
+
+/* Il piede: le cifre di contorno, in silenzio. Se parlassero con la stessa
+   voce della cifra grande non parlerebbe più nessuno. */
+.al-piede {
+  display: flex;
+  gap: var(--s5);
+  margin-top: var(--s4);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--filo);
+}
+.al-stat { display: flex; flex-direction: column; gap: 1px; }
+.al-stat-valore {
+  font-size: var(--t-15);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--testo);
+}
+.al-stat-eti { font-size: var(--t-11); color: var(--testo-4); }
+
+.al-avvertenza {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin: var(--s4) 0 0;
+  padding-top: var(--s3);
+  border-top: 1px solid var(--filo);
+  font-size: var(--t-13);
+  color: var(--avviso);
+}
+.al-avvertenza-segno { flex: none; display: inline-flex; padding-top: 1px; }
+.al-avvertenza-segno svg { display: block; }
+
+/* ============================================================ gli slot === */
+
+.al-gruppi { display: flex; flex-direction: column; gap: var(--s4); }
+.al-gruppo {
+  padding: var(--s3) 0 var(--s2);
+  border-radius: var(--r-scheda);
+  background: var(--scheda);
+  box-shadow: inset 0 0 0 1px var(--filo), var(--ombra);
+}
+.al-gruppo-testa {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 var(--s5) var(--s2);
+}
+.al-gruppo-nome {
+  font-size: var(--t-11);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--testo-3);
+}
+.al-gruppo-conta {
+  font-size: var(--t-11);
+  font-variant-numeric: tabular-nums;
+  color: var(--testo-4);
+}
+
+.al-slot { list-style: none; margin: 0; padding: 0; }
+.al-slot-li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s2) var(--s4) var(--s2) var(--s3);
+}
+.al-slot-li + .al-slot-li { border-top: 1px solid var(--filo); }
+
+/* Il cerchio disegnato è da 26px, il bersaglio da 44: il pollice ha bisogno
+   del secondo, l'occhio del primo. */
+.al-spunta {
+  flex: none;
+  width: var(--tocco); height: var(--tocco);
+  display: grid; place-items: center;
+  border: 0; background: none; padding: 0;
+  cursor: pointer;
+}
+.al-spunta-cerchio {
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: transparent;
+  box-shadow: inset 0 0 0 2px var(--traccia);
+  transition: background var(--veloce) var(--curva), box-shadow var(--veloce) var(--curva);
+}
+.al-spunta-cerchio svg { display: block; }
+.al-spunta.fatta .al-spunta-cerchio {
+  background: var(--ok);
+  box-shadow: none;
+  color: var(--fondo);
+}
+
+.al-slot-corpo {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 3px;
+  padding: var(--s2) 0;
+  border: 0; background: none;
+  color: inherit; font: inherit; text-align: left;
+  cursor: pointer;
+}
+.al-slot-alto { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.al-slot-nome { font-size: var(--t-15); font-weight: 600; }
+.al-slot-nome.fatta { color: var(--testo-3); }
+.al-slot-li.fatta .al-slot-testo,
+.al-slot-li.fatta .al-slot-accessori { color: var(--testo-4); }
+
+.al-stella { display: inline-flex; color: var(--accento); }
+.al-stella svg { display: block; }
+
+.al-tag, .al-giorno {
+  font-size: var(--t-10);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: var(--r-pillola);
+}
+.al-tag { background: var(--accento-tenue); color: var(--accento); }
+.al-giorno { background: var(--scheda-alta); color: var(--testo-3); }
+
+.al-slot-testo { margin: 0; font-size: var(--t-13); color: var(--testo-2); line-height: 1.4; }
+.al-slot-accessori { margin: 0; font-size: var(--t-11); color: var(--testo-4); line-height: 1.4; }
+
+/* ===================================================== il foglio slot === */
+
+.al-foglio-testo { margin: 0; font-size: var(--t-17); line-height: 1.35; }
+.al-foglio-accessori {
+  list-style: none;
+  margin: var(--s3) 0 0;
+  padding: 0;
+  display: flex; flex-direction: column; gap: 5px;
+  font-size: var(--t-13);
+  color: var(--testo-2);
+}
+.al-foglio-accessori li { padding-left: var(--s3); border-left: 2px solid var(--traccia); }
+
+.al-giorni { display: flex; gap: var(--s1); }
+.al-giorno-btn {
+  flex: 1;
+  min-height: var(--tocco);
+  border: 0;
+  border-radius: var(--r-interno);
+  background: var(--scheda-alta);
+  color: var(--testo-2);
+  font-family: var(--font);
+  font-size: var(--t-13);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
+}
+.al-giorno-btn.scelto { background: var(--accento); color: var(--fondo); }
+
+.al-file { position: relative; overflow: hidden; display: flex; gap: var(--s2); justify-content: center; }
+.al-file-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.al-area { min-height: 140px; resize: vertical; font-family: var(--font-m); font-size: var(--t-11); }
+.al-esempio {
+  margin: 0 0 var(--s2);
+  padding: var(--s3);
+  border-radius: var(--r-interno);
+  background: var(--scheda-alta);
+  color: var(--testo-3);
+  font-family: var(--font-m);
+  font-size: var(--t-10);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+/* ========================================================= l'andamento === */
+
+.al-barre { display: flex; flex-direction: column; gap: 5px; margin-top: var(--s2); }
+.al-barra { display: flex; align-items: center; gap: var(--s2); }
+.al-barra-n {
+  flex: none; width: 18px;
+  font-size: var(--t-10);
+  font-variant-numeric: tabular-nums;
+  color: var(--testo-4);
+  text-align: right;
+}
+.al-barra.ora .al-barra-n { color: var(--accento); font-weight: 700; }
+
+/* Due barre sovrapposte, non affiancate: il piano è il binario chiaro, il
+   fatto è quello pieno che ci corre dentro. Affiancate raddoppiavano
+   l'altezza e costringevano a confrontare due lunghezze lontane. */
+.al-barra-binario {
+  flex: 1;
+  position: relative;
+  height: 14px;
+  border-radius: var(--r-pillola);
+  background: var(--traccia);
+  overflow: hidden;
+}
+/* Il piano è l'accento al 25%, non un grigio.
+   Era `--scheda-viva`, che sul binario `--traccia` è la stessa cosa: la
+   legenda prometteva tre colori e sullo schermo se ne vedevano due, e le
+   settimane non ancora corse sembravano vuote invece che programmate. Un
+   grigio appena più chiaro di un altro grigio non è una tinta tenue, è una
+   tinta assente. */
+.al-barra-piano {
+  position: absolute; inset: 0 auto 0 0;
+  background: color-mix(in srgb, var(--accento) 25%, transparent);
+  border-radius: var(--r-pillola);
+}
+.al-barra-fatto {
+  position: absolute; inset: 0 auto 0 0;
+  background: var(--accento);
+  border-radius: var(--r-pillola);
+}
+/* Oltre il +10% il colore cambia significato, non intensità: è la regola
+   del piano che si è rotta, non un valore alto. */
+.al-barra-fatto.sopra { background: var(--male); }
+.al-barra-km {
+  flex: none; min-width: 34px;
+  font-size: var(--t-11);
+  font-variant-numeric: tabular-nums;
+  color: var(--testo-3);
+  text-align: right;
+}
+
+.al-legenda {
+  display: flex; flex-wrap: wrap; gap: var(--s4);
+  margin-top: var(--s3);
+  font-size: var(--t-11);
+  color: var(--testo-4);
+}
+.al-legenda-voce { display: inline-flex; align-items: center; gap: 5px; }
+.al-chiave { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.al-chiave.piano { background: color-mix(in srgb, var(--accento) 25%, transparent); }
+.al-chiave.fatto { background: var(--accento); }
+.al-chiave.sopra { background: var(--male); }
+
+.al-proiezione { display: flex; align-items: baseline; gap: var(--s3); margin: var(--s2) 0 var(--s1); }
+.al-proiezione-cifra {
+  font-family: var(--font-d);
+  font-size: var(--t-48);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.al-proiezione.ok .al-proiezione-cifra { color: var(--ok); }
+.al-proiezione.avviso .al-proiezione-cifra { color: var(--avviso); }
+.al-proiezione-passo { font-size: var(--t-15); color: var(--testo-3); font-variant-numeric: tabular-nums; }
+.al-vuoto-cifra {
+  margin: var(--s2) 0 var(--s1);
+  font-family: var(--font-d);
+  font-size: var(--t-48);
+  font-weight: 700;
+  color: var(--testo-4);
+}
+
+.al-corse { list-style: none; margin: var(--s2) 0 0; padding: 0; }
+.al-corsa {
+  display: flex; align-items: center; gap: var(--s3);
+  min-height: 38px;
+  font-size: var(--t-13);
+}
+.al-corsa + .al-corsa { border-top: 1px solid var(--filo); }
+.al-corsa-data { flex: none; width: 52px; color: var(--testo-3); font-size: var(--t-11); }
+.al-corsa-tit { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.al-corsa-km, .al-corsa-passo { flex: none; font-variant-numeric: tabular-nums; }
+.al-corsa-km { min-width: 36px; text-align: right; font-weight: 600; }
+.al-corsa-passo { min-width: 56px; text-align: right; color: var(--testo-3); font-size: var(--t-11); }
+.al-corsa-x {
+  flex: none; width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: none; color: var(--testo-4);
+  cursor: pointer;
+}
+.al-corsa-x:active { background: var(--scheda-alta); }
+.al-corsa-x svg { display: block; }
+
+.al-regole {
+  list-style: none; margin: var(--s2) 0 var(--s3); padding: 0;
+  display: flex; flex-direction: column; gap: var(--s2);
+  font-size: var(--t-13);
+  color: var(--testo-2);
+}
+.al-regole li { padding-left: var(--s3); border-left: 2px solid var(--traccia); }
+
+/* ============================================================ scrivania === */
+
+@media (min-width: 900px) {
+  .al-gruppi { flex-direction: row; align-items: flex-start; }
+  .al-gruppo { flex: 1; min-width: 0; }
+}

@@ -791,3 +791,85 @@ tutto.
 Nota per il futuro: GitHub risponde con `Deprecation: 10 Mar 2026` e
 `Sunset: 10 Mar 2028` sulla versione d'API `2022-11-28` scelta in automatico.
 Non è urgente, ma è la prossima cosa che romperà questa catena in silenzio.
+
+---
+
+## 13 settembre — il quinto modulo: Allenamenti (chat ATLAS)
+
+Tredici settimane verso i **5 km sotto i venti minuti**, dal piano del
+personal trainer. Parte **lunedì 14 settembre**, non il 15 che c'era sul
+foglio: il 15 era un martedì, e far partire la settimana 1 di martedì
+avrebbe spezzato in due ogni conteggio settimanale per tre mesi. Dal 14 le
+tredici settimane sono lunedì→domenica pulite e finiscono domenica 13
+dicembre, con il test dentro l'ultima.
+
+`core/registro.js` ha una voce in più: `allenamenti`, tinta `--arancio`,
+icona `bersaglio`. Non `corpo`, che è di Mobilità: quello dice «il tuo
+corpo», questo dice «un numero da colpire entro dicembre».
+
+### Il piano è codice, non dati
+
+Le tredici settimane stanno in `dati.js` come costante. **Non si seminano
+nell'archivio e non si sincronizzano.** È la scelta che rende questo modulo
+immune alla classe di guasti che ha morso ATLAS quattro volte: un valore di
+fabbrica con un `up` fresco che batte la scrittura vera qui non può nemmeno
+presentarsi, perché non esiste nessun valore di fabbrica da sincronizzare.
+Nell'archivio ci va solo quello che succede — spunte, giorni scelti, corse.
+
+Gli accessori di palestra non cambiano in tredici settimane: cambia il
+carico del lift principale. Sono tenuti una volta sola, e per settimana c'è
+solo `carichi`. Non è compattezza: è la forma che rende visibile la
+progressione, che è l'unica cosa che si muove.
+
+### Gli slot non hanno un giorno
+
+Il piano dice «3 corse + 3 palestre a settimana, **giorni liberi**: domenica
+pianifichi la settimana e piazzi i 6 slot». Quindi niente griglia
+lunedì-domenica, e la domanda della schermata non è «cosa tocca oggi» — che
+sarebbe una cosa che l'app si inventa — ma **quanti slot restano e quanti
+giorni ho per piazzarli**. Il numero grande è quello, e diventa ambra quando
+gli slot aperti sono più dei giorni rimasti. Non è pessimismo, è aritmetica.
+
+### Gli id deterministici, di nuovo
+
+Uno slot è `s03-qualita`, una corsa è `c-2026-09-15-6210` (data + metri).
+Reimportare lo stesso export di Garmin **non raddoppia i km**, che sono
+l'unico numero per cui questo modulo esiste. È la lezione dei log di
+Abitudini (`habitId|data`) applicata qui.
+
+### L'import
+
+Due direzioni, e sono cose diverse. Le **corse fatte** entrano dal CSV di
+Garmin Connect: il lettore riconosce le intestazioni in italiano e in
+inglese, scarta bici e nuoto, e legge `6,21` e `1.234,5` senza confondere le
+migliaia con i decimali — sbagliare lì significa importare 1,2 km invece di
+1234 metri e non accorgersene mai. Gli **allenamenti** entrano da un CSV a
+quattro colonne (`settimana,slot,testo,km`) che la chat di fitness sa
+produrre; il formato da incollare nella chat si copia da dentro l'app.
+
+Gli allenamenti importati **coprono** il piano, non lo cancellano: lo
+scostamento sta nello stesso record della spunta e si toglie da ogni slot.
+
+### Cosa NON fa ancora, e perché è scritto sul pulsante
+
+«Copia per Garmin» **copia**, non carica. Garmin Connect vuole un `.FIT`
+costruito byte per byte, Hevy la sua API a pagamento. Sono fattibili tutti e
+due ma sono un lavoro a sé, e un pulsante che promette un caricamento e fa
+una copia è peggio di uno onesto.
+
+### Provato
+
+Cinquantatré controlli su una copia isolata senza `config.js`: i confini
+delle settimane, la progressione dei carichi, la settimana del test con
+quattro slot e niente gambe, il CSV di Garmin in italiano, il reimport che
+non raddoppia, il tetto del +10%, e la proiezione di Riegel (5,2 km in 33:20
+→ 31:59 sui 5 km, che è il numero giusto).
+
+**Un difetto trovato guardando, non provando:** la barra del piano era
+`--scheda-viva` sul binario `--traccia`, cioè un grigio su un altro grigio.
+La legenda prometteva tre colori e sullo schermo se ne vedevano due, e le
+settimane non ancora corse sembravano vuote invece che programmate. Ora è
+l'accento al 25%.
+
+**Aperto:** la barra in basso ha sei schede. Su iPhone ci stanno, ma è il
+limite — il prossimo modulo obbliga a ripensarla.

@@ -79,6 +79,19 @@ export const MODULI = [
     ascolta: ["giorno:cambiato"],
   },
   {
+    id: "allenamenti",
+    nome: "Training",
+    // Non `corpo`, che è di Mobilità: quello dice «il tuo corpo», questo dice
+    // «un numero da colpire entro dicembre», e sono due cose diverse anche
+    // quando si fanno con le stesse gambe.
+    icona: "bersaglio",
+    accento: "var(--arancio)",
+    stile: true,
+    carica: () => import("../moduli/allenamenti/modulo.js"),
+    pubblica: [],
+    ascolta: ["giorno:cambiato"],
+  },
+  {
     id: "abitudini",
     nome: "Abitudini",
     icona: "spunta",
