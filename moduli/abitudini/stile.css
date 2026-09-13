@@ -384,21 +384,36 @@
 
 /* ================================================================ schede == */
 
-.ab-schede { display: flex; gap: var(--s1); margin-bottom: var(--s4); }
-.ab-scheda {
-  flex: 1;
-  min-height: 40px;
-  border: 0;
+/* Un binario con una pastiglia. Identico a quello di Allenamenti: due
+   controlli a schede con due aspetti diversi nella stessa app si leggono
+   come due app. */
+.ab-schede {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  margin-bottom: var(--s4);
   border-radius: var(--r-pillola);
   background: var(--scheda);
-  color: var(--testo-2);
+  box-shadow: inset 0 0 0 1px var(--filo);
+}
+.ab-scheda {
+  flex: 1;
+  min-height: 34px;
+  border: 0;
+  border-radius: var(--r-pillola);
+  background: none;
+  color: var(--testo-3);
   font-family: var(--font);
   font-size: var(--t-13);
   font-weight: 600;
   cursor: pointer;
   transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
 }
-.ab-scheda.attiva { background: var(--testo); color: var(--fondo); }
+.ab-scheda.attiva {
+  background: var(--scheda-viva);
+  color: var(--testo);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+}
 
 /* ================================================================= serie == */
 

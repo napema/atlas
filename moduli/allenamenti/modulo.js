@@ -38,7 +38,7 @@ function disegna() {
   aggiungi(contenitore, [
     intestazione("Allenamenti", "", el("button", {
       class: "btn-icona", type: "button", "aria-label": "Importa",
-      html: icona("nuvola", 24),
+      html: icona("importa", 23, 1.9),
       onClick: () => apriImport(disegna, vista === "andamento" ? "corse" : "allenamenti"),
     })),
 

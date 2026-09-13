@@ -195,6 +195,18 @@ function prioritarie(resta, ora) {
 function testa(q) {
   const sync = statoSync();
   return el("header", { class: "og-testa" }, [
+    /* L'INGRANAGGIO STA QUI, e non nella barra in basso.
+       Non è un ritorno al passato: il guasto di allora era che le
+       impostazioni dei moduli stavano sparse dentro i moduli, e quello l'ha
+       risolto l'averle radunate in una schermata sola. La barra invece un
+       costo ce l'ha, e cresce: con Allenamenti sarebbero state sei schede su
+       un telefono. Qui è appoggiato in un angolo che era vuoto, fuori dal
+       flusso — la testata resta centrata esattamente com'era. */
+    el("a", {
+      class: "og-ingranaggio", href: "#/impostazioni",
+      "aria-label": "Impostazioni", title: "Impostazioni",
+      html: icona("ingranaggio", 21, 1.6),
+    }),
     el("div", { class: "og-meta" }, [
       el("span", { class: "og-meta-data", testo: dataLunga() }),
       // Colore e parola vengono dalla stessa fonte. Prima la parola era

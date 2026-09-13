@@ -4,7 +4,7 @@
 // di dare i suoi numeri alla home senza montare l'interfaccia del modulo.
 
 import {
-  PIANO, SETTIMANE, OBIETTIVO, slotDi, fatto, corseVive,
+  PIANO, SETTIMANE, OBIETTIVO, slotDi, fatto, corseVive, stato,
   inizioSettimana, fineSettimana, settimanaDi, settimanaCorrente, pianoDi,
 } from "./dati.js";
 import { oggiISO, piuGiorni } from "../../core/ui.js";
@@ -145,6 +145,59 @@ export function settimaneAlTest(oggi = oggiISO()) {
 
 /** La data del test: l'ultimo giorno del blocco. */
 export const giornoTest = () => fineSettimana(SETTIMANE);
+
+/* ------------------------------------------------- il vincolo del piano -- */
+/*
+   «MAI PALESTRA GAMBE IL GIORNO PRIMA DELLA QUALITÀ.»
+
+   È scritto nel piano, e finché sta solo scritto è una cosa che ti devi
+   ricordare tu il martedì sera. L'app invece sa cosa hai spuntato e quando:
+   può dirtelo nel momento in cui serve, che è l'unico modo in cui una regola
+   smette di essere una nota a piè di pagina.
+
+   La lunga no, e nemmeno quello è un dettaglio: il piano precisa che
+   «tollera le gambe stanche, è in Z2». Dire «oggi niente corsa» sarebbe più
+   prudente e sbagliato — toglierebbe di mezzo l'allenamento che proprio
+   oggi si può fare.
+*/
+
+/** Hai fatto stacchi o squat in quel giorno? Vale su tutto il blocco. */
+export const gambeIl = (iso) =>
+  (stato().slot || []).some((r) => r && !r.del && r.fatta && r.giorno === iso
+    && /-(lower|total)$/.test(r.id));
+
+/**
+ * Una riga di consiglio, o `null`.
+ *
+ * `null` la maggior parte dei giorni, ed è voluto: una riga che compare
+ * sempre diventa parte dell'arredamento e smette di essere letta proprio il
+ * giorno in cui dice qualcosa. Parla solo quando sa una cosa che l'elenco
+ * degli slot non mostra da sé.
+ */
+export function consiglio(n, oggi = oggiISO()) {
+  const aperti = restaSettimana(n);
+  if (!aperti.length) return null;
+
+  const qualita = aperti.find((s) => s.chiave === "qualita");
+  const piano = pianoDi(n);
+
+  // La settimana del test ha una regola sua, più forte di tutte le altre.
+  if (piano?.test && aperti.some((s) => s.genere === "palestra")) {
+    return { tono: "avviso", testo: "Settimana del test: la palestra va a inizio settimana, e solo upper." };
+  }
+
+  if (qualita && gambeIl(piuGiorni(oggi, -1))) {
+    return { tono: "avviso", testo: "Gambe ieri: oggi la qualità no. La lunga sì, è in Z2." };
+  }
+
+  // La qualità è l'unica seduta della settimana che chiede gambe fresche.
+  // Lasciarla per ultima è il modo tipico di sprecarla, e succede perché è
+  // anche la più faticosa da cominciare.
+  if (qualita && giorniRimasti(n, oggi) <= 3) {
+    return { tono: "avviso", testo: "La qualità è ancora aperta, e va fatta da freschi. Non lasciarla a domenica." };
+  }
+  return null;
+}
 
 /**
  * Lo stato della settimana in una parola, e serve alla home.

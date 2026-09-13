@@ -20,7 +20,7 @@ import {
 } from "./dati.js";
 import {
   progressoSettimana, kmPrevisti, kmFatti, corseDi, andamento, kmTotali,
-  proiezione, giorniRimasti, settimaneAlTest, giornoTest, passoSettimana,
+  proiezione, giorniRimasti, settimaneAlTest, giornoTest, passoSettimana, consiglio,
   mmss, passo, km,
 } from "./calcolo.js";
 import { corseDaCSV, allenamentiDaCSV, ESEMPIO_ALLENAMENTI } from "./importa.js";
@@ -47,12 +47,19 @@ export function strisciaSettimane(scelta, alCambio) {
         + (pr.frazione >= 1 ? " chiusa" : ""),
       type: "button",
       "aria-pressed": String(p.n === scelta),
-      "aria-label": `Settimana ${p.n}, ${p.fase}`,
+      "aria-label": `Settimana ${p.n}, ${p.fase}, ${pr.fatti} di ${pr.totali}`,
       onClick: () => alCambio(p.n),
     }, [
       el("span", { class: "al-sett-n", testo: String(p.n) }),
-      el("span", { class: "al-sett-punti" },
-        slotDi(p.n).map((s) => el("span", { class: "al-punto" + (fatto(s.id) ? " pieno" : "") }))),
+      // UNA BARRA, NON SEI PALLINI.
+      //
+      // I pallini dicevano la stessa cosa ma chiedevano di contarli, e con
+      // tredici settimane affiancate sono settantotto puntini in fila: da
+      // lontano diventano rumore grigio e il numero della settimana — che è
+      // l'unica cosa che serve leggere — smetteva di stare al centro del
+      // suo riquadro. Una barra si legge senza contare.
+      el("span", { class: "al-sett-barra" },
+        [el("i", { style: `width:${Math.round(pr.frazione * 100)}%` })]),
     ]);
     b.dataset.fase = chiaveFase(p.fase);
     nastro.append(b);
@@ -123,6 +130,17 @@ export function testata(n) {
     ]),
   ]);
 
+  // Il consiglio parla solo quando sa una cosa che l'elenco non mostra da
+  // sé, e solo per la settimana in corso: su una settimana passata sarebbe
+  // un rimprovero su qualcosa che non si può più fare.
+  const c = corrente ? consiglio(n, oggi) : null;
+  if (c) {
+    box.append(el("p", { class: `al-consiglio ${c.tono}`.trim() }, [
+      el("span", { class: "al-consiglio-segno", html: icona("info", 15, 2) }),
+      el("span", { testo: c.testo }),
+    ]));
+  }
+
   if (piano.avvertenza) {
     box.append(el("p", { class: "al-avvertenza" }, [
       el("span", { class: "al-avvertenza-segno", html: icona("avviso", 15, 2.2) }),
@@ -159,15 +177,31 @@ export function elencoSlot(n, ridisegna) {
   return fuori;
 }
 
+/* Quale slot è stato appena toccato.
+   `disegna()` ricostruisce tutta la lista a ogni spunta, quindi
+   un'animazione d'ingresso sul cerchio verde partirebbe su TUTTI gli slot
+   già fatti ogni volta che ne tocchi uno — dodici molle insieme per un
+   tocco solo. Ricordando l'ultimo, la molla scatta dove l'hai chiesta. */
+let appena = null;
+
 function rigaSlot(s, ridisegna) {
   const f = fatto(s.id);
   const g = giornoSlot(s.id);
 
   const spunta = el("button", {
-    class: "al-spunta" + (f ? " fatta" : ""),
+    class: "al-spunta" + (f ? " fatta" : "") + (s.id === appena ? " appena" : ""),
     type: "button", "aria-pressed": String(f),
     "aria-label": f ? `Riapri ${s.nome}` : `Segna ${s.nome} come fatto`,
-    onClick: (e) => { e.stopPropagation(); alternaSlot(s.id); tocco(f ? 6 : 14); ridisegna(); },
+    onClick: (e) => {
+      e.stopPropagation();
+      const ora = alternaSlot(s.id);
+      appena = ora ? s.id : null;
+      tocco(f ? 6 : 14);
+      ridisegna();
+      // La molla vale per quel ridisegno soltanto: al giro dopo lo slot è
+      // già «fatto da prima» e non deve rifare l'ingresso.
+      appena = null;
+    },
   }, [el("span", { class: "al-spunta-cerchio", html: icona("spunta", 17, 2.6) })]);
 
   const corpo = el("button", {
@@ -477,7 +511,7 @@ function file(accetta, alTesto) {
     catch { avviso("Non riesco a leggere il file.", { tono: "errore" }); }
   });
   return el("label", { class: "btn tenue pieno al-file" }, [
-    el("span", { html: icona("nuvola", 18) }),
+    el("span", { html: icona("importa", 18, 1.9) }),
     el("span", { testo: "…oppure scegli il file" }),
     input,
   ]);

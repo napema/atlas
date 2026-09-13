@@ -9,21 +9,39 @@
 
 /* ============================================================ schede === */
 
-.al-schede { display: flex; gap: var(--s1); margin-bottom: var(--s4); }
-.al-scheda {
-  flex: 1;
-  min-height: 40px;
-  border: 0;
+/* UN BINARIO CON UNA PASTIGLIA, non mezzo schermo tinto di arancio.
+   La scheda attiva riempita di accento era la cosa più forte della pagina, e
+   sopra non c'era niente: gridava «SETTIMANA» a un occhio che stava
+   cercando quanti allenamenti mancano. L'accento in ATLAS vuol dire
+   qualcosa, e scegliere in quale delle due schede stai non è quel
+   qualcosa. Restano il rilievo e il contrasto, che bastano. */
+.al-schede {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  margin-bottom: var(--s4);
   border-radius: var(--r-pillola);
   background: var(--scheda);
-  color: var(--testo-2);
+  box-shadow: inset 0 0 0 1px var(--filo);
+}
+.al-scheda {
+  flex: 1;
+  min-height: 34px;
+  border: 0;
+  border-radius: var(--r-pillola);
+  background: none;
+  color: var(--testo-3);
   font-family: var(--font);
   font-size: var(--t-13);
   font-weight: 600;
   cursor: pointer;
   transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
 }
-.al-scheda.attiva { background: var(--accento); color: var(--fondo); }
+.al-scheda.attiva {
+  background: var(--scheda-viva);
+  color: var(--testo);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+}
 
 /* ========================================================= la striscia === */
 /* Tredici settimane in una riga che scorre: il blocco intero resta sempre
@@ -41,44 +59,77 @@
 }
 .al-striscia::-webkit-scrollbar { display: none; }
 
+/* IL NUMERO STA AL CENTRO del suo riquadro, e la barra dell'avanzamento è
+   appoggiata sul fondo invece di spingerlo in alto. Prima il numero era una
+   riga sopra sei pallini, quindi non era al centro di niente: era la parte
+   alta di una colonnina. */
 .al-sett {
   flex: none;
   scroll-snap-align: center;
-  width: 54px;
-  padding: var(--s2) 0 7px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
+  position: relative;
+  width: 48px; height: 54px;
+  padding: 0;
+  display: grid;
+  place-items: center;
   border: 0;
-  border-top: 2px solid var(--traccia);
-  border-radius: 0 0 var(--r-interno) var(--r-interno);
+  border-radius: var(--r-interno);
   background: var(--scheda);
   color: var(--testo-3);
   font-family: var(--font);
   cursor: pointer;
+  overflow: hidden;
   transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
 }
-.al-sett[data-fase="ricostruzione"] { border-top-color: var(--ciano); }
-.al-sett[data-fase="soglia"]        { border-top-color: var(--arancio); }
-.al-sett[data-fase="specifico"]     { border-top-color: var(--rosa); }
-.al-sett[data-fase="taper"]         { border-top-color: var(--giallo); }
+/* La fase è un filo sul bordo alto: dice Ricostruzione, Soglia, Specifico e
+   Taper tredici volte senza scriverlo nemmeno una. */
+.al-sett::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--traccia);
+}
+.al-sett[data-fase="ricostruzione"]::before { background: var(--ciano); }
+.al-sett[data-fase="soglia"]::before        { background: var(--arancio); }
+.al-sett[data-fase="specifico"]::before     { background: var(--rosa); }
+.al-sett[data-fase="taper"]::before         { background: var(--giallo); }
 
-.al-sett-n { font-size: var(--t-15); font-weight: 700; font-variant-numeric: tabular-nums; }
+.al-sett-n {
+  font-size: var(--t-17);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
 .al-sett.scelta { background: var(--scheda-viva); color: var(--testo); }
+.al-sett.scelta::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-interno);
+  box-shadow: inset 0 0 0 1.5px var(--accento-velo);
+  pointer-events: none;
+}
 /* La settimana di OGGI si riconosce anche quando ne stai guardando un'altra:
    senza, aprendo la settimana 7 a ottobre non si capisce più dove sei. */
 .al-sett.ora .al-sett-n { color: var(--accento); }
 .al-sett.chiusa .al-sett-n { color: var(--ok); }
 
-.al-sett-punti { display: flex; gap: 2px; }
-.al-punto {
-  width: 4px; height: 4px;
-  border-radius: 50%;
+.al-sett-barra {
+  position: absolute;
+  left: 9px; right: 9px; bottom: 7px;
+  height: 3px;
+  border-radius: 2px;
   background: var(--traccia);
+  overflow: hidden;
 }
-.al-punto.pieno { background: var(--accento); }
-.al-sett.chiusa .al-punto.pieno { background: var(--ok); }
+.al-sett-barra i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accento);
+  transition: width var(--normale) var(--curva);
+}
+.al-sett.chiusa .al-sett-barra i { background: var(--ok); }
 
 /* ========================================================== la testata === */
 
@@ -214,6 +265,23 @@
   background: var(--ok);
   box-shadow: none;
   color: var(--fondo);
+}
+
+/* La molla scatta SOLO sullo slot appena toccato — la classe la mette
+   viste.js, per quel ridisegno soltanto. Senza, la lista ricostruita da zero
+   farebbe rimbalzare insieme tutti gli slot già fatti a ogni tocco. */
+@keyframes al-molla {
+  0%   { transform: scale(0.35); }
+  55%  { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+.al-spunta.appena .al-spunta-cerchio { animation: al-molla 380ms var(--molla); }
+.al-spunta:active .al-spunta-cerchio { transform: scale(0.9); }
+
+@media (prefers-reduced-motion: reduce) {
+  .al-spunta.appena .al-spunta-cerchio { animation: none; }
+  .al-spunta:active .al-spunta-cerchio { transform: none; }
+  .al-sett-barra i { transition: none; }
 }
 
 .al-slot-corpo {
@@ -408,3 +476,25 @@
   .al-gruppi { flex-direction: row; align-items: flex-start; }
   .al-gruppo { flex: 1; min-width: 0; }
 }
+
+/* Il consiglio: una riga che compare SOLO quando sa qualcosa che l'elenco
+   degli slot non mostra da sé. Una riga che c'è sempre diventa arredamento e
+   smette di essere letta il giorno in cui conta. */
+.al-consiglio {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin: var(--s4) 0 0;
+  padding-top: var(--s3);
+  border-top: 1px solid var(--filo);
+  font-size: var(--t-13);
+  color: var(--testo-2);
+}
+.al-consiglio.avviso { color: var(--avviso); }
+.al-consiglio-segno { flex: none; display: inline-flex; padding-top: 1px; opacity: 0.85; }
+.al-consiglio-segno svg { display: block; }
+
+/* Il filo della fase resta sopra l'anello della settimana scelta: l'anello
+   è più recente nel foglio e senza questo copriva proprio i due pixel che
+   dicono in che fase sei. */
+.al-sett::before { z-index: 1; }

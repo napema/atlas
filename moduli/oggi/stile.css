@@ -27,6 +27,25 @@
   text-align: center;
 }
 
+/* L'ingranaggio è APPOGGIATO, non incastrato: `position:absolute` lo tiene
+   fuori dal flusso, così la data e il saluto restano centrati sullo schermo
+   e non sul poco che avanza. Il tondo disegnato è da 34px, il bersaglio da
+   44 — il pollice ha bisogno del secondo, l'occhio del primo. */
+.og-ingranaggio {
+  position: absolute;
+  top: 0; right: 0;
+  z-index: 2;
+  width: var(--tocco); height: var(--tocco);
+  display: grid; place-items: center;
+  color: var(--testo-3);
+  transition: color var(--veloce) var(--curva), transform var(--normale) var(--curva);
+}
+.og-ingranaggio svg { display: block; }
+.og-ingranaggio:active { color: var(--testo); transform: rotate(35deg); }
+@media (hover: hover) {
+  .og-ingranaggio:hover { color: var(--testo); }
+}
+
 /* Data e stato in alto a destra. Su telefono tornano sopra il saluto,
    centrati: in un angolo di uno schermo da 375px non ci sta niente. */
 .og-meta {

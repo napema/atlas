@@ -114,14 +114,21 @@ export const MODULI = [
 ];
 
 /**
- * I moduli con una scheda nella barra: TUTTI, Impostazioni compresa.
+ * I moduli con una scheda nella barra: tutti TRANNE Impostazioni.
  *
- * Prima Impostazioni si raggiungeva solo da un pulsante dentro Oggi, e il
- * risultato era che le impostazioni dei moduli non le trovava nessuno —
- * Finanze aveva il suo Setup dentro di sé, Mobilità non ne aveva affatto.
- * Un posto solo, sempre a portata di pollice.
+ * Impostazioni ci era entrata per una ragione buona — prima stava dentro un
+ * pulsante in Oggi e le impostazioni dei moduli non le trovava nessuno,
+ * perché Finanze aveva il suo Setup dentro di sé e Mobilità non ne aveva
+ * affatto. Quel problema però è stato risolto dall'AVER RADUNATO le
+ * impostazioni in una schermata sola, non dall'averle messe nella barra.
+ *
+ * E la barra ha un costo che cresce: con Allenamenti sarebbero sei schede su
+ * un telefono, cioè sei etichette da 60px che diventano illeggibili proprio
+ * mentre il pollice ha meno spazio per sbagliare. Le cinque che restano sono
+ * i posti dove vai ogni giorno; le impostazioni le apri una volta al mese, e
+ * un ingranaggio in alto a destra in Oggi è dove tutti le cercano.
  */
-export const MODULI_IN_BARRA = MODULI;
+export const MODULI_IN_BARRA = MODULI.filter((m) => m.id !== "impostazioni");
 
 /** I tre moduli veri: quelli che hanno dati propri e una scheda nella home. */
 export const MODULI_DATI = MODULI.filter((m) => !["oggi", "impostazioni"].includes(m.id));

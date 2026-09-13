@@ -27,9 +27,21 @@ const TRATTI = {
   // Tre cursori, non un ingranaggio. La ruota dentata era un poligono a
   // mano libera: a 21px i denti si impastavano e sembrava un glifo rotto.
   // Questa è fatta di sole linee e cerchi, e regge qualunque misura.
+  /* UN INGRANAGGIO VERO, con i denti.
+     Prima erano tre cursori con le manopole — l'icona dei «filtri», non
+     quella delle impostazioni. Somigliano abbastanza da non stonare e
+     abbastanza poco da non farti trovare la voce che cerchi: in una barra
+     di cinque icone quella differenza si paga ogni volta. */
   ingranaggio:
-    '<path d="M4 7h9.5M18.5 7H20M4 12h3.5M12 12h8M4 17h8.5M17.5 17H20"/>' +
-    '<circle cx="16" cy="7" r="2.2"/><circle cx="9.5" cy="12" r="2.2"/><circle cx="15" cy="17" r="2.2"/>',
+    '<path d="M19.5 13.1a7.7 7.7 0 0 0 0-2.2l2-1.6-2-3.4-2.4 1a7.7 7.7 0 0 0-1.9-1.1L14.8 3h-4l-.4 2.8a7.7 7.7 0 0 0-1.9 1.1l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 0 0 0 2.2l-2 1.6 2 3.4 2.4-1c.6.5 1.2.8 1.9 1.1l.4 2.8h4l.4-2.8c.7-.3 1.3-.6 1.9-1.1l2.4 1 2-3.4z"/>' +
+    '<circle cx="12" cy="12" r="2.9"/>',
+
+  /* Entrare, non «la nuvola». La nuvola vuol dire sincronizzazione, e qui
+     non si sincronizza niente: si prende un file e lo si fa entrare. Una
+     freccia che scende dentro un vassoio lo dice senza didascalia. */
+  importa:
+    '<path d="M12 3.4v10.4"/><path d="M7.9 9.9l4.1 4.1 4.1-4.1"/>' +
+    '<path d="M4.6 16.2v2.4a1.4 1.4 0 0 0 1.4 1.4h12a1.4 1.4 0 0 0 1.4-1.4v-2.4"/>',
 
   // ------------------------------------------------------------- controlli
   piu:       '<path d="M12 5.2v13.6M5.2 12h13.6"/>',
