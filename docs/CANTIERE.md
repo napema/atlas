@@ -1018,3 +1018,50 @@ loro posto. Trenta controlli in tutto.
 
 **Resta aperto:** l'import da PDF (servirebbe pdf.js, pesante — se si fa, va
 caricato pigramente e solo dentro questo modulo).
+
+---
+
+## 14 settembre, sera — Garmin Connect non importa allenamenti (chat ATLAS)
+
+Il `.FIT` caricato su Connect è diventato un **percorso**. Non è il file a
+essere sbagliato: il cookbook FIT di Garmin conferma la struttura — `file_id`
+type 5, `workout` con `num_valid_steps`, `workout_step` con indice zero-based,
+il passo di ripetizione con `repeatFrom` e `repetitions`, sport Running e
+sub-sport **omesso**. Tutto come scritto.
+
+È che **quella porta non esiste**: l'importazione di Garmin Connect sa fare
+solo attività e percorsi. La stessa pagina del cookbook dice qual è la porta
+vera, e non passa da Connect:
+
+> Plug the device into computer using the USB cable → Garmin folder →
+> **NewFiles** folder → place file(s) to be imported in the NewFiles folder.
+
+Quindi due strade, tutte e due dichiarate per quello che sono:
+
+- **dal telefono** — «Copia i passi per Connect»: i passi numerati negli
+  appunti, nell'ordine in cui li chiede l'editor (Allenamenti e
+  pianificazione → Allenamenti → Crea allenamento). È la strada di nove
+  volte su dieci;
+- **dal PC** — «Scarica il .FIT per l'orologio»: col cavo, in
+  `GARMIN/NewFiles`. Con l'avvertenza esplicita di **non** caricarlo su
+  Connect, che è esattamente l'errore che l'ha fatto diventare un percorso.
+
+Nessuna app può fare meglio senza essere partner del programma sviluppatori
+di Garmin. Meglio dirlo sul pulsante che lasciarlo scoprire dopo.
+
+### L'ingranaggio, terza e ultima posizione
+
+In alto a destra finiva sopra la data. Dentro la riga della data la
+stringeva, e a 18px in mezzo al testo si leggeva come una macchia. Adesso sta
+in **colonna 1 della griglia della testata** — la casella che era vuota,
+diametralmente opposta a quella della data e sulla stessa riga.
+
+Il punto non è la posizione ma il METODO: l'allineamento lo fa
+`align-items: center` della griglia, non un `top` calcolato a mano che va
+rifatto ogni volta che cambia un padding. Fuori dalla griglia i due si
+allineavano solo per caso aritmetico — ed è lo stesso difetto che quel blocco
+aveva già corretto una volta, per la data contro il saluto.
+
+Misurato: **scarto zero** fra il centro dell'ingranaggio e il centro della
+riga della data, in tutte e due le disposizioni, e nessuna sovrapposizione.
+Su un dito (`pointer: coarse`) il bersaglio sale a 50px e il segno a 25.

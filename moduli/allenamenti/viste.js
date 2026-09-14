@@ -300,6 +300,19 @@ function esportazioni(s, ridisegna) {
   return s.genere === "corsa" ? versoGarmin(s) : versoHevy(s, ridisegna);
 }
 
+/*
+   GARMIN CONNECT NON IMPORTA ALLENAMENTI, e l'abbiamo scoperto col file in
+   mano: caricato lì dentro diventa un PERCORSO, perché l'importazione di
+   Connect sa fare solo attività e percorsi. Non è il file a essere
+   sbagliato — il cookbook FIT di Garmin conferma che la struttura è quella
+   giusta — è che quella porta non esiste. La stessa pagina dice qual è la
+   porta vera: il cavo USB, cartella `GARMIN/NewFiles`.
+
+   Quindi due strade, e tutte e due dichiarate per quello che sono:
+   dal PC il file va sull'orologio in dieci secondi; dal telefono la via è
+   l'editor di Connect, e allora la cosa utile è avere i passi scritti
+   nell'ordine e nel formato in cui te li chiede.
+*/
 function versoGarmin(s) {
   const letto = leggiAllenamento(s.testo);
   const righe = descrivi(letto.passi);
@@ -317,21 +330,40 @@ function versoGarmin(s) {
     letto.assunzioni && el("p", { class: "nota", testo:
       "Gli allunghi senza durata li ho messi a 30\" con 60\" di pausa." }),
 
+    // DAL TELEFONO: i passi negli appunti, nell'ordine in cui l'editor di
+    // Connect li chiede. È la strada che userai nove volte su dieci.
     el("button", {
       class: "btn primario pieno", type: "button",
-      html: `${icona("scarica", 18)}<span>Aggiungi a Garmin</span>`,
+      html: `${icona("scarica", 18)}<span>Copia i passi per Connect</span>`,
+      onClick: async () => {
+        const t = [`${s.nome} · Settimana ${s.sett}`, ...righe.map((r, i) => `${i + 1}. ${r}`)].join("\n");
+        try {
+          await navigator.clipboard.writeText(t);
+          avviso("Copiati. Connect → Allenamenti → Crea allenamento.");
+        } catch {
+          avviso("Non riesco a copiare da qui.", { tono: "errore" });
+        }
+      },
+    }),
+    el("p", { class: "nota", testo:
+      "Garmin Connect → Allenamenti e pianificazione → Allenamenti → Crea allenamento. I passi qui sopra sono già nell'ordine giusto." }),
+
+    // DAL PC: il file vero, che l'orologio legge da sé.
+    el("button", {
+      class: "btn tenue pieno", type: "button", stile: { marginTop: "var(--s3)" },
+      html: `${icona("scarica", 18)}<span>Scarica il .FIT per l'orologio</span>`,
       onClick: () => {
         try {
           const byte = fileAllenamento(`${s.nome} S${s.sett}`, letto.passi);
-          scarica(`atlas-${s.sett}-${s.chiave}.fit`, byte);
-          avviso("File salvato. Aprilo e mandalo a Garmin Connect.");
+          scarica(`atlas-s${s.sett}-${s.chiave}.fit`, byte);
+          avviso("Salvato. Copialo in GARMIN/NewFiles con il cavo USB.");
         } catch (e) {
           avviso(`Non riesco a costruire il file: ${e.message}`, { tono: "errore" });
         }
       },
     }),
     el("p", { class: "nota", testo:
-      "Salva un file .FIT. Da File, condividilo con Garmin Connect: Garmin non ha un modo per riceverlo direttamente, e nessuna app può aggirarlo." }),
+      "Dal PC, col cavo: copialo nella cartella GARMIN/NewFiles dell'orologio e lo trovi fra gli allenamenti. NON caricarlo su Connect — lì l'importazione fa solo attività e percorsi, e diventerebbe un percorso." }),
   ]);
 }
 

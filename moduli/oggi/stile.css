@@ -27,23 +27,32 @@
   text-align: center;
 }
 
-/* L'ingranaggio vive DENTRO la riga della data, come terza voce.
-   Appoggiato con `position:absolute` in alto a destra finiva sopra la data:
-   da scrivania quell'angolo non è vuoto, è esattamente dove `.og-meta` va a
-   stare. Nella riga non può sovrapporsi a niente, in nessuna delle due
-   disposizioni.
-   Il bersaglio resta 44px come vuole il pollice; i margini negativi gli
-   tolgono l'ingombro, così la riga resta alta quanto il testo. */
+/* L'INGRANAGGIO NELL'ANGOLO IN ALTO A SINISTRA — quello opposto, e l'unico
+   vuoto in tutte e due le disposizioni.
+   `top` vale quanto il padding della testata, così il bersaglio da 44px si
+   apre esattamente attorno alla riga della data e i due sembrano allineati:
+   l'icona ne sta al centro, il testo ci passa accanto. Fuori dal flusso,
+   quindi la testata resta centrata sullo schermo e non su quel che avanza. */
 .og-ingranaggio {
-  flex: none;
+  position: absolute;
+  top: calc(var(--s2) - 13px);
+  left: -10px;
+  z-index: 2;
   width: var(--tocco); height: var(--tocco);
-  /* Solo a destra il margine è negativo, per stare attaccato al bordo. A
-     sinistra no: il bersaglio da 44px si mangerebbe l'ultima lettera di
-     «Sincronizzato», e toccare una parola non deve aprire le impostazioni. */
-  margin: calc(-0.5 * var(--tocco) + 7px) -12px calc(-0.5 * var(--tocco) + 7px) 0;
   display: grid; place-items: center;
   color: var(--testo-4);
   transition: color var(--veloce) var(--curva), transform var(--normale) var(--curva);
+}
+/* Su un dito serve più bersaglio e più segno: a 22px in mezzo al testo si
+   leggeva come una macchia, e il pollice non mira su un'icona che non
+   distingue. `pointer: coarse` è il telefono, non «schermo piccolo». */
+@media (pointer: coarse) {
+  .og-ingranaggio {
+    width: 50px; height: 50px;
+    top: calc(var(--s2) - 16px);
+    left: -13px;
+  }
+  .og-ingranaggio svg { width: 25px; height: 25px; }
 }
 .og-ingranaggio svg { display: block; }
 .og-ingranaggio:active { color: var(--testo); transform: rotate(35deg); }
@@ -64,8 +73,6 @@
 }
 .og-meta-data { text-transform: capitalize; }
 .og-meta-stato { display: inline-flex; align-items: center; gap: 6px; }
-/* Stato e ingranaggio viaggiano insieme: se vanno a capo, ci vanno in due. */
-.og-meta-fine { display: inline-flex; align-items: center; gap: var(--s2); }
 /* Maiuscola come la data che le sta sopra: sono due righe della stessa
    colonna, e una minuscola in mezzo si legge come una svista. */
 .og-meta-parola::first-letter { text-transform: uppercase; }
@@ -524,6 +531,21 @@
     margin: 0;
     text-align: right;
   }
+  /* L'ingranaggio ENTRA NELLA GRIGLIA, nella colonna 1 che era vuota: è la
+     casella diametralmente opposta a quella della data, sulla stessa riga.
+     Così l'allineamento non è calcolato a mano con un `top` che va rifatto
+     ogni volta che cambia un padding — lo fa `align-items: center`, come
+     per `.og-meta`. Fuori dalla griglia i due si allineavano solo per caso
+     aritmetico, ed era lo stesso difetto che questo blocco aveva già
+     corretto per la data contro il saluto. */
+  .og-ingranaggio {
+    position: static;
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    margin-left: -11px;
+  }
+
   .og-verdetto { grid-column: 1 / -1; grid-row: 2; }
 
   .og-lista { gap: var(--s2); }

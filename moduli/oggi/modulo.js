@@ -201,28 +201,24 @@ function testa(q) {
       // scritta qui — «sincronizzato», sempre — mentre il pallino seguiva lo
       // stato vero: bastava un sync non ancora partito per avere un pallino
       // grigio accanto alla parola «sincronizzato».
-      /* L'INGRANAGGIO STA ATTACCATO ALLO STATO DEL SYNC, in un gruppo che
-         non si spezza.
-         Due tentativi e due difetti, che vale la pena ricordare tutti e
-         due. Appoggiato con `position:absolute` in alto a destra finiva
-         SOPRA la data: da scrivania quell'angolo non è vuoto, è esattamente
-         dove `.og-meta` va a stare. Messo come terza voce della riga non si
-         sovrapponeva più, ma la colonna di destra è stretta e mandava a capo
-         tre volte: data, stato, e l'ingranaggio da solo su una riga sua.
-         Legato allo stato invece va a capo INSIEME a lui, e resta una cosa
-         sola in tutte e due le disposizioni. */
-      el("span", { class: "og-meta-fine" }, [
-        el("span", { class: "og-meta-stato", title: sync.titolo }, [
-          el("span", { class: `sync-pallino is-${sync.stato}` }),
-          el("span", { class: "og-meta-parola", "data-ruolo": "sync-testo", testo: sync.etichetta }),
-        ]),
-        el("a", {
-          class: "og-ingranaggio", href: "#/impostazioni",
-          "aria-label": "Impostazioni", title: "Impostazioni",
-          html: icona("ingranaggio", 18, 1.6),
-        }),
+      el("span", { class: "og-meta-stato", title: sync.titolo }, [
+        el("span", { class: `sync-pallino is-${sync.stato}` }),
+        el("span", { class: "og-meta-parola", "data-ruolo": "sync-testo", testo: sync.etichetta }),
       ]),
     ]),
+
+    /* L'INGRANAGGIO STA NELL'ANGOLO OPPOSTO, e ci è arrivato in tre passi.
+       In alto a destra finiva SOPRA la data, perché da scrivania quell'angolo
+       non è vuoto: è dove il media query manda `.og-meta`. Dentro la riga non
+       si sovrapponeva ma la stringeva, e a 18px in mezzo al testo si leggeva
+       come una macchia. In alto a SINISTRA l'angolo è vuoto in tutte e due le
+       disposizioni — niente da schivare, niente da stringere — e allineato
+       alla riga della data sembra messo lì apposta invece che avanzato. */
+    el("a", {
+      class: "og-ingranaggio", href: "#/impostazioni",
+      "aria-label": "Impostazioni", title: "Impostazioni",
+      html: icona("ingranaggio", 22, 1.7),
+    }),
     el("h1", { class: "og-saluto" }, [
       el("span", { testo: `${saluto()}, ${NOME}` }),
       el("span", { class: "og-punto", testo: "." }),
