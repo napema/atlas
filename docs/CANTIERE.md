@@ -873,3 +873,79 @@ l'accento al 25%.
 
 **Aperto:** la barra in basso ha sei schede. Su iPhone ci stanno, ma è il
 limite — il prossimo modulo obbliga a ripensarla.
+
+---
+
+## 14 settembre — la sveglia esterna funziona davvero (chat ATLAS)
+
+Ventiquattro ore dopo, la prova che mancava. In `stato-notifiche.json`:
+
+```
+ab:h_skincare:mattina:2026-09-13
+ab:h_skincare:sera:2026-09-13
+ab:msnpry7ugxqqg4q:2026-09-13        (Meditazione)
+mo:sessione:2026-09-13
+ab:h_skincare:mattina:2026-09-14     ← la prima mattina vera
+fi:ric:1:2026-09-14                  (la ricarica del lunedì)
+```
+
+E i giri del workflow di stamattina, tutti `workflow_dispatch`:
+
+```
+05:30 · 05:40 · 05:50 · 06:00 · 06:10 · 06:20   UTC
+```
+
+Cioè **07:30–08:20 di Roma, uno ogni dieci minuti esatti**, che è la finestra
+configurata su cron-job.org. Da sei giri al giorno con divari fino a 274
+minuti a una cadenza puntuale: il guasto è chiuso, e lo dice il file dei dati
+invece di una supposizione.
+
+---
+
+## 14 settembre — la passata di UX su Allenamenti, e due difetti miei
+
+**La barra torna a cinque.** Impostazioni esce e diventa un ingranaggio in
+alto a destra in Oggi. Il guasto che l'aveva portata nella barra — le
+impostazioni dei moduli sparse DENTRO i moduli — l'ha risolto l'averle
+radunate in una schermata sola, non l'averle messe fra le schede. E
+l'ingranaggio adesso è un ingranaggio: prima erano tre cursori con le
+manopole, che è l'icona dei «filtri».
+
+**Due difetti miei, tutti e due invisibili dove li avevo provati.**
+
+1. L'ingranaggio, appoggiato con `position:absolute` in alto a destra,
+   finiva **sopra** «Domenica 13 Settembre». Da telefono quell'angolo è
+   vuoto; da scrivania è esattamente dove il media query da 900px manda
+   `.og-meta`. Il primo rimedio — terza voce della riga — toglieva la
+   sovrapposizione e ne creava un'altra: la colonna di destra è stretta e
+   mandava a capo tre volte. Ora sta in un gruppo insieme allo stato del
+   sync: se vanno a capo, ci vanno in due.
+2. La striscia delle settimane restava a sinistra con mezzo schermo vuoto.
+   Ora `justify-content: safe center` — e `safe` è la parola che conta:
+   senza, centrare un contenuto più largo del contenitore taglia la PRIMA
+   settimana e non la si raggiunge più scorrendo, cioè romperebbe proprio il
+   telefono.
+
+Provato **misurando i riquadri** a 1200 e a 390 invece di guardarli: nessuna
+sovrapposizione fra ingranaggio, data e stato; la striscia scorre solo dove
+serve; il centro del numero cade a 22px su una zona utile alta 44.
+
+**Altro nella stessa passata:** i pallini nei riquadri delle settimane
+diventano una barra (tredici settimane facevano settantotto puntini, cioè
+rumore); le schede smettono di essere una pastiglia di accento a tutta
+larghezza e diventano un binario con la pastiglia in rilievo, uguale in
+Abitudini; l'icona dell'import non è più una nuvola, perché la nuvola vuol
+dire sincronizzazione e lì si fa entrare un file.
+
+**E il piano adesso lo conosce l'app.** «Mai palestra gambe il giorno prima
+della qualità» era una riga su un foglio, cioè una cosa da ricordarsi il
+martedì sera. ATLAS sa cosa hai spuntato e quando, quindi lo dice quando
+serve — compreso che la lunga si può fare lo stesso, perché il piano precisa
+che tollera le gambe stanche. La riga compare SOLO quando sa qualcosa che
+l'elenco degli slot non mostra da sé: una riga che c'è sempre diventa
+arredamento.
+
+**Resta aperto:** `.FIT` per Garmin (lavoro una tantum, ma l'import resta a
+tre tocchi perché Garmin non ha un'API aperta per gli allenamenti) e l'API di
+Hevy, che invece permetterebbe la creazione vera a un tocco con un
+abbonamento Pro. Oggi i pulsanti copiano, e lo dicono.
