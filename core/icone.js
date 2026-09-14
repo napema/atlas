@@ -32,16 +32,36 @@ const TRATTI = {
      quella delle impostazioni. Somigliano abbastanza da non stonare e
      abbastanza poco da non farti trovare la voce che cerchi: in una barra
      di cinque icone quella differenza si paga ogni volta. */
-  ingranaggio:
-    '<path d="M19.5 13.1a7.7 7.7 0 0 0 0-2.2l2-1.6-2-3.4-2.4 1a7.7 7.7 0 0 0-1.9-1.1L14.8 3h-4l-.4 2.8a7.7 7.7 0 0 0-1.9 1.1l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 0 0 0 2.2l-2 1.6 2 3.4 2.4-1c.6.5 1.2.8 1.9 1.1l.4 2.8h4l.4-2.8c.7-.3 1.3-.6 1.9-1.1l2.4 1 2-3.4z"/>' +
-    '<circle cx="12" cy="12" r="2.9"/>',
+  /* UNA RUOTA DENTATA CALCOLATA, non disegnata a mano.
+     La versione precedente era un tracciato scritto a occhio, e si vedeva:
+     il dente in cima stava a 12,8 invece che a 12, quindi l'intera ruota
+     pendeva da un lato. A quella misura mezzo millimetro non è un dettaglio
+     — è l'unica cosa che l'occhio nota.
 
-  /* Entrare, non «la nuvola». La nuvola vuol dire sincronizzazione, e qui
-     non si sincronizza niente: si prende un file e lo si fa entrare. Una
-     freccia che scende dentro un vassoio lo dice senza didascalia. */
+     Questi trentadue punti vengono da otto denti a 45° esatti l'uno
+     dall'altro, fra raggio 10,3 e raggio 7,7. Specchiando l'insieme
+     sull'asse verticale torna se stesso, e il centro cade a (12, 12) con
+     scarto zero: la simmetria è una proprietà del calcolo, non una
+     speranza. Otto e non sette proprio per questo — un numero dispari di
+     denti non può essere simmetrico rispetto alla verticale. */
+  ingranaggio:
+    '<path d="M9.81 4.62L10.12 1.87L13.88 1.87L14.19 4.62L15.67 5.23L17.83 3.51' +
+    'L20.49 6.17L18.77 8.33L19.38 9.81L22.13 10.12L22.13 13.88L19.38 14.19' +
+    'L18.77 15.67L20.49 17.83L17.83 20.49L15.67 18.77L14.19 19.38L13.88 22.13' +
+    'L10.12 22.13L9.81 19.38L8.33 18.77L6.17 20.49L3.51 17.83L5.23 15.67' +
+    'L4.62 14.19L1.87 13.88L1.87 10.12L4.62 9.81L5.23 8.33L3.51 6.17L6.17 3.51' +
+    'L8.33 5.23Z"/>' +
+    '<circle cx="12" cy="12" r="3.1"/>',
+
+  /* ENTRARE, non scendere.
+     Prima era una freccia che scendeva dentro un vassoio: è il disegno
+     universale del DOWNLOAD, e infatti si leggeva così. Ma qui non si
+     scarica niente — si prende un file e lo si fa entrare nell'app. Una
+     freccia orizzontale che entra in un contenitore lo dice senza
+     didascalia, e non somiglia a nient'altro nella barra. */
   importa:
-    '<path d="M12 3.4v10.4"/><path d="M7.9 9.9l4.1 4.1 4.1-4.1"/>' +
-    '<path d="M4.6 16.2v2.4a1.4 1.4 0 0 0 1.4 1.4h12a1.4 1.4 0 0 0 1.4-1.4v-2.4"/>',
+    '<path d="M9 3.6H5.4A1.8 1.8 0 0 0 3.6 5.4v13.2a1.8 1.8 0 0 0 1.8 1.8H9"/>' +
+    '<path d="M20.4 12H8.4"/><path d="M12.6 7.8 8.4 12l4.2 4.2"/>',
 
   // ------------------------------------------------------------- controlli
   piu:       '<path d="M12 5.2v13.6M5.2 12h13.6"/>',
