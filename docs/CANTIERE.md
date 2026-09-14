@@ -949,3 +949,72 @@ arredamento.
 tre tocchi perché Garmin non ha un'API aperta per gli allenamenti) e l'API di
 Hevy, che invece permetterebbe la creazione vera a un tocco con un
 abbonamento Pro. Oggi i pulsanti copiano, e lo dicono.
+
+---
+
+## 14 settembre — Garmin e Hevy: due strade, e non sono la stessa (chat ATLAS)
+
+### Hevy si crea davvero
+
+API aperta, chiave in un header `api-key`, e — la cosa che andava verificata
+PRIMA di scrivere una riga — `Access-Control-Allow-Origin: *` con `api-key`
+fra gli header ammessi. Senza CORS permissivo la funzione non esisteva:
+ATLAS non ha un backend dietro cui nascondersi.
+
+`hevy.js` scarica il catalogo (454 esercizi, una volta e basta), traduce i
+nomi del piano e crea la routine. Il vocabolario italiano→inglese elenca i
+candidati **in ordine di preferenza** perché Hevy chiama la stessa cosa in
+modi diversi a seconda dell'attrezzo: tutti e 19 gli esercizi del blocco
+trovano un titolo vero.
+
+```
+Stacco    → Deadlift (Barbell)        Squat      → Squat (Barbell)
+Polpacci  → Standing Calf Raise (M.)  Lat machine→ Lat Pulldown (Cable)
+Tibialis  → Tibialis Raise            Dip        → Triceps Dip
+```
+
+**Provata sul serio:** creata «Lower · Settimana 1» sull'account vero.
+Dentro c'era Deadlift 5×3 @ 60 kg, Hack Squat 4×8, Seated Leg Curl 3×12,
+Lunge 3×12, Standing Calf Raise 4×15, Tibialis Raise 3×20 — cioè il piano,
+esatto, zero esercizi persi.
+
+**LA CHIAVE NON SI SINCRONIZZA.** Sta in una casella locale che nessun
+`impacchetta` tocca. atlas-dati si legge col token dentro `config.js`, e
+`config.js` lo serve GitHub Pages: sincronizzare la chiave di Hevy vorrebbe
+dire pubblicarla. Si scrive una volta per dispositivo.
+
+### Garmin no, e non è pigrizia
+
+Non esiste nessuna porta d'ingresso per un allenamento Garmin che non sia un
+file `.FIT` binario. Quindi `fit.js` lo costruisce byte per byte — niente
+libreria, regola 8 — e il pulsante lo salva; da File lo mandi a Garmin
+Connect col foglio di condivisione. Tre tocchi invece di uno, e nessuna app
+può fare meglio.
+
+`passi.js` traduce prima il testo del piano in passi strutturati: «15' risc +
+5×1000 @ 4:30/km rec 90" + 10' defat» diventa riscaldamento, ripeti 5 volte
+(1000 m a 4:30 · recupero 90"), defaticamento. **Tutte e 39 le corse del
+blocco vengono lette senza buchi.** Quando non capisce NON inventa: un passo
+aperto col testo originale, e la vista lo dice — un orologio che impone dieci
+ripetute che non erano nel piano è molto peggio di uno che dice «corri».
+
+Il bersaglio di ritmo è una FINESTRA di ±10 s/km, non un valore: correre
+esattamente a 4:30/km non lo fa nessuno e un orologio che bippa a ogni
+secondo di scarto si spegne.
+
+### Il bug che ha giustificato il decodificatore
+
+Il `.FIT` si prova **rileggendolo con un lettore indipendente**, scritto da
+zero nel banco di prova. È servito subito: la definizione di `workout_step`
+dichiarava **otto** campi e ne scriveva **nove**. Il lettore si fermava
+all'ottavo, prendeva i tre byte del nono per l'inizio del record successivo,
+e da lì leggeva spazzatura. Garmin avrebbe rifiutato il file senza dire
+perché, e guardando i byte non si capiva niente.
+
+Dopo la correzione: CRC dell'intestazione e del file giusti, lunghezze
+combacianti, cinque passi con gli indici 0..4, il passo RIPETI che torna
+all'indice 1 cinque volte, le intensità warmup/interval/recovery/cooldown al
+loro posto. Trenta controlli in tutto.
+
+**Resta aperto:** l'import da PDF (servirebbe pdf.js, pesante — se si fa, va
+caricato pigramente e solo dentro questo modulo).

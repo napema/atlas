@@ -24,6 +24,9 @@ import {
   mmss, passo, km,
 } from "./calcolo.js";
 import { corseDaCSV, allenamentiDaCSV, ESEMPIO_ALLENAMENTI } from "./importa.js";
+import { leggiAllenamento, descrivi } from "./passi.js";
+import { fileAllenamento, scarica } from "./fit.js";
+import * as hevy from "./hevy.js";
 
 /* ====================================================== la striscia ===== */
 /*
@@ -236,9 +239,6 @@ function etichettaGiorno(iso) {
 export function apriSlot(s, ridisegna) {
   const { corpo } = apriFoglio({ titolo: s.nome, alChiudi: ridisegna });
   const f = fatto(s.id);
-  const testoPieno = s.lift
-    ? [s.lift, ...(s.accessori || [])].join("\n")
-    : s.testo;
 
   aggiungi(corpo, [
     el("section", { class: "scheda" }, [
@@ -274,7 +274,7 @@ export function apriSlot(s, ridisegna) {
         }))),
     ]),
 
-    esportazioni(s, testoPieno),
+    esportazioni(s, ridisegna),
 
     recordSlot(s.id)?.testo && el("button", {
       class: "btn nudo piccolo", type: "button", testo: "Rimetti il piano originale",
@@ -283,33 +283,95 @@ export function apriSlot(s, ridisegna) {
   ]);
 }
 
-/*
-   «Aggiungi a Garmin» e «Aggiungi a Hevy» oggi copiano, non caricano.
-   Vale la pena dirlo sul pulsante invece di scoprirlo dopo: né Garmin
-   Connect né Hevy accettano un allenamento da un link o da un file di testo
-   — Garmin vuole un `.FIT` costruito byte per byte, Hevy la sua API a
-   pagamento. Sono tutti e due fattibili, ma sono un lavoro a sé, e un
-   pulsante che promette un caricamento e fa una copia è peggio di un
-   pulsante onesto.
-*/
-function esportazioni(s, testoPieno) {
-  const dove = s.genere === "corsa" ? "Garmin" : "Hevy";
+/* =========================================================================
+   PORTARE FUORI L'ALLENAMENTO — e le due strade non sono la stessa cosa.
+
+   HEVY ha un'API aperta: la routine si crea davvero, con una chiamata, e
+   compare nell'app senza incollare niente.
+
+   GARMIN no. Non esiste nessuna porta d'ingresso per un allenamento che non
+   sia un file `.FIT`, quindi il pulsante lo costruisce e lo salva; poi sei
+   tu ad aprirlo e mandarlo a Garmin Connect dal foglio di condivisione. Non
+   è pigrizia mia: è che un'API per creare allenamenti Garmin non la dà a
+   nessuno. Il pulsante lo dice, invece di lasciartelo scoprire dopo.
+   ========================================================================= */
+
+function esportazioni(s, ridisegna) {
+  return s.genere === "corsa" ? versoGarmin(s) : versoHevy(s, ridisegna);
+}
+
+function versoGarmin(s) {
+  const letto = leggiAllenamento(s.testo);
+  const righe = descrivi(letto.passi);
+
   return el("div", { class: "campo-gruppo" }, [
-    el("label", { class: "campo-etichetta", testo: "Porta fuori" }),
+    el("label", { class: "campo-etichetta", testo: "Porta su Garmin" }),
+
+    // COSA FINIRÀ NELL'OROLOGIO, prima di salvarlo. Un file che parte alla
+    // cieca e si scopre sbagliato a metà ripetuta è il modo peggiore di
+    // scoprire che il lettore non aveva capito la frase.
+    el("ul", { class: "al-passi" }, righe.map((r) => el("li", { testo: r }))),
+
+    !letto.completo && el("p", { class: "nota tono-avviso", testo:
+      "Una parte di questo allenamento non l'ho saputa tradurre in passi: nell'orologio arriva come corsa libera, e il dettaglio resta qui." }),
+    letto.assunzioni && el("p", { class: "nota", testo:
+      "Gli allunghi senza durata li ho messi a 30\" con 60\" di pausa." }),
+
     el("button", {
-      class: "btn tenue pieno", type: "button",
-      html: `${icona("scarica", 18)}<span>Copia per ${dove}</span>`,
-      onClick: async () => {
-        const t = `${s.nome} — settimana ${s.sett}\n${testoPieno}`;
+      class: "btn primario pieno", type: "button",
+      html: `${icona("scarica", 18)}<span>Aggiungi a Garmin</span>`,
+      onClick: () => {
         try {
-          await navigator.clipboard.writeText(t);
-          avviso(`Copiato. Incollalo in ${dove}.`);
-        } catch {
-          avviso("Non riesco a copiare da qui.", { tono: "errore" });
+          const byte = fileAllenamento(`${s.nome} S${s.sett}`, letto.passi);
+          scarica(`atlas-${s.sett}-${s.chiave}.fit`, byte);
+          avviso("File salvato. Aprilo e mandalo a Garmin Connect.");
+        } catch (e) {
+          avviso(`Non riesco a costruire il file: ${e.message}`, { tono: "errore" });
         }
       },
     }),
-    el("p", { class: "nota", testo: `Copia il testo negli appunti. Il caricamento diretto su ${dove} non c'è ancora.` }),
+    el("p", { class: "nota", testo:
+      "Salva un file .FIT. Da File, condividilo con Garmin Connect: Garmin non ha un modo per riceverlo direttamente, e nessuna app può aggirarlo." }),
+  ]);
+}
+
+function versoHevy(s, ridisegna) {
+  const righe = [s.lift, ...(s.accessori || [])].filter(Boolean);
+
+  return el("div", { class: "campo-gruppo" }, [
+    el("label", { class: "campo-etichetta", testo: "Porta su Hevy" }),
+
+    !hevy.configurato()
+      ? el("p", { class: "nota", testo: "Serve la chiave API, una volta sola: Impostazioni → Allenamenti." })
+      : null,
+
+    el("button", {
+      class: "btn primario pieno", type: "button", disabled: !hevy.configurato(),
+      html: `${icona("nuvola", 18)}<span>Crea la routine su Hevy</span>`,
+      onClick: async (e) => {
+        const b = e.currentTarget;
+        b.disabled = true;
+        b.textContent = "Creo…";
+        try {
+          const { mancanti } = await hevy.creaRoutine({
+            titolo: `${s.nome} · Settimana ${s.sett}`,
+            note: "Da ATLAS — blocco 5 km sub-20",
+            righe,
+          });
+          chiudiFoglio();
+          avviso(mancanti.length
+            ? `Creata. ${mancanti.length} esercizi non erano nel catalogo: ${mancanti.join(", ")}.`
+            : "Routine creata su Hevy.", { durata: mancanti.length ? 5200 : 2400 });
+          ridisegna();
+        } catch (err) {
+          b.disabled = false;
+          b.textContent = "Crea la routine su Hevy";
+          avviso(err.message, { tono: "errore", durata: 4200 });
+        }
+      },
+    }),
+    hevy.configurato() && el("p", { class: "nota", testo:
+      "La routine compare nell'app, in «My Routines». I carichi e le serie sono quelli del piano." }),
   ]);
 }
 
@@ -527,8 +589,8 @@ export const PROMPT_FITNESS =
 /* ==================================================== le impostazioni === */
 
 export function vistaImpostazioni() {
-  const pr = progressoSettimana(1);
   return el("div", {}, [
+    schedaHevy(),
     el("section", { class: "scheda" }, [
       el("div", { class: "scheda-titolo" }, [el("span", { testo: "Il blocco" })]),
       el("ul", { class: "lista" }, [
@@ -551,3 +613,56 @@ const rigaSecca = (etichetta, valore) =>
     el("span", { testo: etichetta }),
     el("span", { class: "valore", testo: valore }),
   ])]);
+
+/*
+   LA CHIAVE DI HEVY STA SOLO SU QUESTO DISPOSITIVO, e la riga sotto il campo
+   lo dice. Non è una precauzione teorica: tutto il resto di questo modulo
+   finisce in atlas-dati, che si legge con il token dentro `config.js` — e
+   `config.js` lo serve GitHub Pages, quindi è pubblico. Sincronizzare la
+   chiave vorrebbe dire pubblicarla.
+*/
+function schedaHevy() {
+  const zona = el("div", {});
+
+  const disegna = () => {
+    zona.replaceChildren();
+    const c = hevy.chiave();
+    aggiungi(zona, [
+      campo({
+        etichetta: "Chiave API", tipo: "password", valore: c,
+        segnaposto: "incollala qui",
+        alCambio: (v) => hevy.scriviChiave(v),
+      }),
+      el("p", { class: "nota", testo:
+        "Hevy → Settings → Developer → Generate API Key. Serve un account Pro." }),
+      el("p", { class: "nota", testo:
+        "Resta su questo dispositivo e non viene sincronizzata: il repo dei dati si legge con un token che è pubblico, quindi sincronizzarla vorrebbe dire pubblicarla." }),
+
+      el("button", {
+        class: "btn tenue pieno", type: "button", testo: "Prova la chiave",
+        onClick: async (e) => {
+          const b = e.currentTarget;
+          b.disabled = true; b.textContent = "Provo…";
+          try {
+            await hevy.provaChiave();
+            const el2 = await hevy.scaricaEsercizi({ forza: true });
+            avviso(`Funziona. ${el2.length} esercizi nel catalogo.`);
+          } catch (err) {
+            avviso(err.message, { tono: "errore", durata: 4200 });
+          }
+          b.disabled = false; b.textContent = "Prova la chiave";
+          disegna();
+        },
+      }),
+      hevy.esercizinoti().length
+        ? el("p", { class: "nota", testo: `Catalogo in memoria: ${hevy.esercizinoti().length} esercizi.` })
+        : null,
+    ]);
+  };
+  disegna();
+
+  return el("section", { class: "scheda" }, [
+    el("div", { class: "scheda-titolo" }, [el("span", { testo: "Hevy" })]),
+    zona,
+  ]);
+}

@@ -51,15 +51,32 @@ non raddoppia i km — che sono l'unico numero per cui questo modulo esiste.
 | `dati.js` | `PIANO` (costante), l'archivio, gli slot, le scritture |
 | `calcolo.js` | puro: progresso, km, andamento, proiezione. Nessun DOM |
 | `importa.js` | CSV in entrata: corse da Garmin, allenamenti dalla chat |
+| `passi.js` | il testo del piano → passi strutturati |
+| `fit.js` | lo scrittore binario del file Garmin |
+| `hevy.js` | il client dell'API, e il vocabolario italiano→inglese |
 | `viste.js` | striscia, testata, slot, andamento, fogli |
 | `stile.css` | i token di ATLAS, con la voce editoriale del piano |
 
+## Portare fuori: due strade diverse
+
+**Hevy si crea davvero** (`hevy.js`). API aperta, `api-key` in un header,
+CORS permissivo — verificato prima di scrivere il codice, perché senza
+backend non c'è modo di aggirarlo. La chiave sta in una casella LOCALE che
+il sync non tocca: atlas-dati si legge col token dentro `config.js`, che è
+servito da Pages, quindi sincronizzarla vorrebbe dire pubblicarla.
+
+**Garmin no** (`fit.js`). Non esiste una porta d'ingresso che non sia un
+file `.FIT` binario, quindi il pulsante lo costruisce e lo salva; poi lo
+mandi a Garmin Connect dal foglio di condivisione. Tre tocchi, non uno, e
+non si può fare di meglio da nessuna app.
+
+`passi.js` traduce il testo italiano del piano in passi strutturati. Quando
+non capisce NON inventa: un passo aperto col testo originale, e la vista lo
+dice. Un orologio che impone dieci ripetute che non erano nel piano è molto
+peggio di uno che dice «corri».
+
 ## Quello che manca ancora
 
-- **`.FIT` per Garmin** e **API di Hevy**: oggi i pulsanti *copiano*, e lo
-  dicono. Garmin vuole un file binario costruito byte per byte, Hevy la sua
-  API a pagamento. Sono fattibili tutti e due, sono un lavoro a sé, e un
-  pulsante che promette un caricamento e fa una copia è peggio di uno onesto.
 - **Import da PDF**: servirebbe pdf.js, che è pesante. Se si fa, va caricato
   pigramente e **solo dentro questo modulo** (regola 8 alla radice).
 - **Un secondo blocco**: oggi `PIANO` è uno solo. Quando ne servirà un altro,

@@ -14,7 +14,7 @@
  * che stanno in core/app.js. Il perché è scritto lì.
  */
 
-const VERSIONE = "atlas-v64";
+const VERSIONE = "atlas-v65";
 const GUSCIO = `guscio-${VERSIONE}`;
 
 /* I FILE PESANTI STANNO IN UNA CACHE CHE NON PORTA LA VERSIONE.
@@ -98,6 +98,9 @@ const DA_PRECARICARE = [
   "./moduli/allenamenti/calcolo.js",
   "./moduli/allenamenti/viste.js",
   "./moduli/allenamenti/importa.js",
+  "./moduli/allenamenti/passi.js",
+  "./moduli/allenamenti/fit.js",
+  "./moduli/allenamenti/hevy.js",
   "./moduli/allenamenti/stile.css",
 
   "./assets/icons/icon-192.png",
