@@ -1065,3 +1065,39 @@ aveva già corretto una volta, per la data contro il saluto.
 Misurato: **scarto zero** fra il centro dell'ingranaggio e il centro della
 riga della data, in tutte e due le disposizioni, e nessuna sovrapposizione.
 Su un dito (`pointer: coarse`) il bersaglio sale a 50px e il segno a 25.
+
+### …e come ci si arriva davvero: il JSON, non il .FIT
+
+Il `.FIT` resta giusto e resta utile — è la strada per l'orologio via USB —
+ma **dentro Connect non entra nessun file**. Gli allenamenti ci entrano come
+JSON, su un'API interna:
+
+```
+POST /gc-api/workout-service/workout
+connect-csrf-token: <meta name="csrf-token">
+x-requested-with: XMLHttpRequest      credentials: include
+```
+
+È la stessa porta che usa l'editor di Connect quando premi «Salva». Lo
+schema — `workoutSegments`, `ExecutableStepDTO`, `RepeatGroupDTO`,
+`endCondition`, `targetType: pace.zone` in m/s — è ricavato da
+un'implementazione che funziona, non indovinato.
+
+**ATLAS non può chiamarla da sé**, e non è una scelta: sta su un altro
+dominio, quell'API vuole i cookie di sessione e un token letto dalla pagina,
+e il browser blocca tutte e tre le cose. L'unica alternativa sarebbe la
+password di Garmin, che non si chiede.
+
+Quindi: da ATLAS esce il JSON negli appunti, e a portarlo dentro è un
+**segnalibro `javascript:`** che gira DENTRO connect.garmin.com con la
+sessione già aperta. Si salva una volta e vale per tutto il blocco. Nessuna
+credenziale passa da qui.
+
+Se Garmin rifiuta, il segnalibro mostra **il messaggio del server** invece di
+un «errore» generico: su un'API non documentata la risposta è l'unica
+diagnosi che esista.
+
+**Non provato fino in fondo, e va detto:** il POST vero non l'ho potuto fare
+— non ho la sessione di Garmin e la password non si chiede. Ventuno controlli
+verificano la forma del JSON; il verdetto lo dà il primo tocco sul
+segnalibro.

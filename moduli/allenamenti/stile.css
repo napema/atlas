@@ -531,3 +531,15 @@
   border-radius: 0 var(--r-interno) var(--r-interno) 0;
 }
 .nota.tono-avviso { color: var(--avviso); }
+
+/* La guida del segnalibro: quattro passi numerati, non un paragrafo.
+   Una procedura in prosa la si rilegge tre volte per capire a che punto si
+   era; numerata la si segue. */
+.al-passi-guida {
+  margin: var(--s2) 0 var(--s3);
+  padding-left: var(--s5);
+  display: flex; flex-direction: column; gap: var(--s2);
+  font-size: var(--t-13);
+  color: var(--testo-2);
+  line-height: 1.4;
+}

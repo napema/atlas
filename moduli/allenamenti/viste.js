@@ -27,6 +27,7 @@ import { corseDaCSV, allenamentiDaCSV, ESEMPIO_ALLENAMENTI } from "./importa.js"
 import { leggiAllenamento, descrivi } from "./passi.js";
 import { fileAllenamento, scarica } from "./fit.js";
 import * as hevy from "./hevy.js";
+import { allenamentoJSON, SEGNALIBRO } from "./garmin.js";
 
 /* ====================================================== la striscia ===== */
 /*
@@ -330,23 +331,24 @@ function versoGarmin(s) {
     letto.assunzioni && el("p", { class: "nota", testo:
       "Gli allunghi senza durata li ho messi a 30\" con 60\" di pausa." }),
 
-    // DAL TELEFONO: i passi negli appunti, nell'ordine in cui l'editor di
-    // Connect li chiede. È la strada che userai nove volte su dieci.
+    // L'ALLENAMENTO VERO DENTRO CONNECT: il JSON negli appunti, e il
+    // segnalibro lo crea. Tre tocchi, e diventa un allenamento — non un
+    // percorso, non una cosa da ribattere a mano.
     el("button", {
       class: "btn primario pieno", type: "button",
-      html: `${icona("scarica", 18)}<span>Copia i passi per Connect</span>`,
+      html: `${icona("scarica", 18)}<span>Copia per Garmin Connect</span>`,
       onClick: async () => {
-        const t = [`${s.nome} · Settimana ${s.sett}`, ...righe.map((r, i) => `${i + 1}. ${r}`)].join("\n");
         try {
-          await navigator.clipboard.writeText(t);
-          avviso("Copiati. Connect → Allenamenti → Crea allenamento.");
-        } catch {
-          avviso("Non riesco a copiare da qui.", { tono: "errore" });
+          const j = allenamentoJSON(`${s.nome} · S${s.sett}`, letto.passi, "Da ATLAS — blocco 5 km sub-20");
+          await navigator.clipboard.writeText(JSON.stringify(j));
+          avviso("Copiato. Apri Connect → Allenamenti e tocca il segnalibro.");
+        } catch (e) {
+          avviso(`Non riesco a copiare: ${e.message}`, { tono: "errore" });
         }
       },
     }),
     el("p", { class: "nota", testo:
-      "Garmin Connect → Allenamenti e pianificazione → Allenamenti → Crea allenamento. I passi qui sopra sono già nell'ordine giusto." }),
+      "Poi su connect.garmin.com → Allenamenti, tocca il segnalibro «ATLAS → Garmin» e l'allenamento si crea da sé. Il segnalibro si salva una volta sola: Impostazioni → Allenamenti." }),
 
     // DAL PC: il file vero, che l'orologio legge da sé.
     el("button", {
@@ -622,6 +624,7 @@ export const PROMPT_FITNESS =
 
 export function vistaImpostazioni() {
   return el("div", {}, [
+    schedaSegnalibro(),
     schedaHevy(),
     el("section", { class: "scheda" }, [
       el("div", { class: "scheda-titolo" }, [el("span", { testo: "Il blocco" })]),
@@ -696,5 +699,42 @@ function schedaHevy() {
   return el("section", { class: "scheda" }, [
     el("div", { class: "scheda-titolo" }, [el("span", { testo: "Hevy" })]),
     zona,
+  ]);
+}
+
+/*
+   IL SEGNALIBRO, e perché serve un segnalibro.
+
+   Gli allenamenti entrano in Garmin Connect da un'API interna che vuole i
+   cookie di sessione e un token CSRF letto dalla pagina. ATLAS sta su un
+   altro dominio: il browser blocca la chiamata, e l'unica alternativa
+   sarebbe chiedere la password di Garmin — che non si fa, mai. Un
+   segnalibro `javascript:` invece gira DENTRO connect.garmin.com, con la
+   sessione che hai già aperto, e nessuna credenziale passa da qui.
+
+   Si salva una volta sola e vale per tutti gli allenamenti del blocco.
+*/
+function schedaSegnalibro() {
+  return el("section", { class: "scheda" }, [
+    el("div", { class: "scheda-titolo" }, [el("span", { testo: "Segnalibro per Garmin" })]),
+    el("p", { class: "nota", testo:
+      "Garmin Connect non ha un'importazione di allenamenti: un .FIT caricato lì diventa un percorso. Questo segnalibro usa la stessa porta che usa l'editor di Connect quando premi «Salva»." }),
+    el("ol", { class: "al-passi-guida" }, [
+      el("li", { testo: "Copia il codice qui sotto." }),
+      el("li", { testo: "Salva un segnalibro qualunque, poi modificalo: chiamalo «ATLAS → Garmin» e incolla il codice al posto dell'indirizzo." }),
+      el("li", { testo: "In ATLAS tocca «Copia per Garmin Connect» su un allenamento." }),
+      el("li", { testo: "Apri connect.garmin.com → Allenamenti e tocca il segnalibro." }),
+    ]),
+    el("button", {
+      class: "btn tenue pieno", type: "button", testo: "Copia il codice del segnalibro",
+      onClick: async () => {
+        try {
+          await navigator.clipboard.writeText(SEGNALIBRO);
+          avviso("Copiato. Salvalo come segnalibro.");
+        } catch { avviso("Non riesco a copiare da qui.", { tono: "errore" }); }
+      },
+    }),
+    el("p", { class: "nota", testo:
+      "Non passa da qui nessuna password: il segnalibro gira dentro Connect e usa la sessione che hai già aperta. Se Garmin rifiuta, ti mostra il SUO messaggio — quello serve per capire cosa non gli è piaciuto." }),
   ]);
 }
