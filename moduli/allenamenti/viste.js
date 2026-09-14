@@ -724,6 +724,7 @@ function schedaSegnalibro() {
       el("li", { testo: "Salva un segnalibro qualunque, poi modificalo: chiamalo «ATLAS → Garmin» e incolla il codice al posto dell'indirizzo." }),
       el("li", { testo: "In ATLAS tocca «Copia per Garmin Connect» su un allenamento." }),
       el("li", { testo: "Apri connect.garmin.com → Allenamenti e tocca il segnalibro." }),
+      el("li", { testo: "Si apre un riquadro: incolla dentro e tocca «Crea allenamento»." }),
     ]),
     el("button", {
       class: "btn tenue pieno", type: "button", testo: "Copia il codice del segnalibro",
@@ -734,6 +735,8 @@ function schedaSegnalibro() {
         } catch { avviso("Non riesco a copiare da qui.", { tono: "errore" }); }
       },
     }),
+    el("p", { class: "nota", testo:
+      "Il riquadro serve perché un segnalibro non vale come «tocco dentro la pagina», e senza quello il browser vieta di leggere gli appunti da solo. Incollare a mano invece è sempre permesso." }),
     el("p", { class: "nota", testo:
       "Non passa da qui nessuna password: il segnalibro gira dentro Connect e usa la sessione che hai già aperta. Se Garmin rifiuta, ti mostra il SUO messaggio — quello serve per capire cosa non gli è piaciuto." }),
   ]);

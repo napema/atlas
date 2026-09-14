@@ -145,14 +145,55 @@ export function allenamentoJSON(nome, passi, nota = "") {
    generico: su un'API non documentata la risposta del server è l'unica
    diagnosi che esista.
 */
-export const SEGNALIBRO =
-  "javascript:(async()=>{try{" +
-  "var m=document.querySelector('meta[name=\"csrf-token\"]');" +
-  "if(!m)return alert('Apri connect.garmin.com e vai su Allenamenti, poi ritocca il segnalibro.');" +
-  "var t=await navigator.clipboard.readText();var j=JSON.parse(t);" +
-  "var r=await fetch('/gc-api/workout-service/workout',{method:'POST',credentials:'include'," +
-  "headers:{'Content-Type':'application/json','connect-csrf-token':m.content,'x-requested-with':'XMLHttpRequest'}," +
-  "body:JSON.stringify(j)});var b=await r.text();" +
-  "if(!r.ok)return alert('Garmin ha risposto '+r.status+'\\n\\n'+b.slice(0,500));" +
-  "var w=JSON.parse(b);location.href='/modern/workout/'+w.workoutId;" +
-  "}catch(e){alert('Non ha funzionato: '+(e&&e.message||e));}})()";
+/*
+   NON LEGGE PIÙ GLI APPUNTI DA SOLO, e non è una semplificazione: è che i
+   browser lo vietano.
+
+   La prima versione faceva `navigator.clipboard.readText()` appena partiva,
+   e Safari rispondeva «Clipboard read request was blocked due to lack of
+   user activation». Il clic su un segnalibro NON vale come attivazione
+   utente: la pagina non l'ha ricevuto, l'ha ricevuto la barra dei
+   segnalibri. Qualunque cosa chieda un permesso, da lì dentro, parte già
+   negata.
+
+   Quindi il segnalibro apre un riquadro DENTRO la pagina: ci incolli il
+   JSON con le dita — che è un incollaggio normale e non chiede permessi — e
+   il pulsante è un clic vero, con l'attivazione che serve. Ci prova anche
+   da solo a leggere gli appunti, in silenzio: se il permesso c'è, il
+   riquadro è già pieno e devi solo confermare.
+*/
+export const SEGNALIBRO = [
+  "javascript:(function(){",
+  "if(document.getElementById('axbox'))return;",
+  "var d=document.createElement('div');d.id='axbox';",
+  "d.style.cssText='position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;font:14px system-ui,sans-serif';",
+  "d.innerHTML=\"<div style='background:#fff;color:#111;max-width:440px;width:92%;padding:18px;border-radius:14px'>",
+  "<div style='font-weight:700;margin-bottom:6px'>ATLAS &rarr; Garmin</div>",
+  "<div id='axm' style='color:#555;margin-bottom:10px'>Incolla qui il JSON copiato da ATLAS.</div>",
+  "<textarea id='axt' style='width:100%;height:110px;box-sizing:border-box;font:12px monospace;border:1px solid #ccc;border-radius:8px;padding:8px'></textarea>",
+  "<div style='display:flex;gap:8px;margin-top:10px'>",
+  "<button id='axgo' style='flex:1;padding:11px;border:0;border-radius:8px;background:#0b6cf5;color:#fff;font-weight:600'>Crea allenamento</button>",
+  "<button id='axno' style='padding:11px 14px;border:0;border-radius:8px;background:#eee'>Chiudi</button>",
+  "</div></div>\";",
+  "document.body.appendChild(d);",
+  "var t=d.querySelector('#axt'),m=d.querySelector('#axm');",
+  "d.querySelector('#axno').onclick=function(){d.remove()};",
+  "t.focus();",
+  // Tentativo silenzioso: se il permesso c'è, risparmia l'incollaggio.
+  "try{navigator.clipboard.readText().then(function(x){if(x&&!t.value){t.value=x;m.textContent='Preso dagli appunti. Tocca Crea.'}}).catch(function(){})}catch(e){}",
+  "d.querySelector('#axgo').onclick=async function(){m.textContent='Invio...';try{",
+  "var raw=t.value.trim();",
+  "if(!raw){try{raw=(await navigator.clipboard.readText()).trim()}catch(e){}}",
+  "if(!raw){m.textContent='Il riquadro e vuoto: incolla il JSON.';return}",
+  "var j=JSON.parse(raw);",
+  "var meta=document.querySelector('meta[name=csrf-token]');",
+  "if(!meta){m.textContent='Non trovo il token: sei dentro connect.garmin.com?';return}",
+  "var r=await fetch('/gc-api/workout-service/workout',{method:'POST',credentials:'include',",
+  "headers:{'Content-Type':'application/json','connect-csrf-token':meta.content,'x-requested-with':'XMLHttpRequest'},",
+  "body:JSON.stringify(j)});",
+  "var b=await r.text();",
+  "if(!r.ok){m.textContent='Garmin ha risposto '+r.status+': '+b.slice(0,300);return}",
+  "var w=JSON.parse(b);location.href='/modern/workout/'+w.workoutId;",
+  "}catch(e){m.textContent='Errore: '+(e&&e.message||e)}};",
+  "})()",
+].join("");
