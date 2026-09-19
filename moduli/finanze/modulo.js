@@ -14,7 +14,7 @@ import { icona } from "../../core/icone.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { annuncia, ascolta } from "../../core/bus.js";
-import { casella, stato, movimentiVivi, migra, checkFatto } from "./dati.js";
+import { casella, stato, movimentiVivi, migra, checkFatto, completaTravasi } from "./dati.js";
 import {
   statistiche, budgetTotale, cassaSettimana, verdetto, meseDi, spostaMese,
   nomeMese, importoEffettivo, proiezione,
@@ -312,7 +312,17 @@ export function avviaSync() {
         }
       }, { origine: "sync", tocca: false });
     },
-    ridisegna: () => { pubblicaSullaLavagna(); if (contenitore) disegna(); },
+    ridisegna: () => {
+      // La riparazione dei travasi a metà gira QUI, dopo che il canale ha
+      // letto il repo, e non in `migra()` all'avvio. Riparare prima di
+      // leggere darebbe a un record un `up` più fresco di una lapide messa
+      // dall'altro dispositivo — e un movimento cancellato sul PC tornerebbe
+      // in vita dal telefono. È la regola «chi non ha letto non scrive»,
+      // applicata a una scrittura che parte da sola.
+      if (canale.letturaFatta) completaTravasi();
+      pubblicaSullaLavagna();
+      if (contenitore) disegna();
+    },
   });
 
   // La lavagna si aggiorna anche a modulo chiuso: la home la legge, e se si

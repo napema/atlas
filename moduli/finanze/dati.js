@@ -444,6 +444,48 @@ export function migra() {
   if (serve && !stato().config?.mig2608) casella.aggiorna(aggiustamenti2608);
 
   aggiungiContanti();
+
+}
+
+/* =========================================================================
+   I TRAVASI A METÀ — il guasto del 19 settembre.
+
+   Il modulo di inserimento mostrava il Principale come destinazione già
+   scelta anche quando nei dati la destinazione era vuota (`pocketTo:
+   null`). Salvando senza toccarla, un prelievo da ING usciva da ING e non
+   entrava da nessuna parte: il 16 e il 18 settembre sono spariti così 22 e
+   60 euro, e il Principale restava a −49 dopo il prelievo che doveva
+   riportarlo sopra lo zero.
+
+   Il modulo adesso non lo permette più. Questa funzione ripara quello che
+   è già stato salvato così: un travaso o uno sforamento senza destinazione
+   riceve il Principale, che è l'UNICA destinazione che quei movimenti
+   possono avere — uno sforamento per definizione porta soldi da ING al
+   Principale, un travaso dalla Cassa al Principale.
+
+   È sicura da far girare a ogni avvio, e non ha bisogno di un segnalino di
+   «già fatto»:
+   - tocca SOLO record oggettivamente rotti, cioè con un estremo solo;
+   - scrive l'unico valore possibile, quindi due dispositivi che la fanno
+     girare insieme scrivono la stessa cosa;
+   - una volta riparato il record non corrisponde più, quindi non la rifà;
+   - se l'origine è già il Principale non indovina: lo lascia com'è, perché
+     lì una destinazione giusta non esiste e inventarla sarebbe peggio.
+   Il timbro `up` alzato è ciò che fa viaggiare la riparazione fino
+   all'altro dispositivo invece di farla perdere nella fusione.
+   ========================================================================= */
+export function completaTravasi() {
+  const rotti = (stato().movs || []).filter((m) => m && !m.del
+    && (m.tipo === "giro" || m.tipo === "extra")
+    && !m.pocketTo && m.pocket && m.pocket !== "principale");
+  if (!rotti.length) return 0;
+  const ids = new Set(rotti.map((m) => m.id));
+  casella.aggiorna((st) => {
+    for (const m of st.movs || []) {
+      if (ids.has(m.id) && !m.pocketTo) { m.pocketTo = "principale"; m.up = Date.now(); }
+    }
+  });
+  return rotti.length;
 }
 
 /* Il pocket Contanti, aggiunto agli archivi che non ce l'hanno.

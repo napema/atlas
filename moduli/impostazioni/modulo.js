@@ -71,7 +71,6 @@ async function bloccoNotifiche(ridisegna) {
   const perm = notifiche.permesso();
   const attive = await notifiche.iscritto();
   const s = notifiche.stato();
-  const nSub = s.subs.filter((x) => !x.del).length;
   const corpo = [];
 
   if (notifiche.suIOS() && !notifiche.installata()) {
@@ -95,7 +94,38 @@ async function bloccoNotifiche(ridisegna) {
       },
     }));
   } else {
-    corpo.push(el("p", { class: "nota positivo", testo: `Questo dispositivo è iscritto. In tutto: ${nSub}.` }));
+    /* NON BASTA DIRE «ISCRITTO». Prima questa riga guardava solo se il
+       browser aveva un'iscrizione, e diceva «iscritto» anche quando il
+       server ne conosceva un'altra — vecchia, rigenerata da iOS, morta.
+       Le notifiche partivano, Apple le accettava, e non arrivava niente,
+       mentre qui c'era scritto che andava tutto bene. Adesso il riallineamento
+       gira prima, e la riga dice se il server conosce QUESTO telefono. */
+    const esito = await notifiche.riallinea();
+    const mio = await notifiche.idQuestoDispositivo();
+    const vivi = notifiche.stato().subs.filter((x) => !x.del);
+    const altri = vivi.filter((x) => x.id !== mio).length;
+
+    corpo.push(el("p", {
+      class: "nota positivo",
+      testo: esito.stato === "riparato"
+        ? "Questo dispositivo non era registrato sul server: sistemato ora. Le prossime notifiche arrivano qui."
+        : "Questo dispositivo è iscritto, e il server lo conosce.",
+    }));
+
+    if (altri > 0) {
+      corpo.push(el("p", { class: "nota", testo:
+        `Il server manda anche a ${altri === 1 ? "un'altra iscrizione" : `altre ${altri} iscrizioni`}. ` +
+        "Se usi ATLAS solo su questo telefono sono vecchie — di una reinstallazione o di un aggiornamento di iOS — e ricevono messaggi che non arrivano da nessuna parte." }));
+      corpo.push(el("button", {
+        class: "btn tenue pieno", type: "button",
+        testo: altri === 1 ? "Tieni solo questo dispositivo" : `Tieni solo questo dispositivo (togli le altre ${altri})`,
+        onClick: async () => {
+          const n = await notifiche.tieniSoloQuesto();
+          avviso(n ? `Tolte ${n}. Resta solo questo dispositivo.` : "Niente da togliere.");
+          ridisegna();
+        },
+      }));
+    }
     corpo.push(lista([
       interruttore("Abitudini", s.orari.abitudini.attiva, (v) => { notifiche.scriviOrari("abitudini", { attiva: v }); ridisegna(); }),
       interruttore("Mobilità", s.orari.mobilita.attiva, (v) => { notifiche.scriviOrari("mobilita", { attiva: v }); ridisegna(); }),
@@ -128,7 +158,7 @@ async function bloccoNotifiche(ridisegna) {
       },
     }));
     corpo.push(el("p", { class: "nota",
-      testo: "I promemoria veri partono da GitHub Actions ogni dieci minuti e possono slittare di qualche minuto: non è un orologio, è un promemoria." }));
+      testo: "La prova parte da QUESTO telefono e non passa dal server: se non la vedi, il problema è nelle impostazioni di iOS — Impostazioni → Notifiche → ATLAS, e controlla che non ci sia una Full immersione attiva. Se la vedi ma i promemoria no, il problema era l'iscrizione, e il riallineamento qui sopra l'ha appena sistemata." }));
     corpo.push(el("button", {
       class: "btn distruttivo nudo pieno", type: "button", testo: "Disiscrivi questo dispositivo",
       onClick: async () => { await notifiche.disiscrivi(); avviso("Disiscritto."); ridisegna(); },

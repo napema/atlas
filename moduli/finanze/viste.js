@@ -1252,15 +1252,37 @@ export function apriDettaglio(id, ridisegna, apriDett) {
    È la schermata che si apre dieci volte al giorno, quindi è quella che
    deve costare meno gesti: importo, nota, e la categoria si propone da sé. */
 
+/**
+ * Da quale pocket parte e dove arriva un movimento nuovo, dato il tipo.
+ *
+ * UNA funzione sola, usata sia all'apertura del modulo sia al cambio di
+ * tipo. Erano due posti che scrivevano le stesse regole a mano, e hanno
+ * smesso di dire la stessa cosa: all'apertura uno sforamento partiva da
+ * «Principale → niente», al cambio di tipo da «ING → Principale».
+ */
+function pocketPredefiniti(tipo) {
+  // Un'entrata arriva su ING; uno sforamento esce da ING e finisce sul
+  // Principale; un travaso va dalla Cassa al Principale; tutto il resto si
+  // spende dal Principale, che è l'unico conto da cui si spende.
+  if (tipo === "in") return { pocket: "ing", pocketTo: null };
+  if (tipo === "extra") return { pocket: "ing", pocketTo: "principale" };
+  if (tipo === "giro") return { pocket: "cassa", pocketTo: "principale" };
+  return { pocket: "principale", pocketTo: null };
+}
+
 export function apriMovimento({ movimento = null, ridisegna, tipo = "out" } = {}) {
   const nuovo = !movimento;
   const b = movimento
     ? { ...movimento }
     : { id: nuovoId("m"), tipo, imp: 0, nota: "", cat: null, sub: null, rif: null, ecc: false,
-        data: oggiISO(),
-        // Il Principale è l'unico conto da cui si spende: è il valore giusto
-        // per default, e non va chiesto ogni volta.
-        pocket: tipo === "in" ? "ing" : "principale", pocketTo: null, rimborsoDi: null };
+        data: oggiISO(), rimborsoDi: null,
+        // I pocket di partenza vengono dalla STESSA funzione che usa il cambio
+        // di tipo. Prima erano scritti qui a parte, e divergevano: aprendo
+        // direttamente uno sforamento — il pulsante rapido — partiva da
+        // «Principale → niente» invece che da «ING → Principale». Il cambio
+        // di tipo metteva i valori giusti, ma in quel caso il tipo non
+        // cambiava mai, quindi non scattava.
+        ...pocketPredefiniti(tipo) };
 
   let testoImporto = b.imp ? (b.imp / 100).toFixed(2).replace(".", ",") : "";
   let categoriaManuale = Boolean(movimento?.cat);
@@ -1378,6 +1400,10 @@ export function apriMovimento({ movimento = null, ridisegna, tipo = "out" } = {}
     if (centesimi(testoImporto) === null) return false;
     if (b.tipo !== "giro" && b.tipo !== "extra" && !b.nota.trim()) return false;
     if (b.tipo === "out" && !b.cat) return false;
+    // Un travaso ha DUE estremi o non è un travaso: con uno solo i soldi
+    // escono da una parte e non entrano da nessun'altra. Non si salva.
+    if ((b.tipo === "giro" || b.tipo === "extra")
+        && (!b.pocket || !b.pocketTo || b.pocket === b.pocketTo)) return false;
     return Boolean(b.data);
   };
 
@@ -1472,16 +1498,34 @@ export function apriMovimento({ movimento = null, ridisegna, tipo = "out" } = {}
     const elenco = (stato().pockets || []).map((p) => [p.id, p.nome]);
     const doppio = b.tipo === "giro" || b.tipo === "extra";
 
+    /* LO SCHERMO NON PUÒ MOSTRARE UNA SCELTA CHE NEI DATI NON C'È.
+
+       Qui c'era `b.pocketTo || "principale"`: la pillola del Principale
+       risultava selezionata anche quando `pocketTo` era vuoto. Tu la vedevi
+       accesa, giustamente non la toccavi, e salvavi un giroconto con una
+       metà sola — i soldi uscivano da ING e non entravano da nessuna parte.
+       Il 16 e il 18 settembre sono spariti così 22 e 60 euro, e il
+       Principale è rimasto a −49 dopo il prelievo.
+
+       Adesso il valore di ripiego non si MOSTRA: si SCRIVE nella bozza,
+       prima di disegnare. Quello che vedi acceso è quello che salvi. */
+    if (!b.pocket) b.pocket = "principale";
+    const destinazioni = elenco.filter(([id]) => id !== b.pocket);
+    if (doppio && (!b.pocketTo || b.pocketTo === b.pocket)) {
+      b.pocketTo = destinazioni.some(([id]) => id === "principale")
+        ? "principale" : destinazioni[0]?.[0] || null;
+    }
+
     aggiungi(zonaPocket, [
       el("div", { class: "campo-gruppo" }, [
         el("label", { class: "campo-etichetta",
           testo: doppio ? "Da quale pocket esce" : b.tipo === "in" ? "Su quale pocket entra" : "Da quale pocket" }),
-        pillole(elenco, b.pocket || "principale",
+        pillole(elenco, b.pocket,
           (v) => { b.pocket = v; disegnaPocket(); disegnaSalva(); }, { unaRiga: true }),
       ]),
       doppio && el("div", { class: "campo-gruppo" }, [
         el("label", { class: "campo-etichetta", testo: "E su quale entra" }),
-        pillole(elenco.filter(([id]) => id !== b.pocket), b.pocketTo || "principale",
+        pillole(destinazioni, b.pocketTo,
           (v) => { b.pocketTo = v; disegnaSalva(); }, { unaRiga: true }),
       ]),
     ]);
@@ -1493,10 +1537,7 @@ export function apriMovimento({ movimento = null, ridisegna, tipo = "out" } = {}
     // Il pocket predefinito cambia col tipo: un'entrata arriva su ING, uno
     // sforamento esce da ING per finire sul Principale, tutto il resto si
     // spende dal Principale.
-    if (v === "in") { b.pocket = "ing"; b.pocketTo = null; }
-    else if (v === "extra") { b.pocket = "ing"; b.pocketTo = "principale"; }
-    else if (v === "giro") { b.pocket = "cassa"; b.pocketTo = "principale"; }
-    else { b.pocket = "principale"; b.pocketTo = null; }
+    Object.assign(b, pocketPredefiniti(v));
     campoNota.placeholder = SEGNAPOSTO[v];
     disegnaCat(); disegnaRif(); disegnaPocket(); disegnaSalva();
   };

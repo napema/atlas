@@ -10,6 +10,7 @@ import { avviaRouter, osservaRotta, rottaCorrente, vaiA } from "./router.js";
 import { osservaStato, configurato } from "./sync.js";
 import { icona } from "./icone.js";
 import { el } from "./ui.js";
+import { riallinea } from "./notifiche.js";
 
 // ------------------------------------------------------------------ barra --
 
@@ -224,8 +225,18 @@ async function registraServiceWorker() {
 
   reg.update().catch(() => { /* offline: riproveremo al prossimo giro */ });
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) reg.update().catch(() => {});
+    if (!document.hidden) {
+      reg.update().catch(() => {});
+      riallinea().catch(() => {});
+    }
   });
+
+  // L'ISCRIZIONE PUSH SI RIMETTE IN PARI A OGNI AVVIO. iOS la rigenera dopo
+  // un aggiornamento o una reinstallazione, e prima di questa riga nessuno
+  // scriveva mai l'endpoint nuovo sul server: le notifiche partivano verso
+  // quello vecchio, Apple le accettava, e sul telefono non arrivava niente.
+  // Vedi `riallinea()` in core/notifiche.js. Silenziosa: non chiede permessi.
+  riallinea().catch(() => {});
 }
 
 // Va letto PRIMA della registrazione: dopo, `controller` è già valorizzato

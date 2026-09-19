@@ -163,6 +163,96 @@ export async function iscritto() {
   return Boolean(await reg.pushManager.getSubscription());
 }
 
+/* =========================================================================
+   IL RIALLINEAMENTO — il guasto del 19 settembre.
+
+   Le notifiche partivano tutti i giorni, Apple le accettava tutte — «2/2»
+   nei log, ogni mattina e ogni sera — e sul telefono non ne arrivava una.
+
+   La causa stava qui, nella differenza fra due domande. L'app chiedeva
+   «questo browser ha un'iscrizione?», e se sì scriveva «questo dispositivo
+   è iscritto». Ma non chiedeva mai «è QUELLA che ha il server?». E l'unico
+   momento in cui scriveva l'iscrizione sul server era il tocco su «Attiva»,
+   che però una volta iscritti non compariva più.
+
+   iOS RIGENERA le iscrizioni push: dopo un aggiornamento del sistema, dopo
+   una reinstallazione dalla schermata Home. Quando succede il telefono ha
+   un endpoint nuovo, l'app continua a dire «iscritto», e nessuno lo scrive
+   mai sul server. Il mittente spara all'endpoint vecchio; Apple a volte non
+   risponde 410 ma accetta e butta via. Nei dati c'erano infatti DUE
+   iscrizioni dello stesso iPhone, del 22 agosto e del 12 settembre, e
+   nessuna delle due riceveva.
+
+   Questa funzione gira a ogni avvio e rimette in pari le cose: se
+   l'iscrizione che il telefono ha adesso non è fra quelle che il server
+   conosce — o c'è con chiavi diverse — la scrive. Non chiede permessi, non
+   apre finestre: se il permesso non c'è non fa niente, e se c'è ripara.
+   Da qui in avanti una rigenerazione di iOS si aggiusta alla prossima
+   apertura dell'app, senza che nessuno se ne accorga.
+   ========================================================================= */
+export async function riallinea() {
+  if (!supportate() || permesso() !== "granted") return { stato: "senza-permesso" };
+  let sub;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    sub = await reg.pushManager.getSubscription();
+  } catch { return { stato: "errore" }; }
+  if (!sub) return { stato: "non-iscritto" };
+
+  const j = sub.toJSON();
+  const id = impronaDi(j.endpoint);
+  const noto = stato().subs.find((x) => x.id === id && !x.del);
+
+  // Già noto con le stesse chiavi: niente da scrivere. Il controllo sulle
+  // chiavi non è pignoleria — un endpoint uguale con chiavi nuove è un
+  // messaggio che Apple non sa più decifrare, cioè uno che non arriva.
+  if (noto && noto.p256dh === j.keys?.p256dh && noto.auth === j.keys?.auth) {
+    return { stato: "ok", id };
+  }
+
+  casella.aggiorna((s) => {
+    const i = s.subs.findIndex((x) => x.id === id);
+    const rec = {
+      id, endpoint: j.endpoint, p256dh: j.keys?.p256dh, auth: j.keys?.auth,
+      ua: navigator.userAgent.slice(0, 80),
+      up: Date.now(),
+    };
+    if (i >= 0) s.subs[i] = rec; else s.subs.push(rec);
+  });
+  return { stato: "riparato", id };
+}
+
+/** L'id dell'iscrizione di questo dispositivo, o null. Serve alla diagnosi. */
+export async function idQuestoDispositivo() {
+  if (!supportate() || permesso() !== "granted") return null;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    return sub ? impronaDi(sub.toJSON().endpoint) : null;
+  } catch { return null; }
+}
+
+/**
+ * Tiene SOLO l'iscrizione di questo dispositivo e mette la lapide alle altre.
+ *
+ * Non è automatico, e di proposito: dal telefono non si può sapere se
+ * un'altra iscrizione è un telefono morto o un secondo dispositivo vivo.
+ * Lo sai tu, e il pulsante lo chiede a te.
+ */
+export async function tieniSoloQuesto() {
+  const mio = await idQuestoDispositivo();
+  if (!mio) return 0;
+  let tolte = 0;
+  casella.aggiorna((s) => {
+    s.subs = s.subs.map((x) => {
+      if (x.id === mio || x.del) return x;
+      tolte++;
+      return { id: x.id, del: true, up: Date.now() };
+    });
+  });
+  return tolte;
+}
+
 /**
  * Un id stabile derivato dall'endpoint.
  *

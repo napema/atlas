@@ -1101,3 +1101,67 @@ diagnosi che esista.
 — non ho la sessione di Garmin e la password non si chiede. Ventuno controlli
 verificano la forma del JSON; il verdetto lo dà il primo tocco sul
 segnalibro.
+
+---
+
+## 19 settembre — due guasti: notifiche mute e giroconti a metà (chat ATLAS)
+
+### Le notifiche partivano e non arrivavano
+
+Il mittente consegnava tutti i giorni — skincare, riepilogo, sessione,
+recupero, meditazione, sempre `2/2` accettati da Apple — e sul telefono non
+arrivava niente. Le due iscrizioni in `notifiche.json` erano **dello stesso
+iPhone**, del 22 agosto e del 12 settembre.
+
+La causa era in ATLAS. L'app chiedeva «il browser ha un'iscrizione?» e se sì
+scriveva «questo dispositivo è iscritto» — senza mai chiedersi se fosse
+QUELLA che aveva il server. L'unico momento in cui la scriveva sul server era
+il tocco su «Attiva», che una volta iscritti non compariva più. iOS rigenera
+le iscrizioni dopo un aggiornamento o una reinstallazione: da lì in poi il
+mittente sparava all'endpoint vecchio, Apple accettava e buttava via.
+
+**`riallinea()`** gira a ogni avvio e a ogni ritorno sull'app: se l'iscrizione
+del telefono non è fra quelle del server, o c'è con chiavi diverse, la
+scrive. Non chiede permessi. La schermata delle notifiche ora dice se il
+server conosce QUESTO telefono, e offre «Tieni solo questo dispositivo» per
+mettere la lapide alle iscrizioni vecchie — a mano, perché dal telefono non
+si può sapere se un'altra iscrizione è un telefono morto o un secondo
+dispositivo vivo.
+
+**Le email di GitHub** venivano da due mittenti delle app di partenza ancora
+accesi: `mobility-blueprint/push.yml` (fallisce con 410, iscrizione morta) e
+`abitudini-dati/notify.yml`. Vanno disattivati — non da qui: sono in repo
+diversi e la modifica è stata fermata come risorsa condivisa.
+
+### I giroconti da ING uscivano e non entravano
+
+Nei dati: `extra` del 16 (22 €) e del 18 (60 €), `pocket: ing`,
+**`pocketTo: null`**. Uscivano da ING e non entravano da nessuna parte; il
+Principale restava a −49,30 dopo il prelievo che doveva riportarlo sopra lo
+zero.
+
+Due difetti incastrati nel modulo di inserimento:
+
+1. aprendo direttamente uno sforamento i pocket di partenza erano scritti a
+   parte e sbagliati (`principale → niente`); quelli giusti li metteva solo il
+   cambio di tipo, che in quel caso non avviene;
+2. la pillola mostrava `b.pocketTo || "principale"`: il Principale risultava
+   selezionato anche con la destinazione vuota. **Lo schermo diceva una cosa
+   e i dati un'altra.**
+
+Ora: una funzione sola per i pocket predefiniti; il ripiego si SCRIVE nella
+bozza prima di disegnare, così quello che vedi acceso è quello che salvi; e
+un travaso con un estremo solo non si salva.
+
+`completaTravasi()` ripara quelli già salvati — solo i record oggettivamente
+rotti, con l'unica destinazione possibile — e gira **dopo la prima lettura**,
+non in `migra()`: riparare prima di leggere resusciterebbe un movimento
+cancellato sull'altro dispositivo.
+
+Sul caso ricostruito: Principale −49,30 → **10,70 €**. Pesa solo il prelievo
+del 18; quello del 16 cade prima dell'ancora ed era già dentro il saldo letto
+quel giorno.
+
+**Sulla data:** un movimento datato prima dell'ancora del suo pocket non
+cambia il saldo, di proposito — il saldo di quel giorno è stato corretto a
+mano e lo contiene già. Retrodatare il giroconto non poteva aiutare.
