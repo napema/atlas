@@ -1165,3 +1165,39 @@ quel giorno.
 **Sulla data:** un movimento datato prima dell'ancora del suo pocket non
 cambia il saldo, di proposito — il saldo di quel giorno è stato corretto a
 mano e lo contiene già. Retrodatare il giroconto non poteva aiutare.
+
+---
+
+## 20 settembre 2026 — il token esce dal repo pubblico *(core)*
+
+**Riguarda tutte e quattro le chat.** `config.js` non contiene più il token:
+`t1`/`t2`/`t3` sono spariti. Chi legge codice vecchio o scrive documentazione
+non li rimetta.
+
+Il file lo serviva GitHub Pages da un repo pubblico:
+`napema.github.io/atlas/config.js` rispondeva `200` a chiunque, con dentro
+lettura e scrittura su `atlas-dati`. Lo stesso valeva per le tre app di
+partenza — quattro token, non uno. Lo split in base64 non era un'attenuante
+ma il difetto peggiore: serviva a non farsi riconoscere dal secret scanner di
+GitHub, cioè a spegnere l'unico allarme che avrebbe revocato il token da
+solo.
+
+Ora il token vive in `core/credenziali.js` (`localStorage`, chiave
+`atlas-credenziali.v1`) e si incolla in **Impostazioni → Sincronizzazione**,
+una volta per dispositivo. `sync.js` lo rilegge a ogni chiamata invece di
+fotografarlo all'avvio, e riparte da solo quando arriva a pagina già aperta.
+
+**Due vincoli che valgono per i moduli:**
+
+1. La casella del token sta **fuori** dal prefisso `atlas.` di `storage.js`,
+   perché `esportaTutto()` raccoglie tutto ciò che comincia per `atlas.` e un
+   backup scaricato col token dentro sarebbe la stessa fuga da un'altra
+   porta. Non spostatela dentro `apriCasella` per uniformità.
+2. **In questo repo non entra nessun segreto.** Vale per la chiave Hevy
+   (già local-only in `moduli/allenamenti/hevy.js`) e per qualunque cosa
+   venga dopo. Regressioni si cercano con
+   `curl -s https://napema.github.io/atlas/config.js | grep -E 'github_pat|ghp_'`.
+
+Le tre app di partenza hanno avuto lo stesso trattamento e non sincronizzano
+più: restano leggibili in locale, e i loro repo dati (`mobilita-dati`,
+`abitudini-dati`, `finance-tracker`) non sono stati toccati.
