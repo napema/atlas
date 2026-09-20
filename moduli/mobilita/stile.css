@@ -560,7 +560,13 @@
   font-weight: 600;
   cursor: pointer;
 }
-.choose button.is-active { background: var(--accento); color: var(--fondo); }
+/* Il selezionato si riempie di BIANCO, non della tinta del modulo.
+   Con l'accento, «No» diventava una pastiglia turchese larga meta'
+   schermata: il colore piu' forte della pagina finiva su una risposta
+   che non e' ne' buona ne' cattiva. E' la stessa scelta di
+   `.pillola[aria-pressed="true"]` in base.css — selezionato si dice col
+   contrasto, non con la tinta. */
+.choose button.is-active { background: var(--inchiostro); color: var(--fondo); font-weight: 650; }
 
 .lat-card { padding: var(--s5); border-radius: var(--r-scheda); background: var(--scheda); margin-bottom: var(--s3); }
 .lat-card__q { font-size: var(--t-17); font-weight: 600; margin-bottom: var(--s2); }

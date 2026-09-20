@@ -1,200 +1,223 @@
-# Il linguaggio visivo di ATLAS
+# Il linguaggio visivo di ATLAS — «NEROFUMO»
 
-Questo file descrive **come è fatto** ATLAS. È il riferimento per chi aggiunge
-una schermata: se una cosa non è qui dentro, probabilmente non va inventata.
+Da leggere **prima di aggiungere una schermata**. Riscritto il 20 settembre
+2026 insieme a `styles/tokens.css` e `styles/base.css`.
 
-Sostituisce `docs/APPLE.md`. Il tentativo di fare ATLAS in stile Apple puro è
-stato abbandonato: `liquid-glass`, i materiali traslucidi e le tinte di sistema
-davano una schermata piatta, tutta dello stesso grigio, in cui la cifra che
-conta pesava quanto l'etichetta accanto. Quello che è rimasto di quel giro sono
-le due lezioni che valgono ancora — **contrasto misurato, non a occhio** e
-**44px di bersaglio** — e le trovi qui sotto come regole.
+Il criterio sta in una riga, e da quella discende tutto il resto:
+
+> **il nero porta, il grigio spiega, il colore indica — e il colore è poco.**
 
 ---
 
 ## 1. Da dove nasce
 
-Nero pieno, tinte sature, una cifra enorme per schermata, e blocchi con angoli
-larghi. L'idea è che ogni schermata risponda a **una domanda sola**, e che la
-risposta si legga da un metro di distanza senza mettere a fuoco.
+L'app aveva un sistema precedente, caldo: fondo marrone scurissimo, tinte
+gessose, titoli compressi da un asse variabile. Funzionava sulla carta e
+non funzionava sullo schermo. Aperta la mattina, la home mostrava quattro
+carte con quattro bordi colorati, cinque righe con un filo ambra ciascuna,
+cerchietti verdi gialli e ciano scelti dal modulo di provenienza, e un
+titolo schiacciato all'82% della sua larghezza.
 
-Concretamente, tre cose:
+Nessuna di quelle scelte era sbagliata da sola. Insieme facevano una
+schermata in cui **niente era in primo piano perché tutto lo era**.
 
-1. **Un eroe per schermata.** La cifra che decide la giornata sta in cima, in
-   48–66px, sul fondo nudo o su una scheda con un velo dell'accento. Tutto il
-   resto è più piccolo di lei, sempre.
-2. **Le tessere al posto degli elenchi.** Nove righe di testo si leggono una
-   per una; nove tessere colorate si scorrono con l'occhio e ci si ferma su
-   quella messa peggio. Dove c'era un elenco con le barrette ora c'è
-   `griglia-tessere`.
-3. **Il colore vuol dire una cosa sola.** Vedi §3.
+Il redesign non ritara quei valori: cambia la domanda. Non «di che colore è
+questo modulo», ma «che cosa ha il diritto di attirare l'occhio».
 
 ---
 
 ## 2. I token
 
-Stanno in `styles/tokens.css` e **nessun modulo ne inventa altri**. Un colore
-letterale in un modulo è un errore, senza eccezioni.
+Tutto sta in `styles/tokens.css`. **Nessun modulo inventa un valore**, e in
+particolare nessun modulo scrive un colore letterale: è la regola 7 del
+contratto.
 
-### Fondi
+I nomi sono rimasti quelli della prima stesura anche dove suonano strani
+(`--incavo` su un fondo nero SALE invece di scendere, perché più scuro del
+nero non c'è). Rinominarli vorrebbe dire riscrivere sette moduli insieme e
+tenere l'app rotta per giorni: il ponte di alias in fondo al file esiste per
+questo, e si toglie un modulo alla volta.
+
+### Superfici
+
+Cinque piani in dodici punti di luminanza. Sembra poco ed è voluto: su nero
+bastano due punti per leggere un bordo.
 
 | token | scuro | a cosa serve |
 |---|---|---|
 | `--fondo` | `#000000` | la pagina |
-| `--fondo-alto` | `#0b0b0d` | la barra |
-| `--scheda` | `#141416` | la superficie normale |
-| `--scheda-alta` | `#1e1e22` | dentro una scheda |
-| `--scheda-viva` | `#292930` | premuto, selezionato |
-| `--traccia` | `#2b2b31` | il binario di una barra |
+| `--rilievo` | `#0c0c0e` | la scheda |
+| `--rilievo-2` | `#151518` | scheda dentro scheda, riga premuta |
+| `--rilievo-3` | `#1f1f24` | riempimento dei controlli |
+| `--incavo` | `#131316` | binari, pozzetti, fondo delle tracce |
 
-### Testo
+**Su nero la scheda si disegna col filo, non col tono.** Dodici punti di
+luminanza al buio sono invisibili: quello che rende la scheda un oggetto è
+il contorno da 1px (`--riga-fine`). È l'opposto della stesura precedente,
+dove il contorno era vietato.
 
-Quattro livelli, e sono **misurati**: ognuno sta sopra 4,5:1 sul fondo più
-chiaro su cui può capitare (`--scheda-viva`). Il terziario a `#74747c` faceva
-3,97:1 e le etichette minuscole sparivano; ora è `#90909a`.
+L'ombra (`--ombra`) è di un componente solo: il foglio modale. È l'unico che
+sta davvero *sopra* gli altri.
 
-`--testo-4` è **decorativo** — righelli, segnaposto — e sta sopra 3:1. Non ci
-va testo da leggere.
+### Inchiostro
 
-### Tinte
+Quattro livelli. I contrasti sono misurati sulla **scheda** (`#0c0c0e`), che
+è la superficie peggiore delle due.
 
-`--rosa --blu --giallo --arancio --viola --verde --menta --rosso --indaco
---pesca --ciano --lime --grigio`
-
-Nel tema chiaro si scuriscono tutte quel tanto che basta a stare sopra 4,5:1 sul
-bianco. Stessa identità, leggibili anche lì.
-
-### Stati
-
-`--ok --avviso --male` sono un insieme **separato** dalle tinte, anche quando il
-valore coincide. Se il verde di «tutto bene» fosse anche il verde di una
-categoria, non si capirebbe più quale dei due sta parlando.
-
-### Angoli
-
-`--r-scheda: 20px` · `--r-interno: 14px` · `--r-btn: 16px` · `--r-pillola: 999px`
-
----
-
-## 3. Il colore vuol dire una cosa sola
-
-Questa è la regola che ha fatto cambiare più codice.
-
-- **Verde = fatto.** Non è la tinta di nessun modulo. Finanze era verde ed è
-  diventata `--lime` proprio per questo.
-- **Rosso = stato negativo.** Non è la tinta di nessuna categoria. «Cibo fuori»
-  era rosso ed è diventato `--rosa`.
-- **Ogni modulo ha la sua tinta, e sono tutte diverse**: Oggi `--pesca`,
-  Finanze `--lime`, Mobilità `--ciano`, Abitudini `--viola`, Impostazioni
-  `--grigio`. Prima Oggi e Mobilità erano tutte e due blu.
-
-La tinta del modulo la dichiara **`core/registro.js`**, non il modulo. Il router
-la mette su `<html>` come `--accento`, e da lì in giù ogni componente condiviso
-diventa del colore giusto senza una riga di codice nel modulo.
-
----
-
-## 4. I componenti
-
-Stanno in `styles/base.css` e si costruiscono con le funzioni di `core/ui.js`.
-
-| componente | funzione | cos'è |
+| token | contrasto | a cosa serve |
 |---|---|---|
-| `.tessera` | `tessera({…})` | il mattone della griglia: simbolo, nome, cifra, e la barra col cursore in fondo |
-| `.barra-cursore` | (dentro `tessera`) | il binario con la punta triangolare che dice a che punto sei |
-| `.griglia-tessere` | — | due colonne su telefono, tre da 900px |
-| `.spezzata` | `spezzata(voci)` | una barra sola divisa in segmenti colorati |
-| `.gettone` | `gettone(simbolo, tinta)` | il quadratino col simbolo davanti a una riga |
-| `.selettore` | `selettore(voci, …)` | la pillola col menu a tendina |
-| `.cifra-xl/l/m/s` | — | la scala delle cifre |
-| `.val` `.cts` | `euroGrande(cent)` | l'euro piccolo e i centesimi piccoli attorno alla cifra grande |
-| `.micro` | — | l'etichetta maiuscoletta sopra un numero, con `.ok/.avviso/.male` |
+| `--inchiostro` | 17,9:1 | titoli, cifre |
+| `--inchiostro-2` | 7,6:1 | testo corrente |
+| `--inchiostro-3` | 4,8:1 | etichette, note — **il minimo** |
+| `--inchiostro-4` | 2,8:1 | **non è testo leggibile** |
 
-### Le azioni stanno dove le cerchi, non in un tondo
+Il quarto sta sotto la soglia di proposito e non porta mai informazione:
+separatori, segnaposto, icone spente, disabilitato. Se ti serve per dire
+qualcosa, hai scelto il livello sbagliato.
 
-Per un giro le tre azioni principali — nuova spesa, inizia sessione, nuova
-abitudine — sono finite in un unico pulsante tondo fisso in basso a destra.
-È stato un errore, ed è stato rimosso.
+### I due insiemi di colore
 
-Il motivo: un tondo solo non può rappresentare due gesti diversi. In Finanze
-«uscita» la registri dieci volte a settimana e «entrata» due volte al mese;
-metterle dietro lo stesso simbolo, per giunta senza dire quale delle due
-parte, costa un tocco e un dubbio ogni volta. E in Mobilità il tondo
-duplicava il tasto «Inizia» che stava già a mezzo schermo di distanza.
+Sono separati e non si mescolano. A distinguerli non è solo la tinta: è il
+**trattamento**.
 
-Quindi: **Finanze ha i suoi tre tasti** (Uscita · Entrata · ⋯) sotto il
-navigatore del mese, come nell'app di partenza; **Abitudini ha il «+»**
-nell'intestazione; **Mobilità ha «Inizia»** dentro la scheda della sessione.
-Ogni azione sta accanto alla cosa su cui agisce.
+| insieme | risponde a | come appare |
+|---|---|---|
+| **tinte** (14) | *quale?* — quale modulo, categoria, fetta | un punto da 8px, un'icona da 17, un segmento di grafico con legenda |
+| **stati** (3) | *quanto va bene?* | una targhetta tinta, una cifra, un anello, una parola |
+| **segnale** (1) | *tocca qui* | `--segnale`, e nient'altro in tutta l'app |
+
+Ora **ogni `--t-<nome>` è davvero il suo colore**. Nella stesura precedente
+`--t-viola` era un blu e `--t-blu` un verde acqua: chi leggeva il CSS di un
+modulo non poteva fidarsi di quello che c'era scritto.
+
+`--t-verde` è giallo-verde e non erba, apposta: libera il verde pieno per
+`--ok`, che è l'unica cosa autorizzata a dire «fatto».
+
+### Tipografia
+
+Undici corpi, da 12 a 64. **`font-stretch` non compare da nessuna parte**:
+i titoli non si stringono più. A corpo grande la personalità la porta il
+peso e la crenatura negativa, che cresce col corpo come su iOS.
+
+Archivo è uscito dalla pila: il file variabile non è mai entrato nel repo,
+quindi la famiglia era dichiarata e mai servita. Si usa SF Pro, self-hosted.
+
+### Forma e movimento
+
+Tre raggi soltanto: `--r-alto` 20px (la scheda), `--r-basso` 12px
+(controlli, pulsanti), `--r-tondo`. Il raggio alto è una promessa — *questo
+si preme* — e ciò che non si preme sta sul fondo, diviso da un filo.
+
+Tre durate, due curve, e tutte corte. Un'app che si apre venti volte al
+giorno non deve mai far aspettare.
+
+---
+
+## 3. Il colore non riempie mai, indica
+
+È la regola che ha cambiato più righe di codice, e quella che si viola più
+facilmente. In pratica:
+
+**Vietato**
+- fondi tinti sotto il testo (sono stati tolti quattro veli sfumati dietro
+  le cifre grandi: finanze, abitudini ×2, mobilità);
+- barre laterali colorate (ne sono state tolte dieci);
+- bordi colorati a tutta larghezza in cima a una scheda;
+- pulsanti riempiti di una tinta di modulo;
+- un colore diverso per riga in una lista.
+
+**Permesso**
+- un punto da 8px accanto a un'etichetta grigia (`.punto` in base.css è
+  fatto per questo);
+- un'icona a 17–20px;
+- una cifra o una parola;
+- una targhetta tinta (`--pillola-tinta`), dove il colore lo porta il testo;
+- un segmento di grafico, **se ha una legenda che lo nomina**.
+
+Il caso limite: due intensità della stessa tinta in un grafico
+(`.al-barra-piano` al 25% contro `.al-barra-fatto` pieno) sono codifica di
+dati, non decorazione. Vanno bene.
+
+### Selezionato si dice col contrasto, non con la tinta
+
+Un elemento scelto in un gruppo si **riempie di bianco** e prende il testo
+nero (`.pillola[aria-pressed="true"]`, `.im-sezione.attiva`,
+`.choose button.is-active`). Non prende l'accento del modulo: con l'accento,
+«No» in Mobilità diventava una pastiglia turchese larga mezza schermata, e
+il colore più forte della pagina finiva su una risposta che non è né buona
+né cattiva.
+
+Stessa ragione per cui **la voce attiva della barra è bianca e non blu**: il
+blu vuol dire «tocca qui», e dove sei già non c'è niente da toccare.
+
+---
+
+## 4. La gerarchia la fa lo spazio
+
+Fra un blocco e il successivo c'è più aria di quanta sembri necessaria. Su
+nero il vuoto non costa niente — non c'è una superficie che lo riempie — ed
+è l'unica cosa che distingue una schermata curata da una densa.
+
+Corollario pratico: **una cosa sola è grande per schermata.** Il numero, e
+il resto gli sta intorno.
 
 ---
 
 ## 5. Le regole che non si discutono
 
-1. **Nessun colore letterale in un modulo.** Solo token.
-2. **Contrasto misurato, non a occhio.** Ogni testo sta sopra 4,5:1 (3:1 sopra
-   i 24px, o 18,7px in grassetto). Chi cambia un grigio lo rimisura — e chi
-   scrive lo strumento di misura lo **calibra prima** su un caso noto: nero su
-   bianco deve dare 21,00. Un misuratore sbagliato è peggio di nessun
-   misuratore, perché dà fiducia.
-3. **44px di bersaglio.** Il disegno può essere più piccolo — la spunta di
-   Abitudini è un cerchio da 30px dentro un bottone da 44 — ma l'area toccabile
-   no.
-4. **17px minimo sui campi di testo.** Sotto, iOS zooma al focus e non torna
-   indietro.
-5. **Niente `var()` negli attributi di presentazione SVG.** `fill="var(--x)"`
-   non si risolve: i colori e i font degli SVG passano da
-   `.style.setProperty`. Da qui la firma doppia di `tag()` in
-   `moduli/finanze/grafici.js`.
-6. **Niente `requestAnimationFrame` per far comparire qualcosa.** In una scheda
-   non visibile — l'app riaperta da una notifica — quel frame non arriva mai, e
-   il foglio resta trasparente sopra la schermata: invisibile e cliccabile. Si
-   forza un reflow (`void nodo.offsetHeight`) e si aggiunge la classe subito.
-7. **Due componenti non possono chiamarsi uguale.** Il CSS è globale anche
-   quando il file è di un modulo: `.micro.avviso` ha incontrato `.avviso`
-   della bolla del toast e l'etichetta minuscola è diventata una pillola
-   bianca grande quanto la tessera; `.pillola` di Mobilità ha incontrato
-   `.pillola` di base.css e i filtri sono diventati alti 26px. Prima di
-   aggiungere un nome a un foglio di modulo, si controlla che base.css non
-   ce l'abbia già:
-
-   ```bash
-   grep -oE '^.[a-z][a-z0-9_-]*' styles/base.css | sort -u
-   ```
-
-8. **I tre riquadri della home ci sono sempre**, anche vuoti. Una home che
-   nasconde ciò che non ha dati cambia forma ogni giorno, e una cosa che cambia
-   forma non si impara a leggere con la coda dell'occhio.
+1. **17px minimo sui campi di testo.** Sotto, iOS zooma al focus e non torna
+   indietro. È un baco di sistema, non una preferenza.
+2. **44px minimo su qualunque cosa si tocchi.** Il segno visibile può essere
+   più piccolo: l'area la allarga il padding, non il `min-height`.
+3. **Nessun colore letterale nei moduli.** Solo token.
+4. **Verde è «fatto», rosso è uno stato negativo.** Nessun modulo e nessuna
+   categoria può prenderseli.
+5. **Un componente, un nome.** Il CSS è globale anche dentro un modulo:
+   `grep -oE '^\.[a-z][a-z0-9_-]*' styles/base.css | sort -u`
+6. **Niente CDN, niente build, niente dipendenze.** Offline non c'è rete.
+7. **Lo stato vuoto non nasconde il contenitore**: cambia il contenuto, mai
+   l'ingombro. Una schermata che cambia forma non si impara a leggere.
+8. **Il maiuscoletto è per etichette di due parole**, non per frasi. In
+   maiuscolo e con la crenatura larga, «da far bastare fino al 20 set»
+   diventa una riga di grida che si legge prima della cifra che spiega.
 
 ---
 
 ## 6. La home
 
-È l'unica schermata con un compito diverso dalle altre: non mostra dati,
-**dice cosa devi sapere**. Nell'ordine:
+È la misura del successo dell'app: se aprirla al mattino non dice più di
+quanto dicevano tre app aperte in fila, non è servita a niente.
 
-1. **Il saluto**, minuscolo e grande, con il punto colorato. È una persona che
-   parla, non un'insegna.
-2. **Il briefing**: una frase — «Ti manca mobilità. Si sta facendo tardi.» — e
-   sotto i due o tre numeri del giorno presi dalla **lavagna**, non dai moduli.
-3. **Una carta larga**, e una sola: la cosa da fare più urgente, con l'invito
-   esplicito. Prima la carta mostrava *tutte* le cose da fare e la griglia
-   sotto le rimostrava una per una: la stessa frase due volte nella stessa
-   schermata, che è il modo più veloce per far smettere di leggere.
-4. **Le tessere** degli altri moduli.
-5. **Gli ultimi sette giorni**: non dice cosa hai fatto, dice se ci sei stato.
+- **Tutte le carte sono la stessa carta**: stesso fondo, stesso filo, stesso
+  raggio, stessa intestazione (icona tinta + nome + valore a destra).
+- **I riquadri ci sono sempre**, anche vuoti.
+- **Niente emoji.** Erano quattro disegni di quattro autori diversi, e a
+  20px quattro macchie colorate. Le emoji restano dove sono un *dato*
+  dell'utente: quelle che ha scelto per le sue abitudini.
+- L'intestazione è **allineata a sinistra**, con l'ingranaggio nell'angolo
+  in alto a destra. Centrata, su 375px, il bersaglio da 44px
+  dell'ingranaggio e il testo della data occupavano lo stesso posto.
 
 ---
 
-## 7. Desktop
+## 7. Da scrivania
 
-Da 900px la barra in basso diventa una colonna fissa a sinistra da 244px e
-`#app` prende `padding-left: 244px`.
+La barra scende dal fondo e diventa una colonna da 96px. Da 1120px la
+colonna dei contenuti si allarga a 1180, ma **le liste no**: una riga di
+testo lunga 1100px non si legge, si insegue.
 
-**Non è una griglia**, ed è deliberato: con `display: grid` l'auto-placement
-metteva la barra e il contenuto su due righe, e il risultato era la barra a
-metà pagina con mille pixel di nero sotto. La barra è `position: fixed`, il
-contenuto ha un padding, e non c'è modo di sbagliare.
+---
 
-Il centro dell'area dei contenuti non è il centro della finestra: gli avvisi
-stanno a `calc(50% + 122px)`, i fogli a `calc(50% + 122px)`.
+## 8. Sviluppo
+
+In locale il service worker **non si registra** e disinstalla quello che
+trova (guardia in cima a `registraServiceWorker()` in `core/app.js`). La sua
+cache sta davanti alla rete e ignora `Cache-Control`: senza quella guardia si
+guarda la schermata di dieci minuti fa convinti che la modifica non sia
+arrivata.
+
+Il server di sviluppo è `.claude/serve-dev.py` (aggiunge `no-store`, e
+**deve** essere a thread: ATLAS carica una ventina di moduli in parallelo).
+
+In produzione non cambia niente, e `VERSIONE` in `sw.js` va comunque alzata a
+ogni rilascio.

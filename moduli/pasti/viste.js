@@ -62,7 +62,24 @@ export function testataGiorno(iso) {
   return scheda(null, [
     el("div", { class: "pa-testata" }, [
       el("div", { class: "pa-anello" }, [
-        anello(b.kcal ? t.kcal / b.kcal : 0, { misura: 116, spessore: 10, colore: "var(--accento)" }),
+        /* L'anello risponde a «quanto va bene», non a «quale modulo»:
+           quindi porta uno STATO, non la tinta di Pasti.
+
+           Prima era sempre corallo — l'accento del modulo — e a 3510 kcal
+           su 2975 mostrava un anello rosa pieno identico a quello di una
+           giornata perfetta. Il numero diceva «hai sforato», il colore
+           diceva «Pasti», e l'unica cosa che si vedeva da lontano era il
+           secondo.
+
+           Lo spessore e' sceso da 10 a 7: a 116px di diametro un tratto da
+           10 e' una ciambella, e la cifra dentro ci sta stretta. */
+        anello(b.kcal ? t.kcal / b.kcal : 0, {
+          misura: 116,
+          spessore: 7,
+          colore: t.kcal > b.kcal ? "var(--male)"
+            : t.kcal >= b.kcal * 0.9 ? "var(--avviso)"
+            : "var(--ok)",
+        }),
         el("div", { class: "pa-anello-testo" }, [
           el("div", { class: "pa-kcal", testo: kcal(t.kcal) }),
           el("div", { class: "micro", testo: `su ${kcal(b.kcal)}` }),

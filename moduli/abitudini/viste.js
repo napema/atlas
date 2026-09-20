@@ -43,7 +43,14 @@ export function strisciaSettimana(giornoScelto, alCambio) {
     }, [
       el("span", { class: "ab-giorno-lettera", testo: GIORNI_INIZIALI[(daISO(g).getDay() + 6) % 7] }),
       el("span", { class: "ab-giorno-anello" }, [
-        anello(futuro ? 0 : p.frazione, { misura: 34, spessore: 3 }),
+        /* VERDE, non la tinta del modulo. Un anello di completamento
+           risponde a «quanto va bene», e quella domanda in ATLAS ha tre
+           risposte sole: `--ok`, `--avviso`, `--male`.
+
+           Col lilla la striscia della settimana era sette cerchi viola
+           in fila: il colore diceva «Abitudini», che si legge gia' nel
+           titolo, e non diceva quello per cui la striscia esiste. */
+        anello(futuro ? 0 : p.frazione, { misura: 34, spessore: 3, colore: "var(--ok)" }),
         el("span", { class: "ab-giorno-numero", testo: String(daISO(g).getDate()) }),
       ]),
     ]);
@@ -75,7 +82,7 @@ export function riepilogo(giorno) {
           : `${plurale(restano, "abitudine", "abitudini")} · ${p.fatte} di ${p.attese} già fatte` }),
       ]),
       el("div", { class: "ab-eroe-anello" }, [
-        anello(p.frazione, { misura: 82, spessore: 7 }),
+        anello(p.frazione, { misura: 82, spessore: 7, colore: "var(--ok)" }),
         el("span", { class: "ab-eroe-pct", testo: `${Math.round(p.frazione * 100)}%` }),
       ]),
     ]),
