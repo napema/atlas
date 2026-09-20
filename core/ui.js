@@ -111,6 +111,39 @@ export function scheda(titolo, corpo, { accento, classe = "", ico, tinta } = {})
   return s;
 }
 
+/**
+ * Un pannello «a colpo d'occhio»: chip, etichetta, cifra, coda.
+ *
+ * Va usato in RIGA, dentro `pannelli()`, in cima a una schermata. Serve a
+ * rispondere con tre o quattro numeri alla domanda per cui la schermata e'
+ * stata aperta, prima di qualunque lista. Un numero solo non e' un colpo
+ * d'occhio: e' un titolo.
+ *
+ *   pannelli([
+ *     pannello({ ico: "portafoglio", tinta: "var(--t-ambra)",
+ *                etichetta: "Spendibili", cifra: "1.240 €", coda: "fino al 30" }),
+ *     ...
+ *   ])
+ */
+export function pannello({ ico, tinta, etichetta, cifra, coda, tono = "", rotta, azione }) {
+  const dentro = [
+    el("div", { class: "pannello-testa" }, [
+      ico && el("span", { class: "chip piccolo", html: icona(ico, 17, 1.8) }),
+      el("span", { class: "pannello-eti", testo: etichetta }),
+    ]),
+    el("div", { class: "pannello-cifra", testo: cifra == null ? "—" : String(cifra) }),
+    coda && el("div", { class: `pannello-coda ${tono}`.trim(), testo: coda }),
+  ].filter(Boolean);
+
+  const p = rotta ? el("a", { class: "pannello", href: rotta }, dentro)
+    : azione ? el("button", { class: "pannello", type: "button", onClick: azione }, dentro)
+    : el("div", { class: "pannello" }, dentro);
+  if (tinta) p.style.setProperty("--tinta", tinta);
+  return p;
+}
+
+export const pannelli = (voci) => el("div", { class: "pannelli" }, voci.filter(Boolean));
+
 /** Riquadro con una cifra sola. `tono` colora la cifra, non lo sfondo. */
 export function riquadro({ etichetta, valore, dettaglio, tono = "" }) {
   return el("div", { class: "riquadro" }, [

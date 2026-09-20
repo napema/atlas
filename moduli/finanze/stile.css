@@ -452,7 +452,9 @@
 .fi-azioni {
   position: fixed;
   left: 0; right: 0;
-  bottom: calc(env(safe-area-inset-bottom) + 74px);
+  /* Sopra la pastiglia della barra, che ora galleggia: 10px di stacco dal
+     fondo + 64 di altezza + 12 d'aria. Con 74 le due barre si toccavano. */
+  bottom: calc(env(safe-area-inset-bottom) + 86px);
   z-index: 55;
   display: flex;
   gap: var(--s2);

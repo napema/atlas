@@ -240,58 +240,83 @@ ul, ol { margin: 0; padding: 0; }
 
 
 /* ============================================================ barra tab ==
-   Fissa in basso, sul fondo nero, separata da un filo. Niente vetro
-   sfocato: il blur costa una composizione a ogni fotogramma di
-   scorrimento, e su nero non ha niente da sfocare.
+   UNA PASTIGLIA CHE GALLEGGIA, non una fascia a tutta larghezza.
 
-   Cinque voci è il tetto. A sei le etichette si tagliano proprio dove il
-   pollice ha meno spazio. */
+   Era una barra piena da bordo a bordo, appoggiata al fondo e separata da
+   un filo: la stessa forma che aveva l'app prima del redesign, e la prima
+   cosa che si vede aprendo qualunque schermata. Finché restava quella,
+   ogni altro cambiamento sembrava una riverniciatura — perché la cornice
+   della finestra era rimasta identica.
+
+   Adesso e' un oggetto: staccata dai bordi, con la sua superficie, il suo
+   filo e la sua ombra. Il contenuto le scorre SOTTO, e questo e' il punto —
+   una barra che galleggia dice «questa e' una app», una fascia incollata
+   al fondo dice «questa e' una pagina web».
+
+   La voce attiva si riempie dell'accento del modulo: e' l'unico posto
+   dell'app dove l'accento compare senza che ci sia un'azione da fare, e
+   serve a dire DOVE SEI mentre il colore cambia passando da una scheda
+   all'altra. Cambiare colore mentre ci si sposta e' meta' della sensazione
+   di essere dentro qualcosa.
+
+   Qui il blur CI STA, ed e' l'unico posto: sotto la pastiglia scorre il
+   contenuto, e senza sfocatura una riga di testo che le passa sotto si
+   legge attraverso. */
 
 #barra {
   position: fixed;
-  left: 0; right: 0; bottom: 0;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 10px);
+  transform: translateX(-50%);
   z-index: 60;
   display: flex;
   align-items: stretch;
-  justify-content: space-around;
   gap: 2px;
-  min-height: 60px;
-  padding: var(--s-6) var(--s-6) max(var(--s-6), env(safe-area-inset-bottom));
-  background: var(--fondo);
-  border-top: 1px solid var(--riga-fine);
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 6px;
+  border: 1px solid var(--riga-marcata);
+  border-radius: var(--r-tondo);
+  background: color-mix(in srgb, var(--rilievo) 86%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: var(--ombra);
 }
 
 .tab {
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: var(--tocco);
+  flex: 0 0 auto;
+  min-width: 58px;
+  min-height: 52px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: var(--s-6) 2px;
+  gap: 3px;
+  padding: 0 var(--s-8);
   border: 0;
-  border-radius: var(--r-interno);
+  border-radius: var(--r-tondo);
   background: none;
   color: var(--inchiostro-4);
   font-family: inherit;
   font-size: 10px;
-  font-weight: 550;
+  font-weight: 600;
   letter-spacing: 0.01em;
   cursor: pointer;
-  transition: color var(--durata-rapida) var(--curva-standard);
+  transition: color var(--durata-rapida) var(--curva-standard),
+              background var(--durata-media) var(--curva-decisa);
 }
-.tab svg { width: 25px; height: 25px; display: block; }
+.tab svg { width: 22px; height: 22px; display: block; }
 .tab > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* L'attivo è BIANCO PIENO, non blu. Il blu è `--segnale` e vuol dire
-   «tocca qui»: sulla voce dove sei già non c'è niente da toccare. La
-   differenza fra spento e acceso la fanno il contrasto e il peso — su nero
-   bastano, e la barra smette di essere la cosa più colorata dello
-   schermo. */
-.tab[aria-current="page"] { color: var(--inchiostro); font-weight: 650; }
+/* L'ATTIVA SI RIEMPIE DELL'ACCENTO del modulo. Il testo va sul fondo, che
+   su ogni tinta di questa palette sta sopra 4,5:1. */
+.tab[aria-current="page"] {
+  background: var(--accento);
+  color: var(--accento-testo);
+  font-weight: 700;
+}
 .tab:active { color: var(--inchiostro-2); }
+.tab[aria-current="page"]:active { color: var(--accento-testo); opacity: 0.85; }
 
 
 /* ================================================================ schede ==
@@ -427,6 +452,91 @@ button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-col
   margin-bottom: var(--s-12);
 }
 
+
+/* ------------------------------------------------- i pannelli a colpo d'occhio
+   LA RIGA DI NUMERI IN CIMA A UNA SCHERMATA.
+
+   E' il pezzo che ATLAS non aveva e che c'e' in tutti e due i riferimenti:
+   nel cruscotto scuro sono le quattro carte «My Balance / Net Profit /
+   Expenses / Pending Invoices», nell'app chiara sono le tre tessere «This
+   Week at a Glance». Stessa idea: prima di qualunque lista, tre o quattro
+   numeri che rispondono alla domanda per cui hai aperto la schermata.
+
+   Ogni schermata di ATLAS invece apriva con UN eroe gigante e sotto una
+   lista. Un numero solo non e' un colpo d'occhio: e' un titolo.
+
+   La forma e' fissa, dall'alto: chip con l'icona, etichetta maiuscoletta,
+   cifra grande, e una coda facoltativa. Quello che cambia e' la tinta del
+   chip — e basta quella, perche' il resto resta bianco e grigio. */
+
+.pannelli {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: var(--s-8);
+  margin-bottom: var(--s-12);
+}
+/* Due per riga su telefono, anche quando ce ne sono tre: a 375px tre
+   colonne danno 105px a testa e una cifra da 32px non ci sta. */
+@media (max-width: 420px) {
+  .pannelli { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Un pannello dispari in fondo prende tutta la riga invece di lasciare
+     un buco della sua stessa dimensione accanto. */
+  .pannelli > .pannello:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+.pannello {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+  padding: var(--s-16);
+  border: 1px solid var(--riga-fine);
+  border-radius: var(--r-scheda);
+  background: var(--rilievo);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  min-width: 0;
+}
+button.pannello, a.pannello { cursor: pointer; transition: background var(--durata-rapida) var(--curva-standard); }
+button.pannello:active, a.pannello:active { background: var(--rilievo-2); }
+
+.pannello-testa { display: flex; align-items: center; gap: var(--s-8); min-width: 0; }
+.pannello-eti {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--t-12);
+  font-weight: var(--t-12-peso);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--inchiostro-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* La cifra e' appoggiata in basso come nella tessera: due pannelli
+   affiancati, uno con la coda e uno senza, avevano i numeri a quote
+   diverse e la riga sembrava storta. */
+.pannello-cifra {
+  margin-top: auto;
+  padding-top: var(--s-8);
+  font-family: var(--font-d);
+  font-size: var(--t-28);
+  font-weight: var(--t-28-peso);
+  line-height: 1.05;
+  letter-spacing: var(--t-28-traccia);
+  font-variant-numeric: tabular-nums;
+  color: var(--inchiostro);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pannello-coda {
+  font-size: var(--t-12);
+  font-weight: 450;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--inchiostro-4);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pannello-coda.ok   { color: var(--ok); font-weight: 600; }
+.pannello-coda.male { color: var(--male); font-weight: 600; }
+.pannello-coda.avviso { color: var(--avviso); font-weight: 600; }
 
 /* ------------------------------------------------------------ il riquadro
    Blocco strutturale NON interattivo: una coppia etichetta/cifra dentro
@@ -1065,7 +1175,7 @@ textarea.campo { padding: var(--s-12) var(--s-16); line-height: 1.45; resize: ve
 
 #avvisi {
   position: fixed;
-  left: 50%; bottom: calc(env(safe-area-inset-bottom) + 80px);
+  left: 50%; bottom: calc(env(safe-area-inset-bottom) + 92px);
   transform: translateX(-50%);
   z-index: 120;
   display: flex; flex-direction: column; align-items: stretch; gap: var(--s-8);
@@ -1269,8 +1379,18 @@ hr { border: 0; height: 1px; background: var(--riga-fine); margin: var(--s-16) 0
   #app { padding-left: 96px; }
 
   #barra {
-    top: 0; bottom: 0; right: auto;
+    /* La pastiglia galleggiante vale solo da telefono. Qui `left` e
+       `transform` del blocco mobile vanno SPENTI esplicitamente, altrimenti
+       la colonna resta centrata e traslata di meta' della sua larghezza. */
+    top: 0; bottom: 0; right: auto; left: 0;
+    transform: none;
     width: 96px;
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
     min-height: 0;
     flex-direction: column;
     justify-content: flex-start;

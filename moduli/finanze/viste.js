@@ -10,7 +10,7 @@
 import {
   el, aggiungi, apriFoglio, chiudiFoglio, avviso, celebra, tocco, traccia, lista, riga, vuoto, voceEvento,
   campo, segmenti, pillole, euro, euroRicco, euroGrande, centesimi, nuovoId, plurale,
-  tessera, spezzata, gettone, selettore,
+  tessera, spezzata, gettone, selettore, pannelli, pannello,
   oggiISO, dataUmana, dataBreve, daISO, GIORNI, GIORNI_INIZIALI, MESI,
 } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
@@ -72,6 +72,7 @@ export function vistaHome(mese, grafico, cambia, apriCat, azioni = {}) {
   const fuori = el("div", {});
 
   aggiungi(fuori, [
+    pannelliFinanze(arrivo),
     ilNumero(set, azioni),
     bloccoCheck(oggi, () => cambia({})),
     av.length > 0 && blocchoAlert(av),
@@ -84,6 +85,62 @@ export function vistaHome(mese, grafico, cambia, apriCat, azioni = {}) {
   ]);
 
   return fuori;
+}
+
+/* --------------------------------------------- 0. I PANNELLI IN CIMA ----
+   Quattro numeri prima di qualunque scheda.
+
+   E' il pezzo che mancava, e la ragione per cui la schermata sembrava
+   sempre la stessa qualunque cosa cambiasse: apriva con UN eroe gigante e
+   sotto una pila di schede. Un numero solo non e' un colpo d'occhio, e'
+   un titolo — per sapere se puoi uscire a cena stasera servono quattro
+   cose, non una, e finche' stavano sparse in quattro schede diverse
+   bisognava scorrere per metterle insieme.
+
+   Sono gli stessi numeri che le schede sotto raccontano per esteso: qui
+   rispondono, sotto spiegano. Nessuno di loro e' nuovo.
+
+   Niente pannelli finche' i pocket non hanno un saldo: quattro trattini in
+   fila sono peggio del vuoto, perche' sembrano un guasto invece di una
+   configurazione che manca. */
+function pannelliFinanze(arrivo) {
+  if (!pocketConSaldi().some((p) => p.saldo)) return null;
+
+  const o = orizzonte();
+  const g = giornata();
+  const prossima = arrivo?.[0] || null;
+
+  // Sopra la quota la domanda cambia: non «quanto resta oggi» ma «di quanto
+  // sei oltre». Due cose diverse, due cifre diverse.
+  const oggiCifra = g.quota <= 0 ? "—" : g.sforo > 0 ? `−${euro(g.sforo)}` : euro(g.resta);
+  const oggiTono  = g.quota <= 0 ? "" : g.sforo > 0 ? "male" : "";
+
+  return pannelli([
+    pannello({
+      ico: "portafoglio", tinta: "var(--t-ambra)",
+      etichetta: "In tasca", cifra: euro(o.disponibile),
+      coda: `${plurale(o.giorni, "giorno", "giorni")} allo stipendio`,
+    }),
+    pannello({
+      ico: "calendario", tinta: "var(--t-turchese)",
+      etichetta: "Oggi", cifra: oggiCifra, tono: oggiTono,
+      coda: g.quota > 0 ? `di ${euro(g.quota)}` : "niente da spendere",
+    }),
+    pannello({
+      ico: "tendenza", tinta: "var(--t-lilla)",
+      etichetta: "Al giorno", cifra: euro(o.alGiorno),
+      coda: o.piano > 0 ? `il piano ne dava ${euro(o.piano)}` : null,
+    }),
+    pannello({
+      ico: "orologio", tinta: "var(--t-corallo)",
+      etichetta: "In arrivo",
+      cifra: prossima ? euro(prossima.importo) : "—",
+      coda: prossima
+        ? `${prossima.nome} · ${prossima.fra === 0 ? "oggi" : `fra ${plurale(prossima.fra, "giorno", "giorni")}`}`
+        : "niente entro 30 giorni",
+      tono: prossima && prossima.fra <= 2 ? "avviso" : "",
+    }),
+  ]);
 }
 
 /* ------------------------------------------------------- 1. IL NUMERO --- */

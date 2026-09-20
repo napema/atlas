@@ -12,7 +12,10 @@ import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js"
 import { annuncia, ascolta } from "../../core/bus.js";
 import { casella, stato, abitudiniVive, eFatta, alterna, idLog, alternaParte, semina } from "./dati.js";
 import { progressoGiorno, mancantiOggi, serie, eAttesa, promemoriaAdesso, restaOggi } from "./calcolo.js";
-import { strisciaSettimana, riepilogo, elenco, apriModifica, vistaImpostazioni, vistaSerie } from "./viste.js";
+import {
+  strisciaSettimana, pannelliGiorno, elenco,
+  apriModifica, vistaImpostazioni, vistaSerie,
+} from "./viste.js";
 
 let contenitore = null;
 let giornoScelto = oggiISO();
@@ -38,7 +41,12 @@ function disegna() {
     ]),
     ...(vista === "serie" ? [vistaSerie(disegna)] : [
       strisciaSettimana(giornoScelto, (g) => { giornoScelto = g; disegna(); }),
-      riepilogo(giornoScelto),
+      // `riepilogo()` non c'e' piu': diceva «1 · 1 abitudine · 0 di 1 gia'
+      // fatte» sotto quattro pannelli che dicono gli stessi numeri, con in
+      // piu' un anello al 0%. Due blocchi che ripetono lo stesso dato non
+      // lo dicono due volte piu' forte: si annullano, perche' chi legge si
+      // chiede in che cosa differiscono.
+      pannelliGiorno(giornoScelto),
       elenco(giornoScelto, disegna),
     ]),
   ]);

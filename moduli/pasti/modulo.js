@@ -16,7 +16,7 @@ import {
 import { bersagli, giornata, previstoFascia } from "./calcolo.js";
 import { assicuraPianiUtili } from "./piano.js";
 import {
-  testataGiorno, elencoFasce, elencoScostamenti, vistaSettimana,
+  pannelliGiorno, testataGiorno, elencoFasce, elencoScostamenti, vistaSettimana,
   apriImport, vistaImpostazioni,
 } from "./viste.js";
 
@@ -47,7 +47,7 @@ function disegna() {
 
     ...(vista === "settimana"
       ? [vistaSettimana(lunedi, disegna)]
-      : [testataGiorno(iso), elencoFasce(iso, disegna), elencoScostamenti(iso, disegna)].filter(Boolean)),
+      : [pannelliGiorno(iso), testataGiorno(iso), elencoFasce(iso, disegna), elencoScostamenti(iso, disegna)].filter(Boolean)),
   ]);
 
   pubblicaSullaLavagna();
