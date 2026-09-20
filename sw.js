@@ -14,7 +14,7 @@
  * che stanno in core/app.js. Il perché è scritto lì.
  */
 
-const VERSIONE = "atlas-v86";
+const VERSIONE = "atlas-v87";
 const GUSCIO = `guscio-${VERSIONE}`;
 
 /* I FILE PESANTI STANNO IN UNA CACHE CHE NON PORTA LA VERSIONE.
@@ -65,16 +65,13 @@ const DA_PRECARICARE = [
   // lo stesso: la prima volta che apri Finanze offline è proprio il caso in
   // cui servono, e "arrivano quando c'è rete" lì vuol dire non averli.
   "./moduli/oggi/modulo.js",
-  "./moduli/oggi/stile.css",
   "./moduli/impostazioni/modulo.js",
-  "./moduli/impostazioni/stile.css",
   "./moduli/pasti/modulo.js",
   "./moduli/pasti/dati.js",
   "./moduli/pasti/calcolo.js",
   "./moduli/pasti/piano.js",
   "./moduli/pasti/importa.js",
   "./moduli/pasti/viste.js",
-  "./moduli/pasti/stile.css",
   "./moduli/finanze/modulo.js",
   "./moduli/finanze/dati.js",
   "./moduli/finanze/calcolo.js",
@@ -82,7 +79,6 @@ const DA_PRECARICARE = [
   "./moduli/finanze/grafici.js",
   "./moduli/finanze/importa.js",
   "./moduli/finanze/esporta.js",
-  "./moduli/finanze/stile.css",
   "./moduli/mobilita/modulo.js",
   "./moduli/mobilita/dati.js",
   "./moduli/mobilita/sessione.js",
@@ -95,12 +91,10 @@ const DA_PRECARICARE = [
   "./moduli/mobilita/esercizi.js",
   "./moduli/mobilita/clip.js",
   "./moduli/mobilita/engine.js",
-  "./moduli/mobilita/stile.css",
   "./moduli/abitudini/modulo.js",
   "./moduli/abitudini/dati.js",
   "./moduli/abitudini/calcolo.js",
   "./moduli/abitudini/viste.js",
-  "./moduli/abitudini/stile.css",
   "./moduli/allenamenti/modulo.js",
   "./moduli/allenamenti/dati.js",
   "./moduli/allenamenti/calcolo.js",
@@ -110,7 +104,6 @@ const DA_PRECARICARE = [
   "./moduli/allenamenti/fit.js",
   "./moduli/allenamenti/hevy.js",
   "./moduli/allenamenti/garmin.js",
-  "./moduli/allenamenti/stile.css",
 
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",

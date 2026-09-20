@@ -74,9 +74,9 @@ durare anni non deve dipendere da una catena di strumenti che invecchia.
 - **`CLAUDE.md`** — perché ATLAS esiste, il contratto dei moduli, le regole
   ferme. Da leggere prima di toccare qualsiasi cosa.
 - **`docs/SCHEMI.md`** — i tre schemi letti dai dati veri, con le trappole.
-- **`docs/DESIGN.md`** — il linguaggio visivo: token, componenti, e le
-  regole misurate (contrasto, bersagli, il colore che vuol dire una cosa
-  sola). Da leggere prima di aggiungere una schermata.
+- **Lo stile è stato azzerato** il 20 set 2026: `styles/tokens.css` e
+  `styles/base.css` sono vuoti, i fogli dei moduli cancellati. Si
+  riparte da zero — vedi la voce del 20 settembre in `docs/CANTIERE.md`.
 - **`docs/SYNC.md`** — come è configurata la sincronizzazione e i guasti veri
   da cui nascono le sue regole.
 - **`docs/MIGRAZIONE.md`** — la procedura di porting e la lista di controllo.

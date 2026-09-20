@@ -43,7 +43,8 @@ posto degli elenchi. Il tentativo in stile Apple è stato abbandonato — dava
 una schermata piatta in cui la cifra che conta pesava quanto l'etichetta di
 fianco. Token in `styles/tokens.css`, componenti in `styles/base.css`, un
 `stile.css` per modulo caricato dal router insieme al modulo. Chiaro e scuro,
-più la scelta manuale. Tutto scritto in `docs/DESIGN.md`.
+più la scelta manuale. (Il documento del linguaggio visivo non esiste
+più: lo stile è stato azzerato il 20 settembre.)
 
 ### ✅ I tre moduli
 
@@ -136,7 +137,7 @@ _(nessuna)_
   le tinte di sistema davano una schermata piatta, tutta dello stesso grigio.
   Al suo posto: nero pieno, tinte sature, un eroe per schermata, tessere al
   posto degli elenchi. `docs/APPLE.md` è stato sostituito da
-  `docs/DESIGN.md`. Restano le due lezioni che valevano: contrasto misurato e
+  un documento che non esiste più. Restano le due lezioni che valevano: contrasto misurato e
   44px di bersaglio.
 - **Una tinta per modulo, tutte diverse** (22 ago) — Oggi e Mobilità erano
   tutte e due blu. Ora Oggi è pesca, Finanze lime, Mobilità ciano, Abitudini
@@ -335,63 +336,41 @@ settimana, spuntate su attese — con i dati veri, 14/36 invece di 7/7.
 
 ---
 
-## 20 settembre — NEROFUMO: il sistema visivo riscritto (chat ATLAS, **fuori perimetro**)
+## 20 settembre — LO STILE E' STATO AZZERATO (chat ATLAS)
 
-`styles/tokens.css` e `styles/base.css` sono riscritti da zero. Il criterio
-nuovo sta in `docs/DESIGN.md`, che va riletto prima di aggiungere una
-schermata:
+Tutto il sistema visivo di ATLAS e' stato cancellato su richiesta, e si
+riparte da zero. Non e' una ritaratura e non e' un rollback a una stesura
+precedente: non c'e' piu' nessuna stesura.
 
-> il nero porta, il grigio spiega, il colore indica — e il colore è poco.
+**Cancellati** (6.041 righe):
 
-**FUORI PERIMETRO, e va saputo.** Il commit tocca i fogli di stile di
-Finanze, Pasti, Mobilità e Abitudini, più `moduli/pasti/viste.js` e
-`moduli/abitudini/viste.js`. Non è uno sconfinamento per comodità: un
-sistema visivo non si cambia un modulo alla volta — per mezza giornata
-l'app sarebbe stata metà nera e metà marrone. Le modifiche ai moduli sono
-solo visive, nessuna tocca dati, calcolo o sync.
+- `styles/tokens.css` e `styles/base.css` — svuotati, restano i due file con
+  un'intestazione che spiega cosa c'era;
+- i sette `moduli/<id>/stile.css` — **cancellati**, e `stile: false` nel
+  registro perche' il router non li chieda piu';
+- `docs/DESIGN.md` — il documento del linguaggio visivo;
+- `redesign/` — la consegna del designer da cui era nata quella stesura;
+- `assets/icons/icone/` — il pacchetto di SVG della stessa consegna, mai
+  usato: le icone vere sono inline in `core/icone.js`;
+- gli accenti dei moduli in `core/registro.js`, che puntavano a token
+  inesistenti: ora sono `null` e il router li salta;
+- i `theme-color` in `index.html` e nel manifest.
 
-### Cosa è cambiato e che cosa dovete sapere
+**Non toccati**, e da non toccare quando si ricomincia: tutto `core/`, i
+`dati.js` / `calcolo.js` / `modulo.js` / `viste.js` dei moduli, i dati veri,
+`config.js`, `sw.js`.
 
-- **I nomi dei token NON sono cambiati**, i valori sì. Il ponte di alias in
-  fondo a `tokens.css` regge ancora tutto il vocabolario della prima
-  stesura (`--scheda`, `--testo-2`, `--s3`…).
-- **Ogni `--t-<nome>` ora è davvero il suo colore.** Prima `--t-viola` era
-  un blu e `--t-blu` un verde acqua. Se un vostro CSS usava `--t-viola`
-  aspettandosi un blu, ora prende un viola: usate `--blu` dal ponte.
-- **`--t-verde` è diventato giallo-verde**, per liberare il verde pieno a
-  `--ok`. Se vi serve un verde «erba» è perché state dicendo «fatto», e
-  allora il token è `--ok`.
-- **I titoli non si stringono più**: `font-stretch` è sparito.
-- **Il colore non riempie.** Sono stati tolti dai vostri fogli: quattro veli
-  sfumati dietro le cifre grandi, dieci barre laterali colorate da 3px, i
-  fondi tinti di Uscita/Entrata, il bordo rosso sopra il check.
+**I ganci restano.** `core/ui.js` e i moduli emettono ancora i nomi di
+classe di sempre (`.scheda`, `.riga`, `.btn`, `.testa`...). Non sono stile:
+sono appigli senza niente attaccato. Chi riscrive puo' riusarli o
+rinominarli — nel secondo caso vanno cambiati anche in `core/ui.js` e nei
+`viste.js`.
 
-### Richieste, se non vi torna
+**I font restano** in `assets/fonts/`: SF Pro e le emoji Apple. Il font non
+cambia. I `@font-face` pero' stavano in `tokens.css`, quindi vanno
+ridichiarati.
 
-Il posto giusto è «Richieste a core» qui sopra. Due cose in particolare
-potrebbero volere una seconda passata dalle chat di modulo:
-
-- **Pasti** — l'anello delle calorie ora porta uno stato (`--ok` /
-  `--avviso` / `--male`) invece dell'accento del modulo, e lo spessore è
-  sceso da 10 a 7. Le soglie (90% per l'ambra) sono una scelta mia: se il
-  criterio giusto è un altro, cambiatelo in `viste.js`.
-- **Abitudini** — gli anelli della settimana sono passati da `--accento` a
-  `--ok`. Facendolo è saltato fuori che i giorni **senza abitudini attese**
-  mostrano l'anello pieno (`frazione` = 1 su 0 su 0), mentre la carta
-  Costanza della home dice «7 giorni senza spuntare niente». Le due
-  schermate leggono lo stesso dato e dicono il contrario. **La logica non
-  l'ho toccata**: è roba vostra, e la convenzione della home (stato
-  `riposo`, opacità 0,45) è probabilmente quella da adottare.
-
-### Sviluppo
-
-- In locale il service worker **non si registra più** e disinstalla quello
-  che trova (`core/app.js`). La sua cache sta davanti alla rete e ignora
-  `Cache-Control`: è costata mezz'ora di modifiche invisibili sullo schermo.
-  In produzione non cambia niente.
-- `.claude/serve-dev.py` è il server di sviluppo (`no-store`). Deve restare
-  a thread: a thread singolo le richieste dei moduli si accodano, la pagina
-  resta nera e il pannello si riempie di `ERR_NETWORK_CHANGED`.
+Tutto il cancellato e' nella storia di git (`git show 5c0efa4:<file>`).
 
 ---
 

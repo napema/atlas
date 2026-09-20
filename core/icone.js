@@ -133,7 +133,7 @@ const TRATTI = {
   cuore:     '<path d="M12 20s-7.4-4.6-7.4-9.4A4.2 4.2 0 0 1 12 8.2a4.2 4.2 0 0 1 7.4 2.4C19.4 15.4 12 20 12 20z"/>',
   stella:    '<path d="M12 3.8l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>',
 
-  /* ------------------------------------------------- la consegna «Quadrante v2»
+  /* ----------------------------------------------------- icone aggiunte
      Le 24 icone di `redesign/icone.zip`, inserite come sono: arrivavano gia
      sulla griglia 24x24 con tratto 1,7 e `currentColor`, cioe' esattamente la
      geometria di questo file. I nomi con il trattino stanno fra virgolette.

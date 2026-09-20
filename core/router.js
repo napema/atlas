@@ -157,7 +157,11 @@ async function disegna() {
   // senza una riga di codice nel modulo.
   // Le tinte si scuriscono da sole nel tema chiaro (styles/tokens.css): non
   // servono più le due varianti che il registro portava dietro a mano.
-  document.documentElement.style.setProperty("--accento", mod.accento);
+  // `accento` e' `null` finche' il sistema visivo non viene riscritto: in
+  // quel caso si TOGLIE la variabile invece di scrivere "null", che sarebbe
+  // un valore non valido e lascerebbe la proprieta' sporca.
+  if (mod.accento) document.documentElement.style.setProperty("--accento", mod.accento);
+  else document.documentElement.style.removeProperty("--accento");
 
   contenitore.innerHTML = "";
   contenitore.dataset.modulo = id;
