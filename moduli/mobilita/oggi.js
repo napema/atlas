@@ -33,19 +33,6 @@ const dataLunga = () => new Date().toLocaleDateString("it-IT", { weekday: "long"
 const minuti = (sec) => Math.max(1, Math.round(sec / 60));
 const inizioSettimana = (iso) => addGiorni(iso, -giornoSettimana(iso));
 
-/* Il pannello «a colpo d'occhio», in HTML perche' questa vista lavora a
-   stringhe e non a nodi. La forma e le classi sono quelle di `pannello()`
-   in core/ui.js: chip, etichetta, cifra, coda. */
-const pannello = ({ ico, tinta, etichetta, cifra, coda }) => `
-  <div class="pannello" style="--tinta:${tinta}">
-    <div class="pannello-testa">
-      <span class="chip piccolo">${icona(ico, 17, 1.8)}</span>
-      <span class="pannello-eti">${etichetta}</span>
-    </div>
-    <div class="pannello-cifra">${cifra}</div>
-    ${coda ? `<div class="pannello-coda">${coda}</div>` : ""}
-  </div>`;
-
 /* Una testata di scheda: chip con l'icona + etichetta maiuscoletta.
    È la stessa forma in tutte e quattro le schede di questa vista, e la
    stessa che usano le carte della home. */
@@ -76,22 +63,8 @@ function renderOggi(container) {
      centimetri più su. Tre righe di navigazione prima del primo dato.
      Resta la riga che dice qualcosa che gli altri due non dicono: che
      giorno è e a che settimana del programma sei. */
-  const inizio = inizioSettimana(oggi);
-  const fatteSett = LETTERE.filter((_, i) => state.storicoSessioni.some((x) => x.data === addGiorni(inizio, i))).length;
-
   container.innerHTML = `
     <p class="mo-data">${dataLunga()} · settimana ${settimana}</p>
-
-    <div class="pannelli">
-      ${pannello({ ico: "orologio", tinta: "var(--t-turchese)", etichetta: "Oggi",
-        cifra: `${minuti(durata)}<span class="mo-min"> min</span>`, coda: NOMI_TIPO[tipo].nome })}
-      ${pannello({ ico: "corpo", tinta: "var(--t-blu)", etichetta: "Esercizi",
-        cifra: passi.length, coda: fattoOggi ? "gia' fatta oggi" : "da fare" })}
-      ${pannello({ ico: "calendario", tinta: "var(--t-lilla)", etichetta: "Settimana",
-        cifra: `${fatteSett} / 7`, coda: `settimana ${settimana} del programma` })}
-      ${pannello({ ico: "grafico", tinta: "var(--t-ambra)", etichetta: "Obiettivo",
-        cifra: `${fase.minuti}<span class="mo-min"> min</span>`, coda: "quando la fase sale" })}
-    </div>
 
     ${renderSettimana(state, oggi)}
 
@@ -109,11 +82,12 @@ function renderOggi(container) {
     <section class="scheda">
       ${testa("orologio", NOMI_TIPO[tipo].nome)}
 
-      <!-- La durata e il numero di esercizi NON si ripetono qui: sono i
-           primi due pannelli in cima alla schermata. Ripetuti a dieci
-           centimetri di distanza facevano credere che fossero due dati
-           diversi. Qui resta il perche' e la lista, che sono il dettaglio. -->
-      <p class="nota mo-perche" style="margin-top:0">${NOMI_TIPO[tipo].perche}</p>
+      <div class="mo-eroe">
+        <div class="cifra mo-durata">${minuti(durata)}<span class="mo-unita">min</span></div>
+        <div class="mo-conta">${passi.length} esercizi${fattoOggi ? " · già fatta oggi" : ""}</div>
+      </div>
+
+      <p class="nota mo-perche">${NOMI_TIPO[tipo].perche}</p>
 
       <ul class="lista">
         ${moduli.map((m) => `

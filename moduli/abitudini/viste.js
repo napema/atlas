@@ -6,7 +6,7 @@
 import {
   el, aggiungi, anello, apriFoglio, chiudiFoglio, avviso, tocco,
   campo, segmenti, pillole, lista, riga, vuoto, nuovoId,
-  oggiISO, piuGiorni, daISO, GIORNI_INIZIALI, dataUmana, plurale, pannelli, pannello,
+  oggiISO, piuGiorni, daISO, GIORNI_INIZIALI, dataUmana, plurale,
 } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
 import {
@@ -66,40 +66,6 @@ export function strisciaSettimana(giornoScelto, alCambio) {
     barra.append(b);
   }
   return barra;
-}
-
-/* I PANNELLI IN CIMA. Quattro numeri prima di qualunque lista: e' lo stesso
-   schema di Finanze, Pasti e Corpo. Prima la schermata apriva con la carta
-   «Ancora da fare» e sotto l'elenco — un numero solo, che e' un titolo, non
-   un colpo d'occhio. */
-export function pannelliGiorno(giorno) {
-  const p = progressoGiorno(giorno);
-  const migliore = abitudiniVive().reduce((m, h) => Math.max(m, serie(h)), 0);
-
-  return pannelli([
-    pannello({
-      ico: "spunta", tinta: "var(--t-lilla)",
-      etichetta: p.riposo ? "Oggi" : "Da fare",
-      cifra: p.riposo ? "—" : String(Math.max(0, p.attese - p.fatte)),
-      coda: p.riposo ? "giornata libera" : `di ${p.attese}`,
-    }),
-    pannello({
-      ico: "fatto", tinta: "var(--t-turchese)",
-      etichetta: "Spuntate", cifra: String(p.fatte),
-      coda: p.riposo ? "niente in programma" : `${Math.round(p.frazione * 100)}% del giorno`,
-      tono: !p.riposo && p.frazione >= 1 ? "ok" : "",
-    }),
-    pannello({
-      ico: "fiamma", tinta: "var(--t-ambra)",
-      etichetta: "Serie", cifra: String(migliore),
-      coda: migliore === 1 ? "giorno di fila" : "giorni di fila",
-    }),
-    pannello({
-      ico: "calendario", tinta: "var(--t-blu)",
-      etichetta: "Attive", cifra: String(abitudiniVive().length),
-      coda: "abitudini in corso",
-    }),
-  ]);
 }
 
 /* -------------------------------------------------------------- l'eroe -- */

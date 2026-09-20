@@ -423,42 +423,11 @@
   color: var(--inchiostro-3);
 }
 
-.og-sett { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s-6); }
-.og-sett-g { display: flex; flex-direction: column; align-items: center; gap: var(--s-6); }
-.og-sett-punto {
-  position: relative;
-  width: 100%; height: 26px;
-  border-radius: var(--r-minimo);
-  background: var(--incavo);
-  overflow: hidden;
-}
-/* Il riempimento cresce dal basso ed è PROPORZIONALE: 1 abitudine su 6 si
-   vede che è un sesto. Prima la casella era accesa o spenta, e un giorno da
-   1 su 6 era indistinguibile da un 6 su 6 — anzi, si accendeva anche per un
-   fatto di un altro modulo.
+/* La striscia della settimana e' `.sett` di base.css: qui non resta
+   niente. Le vecchie regole (`.og-sett`, `.og-sett-g`, `.og-sett-punto`,
+   `.og-sett-lettera`) disegnavano la terza delle tre strisce diverse che
+   l'app aveva per la stessa cosa. */
 
-   Il colore è `--ok` e non una tinta: qui «pieno» vuol dire davvero FATTO,
-   ed è uno dei pochi posti dell'app dove il verde è al suo posto. */
-.og-sett-punto > i {
-  position: absolute; left: 0; right: 0; bottom: 0;
-  display: block;
-  border-radius: var(--r-minimo);
-  background: var(--ok);
-  transition: height var(--durata-lenta) var(--curva-decisa);
-}
-/* Un giorno senza niente in programma non è un fallimento: non hai mancato
-   nulla. Resta lì, spento e più tenue, e non spezza la serie. Uguale per un
-   giorno di cui non sappiamo niente.
-
-   Gli stati stanno in `data-stato` e non in una classe: `.vuoto` e `.pieno`
-   in base.css vogliono già dire altro, e la casella «vuoto» si prendeva il
-   padding dello stato vuoto di una lista sfondando la striscia. */
-.og-sett-g[data-stato="riposo"] .og-sett-punto,
-.og-sett-g[data-stato="ignoto"] .og-sett-punto { opacity: 0.45; }
-.og-sett-g.oggi .og-sett-punto { box-shadow: inset 0 0 0 1.5px var(--inchiostro-3); }
-
-.og-sett-lettera { font-size: var(--t-12); font-weight: 650; letter-spacing: 0.05em; color: var(--inchiostro-4); }
-.og-sett-g.oggi .og-sett-lettera { color: var(--inchiostro); }
 .og-nota { margin: var(--s-16) 0 0; font-size: var(--t-13); color: var(--inchiostro-2); line-height: 1.45; }
 
 /* -------------------------------------------------------------- moduli -- */
@@ -495,7 +464,11 @@
   font-variant-numeric: tabular-nums;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.og-modstato.ok { color: var(--ok); }
+/* NIENTE VERDE QUI. «Piadina con mozzarella…» e «5 / 7» comparivano in
+   verde acceso in mezzo a una griglia di sei riquadri grigi: il verde vuol
+   dire «fatto», e il nome del prossimo pasto non e' un traguardo. Resta
+   solo l'ambra, che segnala davvero qualcosa da fare. */
+.og-modstato.ok { color: var(--inchiostro); }
 .og-modstato.avviso { color: var(--avviso); }
 .og-modfreccia { flex: none; display: none; color: var(--inchiostro-4); }
 
@@ -518,9 +491,14 @@
      altre due ne riempivano 150, quindi due terzi della riga erano vuoto
      stirato. Vuoto che è peggio dell'asimmetria, perché sembra che manchi
      qualcosa. */
+  /* DUE COLONNE UGUALI. Erano `1fr` e `1.05fr`: 529px contro 555, cioe'
+     ventisei pixel di differenza su schermo largo. Una differenza cosi'
+     piccola non si legge come una scelta — si legge come un errore di
+     allineamento, ed e' esattamente quello che sembrava. O due colonne
+     sono palesemente diverse, o sono identiche. */
   .og-griglia {
     display: grid;
-    grid-template-columns: minmax(320px, 1fr) minmax(320px, 1.05fr);
+    grid-template-columns: repeat(2, minmax(320px, 1fr));
     gap: var(--s-16);
     align-items: stretch;
   }
@@ -632,6 +610,12 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--s-8);
   }
+  /* I moduli sono CINQUE su tre colonne: la seconda riga ne aveva due e
+     lasciava un buco grande quanto una tessera in basso a destra — il
+     posto dove l'occhio cade per ultimo, quindi l'unica cosa che si
+     notava. Se l'ultima tessera e' la seconda della sua riga, si allarga
+     e la riga si chiude. */
+  .og-modlista > li:last-child:nth-child(3n + 2) { grid-column: span 2; }
   .og-modriga {
     flex-wrap: wrap;
     align-content: center;

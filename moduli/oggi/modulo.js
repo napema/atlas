@@ -580,28 +580,31 @@ function cartaCostanza() {
           el("span", { testo: "spunte in 7 giorni" }),
         ]),
       ]),
-      el("div", { class: "og-sett" }, letti.map((g) => {
+      /* LA STRISCIA CONDIVISA (`.sett` in base.css), la stessa di Abitudini
+         e di Corpo. Prima questa carta ne aveva una sua, con le celle che
+         si riempivano dal basso IN PROPORZIONE alle spunte: un giorno da 1
+         su 6 diventava una lineetta alta tre pixel in fondo alla casella,
+         che non si leggeva come «un sesto» ma come un bordo sbagliato.
+
+         Il proporzionale e' stato tolto: la striscia risponde a «quanti
+         giorni ho tenuto», che e' una domanda a stati, non a percentuali.
+         Il quanto di ogni giorno sta nel `title`. */
+      el("div", { class: "sett" }, letti.map((g) => {
         const d = new Date(`${g.giorno}T12:00:00`);
-        const quota = g.attese > 0 ? Math.min(1, g.spuntate / g.attese) : 0;
         return el("div", {
           // Lo stato va in un attributo, non in una classe: `vuoto` e `pieno`
           // sono nomi che in `base.css` vogliono già dire altro — `.vuoto` è
           // lo stato vuoto di una lista, con un padding enorme — e la casella
-          // se lo prendeva, sfondando la striscia. È la collisione contro cui
-          // mette in guardia DESIGN.md; con un attributo non può succedere.
-          class: "og-sett-g" + (g.giorno === oggi ? " oggi" : ""),
-          dataset: { stato: g.stato },
+          // se lo prendeva, sfondando la striscia.
+          class: "sett-g" + (g.giorno === oggi ? " oggi" : ""),
+          dataset: { stato: g.stato === "ignoto" ? "riposo" : g.stato },
           title: `${dataUmana(g.giorno)} · ` + (
             g.stato === "ignoto" ? "nessun dato"
             : g.stato === "riposo" ? "niente in programma"
             : `${g.spuntate} su ${g.attese}`),
         }, [
-          el("span", { class: "og-sett-punto" }, [
-            // Riempimento proporzionale: un giorno da 1 su 6 non deve
-            // somigliare a un giorno pieno, e nemmeno a uno vuoto.
-            el("i", { stile: { height: `${Math.round(quota * 100)}%` } }),
-          ]),
-          el("span", { class: "og-sett-lettera", testo: GIORNI_INIZIALI[(d.getDay() + 6) % 7] }),
+          el("span", { class: "sett-cella", testo: String(d.getDate()) }),
+          el("span", { class: "sett-lettera", testo: GIORNI_INIZIALI[(d.getDay() + 6) % 7] }),
         ]);
       })),
       el("p", { class: "og-nota", testo: fraseSerie(serie, pieni, vuotiDiFila) }),

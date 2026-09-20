@@ -13,7 +13,7 @@ import { annuncia, ascolta } from "../../core/bus.js";
 import { casella, stato, abitudiniVive, eFatta, alterna, idLog, alternaParte, semina } from "./dati.js";
 import { progressoGiorno, mancantiOggi, serie, eAttesa, promemoriaAdesso, restaOggi } from "./calcolo.js";
 import {
-  strisciaSettimana, pannelliGiorno, elenco,
+  strisciaSettimana, riepilogo, elenco,
   apriModifica, vistaImpostazioni, vistaSerie,
 } from "./viste.js";
 
@@ -41,12 +41,15 @@ function disegna() {
     ]),
     ...(vista === "serie" ? [vistaSerie(disegna)] : [
       strisciaSettimana(giornoScelto, (g) => { giornoScelto = g; disegna(); }),
-      // `riepilogo()` non c'e' piu': diceva «1 · 1 abitudine · 0 di 1 gia'
-      // fatte» sotto quattro pannelli che dicono gli stessi numeri, con in
-      // piu' un anello al 0%. Due blocchi che ripetono lo stesso dato non
-      // lo dicono due volte piu' forte: si annullano, perche' chi legge si
-      // chiede in che cosa differiscono.
-      pannelliGiorno(giornoScelto),
+      /* NIENTE PANNELLI QUI, ed e' una correzione.
+         Erano «Da fare 2 di 7», «Spuntate 5 · 71% del giorno», «Serie 1»,
+         «Attive 7»: i primi due sono lo stesso fatto detto due volte, e la
+         lista qui sotto lo dice una terza. «Attive» poi non e' nemmeno un
+         dato del giorno — e' una proprieta' della configurazione.
+         I pannelli servono dove i numeri vivono in schede DIVERSE e
+         metterli insieme fa risparmiare uno scorrimento. Qui sta gia'
+         tutto in una schermata. */
+      riepilogo(giornoScelto),
       elenco(giornoScelto, disegna),
     ]),
   ]);

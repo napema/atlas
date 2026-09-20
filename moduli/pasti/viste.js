@@ -11,7 +11,7 @@
 
 import {
   el, aggiungi, scheda, riga, lista, avviso, campo, segmenti, pillole,
-  anello, traccia, apriFoglio, chiudiFoglio, vuoto, plurale, pannelli, pannello,
+  anello, traccia, apriFoglio, chiudiFoglio, vuoto, plurale,
   dataUmana, dataBreve, oggiISO, GIORNI, GIORNI_INIZIALI, numero,
 } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
@@ -65,53 +65,11 @@ const gr = (n) => `${Math.round(n)} g`;
  * tagliata a 1 — ma il numero sotto dice la verità. Un anello che si
  * riavvolge farebbe sembrare che sei di nuovo all'inizio.
  */
-/* I PANNELLI IN CIMA ALLA GIORNATA.
-
-   Quattro numeri prima dell'anello. Prima la schermata apriva con la
-   ciambella gigante e sotto una lista: per sapere se stasera si puo'
-   mangiare fuori bisognava leggere l'anello, poi le tre barre dei macro,
-   poi contare quali fasce erano ancora vuote. Qui la risposta e' in cima.
-
-   Sono gli stessi numeri che l'anello e le barre raccontano per esteso
-   subito sotto: qui rispondono, sotto spiegano. */
-export function pannelliGiorno(iso) {
-  const b = bersagli();
-  const g = giornata(iso);
-  const t = g.totale;
-  const manca = b.kcal - t.kcal;
-  const fatte = g.fasce.filter((f) => f.nome || g.scostamenti.some((s) => s.fascia === f.fascia)).length;
-  const prossima = g.fasce.find((f) => !f.nome && f.regime !== "salto");
-
-  return pannelli([
-    pannello({
-      ico: "fiamma", tinta: "var(--t-ambra)",
-      etichetta: manca >= 0 ? "Mancano" : "Oltre di",
-      cifra: kcal(Math.abs(manca)),
-      coda: `kcal su ${kcal(b.kcal)}`,
-    }),
-    pannello({
-      ico: "corpo", tinta: "var(--t-blu)",
-      etichetta: "Proteine", cifra: `${Math.round(t.p)} g`,
-      coda: `di ${b.p} g`,
-      tono: t.p >= b.p ? "ok" : "",
-    }),
-    pannello({
-      ico: "piatto", tinta: "var(--t-corallo)",
-      etichetta: "Pasti", cifra: `${fatte} / ${g.fasce.length}`,
-      coda: prossima ? `manca ${nomeFascia(prossima.fascia).toLowerCase()}` : "giornata completa",
-    }),
-    pannello({
-      ico: "grafico", tinta: "var(--t-lilla)",
-      etichetta: "Carboidrati", cifra: `${Math.round(t.c)} g`,
-      coda: `di ${b.c} g`,
-    }),
-  ]);
-}
-
 export function testataGiorno(iso) {
   const b = bersagli();
   const g = giornata(iso);
   const t = g.totale;
+  const manca = b.kcal - t.kcal;
 
   return scheda(null, [
     el("div", { class: "pa-testata" }, [
@@ -144,12 +102,11 @@ export function testataGiorno(iso) {
           el("div", { class: "micro", testo: `su ${kcal(b.kcal)}` }),
         ]),
       ]),
-      /* «Mancano / Oltre di» NON si ripete qui: e' il primo pannello in
-         cima alla schermata. Con i pannelli sopra, questa scheda diceva lo
-         stesso numero due volte a quattro centimetri di distanza — ed e'
-         il modo piu' rapido per far smettere di credere a tutti e due.
-         Qui resta l'anello, che e' la forma, e sotto i macro, che sono il
-         dettaglio. */
+      el("div", { class: "pa-manca" }, [
+        el("div", { class: "micro", testo: manca >= 0 ? "Mancano" : "Oltre di" }),
+        el("div", { class: "pa-manca-cifra", testo: kcal(Math.abs(manca)) }),
+        el("div", { class: "micro", testo: "kcal" }),
+      ]),
     ]),
 
     el("div", { class: "pa-macro" }, ["p", "c", "g"].map((k) => {
