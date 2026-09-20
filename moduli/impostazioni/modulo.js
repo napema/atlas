@@ -9,9 +9,10 @@
 // `impostazioni()` e restituisce il proprio nodo. Impostazioni non sa cosa
 // c'è dentro, e i moduli restano indipendenti.
 
-import { el, aggiungi, intestazione, scheda, riga, lista, avviso, segmenti } from "../../core/ui.js";
+import { el, aggiungi, intestazione, scheda, riga, lista, avviso, segmenti, campo } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
-import { canaliAperti, configurato, sincronizzaTutto } from "../../core/sync.js";
+import { canaliAperti, configurato, sincronizzaTutto, verificaAccesso, recapito } from "../../core/sync.js";
+import { leggiToken, scriviToken, dimenticaToken, tokenPresente, sembraUnToken } from "../../core/credenziali.js";
 import { esportaTutto, caselleAperte } from "../../core/storage.js";
 import { spazio, chiediPersistenza } from "../../core/blobs.js";
 import { ultimiEventi, chiAscolta } from "../../core/bus.js";
@@ -40,31 +41,93 @@ function bloccoAspetto() {
   ]);
 }
 
-function bloccoSync() {
+/*
+  Il token si incolla QUI, non si pubblica in config.js.
+
+  È l'unica schermata di ATLAS che chiede un segreto, e la forma conta:
+  si verifica PRIMA di dichiararlo buono, e un token che GitHub rifiuta non
+  resta salvato. Un token rotto che rimane nella casella è peggio di nessun
+  token: i canali ripartono ogni venti secondi, bussano, prendono 401, e la
+  schermata si riempie di errori rossi che non dicono cosa fare.
+*/
+function bloccoSync(ridisegna) {
   const canali = canaliAperti();
-  if (!configurato()) {
-    return scheda("Sincronizzazione", [
-      el("p", { testo: "Non configurata: i dati restano su questo dispositivo." }),
-      el("p", { class: "nota", html: "Compila <code>config.js</code> con il repo dati e il token. Istruzioni in <code>docs/SYNC.md</code>." }),
-    ]);
+  const r = recapito();
+  const contenuto = [];
+
+  if (configurato()) {
+    const errori = canali.filter((c) => c.stato === "err");
+    contenuto.push(
+      canali.length
+        ? lista(canali.map((c) => riga({
+            etichetta: c.id,
+            valore: `${ETICHETTE_STATO[c.stato] || c.stato}${c.ultimo ? ` · ${c.ultimo}` : ""}`,
+            tono: c.stato === "err" ? "negativo" : c.stato === "ok" ? "positivo" : "",
+          })))
+        : el("p", { class: "nota", testo: "Nessun canale aperto." }),
+      ...errori.map((c) => el("p", { class: "nota negativo", testo: `${c.id}: ${c.messaggio}` })),
+      el("button", {
+        class: "btn tenue pieno", type: "button", testo: "Sincronizza adesso",
+        onClick: () => { sincronizzaTutto(); avviso("Giro di sincronizzazione avviato."); },
+      }),
+    );
+  } else {
+    contenuto.push(el("p", { testo: "Non attiva: i dati restano su questo dispositivo. Incolla qui sotto il token e riparte." }));
   }
 
-  const l = lista(canali.map((c) => riga({
-    etichetta: c.id,
-    valore: `${ETICHETTE_STATO[c.stato] || c.stato}${c.ultimo ? ` · ${c.ultimo}` : ""}`,
-    tono: c.stato === "err" ? "negativo" : c.stato === "ok" ? "positivo" : "",
-  })));
-  const errori = canali.filter((c) => c.stato === "err");
+  const esito = el("p", { class: "nota" });
+  let bozza = leggiToken();
 
-  return scheda("Sincronizzazione", [
-    canali.length ? l : el("p", { class: "nota", testo: "Nessun canale aperto." }),
-    ...errori.map((c) => el("p", { class: "nota negativo", testo: `${c.id}: ${c.messaggio}` })),
-    el("button", {
-      class: "btn tenue pieno", type: "button", testo: "Sincronizza adesso",
-      onClick: () => { sincronizzaTutto(); avviso("Giro di sincronizzazione avviato."); },
+  contenuto.push(
+    campo({
+      etichetta: "Token di accesso", tipo: "password", valore: bozza,
+      segnaposto: "github_pat_…", autocomplete: "off",
+      // Si scrive solo al pulsante, non a ogni tasto: salvare mezzo token
+      // farebbe partire un giro di sync destinato a fallire a ogni lettera.
+      alCambio: (v) => { bozza = v; },
     }),
-    el("p", { class: "nota", testo: "Un file per modulo nello stesso repo privato. Gli sha restano indipendenti, così due moduli salvati insieme non si annullano." }),
-  ]);
+    el("button", {
+      class: "btn primario pieno", type: "button", testo: "Verifica e salva",
+      onClick: async (e) => {
+        const b = e.currentTarget;
+        if (!sembraUnToken(bozza)) {
+          esito.className = "nota negativo";
+          esito.textContent = "Non ha la forma di un token GitHub: deve cominciare per github_pat_ o ghp_.";
+          return;
+        }
+        b.disabled = true; b.textContent = "Verifico…";
+        const prima = leggiToken();
+        scriviToken(bozza);
+        const r2 = await verificaAccesso();
+        if (!r2.ok) scriviToken(prima);   // vedi il commento sopra la funzione
+        esito.className = `nota ${r2.ok ? "positivo" : "negativo"}`;
+        esito.textContent = r2.motivo;
+        b.disabled = false; b.textContent = "Verifica e salva";
+        if (r2.ok) { avviso("Token salvato su questo dispositivo."); ridisegna(); }
+      },
+    }),
+    esito,
+    el("p", { class: "nota", html:
+      `Su <code>github.com/settings/personal-access-tokens</code>: token fine-grained, solo il repo <code>${r.owner}/${r.repo}</code>, permesso <code>Contents: Read and write</code>. ` +
+      "Creane uno per dispositivo — dal telefono lo generi in Safari e lo incolli qui senza farlo viaggiare da nessuna parte." }),
+    el("p", { class: "nota", testo:
+      "Resta solo qui e non viene mai sincronizzato né incluso nel backup: se finisse in un file pubblicato aprirebbe il repo dei dati a chiunque." }),
+  );
+
+  if (tokenPresente()) {
+    contenuto.push(el("button", {
+      class: "btn tenue pieno", type: "button", testo: "Dimentica il token su questo dispositivo",
+      onClick: () => {
+        dimenticaToken();
+        avviso("Token rimosso. I dati locali restano, il sync si ferma.");
+        ridisegna();
+      },
+    }));
+  }
+
+  contenuto.push(el("p", { class: "nota", testo: "Un file per modulo nello stesso repo privato. Gli sha restano indipendenti, così due moduli salvati insieme non si annullano." }));
+
+  return scheda("Sincronizzazione", contenuto);
 }
 
 async function bloccoNotifiche(ridisegna) {
@@ -310,7 +373,7 @@ async function disegna() {
     aggiungi(corpo, [
       bloccoAspetto(),
       await bloccoNotifiche(disegna),
-      bloccoSync(),
+      bloccoSync(disegna),
       await bloccoSpazio(),
       bloccoDati(),
       el("p", { class: "nota", style: "text-align:center;margin-top:var(--s6)",

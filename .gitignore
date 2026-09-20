@@ -4,9 +4,13 @@ Thumbs.db
 node_modules/
 *.log
 
-# Non ignoriamo config.js: GitHub Pages deve servirlo, altrimenti il sync
-# non parte. Il token che contiene è fine-grained su un repo privato di
-# dati personali e si revoca in un clic. Vedi il commento dentro il file.
+# config.js si committa, ed e giusto cosi: ora contiene solo il recapito
+# (owner, repo, branch) e la chiave VAPID pubblica. Il token NON sta piu li
+# dentro - stava, ed era servito in chiaro a chiunque aprisse
+# napema.github.io/atlas/config.js. Ora vive sul dispositivo: core/credenziali.js.
+#
+# Regola: in questo repo non entra nessun segreto. Se stai per aggiungere una
+# chiave a un file servito da Pages, non farlo: Pages lo serve a tutti.
 
 # La copia del vecchio Registro caricata per il confronto: sta gia in
 # legacy/finanze/ ed e byte per byte la stessa. Non serve committarla due volte.

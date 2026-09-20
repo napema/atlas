@@ -40,23 +40,39 @@ Un token **fine-grained**, non un classico:
 - *Permissions* → *Contents*: **Read and write**
 - niente altro
 
-### 3. `config.js`
+**Uno per dispositivo**, non uno condiviso. Sul telefono lo si genera da
+Safari, su `github.com/settings/personal-access-tokens`, e si incolla subito
+in ATLAS: così il segreto non passa mai da una nota, da una mail o da una
+chat. E se si perde il telefono se ne revoca uno solo, senza fermare il PC.
 
-In una console del browser:
+### 3. Dove va il token
 
-```js
-const t = "github_pat_iltuotoken";
-const b = btoa(t), n = Math.ceil(b.length / 3);
-console.log(JSON.stringify([b.slice(0, n), b.slice(n, 2*n), b.slice(2*n)]));
-```
+In **Impostazioni → Sincronizzazione**, campo *Token di accesso*, una volta
+per dispositivo. Il pulsante *Verifica e salva* fa una GET di prova sul repo
+prima di tenerselo: un token che GitHub rifiuta non resta salvato.
 
-I tre pezzi vanno in `t1`, `t2`, `t3`.
+Vive in `localStorage`, chiave `atlas-credenziali.v1`, e sta **fuori** dal
+prefisso `atlas.` di `storage.js` di proposito — `esportaTutto()` raccoglie
+tutto ciò che comincia per `atlas.`, e un backup scaricato con dentro il
+token sarebbe la stessa fuga da un'altra porta.
 
-> Il token è nel sorgente di un sito pubblico. Non è sicurezza: è
-> antiscraping. Regge perché il token può fare **una cosa sola** su **un
-> repo privato di dati personali** e si revoca in un clic. Se i dati
-> diventano sensibili sul serio, o gli utenti più di uno, questa soluzione
-> non basta più e serve un backend.
+> **Nel repo non va nessun segreto.** Fino a settembre 2026 il token stava in
+> `config.js`, in base64 spezzato in tre, e il commento lì sopra lo chiamava
+> "antiscraping". Ma `config.js` lo serve GitHub Pages da un repo pubblico:
+> `napema.github.io/atlas/config.js` rispondeva **200 a chiunque**, e dava
+> lettura e scrittura su stipendi, entrate e conti. Peggio ancora, spezzare
+> il base64 serviva solo a non farsi riconoscere dal secret scanner di
+> GitHub — cioè a disattivare l'unico allarme che avrebbe revocato il token
+> da solo. Lo stesso errore era in tutte e tre le app di partenza.
+>
+> La regola che ne resta: **in un sito statico non esiste un nascondiglio.**
+> Tutto ciò che il browser scarica senza autenticarsi lo scarica chiunque, e
+> non cambia niente se il valore è codificato, spezzato o in un file dal nome
+> strano. O c'è un server che autentica, o il segreto sta sul dispositivo.
+
+In `config.js` resta solo il **recapito** — `owner`, `repo`, `branch`,
+`cartella` — più la chiave VAPID *pubblica*. Tutta roba che può stare in
+chiaro: il nome di un repo privato non apre il repo.
 
 ---
 
@@ -121,7 +137,7 @@ giro, e permette di forzarne uno.
 
 | Sintomo | Causa quasi sempre |
 |---|---|
-| tutti i canali `non configurato` | `t1/t2/t3` vuoti o token incollato male |
+| tutti i canali `non configurato` | manca il token su questo dispositivo: Impostazioni → Sincronizzazione |
 | `HTTP 401` | token revocato o scaduto |
 | `HTTP 403` | il token non ha *Contents: read and write*, o non copre quel repo |
 | `HTTP 404` sempre | `owner`/`repo` sbagliati — attenzione: un repo privato invisibile al token risponde 404, non 403 |

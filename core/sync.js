@@ -13,21 +13,27 @@
 // moduli che salvano nello stesso istante non si annullano a vicenda.
 
 import { annuncia as annunciaSulBus } from "./bus.js";
+import { leggiToken, osservaToken } from "./credenziali.js";
 
+// `config.js` dà il RECAPITO (owner, repo, branch, cartella): è pubblico e
+// va benissimo che lo sia, il nome di un repo privato non apre niente. La
+// CHIAVE invece non è mai stata roba da config.js e ora sta sul dispositivo:
+// il perché per esteso è in `credenziali.js`, e merita i due minuti.
 const CFG = (() => {
   const c = globalThis.ATLAS_CFG || {};
-  let token = "";
-  if (c.t1 && c.t2 && c.t3) {
-    try { token = atob(String(c.t1) + String(c.t2) + String(c.t3)); } catch { token = ""; }
-  }
-  return { owner: c.owner, repo: c.repo, branch: c.branch || "main", cartella: c.cartella || "", token };
+  return { owner: c.owner, repo: c.repo, branch: c.branch || "main", cartella: c.cartella || "" };
 })();
 
 const INTERVALLO_MS = 20000;   // poll: ogni quanto si controlla il remoto
 const DEBOUNCE_MS   = 1500;    // quanto si aspetta dopo una modifica locale
 const GIORNI_LAPIDE = 90;      // dopo quanto una cancellazione smette di viaggiare
 
-export const configurato = () => Boolean(CFG.token && CFG.owner && CFG.repo);
+// Si rilegge ogni volta, non si fotografa all'avvio: il token può arrivare
+// a pagina già aperta, incollato in Impostazioni.
+export const configurato = () => Boolean(leggiToken() && CFG.owner && CFG.repo);
+
+/** Il recapito, per chi deve mostrarlo (Impostazioni). Mai la chiave. */
+export const recapito = () => ({ owner: CFG.owner, repo: CFG.repo, branch: CFG.branch });
 
 const urlDi = (file) => {
   const p = CFG.cartella ? `${CFG.cartella.replace(/\/+$/, "")}/${file}` : file;
@@ -35,10 +41,38 @@ const urlDi = (file) => {
 };
 
 const intestazioni = () => ({
-  Authorization: `Bearer ${CFG.token}`,
+  Authorization: `Bearer ${leggiToken()}`,
   Accept: "application/vnd.github+json",
   "X-GitHub-Api-Version": "2022-11-28",
 });
+
+/**
+ * Prova il token contro il repo dei dati, senza scrivere niente.
+ *
+ * Distinguere 401 da 404 è tutto il valore di questa funzione: sono i due
+ * errori che si fanno incollando un token, e portano a rimedi opposti.
+ * 401 = il token è sbagliato o scaduto, rifallo. 404 = il token è valido ma
+ * non vede questo repo, cioè in fase di creazione hai scelto l'account
+ * sbagliato o non gli hai dato "Contents". Senza questa distinzione l'utente
+ * rigenera dieci volte un token che andava già bene.
+ */
+export async function verificaAccesso() {
+  if (!leggiToken()) return { ok: false, motivo: "Manca il token." };
+  if (!CFG.owner || !CFG.repo) return { ok: false, motivo: "Manca il repo in config.js." };
+  try {
+    const res = await fetch(`https://api.github.com/repos/${CFG.owner}/${CFG.repo}`, {
+      headers: intestazioni(), cache: "no-store",
+    });
+    if (res.status === 401) return { ok: false, motivo: "Token rifiutato da GitHub: sbagliato o scaduto." };
+    if (res.status === 403) return { ok: false, motivo: "Token valido ma senza permesso su questo repo." };
+    if (res.status === 404) return { ok: false, motivo: `Il token non vede ${CFG.owner}/${CFG.repo}: controlla l'account e il permesso «Contents».` };
+    if (!res.ok) return { ok: false, motivo: `GitHub ha risposto ${res.status}.` };
+    const j = await res.json();
+    return { ok: true, motivo: `Collegato a ${j.full_name}${j.private ? " (privato)" : " — ATTENZIONE: è pubblico"}.` };
+  } catch (e) {
+    return { ok: false, motivo: `Rete non raggiungibile: ${e.message || e}` };
+  }
+}
 
 // btoa da solo esplode sugli accenti: serve il giro via UTF-8.
 export const b64enc = (s) => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
@@ -298,6 +332,18 @@ export const canaliAperti = () => [...canali.values()];
 export function sincronizzaTutto() {
   for (const c of canali.values()) c.ora();
 }
+
+// Il token arriva quasi sempre a pagina GIÀ APERTA: al primo avvio su un
+// dispositivo nuovo i canali partono senza, si fermano subito (`off`, nessun
+// timer) e lì resterebbero fino a un ricaricamento. Con questo, incollare il
+// token in Impostazioni accende il sync all'istante.
+//
+// `ferma()` prima di `avvia()` non è ridondante: quando il token viene TOLTO,
+// `avvia()` esce subito segnalando `off` e non arriva mai a spegnere il poll,
+// che continuerebbe a bussare a GitHub senza chiave.
+osservaToken(() => {
+  for (const c of canali.values()) { c.ferma(); c.avvia(); }
+});
 
 // Il rientro in primo piano è il momento in cui il dato remoto ha più
 // probabilità di essere cambiato: l'altro dispositivo ha lavorato mentre
