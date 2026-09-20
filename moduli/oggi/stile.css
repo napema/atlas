@@ -1,106 +1,123 @@
 /* moduli/oggi — la home.
    =========================================================================
-   UNA CARTA SOLA, RIPETUTA. Tutte le carte hanno lo stesso raggio, lo stesso
-   fondo, lo stesso filo, la stessa intestazione — emoji, nome, e a destra un
-   numero o niente. Cambia la tinta, e la tinta dice DI COSA parla la carta,
-   non quanto è urgente.
+   Riscritta da zero col redesign «NEROFUMO». La struttura resta quella che
+   quattro giri di correzioni avevano sistemato — due colonne, la molla, gli
+   ordini da telefono: quelle sono lezioni pagate, e sono annotate dove
+   capitano. Cambia tutto il resto.
 
-   È la regola che fa la differenza fra un cruscotto e cinque riquadri
-   disegnati in cinque momenti diversi: con carte uguali l'occhio impara a
-   leggerle una volta sola, con carte diverse deve ricominciare da ogni
-   riquadro.
+   QUATTRO COSE SONO CAMBIATE, e sono le quattro che rendevano questa
+   schermata faticosa:
 
-   Il colore entra solo in tre punti per carta — l'emoji, il filo in alto, il
-   numero — e mai sotto il testo. Una carta colorata è una carta su cui il
-   testo si legge peggio.
+   1. VIA LA RIGA DI TINTA IN CIMA ALLE CARTE. Quattro carte con quattro
+      bordi colorati sono quattro insegne che si contendono l'occhio prima
+      che abbia letto un numero. Di che cosa parla una carta lo dice ora
+      l'icona, che è colorata, sta a 17px e non tocca il bordo.
 
-   DUE MISURE, NON UNA. Il file è scritto compatto e il media query da 1000px
-   aggiunge aria: da telefono la prima schermata deve bastare — niente si
-   scopre scorrendo — e da scrivania lo spazio c'è, quindi si usa.
+   2. VIA LE EMOJI. 📋 💶 🔥 🧭 sono quattro disegni di quattro autori
+      diversi: a quella misura si leggono come macchie. Ora sono icone del
+      repertorio, stessa griglia e stesso tratto. Le emoji restano solo
+      dove sono un dato dell'utente — le sue abitudini.
+
+   3. VIA I FONDI E LE BARRE DALLE RIGHE DELLA CHECKLIST. Ogni voce era una
+      pastiglia grigia con un bordo giallo a sinistra e un cerchio colorato
+      a caso: cinque righe così sono un semaforo. Ora sono righe piane
+      separate da un filo, e l'unica cosa colorata è la parola «in ritardo».
+
+   4. L'INTESTAZIONE È ALLINEATA A SINISTRA. Centrata, su 375px, l'ingranaggio
+      finiva addosso alla data. A sinistra il titolo parte dove parte tutto
+      il resto della schermata e l'ingranaggio ha l'angolo tutto per sé.
+
+   DUE MISURE, NON UNA. Il file è scritto compatto e il media query da
+   1000px aggiunge aria: da telefono la prima schermata deve bastare.
    ========================================================================= */
 
 /* ------------------------------------------------------- l'intestazione -- */
 
 .og-testa {
   position: relative;
-  padding: var(--s2) 0 var(--s4);
-  text-align: center;
+  padding: var(--s-4) 0 var(--s-20);
 }
 
-/* L'INGRANAGGIO NELL'ANGOLO IN ALTO A SINISTRA — quello opposto, e l'unico
-   vuoto in tutte e due le disposizioni.
-   `top` vale quanto il padding della testata, così il bersaglio da 44px si
-   apre esattamente attorno alla riga della data e i due sembrano allineati:
-   l'icona ne sta al centro, il testo ci passa accanto. Fuori dal flusso,
-   quindi la testata resta centrata sullo schermo e non su quel che avanza. */
+/* L'INGRANAGGIO IN ALTO A DESTRA. Era a sinistra e in mezzo alla riga della
+   data: su uno schermo da 375px il suo bersaglio da 44px e il testo della
+   data occupano lo stesso posto, e si toccavano. A destra l'angolo è suo. */
 .og-ingranaggio {
   position: absolute;
-  top: calc(var(--s2) - 13px);
-  left: -10px;
+  top: calc(var(--s-4) - 10px);
+  right: -10px;
   z-index: 2;
   width: var(--tocco); height: var(--tocco);
   display: grid; place-items: center;
-  color: var(--testo-4);
-  transition: color var(--veloce) var(--curva), transform var(--normale) var(--curva);
+  border-radius: var(--r-tondo);
+  color: var(--inchiostro-3);
+  transition: color var(--durata-rapida) var(--curva-standard),
+              transform var(--durata-media) var(--curva-standard);
 }
 /* Su un dito serve più bersaglio e più segno: a 22px in mezzo al testo si
    leggeva come una macchia, e il pollice non mira su un'icona che non
    distingue. `pointer: coarse` è il telefono, non «schermo piccolo». */
 @media (pointer: coarse) {
-  .og-ingranaggio {
-    width: 50px; height: 50px;
-    top: calc(var(--s2) - 16px);
-    left: -13px;
-  }
-  .og-ingranaggio svg { width: 25px; height: 25px; }
+  .og-ingranaggio { width: 48px; height: 48px; top: calc(var(--s-4) - 12px); right: -12px; }
+  .og-ingranaggio svg { width: 24px; height: 24px; }
 }
 .og-ingranaggio svg { display: block; }
-.og-ingranaggio:active { color: var(--testo); transform: rotate(35deg); }
-@media (hover: hover) {
-  .og-ingranaggio:hover { color: var(--testo); }
-}
+.og-ingranaggio:active { color: var(--inchiostro); transform: rotate(35deg); }
+@media (hover: hover) { .og-ingranaggio:hover { color: var(--inchiostro); } }
 
-/* Data e stato in alto a destra. Su telefono tornano sopra il saluto,
-   centrati: in un angolo di uno schermo da 375px non ci sta niente. */
+/* Data e stato: una riga sola sopra il saluto, allineata a sinistra come
+   tutto il resto. `padding-right` tiene il testo lontano dall'ingranaggio
+   anche quando la parola di stato è lunga («Non sincronizzato»).
+
+   NON maiuscoletta, ed è una correzione: in maiuscolo e con la crenatura
+   larga «DOMENICA 20 SETTEMBRE · NON SINCRONIZZATO» non ci sta in 375px
+   meno l'ingranaggio, e finiva troncata in «NON SINCR…». Il maiuscoletto
+   serve per etichette di due parole, non per una frase. */
 .og-meta {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--s3);
-  margin-bottom: var(--s2);
-  font-size: var(--t-11);
-  color: var(--testo-3);
+  gap: var(--s-8);
+  padding-right: 48px;
+  margin-bottom: var(--s-6);
+  font-size: var(--t-13);
+  font-weight: 500;
+  color: var(--inchiostro-3);
 }
-.og-meta-data { text-transform: capitalize; }
-.og-meta-stato { display: inline-flex; align-items: center; gap: 6px; }
-/* Maiuscola come la data che le sta sopra: sono due righe della stessa
-   colonna, e una minuscola in mezzo si legge come una svista. */
+.og-meta-data { white-space: nowrap; text-transform: capitalize; }
+.og-meta-stato { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+/* Maiuscola come la data che le sta accanto: sono due voci della stessa
+   riga, e una minuscola in mezzo si legge come una svista. */
+.og-meta-parola { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .og-meta-parola::first-letter { text-transform: uppercase; }
 
 .og-saluto {
   font-family: var(--font-d);
-  font-size: clamp(30px, 8.4vw, 46px);
+  font-size: clamp(32px, 8.6vw, 44px);
   font-weight: 700;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.032em;
   line-height: 1.05;
+  text-wrap: balance;
 }
 .og-saluto-parola { text-transform: lowercase; }
-.og-punto { color: var(--accento); }
+/* Il punto finale non è un accento colorato. Era `--accento`, cioè un
+   pallino di tinta appiccicato al titolo: su nero, accanto a quattro icone
+   già colorate, era la quinta cosa che chiedeva attenzione. Grigio, fa
+   quello che fa la punteggiatura — chiude la frase e si fa dimenticare. */
+.og-punto { color: var(--inchiostro-4); }
 
 /* Una riga, e una sola. L'avviso di Finanze stava qui e diventava un secondo
    titolo largo mezzo schermo: adesso sta dentro la carta di cui parla. */
 .og-verdetto {
-  margin: var(--s2) auto 0;
+  margin: var(--s-8) 0 0;
   max-width: 46ch;
   font-size: var(--t-15);
-  line-height: 1.4;
-  color: var(--testo-2);
+  line-height: 1.45;
+  color: var(--inchiostro-2);
 }
 
 /* ------------------------------------------------------------ la griglia */
 
-.og-griglia { display: flex; flex-direction: column; gap: var(--s3); }
-.og-col { display: flex; flex-direction: column; gap: var(--s3); min-width: 0; }
+.og-griglia { display: flex; flex-direction: column; gap: var(--s-12); }
+.og-col { display: flex; flex-direction: column; gap: var(--s-12); min-width: 0; }
 
 /* Su telefono l'ordine è quello dell'importanza, non quello delle colonne:
    prima quello che si tocca, poi quello che decide la serata, poi il resto.
@@ -124,167 +141,204 @@
 }
 
 /* --------------------------------------------------------------- la carta */
+/*
+   TUTTE LE CARTE SONO LA STESSA CARTA: stesso fondo, stesso filo, stesso
+   raggio, stessa intestazione. Con carte uguali l'occhio impara a leggerle
+   una volta sola; con carte diverse deve ricominciare da ogni riquadro.
+
+   Niente ombra: su nero non si vede, e l'unica cosa che ha il diritto di
+   stare «sopra» è il foglio modale. Quello che rende la carta un oggetto è
+   il filo da 1px — su un fondo nero pieno è l'unica separazione che si
+   legga davvero.
+*/
 
 .og-carta {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: var(--s4);
-  border-radius: var(--r-scheda);
-  background: var(--scheda);
-  /* Il filo si vede appena e serve: sul nero pieno, senza, due carte
-     affiancate sembrano una superficie sola. */
-  box-shadow: inset 0 0 0 1px var(--filo), var(--ombra);
-  overflow: hidden;
-}
-/* La riga di tinta in alto: è l'unico posto dove il colore tocca il bordo
-   della carta, ed è quello che le rende distinguibili di sfuggita. */
-.og-carta::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 2px;
-  background: var(--tinta, var(--accento));
-  opacity: 0.85;
+  padding: var(--s-16);
+  border: 1px solid var(--riga-fine);
+  border-radius: var(--r-alto);
+  background: var(--rilievo);
 }
 
 .og-carta-testa {
   display: flex;
   align-items: center;
-  gap: var(--s2);
-  margin-bottom: var(--s3);
+  gap: var(--s-8);
+  margin-bottom: var(--s-16);
 }
-.og-carta-emoji { font-size: 20px; line-height: 1; flex: none; }
-/* Il titolo è un titolo, non un'etichetta: 17px in tondo. La versione
-   precedente era una micro-maiuscoletta da 12,5px e spariva sotto il numero
-   grande della carta, che è esattamente il contrario di ciò che deve fare —
-   il numero non si capisce se prima non sai di che cosa è il numero. */
+/* L'UNICO pezzo colorato dell'intestazione, e sta a 17px. È quanto basta
+   per riconoscere la carta con la coda dell'occhio senza che il colore
+   diventi la prima cosa che si vede. */
+.og-carta-ico { display: flex; flex: none; color: var(--tinta, var(--inchiostro-3)); }
+.og-carta-ico svg { display: block; }
+
+/* Il nome è un titolo, non un'etichetta maiuscoletta: la versione
+   precedente era una micro da 12,5px e spariva sotto il numero grande, che
+   è il contrario di ciò che deve fare — il numero non si capisce se prima
+   non sai di che cosa è. Resta però in grigio chiaro e non in bianco: il
+   bianco pieno è del numero. */
 .og-carta-nome {
   flex: 1;
   min-width: 0;
-  font-family: var(--font-d);
-  font-size: var(--t-17);
-  font-weight: 700;
-  letter-spacing: -0.015em;
-  color: var(--testo);
+  font-size: var(--t-15);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--inchiostro-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .og-carta-valore {
   flex: none;
   font-family: var(--font-d);
-  font-size: var(--t-17);
-  font-weight: 700;
+  font-size: var(--t-15);
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
-  color: var(--tinta, var(--accento));
+  color: var(--inchiostro-3);
 }
 .og-carta-corpo { flex: 1; display: flex; flex-direction: column; }
 
 /* ------------------------------------------------------- resta da fare -- */
+/*
+   Righe piane separate da un filo, non pastiglie. Prima ogni voce era un
+   rettangolo grigio con un bordo ambra a sinistra e un cerchietto del
+   colore dell'abitudine: cinque righe facevano cinque colori diversi più
+   due gialli, e la carta che dovrebbe dire «fai queste cose» diceva solo
+   «guarda quanti colori».
 
-.og-lista { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+   Ora la riga è nera come la carta. L'unica cosa colorata è la parola «in
+   ritardo» a destra, che è l'unica informazione di stato che c'è.
+*/
+
+.og-lista { list-style: none; display: flex; flex-direction: column; }
 .og-voce {
   display: flex;
   align-items: center;
-  gap: var(--s3);
+  gap: var(--s-12);
   width: 100%;
-  min-height: 48px;
-  padding: 0 var(--s3);
+  min-height: 50px;
+  padding: var(--s-8) 0;
   border: 0;
-  border-radius: var(--r-interno);
-  background: var(--scheda-alta);
+  background: none;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background var(--veloce) var(--curva), transform var(--veloce) var(--molla);
+  transition: opacity var(--durata-rapida) var(--curva-standard);
 }
-.og-voce:active { transform: scale(0.985); background: var(--scheda-viva); }
-.og-voce.tardi { box-shadow: inset 2px 0 0 var(--avviso); }
+.og-lista li:not(:last-child) .og-voce { border-bottom: 1px solid var(--riga-fine); }
+.og-voce:active { opacity: 0.5; }
 
+/* Il cerchio è un CONTROLLO, quindi è neutro. Prendeva la tinta
+   dell'abitudine, e il risultato era una colonna di cerchi verdi, gialli e
+   ciano che sembravano dire qualcosa sullo stato — mentre erano tutti
+   vuoti allo stesso modo. Di che abitudine si tratta lo dice già la riga
+   sotto il nome. */
 .og-voce-cerchio {
-  width: 24px; height: 24px;
+  width: 23px; height: 23px;
   flex: none;
   display: grid; place-items: center;
   border-radius: 50%;
   color: transparent;
-  box-shadow: inset 0 0 0 2px var(--tinta, var(--accento));
-  transition: background var(--veloce) var(--curva);
+  box-shadow: inset 0 0 0 1.5px var(--inchiostro-4);
+  transition: background var(--durata-rapida) var(--curva-standard),
+              box-shadow var(--durata-rapida) var(--curva-standard),
+              color var(--durata-rapida) var(--curva-standard);
 }
-.og-voce:active .og-voce-cerchio { background: color-mix(in srgb, var(--tinta) 35%, transparent); }
+/* Premendo si riempie di verde: è l'unico momento in cui questa riga ha a
+   che fare col «fatto», ed è l'unico verde della carta. */
+.og-voce:active .og-voce-cerchio {
+  background: var(--ok);
+  box-shadow: inset 0 0 0 1.5px var(--ok);
+  color: var(--fondo);
+}
 .og-voce-cerchio svg { display: block; }
 
-.og-voce-testo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.og-voce-testo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .og-voce-nome {
   font-size: var(--t-15);
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: -0.01em;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.og-voce-dentro { font-size: var(--t-11); color: var(--testo-3); }
-.og-voce-quando { flex: none; font-size: var(--t-11); color: var(--testo-3); }
+.og-voce-dentro { font-size: var(--t-12); font-weight: 450; letter-spacing: 0; text-transform: none; color: var(--inchiostro-4); }
+.og-voce-quando { flex: none; font-size: var(--t-12); font-weight: 450; letter-spacing: 0; text-transform: none; color: var(--inchiostro-3); }
 .og-voce.tardi .og-voce-quando { color: var(--avviso); font-weight: 600; }
-.og-voce-freccia { flex: none; display: flex; color: var(--testo-3); }
+.og-voce-freccia { flex: none; display: flex; color: var(--inchiostro-4); }
 
-.og-tuttofatto { margin: 0; font-size: var(--t-15); color: var(--testo-2); line-height: 1.45; }
+.og-tuttofatto { margin: 0; font-size: var(--t-15); color: var(--inchiostro-2); line-height: 1.45; }
 
 /* ------------------------------------------------------------- finanze -- */
 
-.og-soldi-eroe { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--s3); }
+.og-soldi-eroe { display: flex; flex-direction: column; gap: var(--s-4); margin-bottom: var(--s-16); }
 .og-soldi-cifra {
   font-family: var(--font-d);
-  font-size: clamp(30px, 8vw, 42px);
+  font-size: clamp(34px, 9vw, 44px);
   font-weight: 700;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.038em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  color: var(--inchiostro);
 }
-.og-soldi-eti { font-size: var(--t-11); color: var(--testo-3); }
+/* L'etichetta dei due numeri secondari: maiuscoletta, due parole al
+   massimo. */
+.og-soldi-eti {
+  font-size: var(--t-12);
+  font-weight: var(--t-12-peso);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--inchiostro-3);
+}
+/* Quella sotto la cifra grande NO: la manda Finanze ed è una frase intera
+   («da far bastare fino al 20 set»). In maiuscolo diventava una riga di
+   grida larga quanto la carta, e a corpo 12 con la crenatura larga si
+   leggeva peggio della cifra che dovrebbe spiegare. */
+.og-soldi-eroe .og-soldi-eti {
+  font-size: var(--t-13);
+  font-weight: 450;
+  letter-spacing: 0;
+  text-transform: none;
+}
 
-/* I tre numeri secondari: stessa dimensione fra loro, e tutti più piccoli
+/* I numeri secondari: stessa dimensione fra loro, e tutti più piccoli
    dell'eroe. Se pesassero uguale sarebbero quattro numeri e nessun titolo. */
 .og-soldi-riga {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--s3);
-  padding-top: var(--s3);
-  border-top: 1px solid var(--filo);
+  gap: var(--s-12);
+  padding-top: var(--s-16);
+  border-top: 1px solid var(--riga-fine);
 }
-.og-soldi-voce { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.og-soldi-voce { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
 .og-soldi-num {
-  font-size: var(--t-17);
-  font-weight: 600;
+  font-family: var(--font-d);
+  font-size: var(--t-19);
+  font-weight: 650;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+  color: var(--inchiostro);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .og-soldi-voce .og-soldi-nota {
-  font-size: var(--t-10);
-  color: var(--testo-3);
+  font-size: var(--t-12); font-weight: 450; letter-spacing: 0; text-transform: none;
+  color: var(--inchiostro-4);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-/* ------------------------------------------ il calendario delle uscite -- */
-/*
-   Data a sinistra, filo, nome, importo. La forma di una voce di calendario,
-   perché quando esce una spesa è un fatto di calendario e un calendario si
-   legge dalla colonna delle date.
-
-   Il filo è spento quasi sempre. Si accende in ambra a due giorni dalla
-   scadenza e in rosso quando il pocket da cui deve uscire non la copre: sono
-   le due sole ragioni per cui una riga qui dentro riguarda OGGI.
-*/
-
-
-/* L'avviso: sotto i numeri, dentro la carta che li mostra. */
+/* L'avviso: sotto i numeri, dentro la carta che li mostra. Il punto rosso è
+   l'unico segno di stato — niente fondo tinto, che su nero fa una macchia
+   grande quanto la carta per una riga di testo. */
 .og-soldi-avviso {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  margin: var(--s3) 0 0;
-  padding: var(--s3);
-  border-radius: var(--r-interno);
-  background: var(--scheda-alta);
+  gap: var(--s-8);
+  margin: var(--s-16) 0 0;
+  padding: var(--s-12);
+  border-radius: var(--r-basso);
+  background: var(--incavo);
   font-size: var(--t-13);
-  line-height: 1.4;
-  color: var(--testo-2);
+  line-height: 1.45;
+  color: var(--inchiostro-2);
 }
 .og-soldi-punto {
   width: 7px; height: 7px; flex: none; margin-top: 6px;
@@ -292,26 +346,30 @@
   background: var(--male);
 }
 
-
+/* Il rimando in fondo a una carta. Piano, perché è una nota che si può
+   toccare e non l'azione principale della schermata. */
 .og-apri {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--s-6);
   align-self: flex-start;
-  margin-top: var(--s3);
-  min-height: 40px;
-  padding: 0 var(--s4);
-  border-radius: var(--r-pillola);
-  background: var(--scheda-alta);
-  color: var(--testo);
+  margin-top: var(--s-16);
+  min-height: 38px;
+  padding: 0 var(--s-16);
+  border: 1px solid var(--riga-fine);
+  border-radius: var(--r-tondo);
+  color: var(--inchiostro-2);
   font-size: var(--t-13);
   font-weight: 600;
+  transition: color var(--durata-rapida) var(--curva-standard),
+              border-color var(--durata-rapida) var(--curva-standard);
 }
+.og-apri:active { color: var(--inchiostro); border-color: var(--riga-marcata); }
 .og-apri svg { width: 14px; height: 14px; }
-/* Il rimando alle altre cose di oggi non è un'azione: è una nota che si può
-   toccare. Con lo stesso peso del pulsante «Apri Finanze» sembrerebbe che le
-   due cose contino uguale, e non contano uguale. */
-.og-apri-piano { background: none; padding: 0 2px; color: var(--testo-3); font-weight: 500; }
+/* Il rimando alle altre cose di oggi non è nemmeno quello: nessun contorno,
+   nessun fondo. Con lo stesso peso di «Apri Finanze» sembrerebbe che le due
+   cose contino uguale, e non contano uguale. */
+.og-apri-piano { background: none; border: 0; padding: 0 2px; color: var(--inchiostro-3); font-weight: 500; }
 
 /* ------------------------------------------------------------ costanza -- */
 
@@ -321,62 +379,69 @@
 .og-serie-riga {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  margin-bottom: var(--s4);
+  gap: var(--s-8);
+  margin-bottom: var(--s-20);
 }
+/* La cifra prende la tinta della carta. È il colore più grande della home,
+   ed è giusto che ci sia: la costanza è l'unica cosa in questa schermata
+   che vale la pena di guardare con orgoglio. */
 .og-serie-cifra {
   font-family: var(--font-d);
   font-size: clamp(40px, 10vw, 48px);
   font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 0.95;
-  color: var(--arancio);
+  color: var(--tinta, var(--inchiostro));
   font-variant-numeric: tabular-nums;
 }
-.og-serie-eti {
-  font-size: var(--t-13);
-  color: var(--testo-3);
-  white-space: nowrap;
-}
+.og-serie-eti { font-size: var(--t-13); color: var(--inchiostro-3); white-space: nowrap; }
+/* Una serie fatta di sole giornate parziali non merita il colore pieno: è
+   vera, ma non è una vittoria, e il numero non deve dire il contrario di
+   quello che dicono la striscia e la frase sotto. */
+.og-serie-cifra.magra { color: var(--inchiostro-3); }
+
 /* Il rapporto della settimana, con la sua etichetta sotto. */
 .og-serie-sett { margin-left: auto; text-align: right; }
 .og-serie-sett b {
   display: block;
   font-family: var(--font-d);
   font-size: var(--t-19);
-  font-weight: 700;
+  font-weight: 650;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
-  color: var(--arancio);
+  color: var(--inchiostro);
 }
 .og-serie-sett span {
-  display: block; margin-top: 1px;
-  font-size: var(--t-10);
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  display: block; margin-top: 2px;
+  font-size: var(--t-12);
+  font-weight: var(--t-12-peso);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--testo-3);
+  color: var(--inchiostro-3);
 }
 
-.og-sett { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-.og-sett-g { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.og-sett { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s-6); }
+.og-sett-g { display: flex; flex-direction: column; align-items: center; gap: var(--s-6); }
 .og-sett-punto {
   position: relative;
-  width: 100%; height: 24px;
+  width: 100%; height: 26px;
   border-radius: 7px;
-  background: var(--scheda-viva);
+  background: var(--incavo);
   overflow: hidden;
 }
 /* Il riempimento cresce dal basso ed è PROPORZIONALE: 1 abitudine su 6 si
    vede che è un sesto. Prima la casella era accesa o spenta, e un giorno da
    1 su 6 era indistinguibile da un 6 su 6 — anzi, si accendeva anche per un
-   fatto di un altro modulo. */
+   fatto di un altro modulo.
+
+   Il colore è `--ok` e non una tinta: qui «pieno» vuol dire davvero FATTO,
+   ed è uno dei pochi posti dell'app dove il verde è al suo posto. */
 .og-sett-punto > i {
   position: absolute; left: 0; right: 0; bottom: 0;
   display: block;
   border-radius: 7px;
-  background: var(--menta);
-  transition: height var(--lento) var(--curva);
+  background: var(--ok);
+  transition: height var(--durata-lenta) var(--curva-decisa);
 }
 /* Un giorno senza niente in programma non è un fallimento: non hai mancato
    nulla. Resta lì, spento e più tenue, e non spezza la serie. Uguale per un
@@ -386,16 +451,12 @@
    in base.css vogliono già dire altro, e la casella «vuoto» si prendeva il
    padding dello stato vuoto di una lista sfondando la striscia. */
 .og-sett-g[data-stato="riposo"] .og-sett-punto,
-.og-sett-g[data-stato="ignoto"] .og-sett-punto { opacity: 0.4; }
-.og-sett-g.oggi .og-sett-punto { box-shadow: 0 0 0 1.5px var(--testo-3); }
+.og-sett-g[data-stato="ignoto"] .og-sett-punto { opacity: 0.45; }
+.og-sett-g.oggi .og-sett-punto { box-shadow: inset 0 0 0 1.5px var(--inchiostro-3); }
 
-/* Una serie fatta di sole giornate parziali non merita l'arancio pieno: è
-   vera, ma non è una vittoria, e il numero non deve dire il contrario di
-   quello che dicono la striscia e la frase sotto. */
-.og-serie-cifra.magra { color: var(--testo-3); }
-.og-sett-lettera { font-size: var(--t-10); font-weight: 700; letter-spacing: 0.05em; color: var(--testo-3); }
-.og-sett-g.oggi .og-sett-lettera { color: var(--testo); }
-.og-nota { margin: var(--s3) 0 0; font-size: var(--t-13); color: var(--testo-2); line-height: 1.4; }
+.og-sett-lettera { font-size: var(--t-12); font-weight: 650; letter-spacing: 0.05em; color: var(--inchiostro-4); }
+.og-sett-g.oggi .og-sett-lettera { color: var(--inchiostro); }
+.og-nota { margin: var(--s-16) 0 0; font-size: var(--t-13); color: var(--inchiostro-2); line-height: 1.45; }
 
 /* -------------------------------------------------------------- moduli -- */
 
@@ -403,42 +464,61 @@
 .og-modriga {
   display: flex;
   align-items: center;
-  gap: var(--s3);
+  gap: var(--s-12);
   min-height: 46px;
   color: inherit;
-  box-shadow: inset 0 -1px 0 var(--filo);
+  border-bottom: 1px solid var(--riga-fine);
 }
-.og-modlista li:last-child .og-modriga { box-shadow: none; }
+.og-modlista li:last-child .og-modriga { border-bottom: 0; }
 .og-modicona { display: flex; color: var(--tinta); flex: none; }
-.og-modnome { flex: 1; min-width: 0; font-size: var(--t-15); }
+.og-modnome { flex: 1 1 auto; min-width: 3.5em; font-size: var(--t-15); color: var(--inchiostro-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* IL VALORE SI TRONCA, e non è pignoleria: `oggi()` di Pasti restituisce
+   il nome del prossimo pasto per esteso — «Piadina con mozzarella fusa e
+   maiale sfilacciato» — che con `flex: none` usciva dalla carta, copriva
+   la colonna del nome e lasciava una riga senza sapere di che modulo
+   fosse. Qui il nome ha la precedenza: un valore tagliato si capisce lo
+   stesso, una riga senza nome no.
+
+   `max-width` in percentuale e non in em: le righe con un numero corto
+   («0 / 6») non devono restringersi per colpa di quella lunga. */
 .og-modstato {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 62%;
+  text-align: right;
   font-size: var(--t-13);
   font-weight: 600;
-  color: var(--testo-2);
+  color: var(--inchiostro);
   font-variant-numeric: tabular-nums;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .og-modstato.ok { color: var(--ok); }
 .og-modstato.avviso { color: var(--avviso); }
-.og-modfreccia { flex: none; display: none; color: var(--testo-3); }
+.og-modfreccia { flex: none; display: none; color: var(--inchiostro-4); }
+
+/* Il calendario delle uscite, pieno o vuoto, sta staccato dai due numeri che
+   ha sopra. Senza, la riga «Niente in uscita entro domenica» si incolla a
+   «0 €» e si legge come la sua didascalia invece che come una voce a sé. */
+.og-soldi .og-cal { margin-top: var(--s-8); }
+.og-cal-vuoto {
+  margin: var(--s-16) 0 0;
+  font-size: var(--t-13);
+  color: var(--inchiostro-3);
+}
 
 /* --------------------------------------------------------- da scrivania -- */
 
 @media (min-width: 1000px) {
-  /* DUE colonne, non tre, e una striscia sotto.
+  /* DUE colonne, non tre, e le quattro carte impilate a due a due.
      Con tre colonne le carte erano alte uguali — simmetriche — ma la
      simmetria la pagava il contenuto: Finanze riempiva i suoi 400px e le
      altre due ne riempivano 150, quindi due terzi della riga erano vuoto
      stirato. Vuoto che è peggio dell'asimmetria, perché sembra che manchi
-     qualcosa.
-
-     Impilando «Adesso» e «Costanza» in una colonna sola le due altezze
-     naturali vanno quasi a pari (circa 390 contro 430): le colonne si
-     equilibrano da sé, e non c'è niente da stirare. */
+     qualcosa. */
   .og-griglia {
     display: grid;
     grid-template-columns: minmax(320px, 1fr) minmax(320px, 1.05fr);
-    gap: var(--s4);
+    gap: var(--s-16);
     align-items: stretch;
   }
   /* Il gap della colonna è zero perché la distanza fra le due carte la
@@ -452,145 +532,115 @@
      Le due colonne hanno contenuto indipendente e variabile: a sinistra
      quante uscite hai in arrivo, a destra quante cose ti restano oggi.
      Misurato sulle giornate vere, lo scalino fra le due va da 26 a 319px E
-     CAMBIA SEGNO: certi giorni è più alta la sinistra, altri la destra.
-     L'avanzo quindi esiste sempre, e l'unica scelta è dove metterlo.
+     CAMBIA SEGNO. L'avanzo quindi esiste sempre, e l'unica scelta è dove
+     metterlo.
 
      Si è provato a metterlo dentro le carte, in tre posti diversi, e ogni
-     volta il difetto si è solo spostato:
-       · `space-between` sul corpo di Finanze → tre voragini fra cifra,
-         numeri e pulsante, e la carta sembrava rotta;
-       · l'avanzo tutto in fondo → un buco sotto il pulsante;
-       · l'avanzo dentro la lista del calendario → quattro voci in una
-         lista alta 333px, che è la stessa cosa un po' più nascosta.
-     Poi si è provato a non metterlo da nessuna parte — carte alte quanto il
-     loro contenuto — e l'avanzo è ricomparso sotto la colonna più corta,
-     con la striscia dei moduli sotto a fargli da riga: un buco a L.
+     volta il difetto si è solo spostato: `space-between` sul corpo di
+     Finanze faceva tre voragini; tutto in fondo faceva un buco sotto il
+     pulsante; dentro la lista del calendario faceva quattro voci alte 333px.
+     Poi si è provato a non metterlo da nessuna parte, e l'avanzo è
+     ricomparso sotto la colonna più corta con la striscia dei moduli a
+     fargli da riga: un buco a L.
 
-     Il difetto non stava nella valvola, stava nella forma. La colonna di
-     sinistra aveva UNA carta sola: un avanzo dentro una colonna di una
-     carta può solo stare dentro quella carta o sotto di lei. Perciò «I
-     moduli» scende da sotto la griglia dentro la colonna di sinistra: due
-     colonne di due carte, e in mezzo a ognuna una molla.
+     Il difetto non stava nella valvola, stava nella forma: la colonna di
+     sinistra aveva UNA carta sola, e lì l'avanzo può solo stare dentro
+     quella carta o sotto di lei. Perciò «I moduli» è sceso dentro la
+     colonna di sinistra: due colonne di due carte, e in mezzo a ognuna una
+     molla.
 
-     Adesso l'avanzo ha un posto suo, FUORI dalle carte e dentro la colonna.
-     Con un tetto BASSO, però, ed è la lezione di tre giri di correzioni.
-
-     Il tetto è stato 76, poi 120 per far quadrare le colonne dopo che la
-     carta di Finanze si è accorciata alla settimana. A 120 le colonne
-     finiscono quasi pari — ma fra «Resta da fare» e «Costanza» si apre una
-     fascia vuota più alta della carta piccola, e a quel punto non sembra
-     spazio: sembra una carta che manca. Il pareggio l'aveva pagato la
-     leggibilità.
-
-     A 28 la molla fa quello per cui serve — assorbe gli scarti piccoli, che
-     sono la maggior parte — e lascia che i grossi diventino uno scalino in
-     fondo alla colonna più corta. Sotto non c'è più niente a fargli da
-     riga, quindi si legge per quello che è: due colonne di lunghezza
-     diversa. Fra un vuoto in mezzo a una colonna e uno scalino in fondo
-     alla pagina si sceglie sempre il secondo. */
+     Il tetto è BASSO, ed è la lezione di tre giri di correzioni. A 120 le
+     colonne finiscono quasi pari, ma fra «Resta da fare» e «Costanza» si
+     apre una fascia vuota più alta della carta piccola, e a quel punto non
+     sembra spazio: sembra una carta che manca. A 28 la molla assorbe gli
+     scarti piccoli — che sono la maggior parte — e lascia che i grossi
+     diventino uno scalino in fondo alla colonna più corta, dove si leggono
+     per quello che sono. */
   .og-molla {
     display: block;
     flex: 1 1 0;
-    min-height: var(--s4);
+    min-height: var(--s-16);
     max-height: 28px;
   }
-  .og-costanza .og-serie-riga { margin-bottom: var(--s3); }
-  .og-costanza .og-nota { margin-top: var(--s3); }
+  .og-costanza .og-serie-riga { margin-bottom: var(--s-16); }
+  .og-costanza .og-nota { margin-top: var(--s-16); }
 
-  .og-carta { padding: var(--s5); }
-  .og-carta-testa { margin-bottom: var(--s4); }
-  .og-carta-nome { font-size: var(--t-19); }
-  .og-carta-valore { font-size: var(--t-19); }
+  .og-carta { padding: var(--s-20); }
+  .og-carta-testa { margin-bottom: var(--s-20); }
+  .og-carta-nome { font-size: var(--t-17); }
+  .og-carta-valore { font-size: var(--t-17); }
 
-  /* Data e stato a destra, SULLA RIGA DEL SALUTO.
-     Erano in posizione assoluta a 16px dal bordo alto, e il saluto comincia
-     più in basso: le due cose finivano su due altezze diverse per un caso
-     aritmetico, non per una scelta. Con la griglia stanno nella stessa riga
-     e ci si centrano dentro — il saluto resta al centro della pagina perché
-     le due colonne laterali sono uguali (`1fr auto 1fr`). */
+  /* L'intestazione resta allineata a sinistra anche qui: è l'impaginazione
+     di tutto il resto della pagina, e centrarla avrebbe rimesso il titolo
+     in un asse suo. La data e lo stato vanno a destra, sulla riga del
+     saluto.
+
+     Le righe sono dichiarate a mano. Senza, `.og-meta` viene prima nel DOM,
+     occupa la colonna 2 della riga 1, e il saluto — che chiede la colonna 1
+     — non può più tornare indietro: la collocazione automatica non arretra,
+     e finisce sulla riga sotto. */
   .og-testa {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: 1fr auto auto;
     align-items: center;
-    padding: var(--s5) 0 var(--s6);
+    column-gap: var(--s-16);
+    padding: var(--s-16) 0 var(--s-28);
   }
-  /* Le righe sono dichiarate a mano. Senza, `.og-meta` viene prima nel DOM,
-     occupa la colonna 3 della riga 1, e il saluto — che chiede la colonna 2
-     — non può più tornare indietro: la collocazione automatica non
-     arretra, e finisce sulla riga sotto. È il motivo per cui la data
-     restava più in alto del saluto anche dentro la griglia. */
-  .og-saluto { grid-column: 2; grid-row: 1; }
+  .og-saluto { grid-column: 1; grid-row: 1; }
   .og-meta {
     position: static;
-    grid-column: 3;
+    grid-column: 2;
     grid-row: 1;
     justify-self: end;
     flex-direction: column;
     align-items: flex-end;
-    gap: 2px;
+    gap: var(--s-4);
     margin: 0;
+    padding-right: 0;
     text-align: right;
   }
-  /* L'ingranaggio ENTRA NELLA GRIGLIA, nella colonna 1 che era vuota: è la
-     casella diametralmente opposta a quella della data, sulla stessa riga.
-     Così l'allineamento non è calcolato a mano con un `top` che va rifatto
-     ogni volta che cambia un padding — lo fa `align-items: center`, come
-     per `.og-meta`. Fuori dalla griglia i due si allineavano solo per caso
-     aritmetico, ed era lo stesso difetto che questo blocco aveva già
-     corretto per la data contro il saluto. */
+  /* L'ingranaggio ENTRA NELLA GRIGLIA, nella terza colonna: così
+     l'allineamento non è calcolato a mano con un `top` che va rifatto ogni
+     volta che cambia un padding — lo fa `align-items: center`. */
   .og-ingranaggio {
     position: static;
-    grid-column: 1;
+    grid-column: 3;
     grid-row: 1;
-    justify-self: start;
-    margin-left: -11px;
+    justify-self: end;
+    margin-right: -10px;
   }
+  .og-verdetto { grid-column: 1 / -1; grid-row: 2; margin-top: var(--s-12); }
 
-  .og-verdetto { grid-column: 1 / -1; grid-row: 2; }
-
-  .og-lista { gap: var(--s2); }
   .og-voce { min-height: 54px; }
-  .og-soldi-eroe { margin-bottom: var(--s4); }
-  .og-soldi-riga { padding-top: var(--s4); }
-  .og-nota { margin-top: var(--s4); }
-  .og-sett-punto { height: 30px; }
+  .og-soldi-eroe { margin-bottom: var(--s-20); }
+  .og-soldi-riga { padding-top: var(--s-20); }
+  .og-nota { margin-top: var(--s-20); }
+  .og-sett-punto { height: 32px; }
 
   /* Tre tessere, nome sopra e valore sotto.
-     Finché la striscia stava sotto la griglia era larga quanto la pagina e
-     le tre celle in fila ci stavano comode. Dentro mezza colonna no: a
-     1000px di finestra le celle scendono a 110px e il NOME viene compresso
-     a zero — resta il valore senza sapere di che cosa. Impilate in tre
-     righe si leggono, ma la carta arriva a 239px e da sola sbilancia la
-     colonna di 170. Mandando il valore a capo si torna a 166px e i nomi
-     restano interi: è l'unica delle tre forme che sta in mezza colonna
-     senza né rompersi né pesare. */
+     Dentro mezza colonna le celle in fila scendono a 110px e il NOME viene
+     compresso a zero — resta il valore senza sapere di che cosa. Impilate
+     in tre righe si leggono, ma la carta arriva a 239px e da sola sbilancia
+     la colonna. Mandando il valore a capo si torna a 166px e i nomi restano
+     interi: è l'unica delle tre forme che sta in mezza colonna senza né
+     rompersi né pesare. */
   .og-modlista {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--s2);
+    gap: var(--s-8);
   }
   .og-modriga {
     flex-wrap: wrap;
     align-content: center;
-    gap: 7px;
+    gap: var(--s-6);
     min-height: 0;
-    padding: var(--s3);
-    border-radius: var(--r-interno);
-    background: var(--scheda-alta);
-    box-shadow: none;
+    padding: var(--s-12);
+    border-bottom: 0;
+    border-radius: var(--r-basso);
+    background: var(--incavo);
   }
   /* Il valore su una riga tutta sua: è il numero della tessera, e in fila
      col nome sarebbe il secondo di due testi corti che si contendono
      novanta pixel. */
   .og-modstato { flex: 1 0 100%; font-size: var(--t-17); }
-}
-
-/* Il calendario delle uscite, pieno o vuoto, sta staccato dai due numeri che
-   ha sopra. Senza, la riga «Niente in uscita entro domenica» si incolla a
-   «0 €» e si legge come la sua didascalia invece che come una voce a sé. */
-.og-soldi .og-cal { margin-top: var(--s3); }
-.og-cal-vuoto {
-  margin: var(--s3) 0 0;
-  font-size: var(--t-13);
-  color: var(--testo-3);
 }

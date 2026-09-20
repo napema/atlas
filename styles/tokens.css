@@ -1,22 +1,50 @@
 /* =========================================================================
-   ATLAS — token di design.
+   ATLAS — token di design. «NEROFUMO».
 
-   Linguaggio: nero pieno, schede a raggio largo, cifre enormi, e UNA tinta
-   vivida per oggetto. Il colore qui non è decorazione: la barra colorata
-   sotto una scheda È il dato, ed è quello che ti fa riconoscere una voce
-   senza leggerla.
+   Riscritto da zero il 20 settembre 2026. Non è una ritaratura della
+   stesura precedente: cambiano i valori, cambia il criterio, cambia cosa
+   un colore ha il permesso di dire.
 
-   TRE REGOLE:
-     1. nessun colore letterale nei moduli. Solo token.
-     2. la tinta identifica una COSA (una categoria, un'abitudine). Lo STATO
-        si dice con la forma e con la parola. Un colore che vuol dire due
-        cose non ne vuol dire nessuna.
-     3. il fondo è quasi nero (#08080b, non #000). Le schede si staccano per
-        luminosità, non per bordo. Il nero assoluto su OLED fa sparire il
-        bordo dello schermo e la pagina sembra galleggiare nel vuoto: due
-        punti di luminanza bastano a darle un pavimento.
+   IL CRITERIO, in una riga:
+   il nero porta, il grigio spiega, il colore indica — e il colore è poco.
+
+   Tre conseguenze, che valgono per ogni riga di questo file:
+
+   1. IL FONDO È NERO VERO (#000). Non un marrone scurissimo. Su OLED il
+      nero non si accende: le schede sembrano sospese invece che disegnate,
+      e la batteria ringrazia. Le superfici salgono da lì, di pochissimo —
+      «nero sul nero». La separazione la fa il filo, non il salto di tono.
+
+   2. IL COLORE NON RIEMPIE MAI, INDICA. Niente schede colorate, niente
+      bordi laterali colorati, niente fondi tinti. Il colore compare in
+      pezzi piccoli e saturi: un punto da 8px, un filo da 2px, una cifra,
+      un'icona. È il contrario della stesura precedente, dove ogni riga
+      aveva il suo bordo giallo e la home sembrava un semaforo.
+
+   3. IL TESTO NON SI STRINGE. L'asse della larghezza è stato tolto: i
+      titoli restano a larghezza normale. Comprimere un titolo lo fa
+      sembrare schiacciato a corpo grande, ed era il difetto più visibile
+      della schermata Oggi.
+
+   ------------------------------------------------------------------------
+   I NOMI NON CAMBIANO. Cambiano i valori.
+
+   Sette moduli portano migliaia di righe di stile che chiamano questi
+   token per nome. Rinominarli vorrebbe dire riscrivere tutto insieme e
+   tenere l'app rotta per giorni. Quindi: stessi nomi, valori nuovi. In
+   fondo c'è il blocco degli alias, che è dove i nomi della prima stesura
+   vengono fatti puntare al colore GIUSTO — non a quello che gli somiglia
+   di nome.
    ========================================================================= */
 
+/* ------------------------------------------------------------- il corpo --
+   SF Pro, self-hosted, i sei tagli che c'erano già. L'asse variabile non
+   serve più: senza compressione dei titoli, i pesi fissi bastano.
+
+   Archivo è stato tolto dalla pila. Il file variabile non è mai entrato nel
+   repo, quindi la famiglia era dichiarata e mai servita: a ogni avvio il
+   browser provava un @font-face inesistente e ricadeva su SF Pro. Meglio
+   chiedere direttamente quello che si usa davvero. */
 @font-face { font-family: "SF Pro Text"; font-weight: 400; font-style: normal; font-display: swap;
   src: url("../assets/fonts/sf-pro-text-regular.woff2") format("woff2"); }
 @font-face { font-family: "SF Pro Text"; font-weight: 500; font-style: normal; font-display: swap;
@@ -30,243 +58,429 @@
 @font-face { font-family: "SF Pro Display"; font-weight: 700; font-style: normal; font-display: swap;
   src: url("../assets/fonts/sf-pro-display-bold.woff2") format("woff2"); }
 
-:root {
+
+/* =========================================================================
+   SCURO — il tema per cui questa app è disegnata.
+   ========================================================================= */
+
+:root,
+:root[data-tema="scuro"] {
   color-scheme: dark;
 
-  /* ------------------------------------------------------------ superfici --
-     Quattro livelli, non di più. Il fondo è nero vero: è quello che fa
-     sembrare le schede sospese invece che disegnate. */
-  --fondo:        #08080b;
-  --fondo-alto:   #0b0b0d;   /* barre e cromatura */
-  --scheda:       #141416;   /* la superficie normale */
-  --scheda-alta:  #1e1e22;   /* dentro una scheda: campi, incassi */
-  --scheda-viva:  #292930;   /* premuto, selezionato */
-  --traccia:      #2b2b31;   /* il fondo di una barra di avanzamento */
-  --filo:         rgba(255, 255, 255, 0.07);
-  /* L'elevazione. Sul nero non serve — una superficie più chiara del fondo
-     è già staccata — e resta un'ombra nulla, così le regole che la usano
-     possono comporla senza doversi riscrivere per tema. Sul chiaro invece è
-     l'unica cosa che distingue una carta bianca da un fondo quasi bianco. */
-  --ombra: 0 0 0 0 rgba(0, 0, 0, 0);
+  /* ---------------------------------------------------------- superfici --
+     Cinque piani in dodici punti di luminanza. Sembra poco ed è voluto:
+     su nero bastano due punti per leggere un bordo, e tenendo i salti
+     minimi la gerarchia la fanno lo spazio e il filo — che non stancano —
+     invece del contrasto, che a forza di gradini diventa grigio.
 
-  /* ------------------------------------------------------------ etichette --
-     I quattro livelli restano sopra 4,5:1 sul fondo più chiaro su cui possono
-     capitare (--scheda-viva): il terziario a #74747c faceva 3,97:1 e le
-     etichette minuscole sparivano. Il quarto è decorativo — righelli,
-     segnaposto — e sta sopra 3:1, non ci va testo da leggere. */
-  --testo:    #ffffff;
-  --testo-2:  #b8b8c2;
-  --testo-3:  #90909a;
-  --testo-4:  #5e5e68;
+     `--incavo` è l'unica superficie che SALE invece di scendere: su un
+     fondo nero non esiste un «più scuro», quindi un binario scavato si
+     disegna schiarendo. È il contrario di quello che dice il nome, ed è
+     il motivo per cui il nome resta — cambiarlo vorrebbe dire toccare
+     ogni traccia di ogni modulo. */
+  --fondo:        #000000;
+  --rilievo:      #0c0c0e;   /* la scheda */
+  --rilievo-2:    #151518;   /* scheda dentro scheda, riga premuta */
+  --rilievo-3:    #1f1f24;   /* riempimento dei controlli */
+  --incavo:       #131316;   /* binari, pozzetti, fondo delle tracce */
 
-  /* --------------------------------------------------------- tinte vivide --
-     Le tinte con cui si riconosce una voce: la barra di una categoria, il
-     colore di un'abitudine, la fetta di un grafico. Scelte per distinguersi
-     fra loro anche di sfuggita, e tutte sopra 4,5:1 sul nero — quindi si
-     possono usare anche come testo, non solo come riempimento. */
-  --rosa:     #ff5fa2;
-  --blu:      #3fa9ff;
-  --giallo:   #ffd426;
-  --arancio:  #ff8a4c;
-  --viola:    #c77dff;
-  --verde:    #32d74b;
-  --menta:    #5fe3c0;
-  --rosso:    #ff4d5e;
-  --indaco:   #8b8bff;
-  --pesca:    #ffb26b;
-  --ciano:    #4fd8eb;
-  --lime:     #b8f14a;
-  --grigio:   #90909a;
+  /* I fili. Sono la vera struttura di questo tema: separano senza pesare,
+     e non cambiano mai colore — un filo colorato è una decorazione. */
+  --riga-fine:    rgba(255, 255, 255, 0.07);
+  --riga-marcata: rgba(255, 255, 255, 0.13);
 
-  /* Gli stati sono un insieme SEPARATO dalle tinte: se il verde di "tutto
-     bene" fosse anche il verde di una categoria, non si capirebbe più quale
-     dei due sta parlando. */
-  --ok:       #32d74b;
-  --avviso:   #ffd426;
-  --male:     #ff4d5e;
+  /* L'ombra su nero non si vede: serve solo a staccare i fogli modali dal
+     fondo, e lo fa scurendo ciò che sta sotto. */
+  --ombra: 0 12px 40px -8px rgba(0, 0, 0, 0.9), 0 2px 8px rgba(0, 0, 0, 0.6);
 
-  /* L'accento del modulo. Lo imposta il router leggendolo dal registro. */
-  --accento:       var(--blu);
-  --accento-tenue: color-mix(in srgb, var(--accento) 16%, transparent);
-  --accento-velo:  color-mix(in srgb, var(--accento) 30%, transparent);
+  /* --------------------------------------------------------- inchiostro --
+     Quattro livelli. I contrasti misurati sono sulla SCHEDA (#0c0c0e),
+     non sul fondo: è la superficie peggiore delle due, quindi se passano
+     lì passano ovunque.
 
-  /* ---------------------------------------------------------- tipografia --
-     SF Pro nativa dove c'è, self-hosted dove non c'è. La scala è più larga
-     di quella di sistema perché qui le cifre sono protagoniste: 48 e 64 non
-     sono titoli, sono numeri. */
-  --font:   -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
-  --font-d: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
-  --font-m: ui-monospace, "SF Mono", Menlo, "Cascadia Mono", monospace;
-  /* Le emoji le disegna il sistema: su iPhone Apple Color Emoji, su Windows
-     Segoe UI Emoji. Le Apple su Windows non si possono avere — il disegno
-     sta in un font proprietario che non si ridistribuisce — ma dichiarare
-     la pila evita il caso peggiore, cioè il glifo monocromatico preso da un
-     font di testo. */
-  --font-e: "AppleColorEmoji", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+       --inchiostro    #f5f5f7   17,9:1   titoli, cifre
+       --inchiostro-2  #a1a1a8    7,6:1   testo corrente
+       --inchiostro-3  #7e7e85    4,8:1   etichette, note — il minimo
+       --inchiostro-4  #55555c    2,8:1   NON è testo leggibile
 
-  /* TUTTA LA SCALA È AL 110%, e i nomi dei gradini restano quelli di prima.
-     `--t-15` vale 17px, non 15: il nome è l'etichetta del gradino, non la
-     misura, e rinominarli tutti avrebbe voluto dire toccare ogni file per
-     cambiare una cosa che si decide qui.
+     Il quarto sta sotto la soglia di proposito e non porta mai
+     informazione: separatori, segnaposto, icone spente, lo stato
+     disabilitato. Se ti serve per dire qualcosa, hai scelto il livello
+     sbagliato. */
+  --inchiostro:   #f5f5f7;
+  --inchiostro-2: #a1a1a8;
+  --inchiostro-3: #7e7e85;
+  --inchiostro-4: #55555c;
 
-     Il 10% non è un vezzo: alla misura di prima le didascalie e i
-     maiuscoletti passavano il contrasto e non si leggevano lo stesso — che
-     è la prova che il contrasto da solo non basta a dire «si legge». I due
-     gradini in fondo erano già stati alzati una volta per quel motivo;
-     questo giro alza tutto insieme, tipografia e spazi, se no il testo
-     cresce dentro scatole rimaste ferme e l'aria sparisce. */
-  --t-64: 70px; --t-48: 53px; --t-40: 44px; --t-34: 37px; --t-28: 31px;
-  --t-22: 24px; --t-19: 21px; --t-17: 19px; --t-15: 17px; --t-13: 14px;
-  --t-11: 13.5px; --t-10: 12.5px;
+  /* -------------------------------------------------------------- tinte --
+     QUATTORDICI, e rispondono a una domanda sola: QUALE? Quale modulo,
+     quale categoria, quale fetta del grafico.
 
-  /* ---------------------------------------------------------- spaziatura -- */
-  /* Anche questi al 110%, tranne `--s1`: quattro pixel sono un filo di
-     distacco, e 4,4 arrotondati restano 4. */
-  --s1: 4px;  --s2: 9px;  --s3: 13px; --s4: 18px; --s5: 22px;
-  --s6: 26px; --s8: 35px; --s10: 44px; --s12: 53px; --s16: 70px;
+     Ora ogni nome È il suo colore. Nella stesura precedente `--t-viola`
+     era un blu e `--t-blu` era un verde acqua: chi leggeva il CSS di un
+     modulo non poteva fidarsi di quello che c'era scritto. Chi aveva
+     bisogno di quei colori li ritrova dagli alias in fondo.
 
-  /* --------------------------------------------------------------- forma --
-     Raggi larghi. È la differenza più immediata fra "pannello" e "oggetto":
-     una scheda con 20px di raggio si legge come una cosa che potresti
-     prendere in mano. */
-  --r-scheda:  20px;
-  --r-interno: 14px;
-  --r-campo:   14px;
-  --r-btn:     16px;
-  --r-pillola: 999px;
-  --tocco:     44px;
+     Sono sature e chiare perché devono reggere su nero a 8px di diametro.
+     Una tinta smorta, a quella misura, è un puntino grigio. */
+  --t-ambra:    #ff9f0a;
+  --t-terra:    #e2593f;
+  --t-corallo:  #ff6482;
+  --t-rosa:     #ff5fb8;
+  --t-magenta:  #d264e8;
+  --t-lilla:    #a78bfa;
+  --t-viola:    #7c6cf7;
+  --t-indaco:   #5b6ef5;
+  --t-blu:      #409cff;
+  --t-ciano:    #32ade6;
+  --t-turchese: #2dd4bf;
+  --t-verde:    #8fd14f;
+  --t-giallo:   #ffd60a;
+  --t-grigio:   #8e8e93;
 
-  /* ---------------------------------------------------------- movimento -- */
-  --curva:   cubic-bezier(0.32, 0.72, 0, 1);
-  --molla:   cubic-bezier(0.34, 1.4, 0.64, 1);
-  --veloce:  160ms;
-  --normale: 300ms;
-  --lento:   480ms;
+  /* -------------------------------------------------------------- stati --
+     TRE, e rispondono a un'altra domanda: QUANTO VA BENE?
+
+     Verde e rosso appartengono a loro e a nessun altro — è la regola 7 del
+     contratto, e nasce dal fatto che un verde «categoria» accanto a un
+     verde «fatto» rende illeggibili tutti e due.
+
+     Per questo `--t-verde` qui sopra è giallo-verde e non erba: libera il
+     verde pieno per l'unica cosa che ha il diritto di dirlo. E `--ok` non
+     compare mai come punto colorato: gli stati si mostrano con un
+     trattamento diverso (targhetta tinta, cifra, freccia), mai con lo
+     stesso punto da 8px che usano le tinte. È il trattamento a distinguere
+     i due insiemi, non solo la tinta. */
+  --ok:     #30d158;
+  --avviso: #ffb340;
+  --male:   #ff453a;
+
+  /* ------------------------------------------------------------ segnale --
+     UNO SOLO, in tutta l'app: TOCCA QUI. Non è l'accento del modulo, e non
+     lo diventa mai. Prima l'anello di selezione prendeva il colore del
+     modulo, quindi «selezionato» era lime in Finanze e ciano in Mobilità,
+     cioè non era niente. */
+  --segnale:       #0a84ff;
+  --segnale-testo: #ffffff;
 }
 
-/* ------------------------------------------------------------------ chiaro --
-   Il progetto nasce scuro e resta scuro: le tinte vivide sul nero sono la
-   cosa che lo rende riconoscibile. Il chiaro esiste perché di giorno
-   all'aperto serve — non è un'alternativa alla pari, è la stessa
-   impaginazione su carta. Le tinte si scuriscono quel tanto che basta a
-   stare sopra 4,5:1 sul bianco: stesse identità, leggibili anche lì. */
-@media (prefers-color-scheme: light) {
-  :root:not([data-tema="scuro"]) {
-    color-scheme: light;
 
-    --fondo:        #f2f2f5;
-    --fondo-alto:   #fbfbfd;
-    --scheda:       #ffffff;
-    --scheda-alta:  #eceef3;
-    --scheda-viva:  #dfe1e9;
-    --traccia:      #e3e5ec;
-    --filo:         rgba(16, 18, 27, 0.10);
-    --ombra: 0 1px 2px rgba(16, 18, 27, 0.05), 0 8px 20px -6px rgba(16, 18, 27, 0.10);
+/* =========================================================================
+   CHIARO — non un'inversione: una seconda palette, progettata a parte.
 
-    --testo:    #0c0c0d;
-    --testo-2:  #57575f;
-    --testo-3:  #64646f;
-    --testo-4:  #828290;
+   Il fondo è grigio neutro e le schede sono bianche, non il contrario: su
+   bianco pieno una scheda bianca non esiste, e servirebbero ombre ovunque
+   per ritrovarla. Qui la scheda è la superficie ALTA, come su iOS, e il
+   fondo le sta sotto.
 
-    --rosa:     #c31657;
-    --blu:      #0964c2;
-    --giallo:   #806000;
-    --arancio:  #aa4714;
-    --viola:    #8639cc;
-    --verde:    #147535;
-    --menta:    #077362;
-    --rosso:    #c81525;
-    --indaco:   #4646d0;
-    --pesca:    #915517;
-    --ciano:    #016e84;
-    --lime:     #536e0f;
-    --grigio:   #65656d;
-
-    --ok:       #147535;
-    --avviso:   #806000;
-    --male:     #c81525;
-  }
-}
+   Le tinte sono le stesse quattordici ABBASSATE di luminanza: quelle
+   chiare vanno su nero e sparirebbero su bianco. Ogni valore è scelto per
+   stare sopra 4,5:1 sulla scheda (#ffffff), che è il caso peggiore.
+   ========================================================================= */
 
 :root[data-tema="chiaro"] {
   color-scheme: light;
-  --fondo:        #f2f2f5;
-  --fondo-alto:   #fbfbfd;
-  --scheda:       #ffffff;
-  --scheda-alta:  #eceef3;
-  --scheda-viva:  #dfe1e9;
-  --traccia:      #e3e5ec;
-  --filo:         rgba(16, 18, 27, 0.10);
-  --ombra: 0 1px 2px rgba(16, 18, 27, 0.05), 0 8px 20px -6px rgba(16, 18, 27, 0.10);
-  --testo:    #0c0c0d;
-  --testo-2:  #57575f;
-  --testo-3:  #64646f;
-  --testo-4:  #828290;
-  --rosa:     #c31657;
-  --blu:      #0964c2;
-  --giallo:   #806000;
-  --arancio:  #aa4714;
-  --viola:    #8639cc;
-  --verde:    #147535;
-  --menta:    #077362;
-  --rosso:    #c81525;
-  --indaco:   #4646d0;
-  --pesca:    #915517;
-  --ciano:    #016e84;
-  --lime:     #536e0f;
-  --grigio:   #65656d;
-  --ok:       #147535;
-  --avviso:   #806000;
-  --male:     #c81525;
+
+  --fondo:        #f4f4f6;
+  --rilievo:      #ffffff;
+  --rilievo-2:    #fafafb;
+  --rilievo-3:    #ededf1;
+  --incavo:       #e7e7ec;
+
+  --riga-fine:    rgba(0, 0, 0, 0.08);
+  --riga-marcata: rgba(0, 0, 0, 0.16);
+
+  --ombra: 0 12px 32px -8px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.07);
+
+  --inchiostro:   #0b0b0f;
+  --inchiostro-2: #55555f;
+  --inchiostro-3: #75757e;
+  --inchiostro-4: #a8a8b0;
+
+  --t-ambra:    #b26200;
+  --t-terra:    #c23d22;
+  --t-corallo:  #d32d55;
+  --t-rosa:     #c22289;
+  --t-magenta:  #9b2bb0;
+  --t-lilla:    #6d45d9;
+  --t-viola:    #5a3ee0;
+  --t-indaco:   #3b4ad6;
+  --t-blu:      #0a6ecc;
+  --t-ciano:    #00709e;
+  --t-turchese: #00776a;
+  --t-verde:    #4a7d00;
+  --t-giallo:   #8a6200;
+  --t-grigio:   #6b6b73;
+
+  --ok:     #007a2f;
+  --avviso: #9a5800;
+  --male:   #c0271c;
+
+  --segnale:       #0066d6;
+  --segnale-testo: #ffffff;
+}
+
+/* ------------------------------------------------------------ «Sistema» --
+   Il tema di serie è `data-tema="auto"`: segue il telefono e cambia da sé
+   al tramonto. Senza questo blocco «Sistema» resterebbe scuro per sempre,
+   perché l'attributo `chiaro` non viene mai scritto.
+
+   I valori sono gli stessi del blocco qui sopra. Sono ripetuti e non
+   ereditati perché una variabile CSS non si può «importare» in un altro
+   selettore: l'alternativa sarebbe una lista di `var()` che punta a un
+   terzo blocco, cioè tre posti da tenere allineati invece di due. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="scuro"]):not([data-tema="chiaro"]) {
+    color-scheme: light;
+
+    --fondo:        #f4f4f6;
+    --rilievo:      #ffffff;
+    --rilievo-2:    #fafafb;
+    --rilievo-3:    #ededf1;
+    --incavo:       #e7e7ec;
+
+    --riga-fine:    rgba(0, 0, 0, 0.08);
+    --riga-marcata: rgba(0, 0, 0, 0.16);
+
+    --ombra: 0 12px 32px -8px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.07);
+
+    --inchiostro:   #0b0b0f;
+    --inchiostro-2: #55555f;
+    --inchiostro-3: #75757e;
+    --inchiostro-4: #a8a8b0;
+
+    --t-ambra:    #b26200;
+    --t-terra:    #c23d22;
+    --t-corallo:  #d32d55;
+    --t-rosa:     #c22289;
+    --t-magenta:  #9b2bb0;
+    --t-lilla:    #6d45d9;
+    --t-viola:    #5a3ee0;
+    --t-indaco:   #3b4ad6;
+    --t-blu:      #0a6ecc;
+    --t-ciano:    #00709e;
+    --t-turchese: #00776a;
+    --t-verde:    #4a7d00;
+    --t-giallo:   #8a6200;
+    --t-grigio:   #6b6b73;
+
+    --ok:     #007a2f;
+    --avviso: #9a5800;
+    --male:   #c0271c;
+
+    --segnale:       #0066d6;
+    --segnale-testo: #ffffff;
+  }
+}
+
+
+/* =========================================================================
+   TIPOGRAFIA
+
+   Undici corpi veri, da 12 a 64. Nessuno si stringe: `font-stretch` non
+   compare in questo file. A corpo grande la personalità la porta il peso
+   e la crenatura negativa, non la compressione.
+
+   La crenatura è negativa e cresce col corpo. È il comportamento di SF Pro
+   su iOS: a 13px le lettere hanno bisogno di aria, a 50px ne avanza, e
+   lasciarla com'è fa sembrare il titolo sgranato.
+   ========================================================================= */
+
+:root {
+  --t-12: 12px; --t-13: 13px; --t-15: 15px; --t-17: 17px;
+  --t-19: 20px; --t-21: 22px; --t-24: 26px; --t-28: 32px;
+  --t-34: 40px; --t-42: 50px; --t-54: 64px; --t-72: 64px;
+
+  --t-12-peso: 590; --t-12-interlinea: 1.35; --t-12-traccia:  0.2px;
+  --t-13-peso: 500; --t-13-interlinea: 1.4;  --t-13-traccia:  0px;
+  --t-15-peso: 450; --t-15-interlinea: 1.45; --t-15-traccia: -0.1px;
+  --t-17-peso: 450; --t-17-interlinea: 1.45; --t-17-traccia: -0.2px;
+  --t-19-peso: 600; --t-19-interlinea: 1.3;  --t-19-traccia: -0.3px;
+  --t-21-peso: 640; --t-21-interlinea: 1.25; --t-21-traccia: -0.4px;
+  --t-24-peso: 680; --t-24-interlinea: 1.2;  --t-24-traccia: -0.6px;
+  --t-28-peso: 700; --t-28-interlinea: 1.15; --t-28-traccia: -0.8px;
+  --t-34-peso: 700; --t-34-interlinea: 1.08; --t-34-traccia: -1.2px;
+  --t-42-peso: 700; --t-42-interlinea: 1.04; --t-42-traccia: -1.6px;
+  --t-54-peso: 700; --t-54-interlinea: 1.0;  --t-54-traccia: -2.2px;
+  --t-72-peso: 700; --t-72-interlinea: 1.0;  --t-72-traccia: -2.2px;
+
+  /* Le larghezze restano dichiarate a 100% perché qualche modulo le cita.
+     Valgono «non stringere»: il giorno che spariscono dai moduli, spariscono
+     anche da qui. */
+  --t-12-largh: 100%; --t-13-largh: 100%; --t-15-largh: 100%; --t-17-largh: 100%;
+  --t-19-largh: 100%; --t-21-largh: 100%; --t-24-largh: 100%; --t-28-largh: 100%;
+  --t-34-largh: 100%; --t-42-largh: 100%; --t-54-largh: 100%; --t-72-largh: 100%;
+
+  /* ---------------------------------------------------------- spaziatura --
+     Dieci gradini. Più generosi di prima nella fascia alta: su nero il
+     vuoto è gratis — non c'è una superficie che lo riempie — ed è quello
+     che separa una schermata curata da una densa. */
+  --s-4: 4px;   --s-6: 6px;   --s-8: 8px;   --s-12: 12px; --s-16: 16px;
+  --s-20: 20px; --s-28: 28px; --s-38: 40px; --s-52: 56px; --s-70: 76px;
+
+  /* --------------------------------------------------------------- forma --
+     Tre raggi. Più larghi della stesura precedente: 16px su una scheda a
+     tutta larghezza legge quasi squadrato, 20 no. Il raggio alto resta una
+     promessa — QUESTO SI PREME — e ciò che non si preme sta sul fondo,
+     diviso da un filo. */
+  --r-alto:  20px;
+  --r-basso: 12px;
+  --r-tondo: 9999px;
+
+  /* ----------------------------------------------------------- movimento --
+     Corto. Un'app che si apre venti volte al giorno non deve mai far
+     aspettare: l'animazione serve a spiegare da dove arriva una cosa, e
+     appena dura più di così diventa un pedaggio. */
+  --durata-rapida: 110ms;
+  --durata-media:  200ms;
+  --durata-lenta:  320ms;
+  --curva-standard: cubic-bezier(0.32, 0.72, 0, 1);
+  --curva-decisa:   cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --veloce: 0ms; --normale: 0ms; --lento: 0ms; }
+  :root { --durata-rapida: 0ms; --durata-media: 0ms; --durata-lenta: 0ms; }
 }
 
-/* ------------------------------------------------- la pillola colorata --
-   Il fondo di una targhetta tinta — «3 giorni di fila», «GOWOD», «Sera».
 
-   Nel tema scuro è la tinta al 18% su nero: SCURISCE il fondo, quindi il
-   testo colorato sopra guadagna contrasto. Nel chiaro la stessa formula fa
-   il contrario, schiarisce verso il bianco, e ogni targhetta scendeva sotto
-   4,5:1 — il caso peggiore misurato era 3,08.
+/* =========================================================================
+   IL PONTE
 
-   Da qui due valori diversi: nel chiaro la pillola non è tinta, è la
-   superficie grigia di sempre, e il colore lo porta solo il testo. Si perde
-   un filo di allegria e si guadagna che si legge. */
-:root { --pillola-tinta: color-mix(in srgb, currentColor 18%, transparent); }
+   I nomi della prima stesura, che i sette moduli usano ancora. Si tolgono
+   un modulo alla volta; non si aggiungono righe qui. Quando
+
+       grep -rnE -- '--scheda|--testo-[0-9]|--s[0-9]|--r-btn' moduli/
+
+   dà zero, questo blocco esce. Un ponte che resta diventa due sistemi, che
+   è il guasto da cui ATLAS è nata.
+   ========================================================================= */
+
+:root {
+  /* ----------------------------------------------------- famiglie e forma */
+  --font:   -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-d: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-m: ui-monospace, "SF Mono", Menlo, "Cascadia Mono", monospace;
+  /* Le emoji restano: le abitudini le ha scelte l'utente, quindi sono un
+     dato suo, non una scelta di stile. */
+  --font-e: "AppleColorEmoji", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  --tocco: 44px;
+
+  /* Erano il taglio display compresso. Ora valgono «non comprimere»: i
+     titoli non si stringono più da nessuna parte. */
+  --larga:   100%;
+  --larghis: 100%;
+
+  /* ----------------------------------------------- i nomi che usa base.css */
+  --righello:   var(--riga-fine);
+  --righello-2: var(--riga-marcata);
+  --segnale-tenue: color-mix(in srgb, var(--segnale) 16%, transparent);
+  --segnale-velo:  color-mix(in srgb, var(--segnale) 30%, transparent);
+
+  /* L'accento del MODULO, scritto su <html> dal router leggendolo dal
+     registro. Dice DOVE SEI, non cosa si tocca: quello è `--segnale`. */
+  --accento:       var(--t-grigio);
+  --accento-tenue: color-mix(in srgb, var(--accento) 16%, transparent);
+  --accento-velo:  color-mix(in srgb, var(--accento) 32%, transparent);
+
+  /* ------------------------------------------------------------ superfici */
+  --fondo-alto:  var(--incavo);
+  --scheda:      var(--rilievo);
+  --scheda-alta: var(--rilievo-2);
+  --scheda-viva: var(--rilievo-3);
+  --traccia:     var(--incavo);
+  --filo:        var(--riga-fine);
+
+  /* ----------------------------------------------------------- inchiostro */
+  --testo:   var(--inchiostro);
+  --testo-2: var(--inchiostro-2);
+  --testo-3: var(--inchiostro-3);
+  --testo-4: var(--inchiostro-4);
+
+  /* ---------------------------------------------------------------- tinte
+     I nomi vecchi puntano al COLORE che il modulo si aspetta. Ora che ogni
+     `--t-*` è davvero il suo colore, questa mappa è finalmente ovvia:
+     `--blu` è `--t-blu`, non `--t-viola`. */
+  --rosso:   var(--t-terra);
+  --arancio: var(--t-ambra);
+  --pesca:   var(--t-ambra);
+  --giallo:  var(--t-giallo);
+  --lime:    var(--t-verde);
+  --verde:   var(--t-verde);
+  --menta:   var(--t-turchese);
+  --ciano:   var(--t-ciano);
+  --blu:     var(--t-blu);
+  --indaco:  var(--t-indaco);
+  --viola:   var(--t-viola);
+  --rosa:    var(--t-corallo);
+  --grigio:  var(--t-grigio);
+
+  /* Citati da registro.js e da qualche modulo. */
+  --t-acqua:   var(--t-turchese);
+  --t-argilla: var(--t-terra);
+  --t-muschio: var(--t-verde);
+  --t-lime:    var(--t-verde);
+
+  /* ------------------------------------------------------------ tipografia
+     I gradini vecchi sui nuovi. Sotto i 12px non si legge niente, quindi
+     `--t-10` e `--t-11` finiscono tutti e due lì. */
+  --t-10: var(--t-12);
+  --t-11: var(--t-12);
+  --t-22: var(--t-21);
+  --t-40: var(--t-34);
+  --t-48: var(--t-42);
+  --t-64: var(--t-54);
+
+  /* ------------------------------------------------------------ spaziatura */
+  --s1:  var(--s-4);
+  --s2:  var(--s-8);
+  --s3:  var(--s-12);
+  --s4:  var(--s-16);
+  --s5:  var(--s-20);
+  --s6:  var(--s-28);
+  --s8:  var(--s-38);
+  --s10: var(--s-52);
+  --s12: var(--s-52);
+  --s16: var(--s-70);
+
+  /* ----------------------------------------------------------------- forma */
+  --r-scheda:  var(--r-alto);
+  --r-btn:     var(--r-basso);
+  --r-campo:   var(--r-basso);
+  --r-interno: var(--r-basso);
+  --r-pillola: var(--r-tondo);
+
+  /* ------------------------------------------------------------- movimento */
+  --veloce:  var(--durata-rapida);
+  --normale: var(--durata-media);
+  --lento:   var(--durata-lenta);
+  --curva:   var(--curva-standard);
+  --molla:   var(--curva-decisa);
+
+  /* ------------------------------------------------- la targhetta colorata
+     La tinta al 15% sul nero SCURISCE, quindi la cifra colorata sopra
+     guadagna contrasto invece di perderlo. Nel chiaro la stessa formula
+     schiarisce verso il bianco e ogni targhetta scendeva sotto 4,5:1: lì
+     il fondo è la superficie di sempre e il colore lo porta solo il
+     testo. */
+  --pillola-tinta: color-mix(in srgb, currentColor 15%, transparent);
+}
+
+:root[data-tema="chiaro"] { --pillola-tinta: var(--rilievo-3); }
 @media (prefers-color-scheme: light) {
-  :root:not([data-tema="scuro"]) { --pillola-tinta: var(--scheda-alta); }
+  :root:not([data-tema="scuro"]):not([data-tema="chiaro"]) { --pillola-tinta: var(--rilievo-3); }
 }
-:root[data-tema="chiaro"] { --pillola-tinta: var(--scheda-alta); }
 
-/* ------------------------------------------------------ le emoji Apple --
-   Sono il font di sistema di Apple, imbarcato come webfont. Tre note.
 
-   1. `local()` PRIMA dell'url, e non è un dettaglio: su iPhone e su Mac il
-      font è già installato, `local()` lo trova e i 45 MB non partono mai.
-      Li scarica solo chi non ce l'ha, cioè Windows e Android.
-
-   2. `unicode-range` limitato ai blocchi delle emoji: senza, il browser
-      considererebbe questo font come candidato per QUALSIASI carattere e lo
-      scaricherebbe al primo pezzo di testo. Così parte solo quando in
-      pagina compare davvero un'emoji.
-
-   3. Fuori dal precarico del service worker, di proposito: mettere 45 MB
-      nell'installazione iniziale vorrebbe dire che la prima apertura non
-      finisce mai. Ci pensa la regola cache-first sui font, quindi dopo il
-      primo caricamento funziona anche offline.
-
-   Il formato è `woff` e non `woff2` perché il woff2 di quel pacchetto non
-   si carica — lo dice il pacchetto stesso — e in ogni caso il grosso del
-   peso sono i PNG dentro la tabella `sbix`, che non si comprimono più.
+/* ------------------------------------------------------- le emoji Apple --
+   `local()` PRIMA dell'url: su iPhone e su Mac il font è già installato e i
+   45 MB non partono mai. `unicode-range` limitato alle emoji: senza, il
+   browser lo scaricherebbe al primo pezzo di testo. Fuori dal precarico del
+   service worker di proposito — 45 MB nell'installazione iniziale vogliono
+   dire che la prima apertura non finisce mai.
 
    SUI DIRITTI: il font è di Apple e questo è un pacchetto non ufficiale.
-   Sta qui perché è stato chiesto esplicitamente, ed è una scelta di chi usa
-   l'app; ridistribuirlo in un progetto pubblico non è coperto da nessuna
-   licenza. Per toglierlo basta cancellare questo blocco e il file: la pila
-   `--font-e` ricade da sola su Segoe UI Emoji. */
+   Per toglierlo basta cancellare questo blocco e il file: `--font-e` ricade
+   da sola su Segoe UI Emoji. */
 @font-face {
   font-family: "AppleColorEmoji";
   font-style: normal;

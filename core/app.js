@@ -209,6 +209,30 @@ async function avvia() {
  *     e "ho ricaricato e non è cambiato niente" è letteralmente vero.
  */
 async function registraServiceWorker() {
+  // IN LOCALE IL SERVICE WORKER NON SI REGISTRA, E QUELLO GIÀ INSTALLATO SI
+  // DISINSTALLA.
+  //
+  // La sua cache risponde PRIMA della rete, e sta davanti anche alla cache
+  // HTTP: `Cache-Control: no-store` non la scavalca, e nemmeno un
+  // `fetch(..., {cache: "no-store"})`. In sviluppo vuol dire guardare la
+  // schermata di dieci minuti fa convinti che la modifica non sia
+  // arrivata — è successo per mezz'ora durante il redesign, con i file
+  // nuovi sul disco e quelli vecchi sullo schermo.
+  //
+  // L'alternativa sarebbe alzare `VERSIONE` in sw.js a ogni salvataggio,
+  // che non è una procedura: è una tassa che prima o poi ci si dimentica di
+  // pagare, e a quel punto si debugga un guasto che non esiste.
+  //
+  // In produzione non cambia niente: `localhost` non è il dominio di
+  // GitHub Pages, quindi lì la riga non scatta e l'offline resta intero.
+  if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+    try {
+      for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+      if (globalThis.caches) for (const k of await caches.keys()) await caches.delete(k);
+    } catch (e) { console.warn("[sw] pulizia locale", e); }
+    return;
+  }
+
   // Tocco su una notifica mentre l'app è già aperta: il service worker non
   // può cambiare rotta da solo, manda un messaggio e ci pensiamo noi.
   navigator.serviceWorker.addEventListener("message", (e) => {

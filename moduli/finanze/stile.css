@@ -23,26 +23,42 @@
   cursor: pointer;
 }
 
-.fi-schede { display: flex; gap: var(--s1); margin-bottom: var(--s5); }
+/* Il controllo a segmenti: le misure e gli stati stanno in
+   `redesign/component-specs.md` (Segmenti). Sei moduli se l'erano
+   reimplementato con un nome proprio, e per questo la schermata
+   continuava a sembrare quella di prima anche dopo il cambio dei
+   token. Finche' il nome resta locale, i valori almeno sono quelli. */
+.fi-schede {
+  display: flex;
+  gap: var(--s-4);
+  padding: var(--s-4);
+  margin-bottom: var(--s-20);
+  border-radius: 10px;
+  background: var(--incavo);
+}
 .fi-scheda {
-  flex: 1 1 0;
+  flex: 1;
   min-width: 0;
-  min-height: 40px;
-  padding: 0 var(--s2);
+  min-height: var(--tocco);
   border: 0;
-  border-radius: var(--r-pillola);
-  background: var(--scheda);
-  color: var(--testo-2);
+  border-radius: var(--r-basso);
+  background: none;
+  color: var(--inchiostro-3);
   font-family: var(--font);
-  font-size: var(--t-13);
-  font-weight: 600;
+  font-size: var(--t-15);
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
-  transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
+  transition: background var(--durata-media) var(--curva-decisa),
+              color var(--durata-media) var(--curva-decisa);
 }
-.fi-scheda.attiva { background: var(--testo); color: var(--fondo); }
+.fi-scheda.attiva {
+  background: var(--rilievo-2);
+  color: var(--inchiostro);
+  font-weight: 700;
+}
 
 /* ================================================================== eroe == */
 /* La cifra grande in cima. Non sta in una scheda: sta sul fondo nudo, ed è
@@ -113,7 +129,6 @@
   padding: var(--s3) var(--s4);
   border-radius: var(--r-interno);
   background: var(--scheda);
-  box-shadow: inset 3px 0 0 var(--tinta);
 }
 .fi-avviso b { display: block; font-size: var(--t-15); margin-bottom: 1px; }
 .fi-avviso-punto {
@@ -262,7 +277,9 @@
   background: var(--scheda-alta);
 }
 .fi-cfr .num { font-size: var(--t-19); font-weight: 700; }
-.fi-cfr.adesso { box-shadow: inset 3px 0 0 var(--accento); }
+/* «Adesso» non è uno stato, è un segnaposto: lo dice il testo in
+   grassetto, non una barra colorata alta quanto la riga. */
+.fi-cfr.adesso { color: var(--inchiostro); font-weight: 650; }
 
 .fi-statgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); margin-top: var(--s3); }
 .fi-statbox { padding: var(--s3) var(--s2); border-radius: var(--r-interno); background: var(--scheda-alta); text-align: center; }
@@ -311,9 +328,8 @@
   border-radius: var(--r-interno);
   margin-bottom: var(--s5);
   background: var(--scheda);
-  box-shadow: inset 3px 0 0 var(--ok);
 }
-.fi-quadra.ko { box-shadow: inset 3px 0 0 var(--male); }
+.fi-quadra.ko { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--male) 50%, transparent); }
 .fi-quadra b { font-size: var(--t-22); font-family: var(--font-d); letter-spacing: -0.02em; }
 .fi-riga-doppia { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); }
 
@@ -455,28 +471,33 @@
    pulsanti, più visibile del problema che risolveva. Il contenuto sotto lo
    tiene già a distanza il `padding-bottom` di #vista. */
 
-.fi-uscita, .fi-entrata { flex: 1; font-weight: 600; }
-/* Il testo NON è `var(--male)` puro: su un fondo tinto al 20% del colore
-   stesso dà 4,43, sotto i 4,5 che servono. Va schiarito quel tanto che basta
-   a staccarsi dal proprio alone. */
-.fi-uscita  { background: color-mix(in srgb, var(--male) 20%, var(--scheda));
-              color: color-mix(in srgb, var(--male) 82%, #fff); }
-.fi-entrata { background: color-mix(in srgb, var(--ok) 20%, var(--scheda));
-              color: var(--ok); }
+/* I DUE PULSANTI NON SONO PIÙ TINTI NEL FONDO.
+
+   Erano rosso e verde al 20%, e da soli facevano due terzi del colore
+   della schermata. Il commento qui sotto lo diceva già per il tema
+   chiaro — «due pulsanti pieni rosso e verde direbbero male e bene, e
+   un'entrata e un'uscita sono solo due direzioni» — e la stessa
+   obiezione vale per lo scuro: la si era accettata lì perché sul fondo
+   marrone il 20% quasi non si vedeva. Su nero si vede eccome.
+
+   Ora il fondo è quello dei controlli, uguale per tutti e due, e il
+   colore resta solo sulla parola. La direzione la dice il testo; il
+   colore lo conferma senza gridarlo. */
+.fi-uscita, .fi-entrata {
+  flex: 1;
+  font-weight: 600;
+  background: var(--rilievo-2);
+  border: 1px solid var(--riga-fine);
+}
+.fi-uscita  { color: var(--male); }
+.fi-entrata { color: var(--ok); }
 .fi-altro   { flex: none; width: 52px; padding: 0; font-size: var(--t-19); letter-spacing: 0.06em; }
 
-/* In tema chiaro il `color-mix` col fondo SCHIARISCE la pillola mentre il
-   testo resta a metà strada: misurati, 3,57 e 3,61 contro i 4,5 che servono.
-   Si scurisce il testo e non si carica il fondo: due pulsanti pieni rosso e
-   verde accanto ai numeri direbbero «male» e «bene», e in questa app quei
-   due colori vogliono già dire quello — su un'entrata e un'uscita, che sono
-   solo due direzioni, sarebbe un giudizio che nessuno ha chiesto. */
-@media (prefers-color-scheme: light) {
-  :root:not([data-tema="scuro"]) .fi-uscita  { color: color-mix(in srgb, var(--male) 80%, #000); }
-  :root:not([data-tema="scuro"]) .fi-entrata { color: color-mix(in srgb, var(--ok) 80%, #000); }
-}
-:root[data-tema="chiaro"] .fi-uscita  { color: color-mix(in srgb, var(--male) 80%, #000); }
-:root[data-tema="chiaro"] .fi-entrata { color: color-mix(in srgb, var(--ok) 80%, #000); }
+/* Le correzioni di contrasto per il tema chiaro sono state tolte insieme
+   al fondo tinto: servivano perché il `color-mix` col bianco schiariva la
+   pillola e il testo restava a metà strada (3,57 e 3,61 misurati, contro i
+   4,5 che servono). Senza fondo tinto, `--male` e `--ok` del tema chiaro
+   stanno sopra 4,5:1 sulla superficie dei controlli senza aiuto. */
 
 /* =========================================================================
    REGISTRO v2 — i blocchi della home nuova.
@@ -492,7 +513,18 @@
    «QUESTA SETTIMANA» e «0% CONSUMATO» finivano appiccicati al filo del
    velo: allineati con le schede sotto sì, ma allineati col loro BORDO
    invece che col loro contenuto, che è la cosa sbagliata da allineare. */
-.fi-numero { padding: var(--s5); margin-bottom: var(--s4); }
+/* Ora è una scheda vera, con la sua superficie e il suo filo.
+   Prima il blocco NON aveva fondo: quello che gli faceva da scatola era il
+   velo tinto in `::before`. Tolto il velo restava una cifra appoggiata sul
+   nero, e «questa settimana» sembrava un titolo di sezione invece che il
+   contenuto di un riquadro. */
+.fi-numero {
+  padding: var(--s-20);
+  margin-bottom: var(--s-12);
+  border: 1px solid var(--riga-fine);
+  border-radius: var(--r-alto);
+  background: var(--rilievo);
+}
 .fi-numero-testa {
   display: flex; align-items: center; justify-content: space-between;
   gap: var(--s3); margin-bottom: var(--s2);
@@ -699,8 +731,8 @@
 
 /* ------------------------------------------------------------ sforamenti */
 
-.fi-sfor.ok   { box-shadow: inset 3px 0 0 var(--ok); }
-.fi-sfor.male { box-shadow: inset 3px 0 0 var(--avviso); }
+.fi-sfor.ok   { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ok) 45%, transparent); }
+.fi-sfor.male { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--avviso) 50%, transparent); }
 
 /* --------------------------------------------------------------- ricarica */
 
@@ -822,19 +854,18 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
    scheda sotto. Da lì la sensazione che fra i due non ci fosse spazio — lo
    spazio c'era, ma la scatola finiva prima del suo contenuto, e una scatola
    che finisce prima del contenuto si legge come una scatola senza margine. */
-.fi-numero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: var(--r-scheda);
-  /* La sfumatura arriva fino in fondo. Si fermava al 78%, e col blocco
-     cresciuto quel 78% cadeva sulla barra del consumo: il verde spariva
-     proprio lì, la barra sembrava il bordo inferiore di una scheda, e la
-     riga del ritmo restava fuori appoggiata sul nero. Non era spazio che
-     mancava — era che la scatola sembrava chiudersi prima del testo. */
-  background: linear-gradient(180deg, var(--accento-tenue), transparent 99%);
-  pointer-events: none;
-}
+/* LA SFUMATURA È STATA TOLTA col redesign, e con lei l'unico fondo tinto
+   rimasto in tutta l'app.
+
+   Era `linear-gradient(180deg, var(--accento-tenue), transparent)`: mezza
+   scheda color ambra che sbiadiva verso il nero. Serviva a dire «questo è
+   il blocco principale» su un fondo marrone dove le superfici si
+   somigliavano tutte. Su nero non serve più — la scheda si stacca da sola
+   col suo filo — e quello che restava era una macchia larga quanto lo
+   schermo sotto cui il testo grigio perdeva un punto di contrasto.
+
+   Il blocco principale ora si distingue per quello che contiene: la cifra
+   più grande della schermata. */
 .fi-numero > * { position: relative; }
 
 /* La barra del consumo era spessa come quelle delle categorie e pesava
@@ -865,20 +896,19 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
 }
 .fi-check:active { transform: scale(0.99); background: var(--scheda-alta); }
 
-/* La tinta entra dal filo in alto e dal titolo. Non dal fondo: un pannello
-   rosso pieno con testo sopra è la cosa che nell'app di partenza non si
-   riusciva a leggere in pieno sole. */
+/* La tinta entra dal TITOLO e dai quattro pallini, e da nient'altro. Non
+   dal fondo: un pannello rosso pieno con testo sopra è la cosa che
+   nell'app di partenza non si riusciva a leggere in pieno sole.
+
+   E non più dal filo da 3px in cima alla scheda: col redesign è sparito.
+   Su nero era una striscia rossa a tutta larghezza sopra una scheda che
+   ne aveva già una ambra due dita più su — due insegne colorate prima di
+   un numero, che è esattamente quello che il redesign doveva togliere.
+   Il titolo colorato dice la stessa cosa, e la dice con delle parole. */
 .fi-check.ok         { --tinta: var(--ok); }
 .fi-check.attenzione { --tinta: var(--avviso); }
 .fi-check.male       { --tinta: var(--male); }
 .fi-check { position: relative; overflow: hidden; }
-.fi-check::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 3px;
-  background: var(--tinta);
-}
 
 .fi-check-testa {
   display: flex; align-items: center; justify-content: space-between;
@@ -903,11 +933,14 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
   color: var(--testo);
 }
 
+/* Sceso da 32 a 26px. È l'unica frase colorata della schermata e deve
+   restare la più forte, ma a 32 in rosso pieno su nero era un cartello:
+   si leggeva prima del saldo, che è il dato per cui si apre Finanze. */
 .fi-check-titolo {
   font-family: var(--font-d);
-  font-size: var(--t-28);
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-size: var(--t-24);
+  font-weight: var(--t-24-peso);
+  letter-spacing: var(--t-24-traccia);
   color: var(--tinta);
 }
 .fi-check-sotto {
@@ -1068,7 +1101,6 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
   padding: var(--s4);
   border-radius: var(--r-interno);
   background: var(--scheda-alta);
-  box-shadow: inset 3px 0 0 var(--tinta);
 }
 .fi-copertura.ok   { --tinta: var(--ok); }
 .fi-copertura.male { --tinta: var(--male); }

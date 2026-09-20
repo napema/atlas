@@ -1,13 +1,39 @@
 /* =========================================================================
-   ATLAS — componenti condivisi.
+   ATLAS — componenti condivisi. «NEROFUMO».
 
-   Qui sta SOLO ciò che più di un modulo usa. Un componente usato da uno
-   solo vive nel suo `moduli/<id>/stile.css`.
+   Riscritto da zero il 20 settembre 2026, insieme a `tokens.css`.
 
-   L'oggetto caratteristico di questa interfaccia è la SCHEDA A BARRA: una
-   tessera con l'icona e il nome in alto, una cifra grande al centro, e in
-   fondo una barra colorata con un cursore che dice a che punto sei. Tutto
-   il resto è impaginazione intorno a quella.
+   LE QUATTRO REGOLE DI QUESTO FILE. Ogni componente qui sotto le rispetta,
+   e quando una viene violata c'è scritto perché.
+
+   1. SU NERO LA SCHEDA SI DISEGNA COL FILO, NON COL TONO.
+      La scheda sta dodici punti di luminanza sopra il fondo: da sola non
+      si vede. Quello che la rende un oggetto è il contorno da 1px. È
+      l'opposto della stesura precedente, dove il contorno era vietato e la
+      separazione la faceva il salto di grigio — che su un fondo marrone
+      funzionava e su nero no.
+
+   2. IL COLORE È UN PUNTO, NON UNA SUPERFICIE.
+      Nessuna riga ha un bordo colorato, nessuna scheda ha un fondo tinto,
+      nessuna lista ha una barra laterale. Il colore entra da `.punto`
+      (8px), dalla cifra, dall'icona e dalla targhetta. Prima ogni voce da
+      fare aveva il suo filo giallo e la home sembrava un semaforo.
+
+   3. LA GERARCHIA LA FA LO SPAZIO.
+      Fra un blocco e il successivo c'è più aria di quanta ne sembri
+      necessaria. Su nero il vuoto non costa niente — non c'è una
+      superficie che lo riempie — ed è l'unica cosa che distingue una
+      schermata curata da una densa.
+
+   4. UN COMPONENTE, UN NOME.
+      Il CSS è globale anche quando il file sta dentro un modulo.
+
+          grep -oE '^\.[a-z][a-z0-9_-]*' styles/base.css | sort -u
+
+   ------------------------------------------------------------------------
+   I NOMI DELLE CLASSI NON CAMBIANO. Sette moduli e `core/ui.js` emettono
+   questo markup: rinominare `.testa` in `.intestazione` vuol dire sette
+   file rotti insieme e nessun guadagno per chi guarda lo schermo.
    ========================================================================= */
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -17,27 +43,20 @@ html {
   background: var(--fondo);
   -webkit-text-size-adjust: 100%;
   overflow-x: hidden;
-
-  /* NIENTE ZOOM. ATLAS è installata sulla schermata Home e deve comportarsi
-     come un'app: pizzicare per ingrandire, o toccare due volte a vuoto e
-     ritrovarsi la schermata scalata e spostata, è il gesto che tradisce che
-     sotto c'è un sito.
-
-     `pan-x pan-y` e non `none`: togliere lo zoom NON deve togliere lo
-     scorrimento, né quello verticale della pagina né quello orizzontale
-     delle strisce che ce l'hanno. `manipulation` non basterebbe — toglie il
-     doppio tocco ma lascia il pizzico.
-
-     Su Safari il pizzico passa lo stesso: lì lo chiudono i `gesture*` in
-     core/app.js. Le tre difese sono complementari, non alternative. */
+  /* NIENTE ZOOM. `pan-x pan-y` e non `none`: togliere lo zoom NON deve
+     togliere lo scorrimento. Su Safari il pizzico passa lo stesso, e lì lo
+     chiudono i `gesture*` in core/app.js: le tre difese sono
+     complementari, non alternative. */
   touch-action: pan-x pan-y;
 }
 
 body {
   font-family: var(--font);
   font-size: var(--t-17);
-  line-height: 1.4;
-  color: var(--testo);
+  font-weight: var(--t-17-peso);
+  line-height: var(--t-17-interlinea);
+  letter-spacing: var(--t-17-traccia);
+  color: var(--inchiostro);
   background: var(--fondo);
   -webkit-font-smoothing: antialiased;
   font-optical-sizing: auto;
@@ -47,31 +66,50 @@ body {
   overscroll-behavior-y: none;
 }
 input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
-::selection { background: var(--accento-velo); }
+::selection { background: var(--segnale-velo); }
 
-/* ============================================================ tipografia == */
+/* L'anello di fuoco è uno solo, blu, e vale per tutto ciò che si tocca.
+   `:focus-visible` e non `:focus`: col dito l'anello non serve e sporca
+   ogni tocco. */
+:focus-visible {
+  outline: 2px solid var(--segnale);
+  outline-offset: 2px;
+  border-radius: var(--r-basso);
+}
 
-h1, h2, h3, h4 { margin: 0; font-family: var(--font-d); letter-spacing: -0.03em; line-height: 1.08; }
-h1 { font-size: var(--t-40); font-weight: 700; }
-h2 { font-size: var(--t-28); font-weight: 700; }
-h3 { font-size: var(--t-22); font-weight: 700; }
-h4 { font-family: var(--font); font-size: var(--t-17); font-weight: 600; letter-spacing: -0.01em; }
-p  { margin: 0 0 var(--s3); }
+
+/* ============================================================ tipografia ==
+   Ogni gradino porta con sé peso, interlinea e crenatura. `font-stretch`
+   non compare in questo file: i titoli non si stringono più da nessuna
+   parte, ed è la correzione più visibile del redesign — «Buonasera, Ema.»
+   a 40px compresso all'82% sembrava schiacciato con le mani. */
+
+h1, h2, h3, h4 { margin: 0; font-family: var(--font-d); }
+h1 {
+  font-size: var(--t-34); font-weight: var(--t-34-peso);
+  line-height: var(--t-34-interlinea); letter-spacing: var(--t-34-traccia);
+}
+h2 {
+  font-size: var(--t-28); font-weight: var(--t-28-peso);
+  line-height: var(--t-28-interlinea); letter-spacing: var(--t-28-traccia);
+}
+h3 {
+  font-size: var(--t-24); font-weight: var(--t-24-peso);
+  line-height: var(--t-24-interlinea); letter-spacing: var(--t-24-traccia);
+}
+h4 {
+  font-family: var(--font); font-size: var(--t-19); font-weight: var(--t-19-peso);
+  line-height: var(--t-19-interlinea); letter-spacing: var(--t-19-traccia);
+}
+p  { margin: 0 0 var(--s-12); }
 a  { color: inherit; text-decoration: none; }
-b, strong { font-weight: 600; }
+b, strong { font-weight: 650; }
 
-/* Il rientro di serie delle liste va tolto QUI, una volta sola.
-   ATLAS non ha una sola lista puntata: `ul` e `ol` sono l'impalcatura
-   semantica di elenchi disegnati a mano, e i 40px di padding del browser li
-   spostavano tutti a destra rispetto al titolo della propria carta. Toglierlo
-   dentro ogni singola `.og-lista`, `.og-modlista`, `.fi-check-lista` vuol
-   dire dimenticarselo alla prossima. */
+/* Il rientro di serie delle liste va tolto QUI, una volta sola: `ul` e `ol`
+   sono l'impalcatura semantica di elenchi disegnati a mano, e i 40px di
+   padding del browser li spostavano tutti a destra. */
 ul, ol { margin: 0; padding: 0; }
 
-/* L'icona-maschera: un bitmap ritagliato sopra un fondo di `currentColor`.
-   È il ripiego per le icone che arrivano da fuori già disegnate — vedi
-   `MASCHERE` in core/icone.js. Le misure le mette il JS in stile inline,
-   perché cambiano da un punto all'altro. */
 .icona-maschera {
   display: inline-block;
   flex: none;
@@ -81,60 +119,78 @@ ul, ol { margin: 0; padding: 0; }
   -webkit-mask-size: contain;     mask-size: contain;
 }
 
-/* La cifra. È l'elemento più importante dell'interfaccia: Display, tabellare,
-   crenatura molto stretta. A questi corpi la crenatura di serie lascia buchi
-   fra le cifre che si notano più del numero. */
+/* LA CIFRA. `tabular-nums` sta sulla CLASSE e non sul font: una colonna di
+   importi sfalsata è illeggibile prima ancora di essere brutta. */
 .cifra {
   font-family: var(--font-d);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 1;
+  color: var(--inchiostro);
 }
-.cifra-xl { font-size: var(--t-48); }
-.cifra-l  { font-size: var(--t-34); }
-.cifra-m  { font-size: var(--t-28); }
-.cifra-s  { font-size: var(--t-22); }
+.cifra-xl {
+  font-size: var(--t-54); font-weight: var(--t-54-peso);
+  line-height: var(--t-54-interlinea); letter-spacing: var(--t-54-traccia);
+}
+.cifra-l {
+  font-size: var(--t-42); font-weight: var(--t-42-peso);
+  line-height: var(--t-42-interlinea); letter-spacing: var(--t-42-traccia);
+}
+.cifra-m {
+  font-size: var(--t-28); font-weight: var(--t-28-peso);
+  line-height: var(--t-28-interlinea); letter-spacing: var(--t-28-traccia);
+}
+.cifra-s {
+  font-size: var(--t-24); font-weight: var(--t-24-peso);
+  line-height: var(--t-24-interlinea); letter-spacing: var(--t-24-traccia);
+}
 
-/* Il simbolo di valuta: più piccolo e appoggiato in alto, come sulle
-   etichette dei prezzi. Non è un apice — sta sulla stessa linea ottica. */
-.val {
-  font-size: 0.56em;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin-left: 0.12em;
-  vertical-align: 0.34em;
+/* Il simbolo di valuta e i centesimi: contesto, non dato. Restano in alto
+   e piccoli, come su un listino — il dato è il numero intero. */
+.val, .cts {
+  font-size: 0.46em;
+  font-weight: 650;
+  letter-spacing: 0;
+  color: var(--inchiostro-3);
+  vertical-align: 0.42em;
 }
-/* I centesimi: stessa idea, dall'altra parte. */
-.cts { font-size: 0.56em; font-weight: 700; letter-spacing: -0.01em; vertical-align: 0.34em; }
+.val { margin-left: 0.12em; }
 
 .num  { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 .mono { font-family: var(--font-m); font-variant-numeric: tabular-nums; }
 
-/* L'etichetta minuscola in maiuscolo sopra un dato. Piccola, spaziata,
-   e quasi sempre colorata: è lei a dare il tono alla scheda. */
+/* L'etichetta maiuscoletta. La crenatura positiva è obbligatoria: le
+   maiuscole a corpo piccolo senza aria fra le lettere si impastano. */
 .micro {
-  font-size: var(--t-10);
-  font-weight: 700;
-  letter-spacing: 0.09em;
+  font-size: var(--t-12);
+  font-weight: var(--t-12-peso);
+  line-height: var(--t-12-interlinea);
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--testo-3);
+  color: var(--inchiostro-3);
 }
-.micro.ok    { color: var(--ok); }
-.micro.male  { color: var(--male); }
-.micro.avviso{ color: var(--avviso); }
+.micro.ok     { color: var(--ok); }
+.micro.male   { color: var(--male); }
+.micro.avviso { color: var(--avviso); }
 
-.nota  { font-size: var(--t-13); color: var(--testo-2); line-height: 1.35; }
-.nota-2 { font-size: var(--t-11); color: var(--testo-3); line-height: 1.3; }
-.etichetta { font-size: var(--t-13); font-weight: 500; color: var(--testo-2); }
+.nota {
+  font-size: var(--t-13); font-weight: var(--t-13-peso);
+  line-height: var(--t-13-interlinea); color: var(--inchiostro-3);
+}
+.nota-2 {
+  font-size: var(--t-12); font-weight: 450; letter-spacing: 0;
+  text-transform: none; line-height: 1.4; color: var(--inchiostro-4);
+}
+.etichetta { font-size: var(--t-13); font-weight: 500; color: var(--inchiostro-2); }
 
-.positivo { color: var(--ok); }
-.negativo { color: var(--male); }
+.positivo   { color: var(--ok); }
+.negativo   { color: var(--male); }
 .attenzione { color: var(--avviso); }
-.tenue { color: var(--testo-2); }
+.tenue      { color: var(--inchiostro-2); }
 
-/* ================================================================= shell == */
+
+/* ================================================================= shell ==
+   La gronda laterale è 20px sul telefono. Sembra poco su 375px ed è
+   giusto: le schede devono sembrare larghe, non incorniciate. */
 
 #app { min-height: 100dvh; }
 
@@ -143,58 +199,66 @@ ul, ol { margin: 0; padding: 0; }
   max-width: 680px;
   margin: 0 auto;
   padding:
-    calc(env(safe-area-inset-top) + var(--s5))
-    calc(env(safe-area-inset-right) + var(--s4))
-    calc(env(safe-area-inset-bottom) + 120px)
-    calc(env(safe-area-inset-left) + var(--s4));
+    calc(env(safe-area-inset-top) + var(--s-16))
+    calc(env(safe-area-inset-right) + var(--s-20))
+    calc(env(safe-area-inset-bottom) + 124px)
+    calc(env(safe-area-inset-left) + var(--s-20));
 }
 
-/* --------------------------------------------------------- intestazione -- */
+/* --------------------------------------------------------- intestazione --
+   Occhiello piccolo sopra, titolo grande sotto, azioni a destra.
+
+   `align-items: flex-start` e non `center`: con due righe a sinistra e un
+   tondo da 44 a destra, centrare verticalmente il tondo lo faceva scendere
+   in mezzo al titolo. Allineato in alto sta sopra l'occhiello, che è dove
+   lo cerca l'occhio. */
 
 .testa {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--s3);
-  margin-bottom: var(--s5);
+  gap: var(--s-12);
+  margin: var(--s-8) 0 var(--s-28);
 }
-.testa-testo { min-width: 0; }
-.testa h1 { font-size: var(--t-34); }
-.testa .micro { margin-bottom: var(--s2); }
-.testa-occhiello { display: flex; align-items: center; gap: 7px; }
-.testa-azioni { display: flex; gap: var(--s1); flex: none; }
+.testa-testo { min-width: 0; padding-top: 2px; }
+.testa .micro { margin-bottom: var(--s-6); }
+.testa h1 { text-wrap: balance; }
+.testa-occhiello { display: flex; align-items: center; gap: var(--s-8); flex-wrap: wrap; }
+.testa-azioni {
+  display: flex; gap: var(--s-4); flex: none; align-items: center;
+  /* I tondi hanno 44px di area e un glifo da 20: il bianco attorno al
+     glifo fa sembrare la fila staccata dal bordo dello schermo. Il margine
+     negativo la riporta in asse con la gronda. */
+  margin-right: calc(-1 * var(--s-8));
+}
 
-/* L'interruttore di un gruppo (Mobilità | Training) sta AL POSTO del titolo,
-   non sopra: vedi `intestazione()` in core/ui.js. Quindi deve avere il peso
-   di un titolo e non quello di un filtro — segmenti più alti, testo più
-   grande — e la testata si centra, perché due elementi della stessa altezza
-   allineati in alto sembrano sfalsati. */
-.testa-con-gruppo { align-items: center; }
-.testa-gruppo { flex: 1 1 auto; max-width: 300px; }
-.testa-gruppo .segmenti { padding: 4px; }
+/* L'interruttore di un gruppo (Mobilità | Training) sta AL POSTO del
+   titolo, non sopra: titolo più interruttore più pillole sono tre righe di
+   navigazione prima del primo dato. */
+.testa-gruppo { flex: 1 1 auto; max-width: 320px; }
 .testa-gruppo .segmento { min-height: 40px; font-size: var(--t-15); }
 
-/* ============================================================ barra tab == */
+
+/* ============================================================ barra tab ==
+   Fissa in basso, sul fondo nero, separata da un filo. Niente vetro
+   sfocato: il blur costa una composizione a ogni fotogramma di
+   scorrimento, e su nero non ha niente da sfocare.
+
+   Cinque voci è il tetto. A sei le etichette si tagliano proprio dove il
+   pollice ha meno spazio. */
 
 #barra {
   position: fixed;
   left: 0; right: 0; bottom: 0;
   z-index: 60;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-around;
-  gap: var(--s1);
-  /* Sotto le etichette non ci vanno 8px PIÙ la safe area: la safe area è già
-     lo spazio dell'indicatore di Home, e sommarci un respiro fa una barra da
-     94px dove iOS ne usa 83. Si toglie quel respiro e altri 8, che restano
-     abbondanti — l'indicatore occupa i 13px in basso, qui gliene restano 26.
-     Il `max()` serve dove la safe area è zero: su Android e da scrivania
-     `env()` vale 0 e senza il minimo la barra resterebbe senza fondo. */
-  padding: 5px var(--s3) max(5px, calc(env(safe-area-inset-bottom) - 8px));
-  background: color-mix(in srgb, var(--fondo-alto) 82%, transparent);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  border-top: 1px solid var(--filo);
+  gap: 2px;
+  min-height: 60px;
+  padding: var(--s-6) var(--s-6) max(var(--s-6), env(safe-area-inset-bottom));
+  background: var(--fondo);
+  border-top: 1px solid var(--riga-fine);
 }
 
 .tab {
@@ -205,411 +269,620 @@ ul, ol { margin: 0; padding: 0; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 5px;
+  padding: var(--s-6) 2px;
   border: 0;
+  border-radius: var(--r-basso);
   background: none;
-  color: var(--testo-3);
+  color: var(--inchiostro-4);
   font-family: inherit;
-  font-size: var(--t-10);
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 550;
   letter-spacing: 0.01em;
   cursor: pointer;
-  transition: color var(--veloce) var(--curva), transform var(--veloce) var(--molla);
+  transition: color var(--durata-rapida) var(--curva-standard);
 }
-.tab svg { width: 24px; height: 24px; display: block; }
-.tab[aria-current="page"] { color: var(--accento); }
-.tab:active { transform: scale(0.92); }
+.tab svg { width: 25px; height: 25px; display: block; }
+.tab > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ================================================================ schede == */
+/* L'attivo è BIANCO PIENO, non blu. Il blu è `--segnale` e vuol dire
+   «tocca qui»: sulla voce dove sei già non c'è niente da toccare. La
+   differenza fra spento e acceso la fanno il contrasto e il peso — su nero
+   bastano, e la barra smette di essere la cosa più colorata dello
+   schermo. */
+.tab[aria-current="page"] { color: var(--inchiostro); font-weight: 650; }
+.tab:active { color: var(--inchiostro-2); }
+
+
+/* ================================================================ schede ==
+   Il contenitore di primo livello.
+
+   IL CONTORNO C'È, l'ombra no. Su nero la scheda senza filo non esiste:
+   dodici punti di luminanza al buio sono invisibili, e la schermata
+   diventa un elenco che galleggia. Il filo la chiude e la fa oggetto.
+   L'ombra resta riservata al foglio modale, che è l'unico componente che
+   sta davvero SOPRA gli altri. */
 
 .scheda {
   position: relative;
-  background: var(--scheda);
-  border-radius: var(--r-scheda);
-  padding: var(--s4);
-  margin-bottom: var(--s3);
-  overflow: hidden;
-  /* Sul chiaro una carta bianca su un fondo quasi bianco non si vede: la
-     separazione la fa l'ombra, non il colore. Sul scuro `--ombra` è nulla e
-     questa riga non fa niente — è il fondo più chiaro a staccare. */
-  box-shadow: var(--ombra);
+  background: var(--rilievo);
+  border: 1px solid var(--riga-fine);
+  border-radius: var(--r-alto);
+  padding: var(--s-20);
+  margin-bottom: var(--s-12);
+  transition: background var(--durata-rapida) var(--curva-standard),
+              border-color var(--durata-rapida) var(--curva-standard);
 }
+.scheda.densa { padding: var(--s-16); }
+button.scheda, a.scheda { display: block; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-color: var(--riga-marcata); }
+
+/* Il titolo dentro la scheda: piccolo, grigio, maiuscoletto. Non compete
+   con la cifra che ha sotto — è un'etichetta, non un capo. */
 .scheda-titolo {
   display: flex;
   align-items: center;
-  gap: var(--s2);
-  font-size: var(--t-15);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  margin-bottom: var(--s3);
+  gap: var(--s-8);
+  font-size: var(--t-12);
+  font-weight: var(--t-12-peso);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--inchiostro-3);
+  margin-bottom: var(--s-16);
 }
+.scheda-titolo svg { color: var(--tinta, var(--inchiostro-4)); flex: none; }
 .scheda > p:last-child, .scheda > .nota:last-child { margin-bottom: 0; }
 
+/* Il titolo di sezione vive SUL FONDO, mai su una scheda: separa due
+   gruppi di schede, quindi non può essere dentro nessuno dei due. Niente
+   riga sotto — la separazione la fa lo spazio sopra. */
 .sezione-titolo {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: var(--s3);
-  margin: var(--s6) 0 var(--s3);
+  gap: var(--s-12);
+  margin: var(--s-38) var(--s-4) var(--s-12);
 }
-.sezione-titolo h3 { font-size: var(--t-19); }
+.sezione-titolo h3 {
+  font-family: var(--font);
+  font-size: var(--t-19);
+  font-weight: var(--t-19-peso);
+  letter-spacing: var(--t-19-traccia);
+}
+.sezione-titolo:first-child { margin-top: 0; }
 
-/* ------------------------------------------------- LA SCHEDA A BARRA ------
-   L'oggetto caratteristico. Emoji o icona e nome in alto, una riga di
-   contesto, la cifra, e in fondo la barra con il cursore.
 
-   La barra è a filo dei tre bordi: esce dall'imbottitura della scheda e la
-   tocca. È voluto — una barra con il margine sembra un grafico messo dentro
-   una scheda, una barra a filo sembra la scheda stessa che si riempie. */
+/* ------------------------------------------------------------- la tessera
+   Le card della griglia Oggi. Altezza minima IDENTICA PER TUTTE anche a
+   vuoto: una home che cambia forma non si impara a leggere con la coda
+   dell'occhio.
+
+   La struttura è sempre la stessa, dall'alto: punto colorato + nome del
+   modulo in maiuscoletto, poi il vuoto, poi la cifra appoggiata in basso.
+   Il modulo lo dice il punto da 8px; tutto il resto è bianco e grigio. */
 
 .tessera {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--s1);
-  padding: var(--s4) var(--s4) var(--s6);
-  border-radius: var(--r-scheda);
-  background: var(--scheda);
+  gap: var(--s-4);
+  padding: var(--s-16) var(--s-16) var(--s-20);
+  border: 1px solid var(--riga-fine);
+  border-radius: var(--r-alto);
+  background: var(--rilievo);
   color: inherit;
   text-align: left;
-  border: 0;
   font: inherit;
   cursor: pointer;
-  overflow: hidden;
-  min-height: 148px;
-  transition: transform var(--veloce) var(--curva), background var(--veloce) var(--curva);
+  min-height: 168px;
+  transition: background var(--durata-rapida) var(--curva-standard),
+              border-color var(--durata-rapida) var(--curva-standard);
 }
-.tessera:active { transform: scale(0.985); background: var(--scheda-alta); }
+.tessera:active { background: var(--rilievo-2); border-color: var(--riga-marcata); }
 
-.tessera-testa { display: flex; align-items: center; gap: var(--s2); min-width: 0; }
+/* Lo stato vuoto NON nasconde il contenitore: cambia il contenuto, mai
+   l'ingombro. */
+.tessera.vuota .tessera-cifra,
+.tessera.vuota .tessera-coda,
+.tessera.vuota .tessera-sotto { color: var(--inchiostro-4); }
+
+/* L'urgente si segnala col FILO, non con un anello interno da 2px che
+   ridisegnava la tessera come un bottone premuto. */
+.tessera.urgente { border-color: color-mix(in srgb, var(--avviso) 55%, transparent); }
+
+.tessera-testa { display: flex; align-items: center; gap: var(--s-8); min-width: 0; }
 .tessera-emoji { font-size: 17px; line-height: 1; flex: none; }
-.tessera-icona { display: flex; color: var(--tinta, var(--testo-2)); flex: none; }
+/* L'icona del modulo prende la tinta: è l'unico pezzo colorato della
+   tessera, e a 20px è abbastanza piccolo da restare un accenno. */
+.tessera-icona { display: flex; color: var(--tinta, var(--inchiostro-3)); flex: none; }
 .tessera-nome {
-  font-size: var(--t-15);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  flex: 1 1 auto;
+  font-size: var(--t-12);
+  font-weight: var(--t-12-peso);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--inchiostro-3);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.tessera-sotto { font-size: var(--t-11); color: var(--testo-3); margin-bottom: var(--s3); }
-.tessera .micro { margin-bottom: 2px; }
-/* La cifra si appoggia al fondo, non segue quello che ha sopra: due tessere
-   affiancate, una con l'etichetta di stato e una senza, avevano i numeri a
-   cinquanta pixel di distanza in verticale e la riga sembrava storta. */
-.tessera-cifra { font-size: var(--t-28); margin-top: auto; }
-.tessera-coda { font-size: var(--t-11); color: var(--testo-3); margin-top: 2px; }
+.tessera-sotto { font-size: var(--t-12); font-weight: 450; letter-spacing: 0; text-transform: none; color: var(--inchiostro-4); }
 
-/* La barra col cursore. */
-.barra-cursore {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: 8px;
-  background: var(--traccia);
+/* La cifra si appoggia al fondo e non segue quello che ha sopra: due
+   tessere affiancate, una con l'etichetta di stato e una senza, avevano i
+   numeri a cinquanta pixel di distanza in verticale e la riga sembrava
+   storta. */
+.tessera-cifra {
+  margin-top: auto;
+  padding-top: var(--s-16);
+  font-size: var(--t-28); font-weight: var(--t-28-peso);
+  line-height: var(--t-28-interlinea); letter-spacing: var(--t-28-traccia);
+  color: var(--inchiostro);
 }
-.barra-cursore > i {
-  display: block;
-  height: 100%;
-  border-radius: 0 var(--r-pillola) var(--r-pillola) 0;
-  background: var(--tinta, var(--accento));
-  transition: width var(--lento) var(--curva);
-}
-/* Il triangolino che indicava il punto esatto non c'è più: alla scala di una
-   tessera era un cuneo di sei pixel appoggiato all'angolo tondo, e sembrava
-   sporco sullo schermo. Il bordo del riempimento dice già dove sei. */
-.barra-cursore > b { display: none; }
+.tessera-coda { font-size: var(--t-12); font-weight: 450; letter-spacing: 0; text-transform: none; color: var(--inchiostro-3); margin-top: 3px; }
+.tessera-piede { display: flex; flex-direction: column; gap: var(--s-8); margin-top: var(--s-12); }
 
-/* La griglia delle tessere.
-   `auto-fit` e non un numero fisso di colonne: con tre colonne fisse e due
-   sole tessere — la home, quando una delle tre è promossa a carta larga —
-   restava un buco a destra e la riga sembrava troncata. Così le colonne le
-   decide la larghezza disponibile, e quello che c'è riempie sempre la riga. */
 .griglia-tessere {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 156px), 1fr));
-  gap: var(--s3);
-  margin-bottom: var(--s3);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 152px), 1fr));
+  gap: var(--s-12);
+  margin-bottom: var(--s-12);
 }
 
-/* -------------------------------------------------- riquadro statistico -- */
 
-.riquadri { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: var(--s3); margin-bottom: var(--s3); }
+/* ------------------------------------------------------------ il riquadro
+   Blocco strutturale NON interattivo: una coppia etichetta/cifra dentro
+   una scheda. Sta sull'incavo e ha il raggio basso, così non si confonde
+   con una tessera che si preme.
+
+   Il bordo fra due riquadri affiancati è stato tolto: con l'incavo che si
+   vede già, era una riga in più a dividere due cose che stanno insieme. */
+
+.riquadri { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--s-8); margin-bottom: var(--s-12); }
 .riquadro {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: var(--s4);
-  border-radius: var(--r-scheda);
-  background: var(--scheda);
+  gap: var(--s-4);
+  padding: var(--s-16);
+  border-radius: var(--r-basso);
+  background: var(--incavo);
 }
-.riquadro .cifra { font-size: var(--t-28); margin-top: var(--s1); }
+.riquadro .cifra {
+  font-size: var(--t-24); font-weight: var(--t-24-peso);
+  letter-spacing: var(--t-24-traccia); line-height: 1.1;
+}
+.riquadro .nota-2 { margin-top: -2px; }
 
-/* =============================================================== liste === */
+
+/* =============================================================== liste ===
+   Composizione verticale dentro una scheda. Lo spazio fra due voci è ZERO:
+   il separatore è il filo, non un gap. L'ultima riga non ce l'ha.
+
+   Il filo NON arriva ai bordi della scheda: parte dopo l'icona, come su
+   iOS. Un separatore che tocca il bordo taglia la scheda in due; uno
+   rientrato dice «la stessa lista continua». */
 
 .lista {
   list-style: none;
-  margin: 0 0 var(--s4);
-  padding: var(--s1) 0;
-  background: var(--scheda);
-  border-radius: var(--r-scheda);
-  overflow: hidden;
+  margin: 0 0 var(--s-8);
+  padding: 0;
 }
+.lista > li:not(:last-child) > .riga { border-bottom: 1px solid var(--riga-fine); }
+.lista:last-child { margin-bottom: 0; }
+
 .riga {
   display: flex;
   align-items: center;
-  gap: var(--s3);
+  gap: var(--s-12);
   width: 100%;
-  min-height: 56px;
-  padding: var(--s2) var(--s4);
+  min-height: var(--tocco);
+  padding: var(--s-12) 0;
   border: 0;
   background: none;
   font: inherit;
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background var(--veloce) var(--curva);
+  transition: opacity var(--durata-rapida) var(--curva-standard);
 }
-.riga:active { background: var(--scheda-alta); }
-.riga .valore { margin-left: auto; color: var(--testo-2); font-variant-numeric: tabular-nums; flex: none; }
-.riga .freccia { color: var(--testo-4); display: flex; flex: none; }
-.riga .icona { color: var(--testo-2); display: flex; flex: none; }
+.riga.due-righe { min-height: 58px; }
+/* Il premuto NON cambia il fondo: dentro una scheda che sta già a dodici
+   punti dal nero, un secondo fondo a venti si legge come un errore di
+   disegno. Si abbassa l'opacità, che su nero è il gesto più naturale. */
+.riga:active { opacity: 0.55; }
+.riga[disabled], .riga.spento { opacity: 0.4; pointer-events: none; }
+.riga > span { font-size: var(--t-17); min-width: 0; }
+.riga .nota { font-size: var(--t-13); color: var(--inchiostro-3); }
+.riga .valore {
+  margin-left: auto;
+  font-size: var(--t-17);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+.riga .freccia { color: var(--inchiostro-4); display: flex; flex: none; margin-left: var(--s-4); }
+.riga .icona { color: var(--inchiostro-3); display: flex; flex: none; }
+/* Il blocco di testo su due righe: il titolo non deve mai spingere fuori
+   il valore a destra. */
+.riga > div { min-width: 0; flex: 1 1 auto; }
+.riga > div > div:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Il quadratino con l'emoji davanti a una riga. Dà ritmo alla lista e fa
-   da bersaglio visivo: senza, un elenco di venti movimenti è un muro. */
+/* Il gettone: badge tondo. 20px da contatore, 56 da avatar. */
 .gettone {
-  width: 36px; height: 36px;
+  width: 34px; height: 34px;
   flex: none;
   display: grid;
   place-items: center;
-  border-radius: 11px;
-  background: var(--scheda-alta);
-  font-size: 17px;
+  border-radius: var(--r-tondo);
+  background: var(--rilievo-2);
+  color: var(--inchiostro-2);
+  font-size: var(--t-13);
+  font-weight: 650;
   line-height: 1;
 }
-/* Il glifo non è `--tinta` pura: su un fondo che è la stessa tinta al 22% si
-   ferma fra 4,0 e 4,3, sotto i 4,5. Con un'emoji non si vedrebbe — le emoji
-   a colori ignorano `color` — ma il ripiego di una categoria senza emoji è
-   un «!», e quello è testo a tutti gli effetti. */
+.gettone.contatore { width: 21px; height: 21px; font-size: 11px; }
+.gettone.avatar { width: 54px; height: 54px; font-size: var(--t-19); }
+/* Con la tinta: il glifo prende il colore pieno su un fondo della stessa
+   tinta al 15%. Le emoji a colori ignorano `color`, ma il ripiego di una
+   categoria senza emoji è un «!», e quello è testo a tutti gli effetti. */
 .gettone.tinto {
-  background: color-mix(in srgb, var(--tinta) 22%, transparent);
-  color: color-mix(in srgb, var(--tinta) 86%, #fff);
+  background: color-mix(in srgb, var(--tinta) 15%, transparent);
+  color: var(--tinta);
 }
-@media (prefers-color-scheme: light) {
-  :root:not([data-tema="scuro"]) .gettone.tinto { color: color-mix(in srgb, var(--tinta) 82%, #000); }
-}
-:root[data-tema="chiaro"] .gettone.tinto { color: color-mix(in srgb, var(--tinta) 82%, #000); }
 
 .gruppo-titolo {
-  font-size: var(--t-11);
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: var(--t-12);
+  font-weight: var(--t-12-peso);
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--testo-3);
-  padding: 0 var(--s2) var(--s2);
-  margin-top: var(--s5);
+  color: var(--inchiostro-3);
+  padding: 0 var(--s-4) var(--s-8);
+  margin-top: var(--s-20);
 }
 
-/* ============================================================= pulsanti == */
+
+/* ============================================================= pulsanti ==
+   Le azioni stanno accanto alla cosa su cui agiscono: nessun tondo fisso in
+   basso a destra — un tondo solo non può rappresentare due gesti diversi.
+
+   Il raggio è quello BASSO (12px), non quello alto: a 52px di altezza il
+   raggio alto fa una pastiglia, e una pastiglia blu larga quanto lo schermo
+   è la cosa più vistosa che si possa mettere in una schermata. */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--s2);
+  gap: var(--s-8);
   min-height: 52px;
-  padding: 0 var(--s6);
+  padding: 0 var(--s-28);
   border: 0;
-  border-radius: var(--r-btn);
-  background: var(--testo);
-  color: var(--fondo);
+  border-radius: var(--r-basso);
+  background: var(--segnale);
+  color: var(--segnale-testo);
   font-family: var(--font);
   font-size: var(--t-17);
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.1px;
   cursor: pointer;
-  transition: opacity var(--veloce) var(--curva), transform var(--veloce) var(--curva);
+  transition: opacity var(--durata-rapida) var(--curva-standard),
+              transform var(--durata-rapida) var(--curva-standard);
 }
-.btn:active { transform: scale(0.985); opacity: 0.86; }
-.btn[disabled] { opacity: 0.3; pointer-events: none; }
+.btn:active { transform: scale(0.975); opacity: 0.85; }
+.btn[disabled] { opacity: 0.4; pointer-events: none; }
 .btn.pieno { width: 100%; }
-.btn.tinto { background: var(--accento); color: var(--fondo); }
-.btn.morbido { background: var(--scheda-alta); color: var(--testo); }
-.btn.nudo { background: none; color: var(--testo-2); min-height: var(--tocco); }
-.btn.distruttivo { background: var(--male); color: #fff; }
+
+/* Il tinto porta la tinta del MODULO, non il segnale: parla del dato di
+   quel modulo, non dell'azione principale della schermata. */
+.btn.tinto {
+  background: color-mix(in srgb, var(--accento) 15%, transparent);
+  color: var(--accento);
+}
+
+/* Il morbido è il secondario: superficie dei controlli, testo bianco.
+   Il filo lo tiene separato dalla scheda su cui appoggia. */
+.btn.morbido {
+  background: var(--rilievo-2);
+  border: 1px solid var(--riga-fine);
+  color: var(--inchiostro);
+}
+
+.btn.nudo {
+  background: none;
+  color: var(--segnale);
+  min-height: var(--tocco);
+  padding: 0 var(--s-12);
+  font-weight: 500;
+}
+
+/* Tinto a riposo, mai pieno: pieno, in una lista di impostazioni, diventa
+   la cosa più vistosa della schermata — e quella cosa è un pulsante che
+   cancella. */
+.btn.distruttivo {
+  background: color-mix(in srgb, var(--male) 15%, transparent);
+  color: var(--male);
+}
 .btn.distruttivo.nudo { background: none; color: var(--male); }
-.btn.piccolo { min-height: 38px; padding: 0 var(--s4); font-size: var(--t-15); }
-.btn.grande { min-height: 56px; font-size: var(--t-17); border-radius: var(--r-btn); }
+
+.btn.piccolo { min-height: 38px; padding: 0 var(--s-16); font-size: var(--t-15); border-radius: var(--r-basso); }
+.btn.grande  { min-height: 56px; }
 
 .btn-icona {
   width: var(--tocco); height: var(--tocco);
+  flex: none;
   display: inline-flex; align-items: center; justify-content: center;
-  border: 0; border-radius: 50%;
-  background: var(--scheda);
-  color: var(--testo);
+  border: 0;
+  border-radius: var(--r-tondo);
+  background: none;
+  color: var(--inchiostro-2);
   cursor: pointer;
-  transition: background var(--veloce) var(--curva), transform var(--veloce) var(--molla);
+  transition: background var(--durata-rapida) var(--curva-standard),
+              color var(--durata-rapida) var(--curva-standard);
 }
-.btn-icona:active { background: var(--scheda-viva); transform: scale(0.9); }
+.btn-icona:active { background: var(--rilievo-2); color: var(--inchiostro); }
 
-/* =============================================================== campi === */
+/* Il tasto del tastierino: alto, senza fondo a riposo. A una mano il
+   pollice sbaglia in verticale più che in orizzontale, quindi l'altezza
+   conta più della larghezza. */
+.tasto {
+  min-height: 62px;
+  border: 0;
+  border-radius: var(--r-basso);
+  background: none;
+  color: var(--inchiostro);
+  font-family: var(--font-d);
+  font-size: var(--t-24);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background var(--durata-rapida) var(--curva-standard);
+}
+.tasto:active { background: var(--rilievo-2); }
+
+
+/* =============================================================== campi ===
+   `--t-17` È IL MINIMO ASSOLUTO, mai `--t-15` o sotto: iOS zooma al focus e
+   non torna indietro. È un baco di sistema, non una preferenza.
+
+   Il campo è scavato nell'incavo e SENZA bordo a riposo: su nero un bordo
+   permanente attorno a ogni campo fa sembrare il foglio un modulo
+   cartaceo. Il bordo compare quando serve — sul fuoco e sull'errore. */
 
 .campo {
   width: 100%;
-  min-height: 52px;
-  padding: 14px var(--s4);
-  border: 0;
-  border-radius: var(--r-campo);
-  background: var(--scheda-alta);
-  color: var(--testo);
+  min-height: 50px;
+  padding: 0 var(--s-16);
+  border: 1px solid transparent;
+  border-radius: var(--r-basso);
+  background: var(--incavo);
+  color: var(--inchiostro);
   font-family: var(--font);
   font-size: var(--t-17);
-  transition: box-shadow var(--veloce) var(--curva);
+  transition: border-color var(--durata-rapida) var(--curva-standard),
+              background var(--durata-rapida) var(--curva-standard);
 }
-.campo::placeholder { color: var(--testo-3); }
-.campo:focus { outline: none; box-shadow: 0 0 0 3px var(--accento-velo); }
+.campo::placeholder { color: var(--inchiostro-4); }
+.campo:focus { outline: none; border-color: var(--segnale); background: var(--rilievo-2); }
+.campo.male  { border-color: var(--male); }
+.campo[disabled] { opacity: 0.45; }
 select.campo { appearance: none; }
+textarea.campo { padding: var(--s-12) var(--s-16); line-height: 1.45; resize: vertical; }
+
+.campo-errore { display: block; margin-top: var(--s-6); font-size: var(--t-13); color: var(--male); }
 
 .campo-etichetta {
   display: block;
-  font-size: var(--t-11);
-  font-weight: 700;
+  font-size: var(--t-12);
+  font-weight: var(--t-12-peso);
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--testo-3);
-  margin: 0 0 var(--s2) 2px;
+  color: var(--inchiostro-3);
+  margin: 0 0 var(--s-8) 2px;
 }
-.campo-gruppo { margin-bottom: var(--s4); }
+.campo-gruppo { margin-bottom: var(--s-16); }
 
-/* ============================================== selettori e interruttori == */
 
-/* La pillola col menu a tendina in alto a destra, tipo "settimana ⌄". */
+/* ============================================== selettori e interruttori ==
+   I SEGMENTI stanno in un incavo e si escludono; le PILLOLE stanno sul
+   rilievo e si sommano. La forma dice già quale delle due è. */
+
+/* Il selettore è una riga con valore e chevron che apre un altro contesto. */
 .selettore {
   display: inline-flex;
   align-items: center;
-  gap: var(--s1);
-  min-height: 38px;
-  padding: 0 var(--s3);
+  gap: var(--s-6);
+  min-height: var(--tocco);
+  padding: 0 var(--s-8);
   border: 0;
-  border-radius: var(--r-pillola);
-  background: var(--scheda-alta);
-  color: var(--testo);
+  border-radius: var(--r-basso);
+  background: none;
+  color: var(--inchiostro);
   font-family: var(--font);
-  font-size: var(--t-13);
+  font-size: var(--t-15);
   font-weight: 600;
   cursor: pointer;
+  transition: opacity var(--durata-rapida) var(--curva-standard);
 }
-.selettore svg { width: 14px; height: 14px; opacity: 0.6; }
+.selettore:active { opacity: 0.6; }
+.selettore svg { width: 17px; height: 17px; color: var(--inchiostro-4); }
 
 .segmenti {
   display: flex;
-  gap: 2px;
+  gap: 3px;
   padding: 3px;
-  border-radius: var(--r-pillola);
-  background: var(--scheda-alta);
+  border-radius: 13px;              /* --r-basso + il padding, così i due
+                                       raggi restano concentrici */
+  background: var(--incavo);
 }
 .segmento {
   flex: 1;
   min-height: 38px;
   border: 0;
-  border-radius: var(--r-pillola);
+  border-radius: var(--r-basso);
   background: none;
-  color: var(--testo-2);
+  color: var(--inchiostro-3);
   font-family: var(--font);
-  font-size: var(--t-13);
-  font-weight: 600;
+  font-size: var(--t-15);
+  font-weight: 550;
   cursor: pointer;
-  transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
+  transition: background var(--durata-media) var(--curva-decisa),
+              color var(--durata-media) var(--curva-decisa);
 }
-.segmento[aria-pressed="true"] { background: var(--scheda-viva); color: var(--testo); }
+/* Il selezionato è la superficie dei controlli col suo filo: legge come una
+   pastiglia sollevata, che è esattamente il gesto di un segmentato. */
+.segmento[aria-pressed="true"] {
+  background: var(--rilievo-3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  color: var(--inchiostro);
+  font-weight: 650;
+}
 
-.pillole { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.pillole { display: flex; flex-wrap: wrap; gap: var(--s-8); }
 .pillole.riga-unica {
   flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
-  margin-inline: calc(-1 * var(--s4)); padding-inline: var(--s4); padding-bottom: 2px;
+  margin-inline: calc(-1 * var(--s-20)); padding-inline: var(--s-20); padding-bottom: 2px;
 }
 .pillole.riga-unica::-webkit-scrollbar { display: none; }
 
+/* Il segno visibile è più basso di 44px: l'area di tocco la allarga il
+   padding verticale, non un `min-height` visibile. Il selezionato si
+   RIEMPIE invece di prendere un bordo blu: un bordo da 2px su una
+   pastiglia piccola la fa vibrare. */
 .pillola {
-  min-height: 40px;
-  padding: 0 var(--s4);
-  border: 0;
-  border-radius: var(--r-pillola);
-  background: var(--scheda-alta);
-  color: var(--testo-2);
+  padding: var(--s-8) var(--s-16);
+  border: 1px solid var(--riga-fine);
+  border-radius: var(--r-tondo);
+  background: none;
+  color: var(--inchiostro-2);
   font-family: var(--font);
   font-size: var(--t-15);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
-  transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
+  transition: background var(--durata-rapida) var(--curva-standard),
+              color var(--durata-rapida) var(--curva-standard),
+              border-color var(--durata-rapida) var(--curva-standard);
 }
-.pillola[aria-pressed="true"] { background: var(--testo); color: var(--fondo); font-weight: 600; }
-.pillola:active { opacity: 0.7; }
+.pillola[aria-pressed="true"] {
+  background: var(--inchiostro);
+  border-color: var(--inchiostro);
+  color: var(--fondo);
+  font-weight: 600;
+}
 
+/* La pista è 46×27 e il pallino 23: il bersaglio da 44 lo fa il padding
+   attorno, non la pista. Acceso è SEGNALE, non verde — è un comando, non
+   uno stato «va bene». */
 .interruttore {
-  width: 50px; height: 30px;
+  width: 47px; height: 28px;
   flex: none;
   display: block;
   border: 0;
-  border-radius: var(--r-pillola);
-  background: var(--traccia);
+  border-radius: var(--r-tondo);
+  background: var(--rilievo-3);
   padding: 2px;
   cursor: pointer;
-  transition: background var(--veloce) var(--curva);
+  transition: background var(--durata-media) var(--curva-standard);
 }
 .interruttore-pallina {
   display: block;
-  width: 26px; height: 26px;
+  width: 24px; height: 24px;
   border-radius: 50%;
-  background: #fff;
-  transition: transform var(--veloce) var(--molla);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  transition: transform var(--durata-media) var(--curva-decisa);
 }
-.interruttore.acceso { background: var(--ok); }
-.interruttore.acceso .interruttore-pallina { transform: translateX(20px); }
+.interruttore.acceso { background: var(--segnale); }
+.interruttore.acceso .interruttore-pallina { transform: translateX(19px); }
 
-/* ========================================================= avanzamento === */
 
-.traccia {
-  height: 8px;
-  border-radius: var(--r-pillola);
-  background: var(--traccia);
+/* ========================================================= avanzamento ===
+   La traccia: 6px, fondo `--incavo`, riempimento della tinta, tondo alle
+   due estremità.
+
+   Il fondo è l'INCAVO e non il rilievo: una barra è una cosa scavata, e su
+   nero il binario deve stare più in basso del riempimento, non allo stesso
+   piano della scheda.
+
+   `.guida` è la stessa cosa con una tacca in più: `ui.js` la emette, e la
+   tacca dice dove DOVRESTI essere. */
+
+.traccia, .guida {
+  position: relative;
+  height: 6px;
+  border-radius: var(--r-tondo);
+  background: var(--incavo);
   overflow: hidden;
 }
-.traccia.sottile { height: 5px; }
-.traccia > .barra {
-  height: 100%;
-  border-radius: var(--r-pillola);
-  background: var(--tinta, var(--accento));
-  transition: width var(--lento) var(--curva);
-}
+.traccia.sottile, .guida.sottile { height: 4px; }
+.guida.alta { height: 10px; }
+.guida { overflow: visible; }
+.traccia + .traccia { margin-top: var(--s-16); }
 
-/* La barra a segmenti: una riga sola divisa in fette colorate, con la
-   legenda sotto. Dice la composizione senza chiedere una ciambella. */
+.traccia > .barra, .guida > i {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  border-radius: var(--r-tondo);
+  background: var(--tinta, var(--accento));
+  transition: width var(--durata-lenta) var(--curva-decisa);
+}
+.traccia > .barra { position: relative; height: 100%; }
+.traccia > .barra.avviso { background: var(--avviso); }
+.traccia > .barra.oltre  { background: var(--male); }
+
+.guida > i.eccesso { background: var(--ok); }
+.guida.giu > i.eccesso { background: var(--male); }
+.guida.tono-avviso > i:not(.eccesso) { background: var(--avviso); }
+.guida.tono-male   > i:not(.eccesso) { background: var(--male); }
+/* La tacca sporge sopra e sotto il binario: dentro si confondeva col
+   riempimento appena i due si toccavano. */
+.guida > b {
+  position: absolute;
+  top: -3px; bottom: -3px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--inchiostro-2);
+}
+.guida.oltre > b { background: var(--inchiostro); }
+
+/* La spezzata: la barra a segmenti delle proporzioni. È l'unico posto dove
+   più tinte stanno una accanto all'altra, e funziona perché ogni segmento
+   ha una legenda sotto che lo nomina. */
 .spezzata {
   display: flex;
   gap: 2px;
-  height: 10px;
-  border-radius: var(--r-pillola);
+  height: 8px;
+  border-radius: var(--r-tondo);
   overflow: hidden;
-  margin-bottom: var(--s3);
+  background: var(--incavo);
+  margin-bottom: var(--s-16);
 }
-.spezzata > i { display: block; height: 100%; background: var(--tinta); }
-.legenda { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); }
-.legenda-voce { display: inline-flex; align-items: center; gap: 6px; font-size: var(--t-11); color: var(--testo-2); }
-.legenda-voce b { color: var(--testo); font-weight: 600; }
-.punto { width: 8px; height: 8px; border-radius: 50%; background: var(--tinta); flex: none; }
+.spezzata > i { display: block; height: 100%; background: var(--tinta); border-radius: 2px; }
 
+.legenda { display: flex; flex-direction: column; gap: var(--s-12); }
+.legenda-voce { display: flex; align-items: center; gap: var(--s-8); font-size: var(--t-15); color: var(--inchiostro-2); }
+.legenda-voce b { margin-left: auto; color: var(--inchiostro); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* IL PUNTO. È il modo principale con cui il colore entra in questa app:
+   8px, pieno, saturo, accanto a un'etichetta grigia. Tutto il resto della
+   riga resta neutro. */
+.punto { width: 8px; height: 8px; border-radius: var(--r-tondo); background: var(--tinta); flex: none; }
+
+/* L'anello: traccia spessa a qualunque diametro, riempimento della tinta
+   del modulo — mai il segnale, perché l'anello non è «tocca qui». */
 .anello { display: block; transform: rotate(-90deg); }
 .anello circle { fill: none; }
 
-/* ============================================================== fogli ==== */
+
+/* ============================================================== fogli ====
+   L'UNICO componente che porta `--ombra`. Il velo è nero pieno: su un
+   fondo già nero serve a spegnere quello che c'è sotto, non a tingerlo. */
 
 .velo {
   position: fixed; inset: 0; z-index: 90;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(2px);
+  background: #000;
   opacity: 0; pointer-events: none;
-  transition: opacity var(--normale) var(--curva);
+  transition: opacity var(--durata-media) var(--curva-standard);
 }
-.velo.aperto { opacity: 1; pointer-events: auto; }
+.velo.aperto { opacity: 0.68; pointer-events: auto; }
 
 .foglio {
   position: fixed;
@@ -618,91 +891,105 @@ select.campo { appearance: none; }
   max-height: 92dvh;
   display: flex;
   flex-direction: column;
-  border-radius: 28px 28px 0 0;
-  background: var(--fondo-alto);
-  border-top: 1px solid var(--filo);
+  border-top: 1px solid var(--riga-marcata);
+  border-radius: var(--r-alto) var(--r-alto) 0 0;
+  background: var(--rilievo);
+  box-shadow: var(--ombra);
   transform: translateY(101%);
-  transition: transform var(--normale) var(--curva);
+  transition: transform var(--durata-lenta) var(--curva-decisa);
   padding-bottom: env(safe-area-inset-bottom);
 }
 .foglio.aperto { transform: none; }
 .foglio.mezzo { max-height: 58dvh; }
 
 .foglio-maniglia {
-  width: 40px; height: 5px;
-  border-radius: var(--r-pillola);
-  background: var(--testo-4);
-  margin: var(--s2) auto var(--s1);
+  width: 36px; height: 5px;
+  border-radius: var(--r-tondo);
+  background: var(--riga-marcata);
+  margin: var(--s-8) auto 0;
   flex: none;
 }
 .foglio-testa {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: var(--s2);
-  padding: var(--s2) var(--s3) var(--s3);
+  gap: var(--s-8);
+  padding: var(--s-12) var(--s-12) var(--s-16);
   flex: none;
 }
-.foglio-testa h3 { font-family: var(--font); font-size: var(--t-17); font-weight: 600; text-align: center; letter-spacing: -0.01em; }
+.foglio-testa h3 {
+  font-family: var(--font); font-size: var(--t-17); font-weight: 650;
+  letter-spacing: -0.2px; text-align: center; white-space: nowrap;
+}
 .foglio-testa .btn.nudo:first-child { justify-self: start; }
-.foglio-testa .btn.nudo:last-child { justify-self: end; color: var(--accento); }
+.foglio-testa .btn.nudo:last-child { justify-self: end; font-weight: 650; }
 /* `overscroll-behavior: contain`: arrivato in fondo al foglio, lo
-   scorrimento NON prosegue sulla pagina sotto. È quello che fa sembrare il
-   tastierino a schermo intero una schermata sua invece di un pannello
-   appoggiato su una pagina che si muove. */
+   scorrimento NON prosegue sulla pagina sotto. `overflow-x: hidden` non è
+   pignoleria: le pillole a riga unica escono di proposito dai margini, e un
+   figlio più largo del genitore rende scorrevole ANCHE l'asse x. */
 .foglio-corpo {
   overflow-y: auto;
-  /* `overflow-x: hidden` non è pignoleria: le strisce di pillole a riga
-     unica escono di proposito dai margini del foglio (`margin-inline`
-     negativo) per andare a filo dello schermo, e un figlio più largo del
-     genitore che ha `overflow-y: auto` rende scorrevole ANCHE l'asse x. È
-     il motivo per cui il tastierino a schermo intero si poteva trascinare
-     di lato. Le pillole continuano a scorrere: quello è il loro overflow,
-     non questo. */
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 0 var(--s4) var(--s5);
+  padding: 0 var(--s-20) var(--s-20);
 }
+.foglio-piede {
+  flex: none;
+  display: flex; gap: var(--s-8);
+  padding: var(--s-12) var(--s-20) var(--s-16);
+  border-top: 1px solid var(--riga-fine);
+  background: var(--rilievo);
+}
+.foglio-piede .btn { flex: 1; }
 
-/* ============================================================= avvisi ==== */
+
+/* ============================================================= avvisi ====
+   Il toast si chiama `.bolla` e NON `.avviso` — e non è pedanteria: le
+   tessere usano `.micro.avviso` per il tono giallo, i due nomi si sono già
+   incontrati una volta, e l'etichetta minuscola è diventata una pillola
+   bianca grande quanto la tessera. */
 
 #avvisi {
   position: fixed;
-  left: 50%; bottom: calc(env(safe-area-inset-bottom) + 104px);
+  left: 50%; bottom: calc(env(safe-area-inset-bottom) + 80px);
   transform: translateX(-50%);
   z-index: 120;
-  display: flex; flex-direction: column; align-items: center; gap: var(--s2);
+  display: flex; flex-direction: column; align-items: stretch; gap: var(--s-8);
   pointer-events: none;
-  width: max-content; max-width: calc(100vw - var(--s8));
+  width: max-content; max-width: calc(100vw - var(--s-38));
 }
-/* La bolla del toast. Non si chiama `.avviso` — e non è pedanteria: le
-   tessere usano `.micro.avviso` per il tono giallo, i due nomi si
-   incontravano, e l'etichetta minuscola diventava una pillola bianca
-   grande quanto la tessera. */
 .bolla {
-  padding: 12px var(--s5);
-  border-radius: var(--r-pillola);
-  background: var(--testo);
-  color: var(--fondo);
+  display: flex; align-items: center; gap: var(--s-8);
+  padding: var(--s-12) var(--s-16);
+  border: 1px solid var(--riga-marcata);
+  border-radius: var(--r-basso);
+  background: var(--rilievo-3);
+  color: var(--inchiostro);
   font-size: var(--t-15);
-  font-weight: 600;
-  text-align: center;
-  animation: sali var(--normale) var(--molla);
+  font-weight: 500;
+  box-shadow: var(--ombra);
+  animation: sali var(--durata-media) var(--curva-decisa);
 }
-.bolla.errore { background: var(--male); color: #fff; }
-.bolla.via { opacity: 0; transition: opacity var(--normale) var(--curva); }
-@keyframes sali { from { opacity: 0; transform: translateY(14px) scale(0.94); } }
+.bolla::before {
+  content: "";
+  flex: none;
+  width: 7px; height: 7px;
+  border-radius: var(--r-tondo);
+  background: var(--inchiostro-3);
+}
+.bolla.ok::before     { background: var(--ok); }
+.bolla.avviso::before { background: var(--avviso); }
+.bolla.errore::before { background: var(--male); }
+.bolla.via { opacity: 0; transition: opacity var(--durata-media) var(--curva-standard); }
+@keyframes sali { from { opacity: 0; transform: translateY(12px); } }
 
-/* ------------------------------------------------------- la conferma grande
 
-   `celebra()`: la patina e la spunta che si disegna. Sta qui e non in un
-   modulo perché è un gesto del guscio — chiunque abbia un'abitudine
-   quotidiana da chiudere la userà, e averne due versioni diverse sarebbe la
-   duplicazione che ATLAS esiste per togliere.
-
-   Niente coriandoli. Una cosa che festeggia troppo la prima volta imbarazza
-   la decima, e questa la si vede ogni giorno.                              */
+/* --------------------------------------------------------- la conferma --
+   Micro-feedback su un traguardo. Colore `--ok` ed esclusivamente quello,
+   un solo ciclo, mai in loop. Niente coriandoli, mascotte o suoni: una cosa
+   che festeggia troppo la prima volta imbarazza la decima, e questa la si
+   vede ogni giorno. */
 
 .celebra {
   position: fixed;
@@ -712,115 +999,87 @@ select.campo { appearance: none; }
   place-items: center;
   pointer-events: none;
   opacity: 0;
-  transition: opacity var(--normale) var(--curva);
+  transition: opacity var(--durata-media) var(--curva-standard);
 }
 .celebra.acceso { opacity: 1; }
-
-/* La patina: verde solo al centro e verso i bordi, non un lastrone. Un velo
-   pieno sopra lo schermo nasconde quello che si è appena fatto, e la prima
-   cosa che si guarda dopo aver confermato è proprio quella. */
 .celebra-fondo {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(60% 45% at 50% 50%,
-      color-mix(in srgb, var(--tinta) 30%, transparent), transparent 70%),
-    color-mix(in srgb, var(--tinta) 10%, transparent);
+  background: radial-gradient(56% 42% at 50% 50%,
+    color-mix(in srgb, var(--ok) 18%, transparent), transparent 70%);
 }
-
-.celebra-centro {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--s3);
-}
+.celebra-centro { position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--s-16); }
 .celebra-spunta {
   display: block;
-  color: var(--tinta);
-  filter: drop-shadow(0 6px 24px color-mix(in srgb, var(--tinta) 45%, transparent));
-  animation: celebra-entra 420ms var(--molla) both;
+  color: var(--ok);
+  animation: celebra-entra var(--durata-lenta) var(--curva-decisa) both;
 }
 .celebra-testo {
   margin: 0;
   max-width: 22ch;
   font-family: var(--font-d);
   font-size: var(--t-19);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 650;
   text-align: center;
-  color: var(--testo);
-  animation: celebra-entra 420ms 90ms var(--molla) both;
+  color: var(--inchiostro);
+  animation: celebra-entra var(--durata-lenta) 90ms var(--curva-decisa) both;
 }
-
-/* L'anello si chiude e poi il tratto si disegna dentro. 175 è la
-   circonferenza del cerchio r=27 arrotondata per eccesso (169,6): sotto, un
-   pezzetto di anello resterebbe già visibile al primo fotogramma. */
-.celebra-anello {
-  stroke-dasharray: 175;
-  stroke-dashoffset: 175;
-  animation: celebra-traccia 520ms var(--curva) forwards;
-}
-.celebra-tratto {
-  stroke-dasharray: 60;
-  stroke-dashoffset: 60;
-  animation: celebra-traccia 300ms 300ms var(--curva) forwards;
-}
-
-@keyframes celebra-entra { from { opacity: 0; transform: scale(0.72); } }
+/* 175 è la circonferenza del cerchio r=27 arrotondata per eccesso (169,6):
+   sotto, un pezzetto di anello resterebbe già visibile al primo
+   fotogramma. */
+.celebra-anello { stroke-dasharray: 175; stroke-dashoffset: 175; animation: celebra-traccia var(--durata-lenta) var(--curva-standard) forwards; }
+.celebra-tratto { stroke-dasharray: 60; stroke-dashoffset: 60; animation: celebra-traccia var(--durata-media) var(--durata-media) var(--curva-standard) forwards; }
+@keyframes celebra-entra { from { opacity: 0; transform: scale(0.82); } }
 @keyframes celebra-traccia { to { stroke-dashoffset: 0; } }
 
-/* Con il movimento ridotto resta la dissolvenza: la spunta c'è, disegnata
-   tutta insieme invece che tratto per tratto. */
 @media (prefers-reduced-motion: reduce) {
   .celebra-anello, .celebra-tratto { animation: none; stroke-dashoffset: 0; }
   .celebra-spunta, .celebra-testo { animation: none; }
 }
 
-/* ============================================================ stato sync = */
+
+/* ============================================================ stato sync =
+   Il pallino vive in due posti soli: la testata di Oggi e Impostazioni. In
+   cima a ogni modulo cambiava colore in un punto diverso ogni volta. */
 
 .sync-pallino {
   width: 7px; height: 7px; border-radius: 50%;
-  background: var(--testo-4); flex: none;
-  transition: background var(--normale) var(--curva);
+  background: var(--inchiostro-4); flex: none;
+  transition: background var(--durata-media) var(--curva-standard);
 }
 .sync-pallino.is-ok       { background: var(--ok); }
-.sync-pallino.is-corso    { background: var(--avviso); animation: pulsa 1.3s ease-in-out infinite; }
+.sync-pallino.is-corso    { background: var(--segnale); animation: pulsa 1.3s ease-in-out infinite; }
 .sync-pallino.is-err      { background: var(--male); }
-/* Grigi, e scritti: erano gli unici due stati senza regola e finivano sul
-   colore di partenza per caso. Un colore che capita non è un colore. */
-.sync-pallino.is-off      { background: var(--testo-4); }
-.sync-pallino.is-inattivo { background: var(--testo-4); }
+.sync-pallino.is-off      { background: none; box-shadow: inset 0 0 0 1px var(--inchiostro-4); }
+.sync-pallino.is-inattivo { background: var(--inchiostro-4); }
 @keyframes pulsa { 50% { opacity: 0.2; } }
 
-/* ============================================================ eventi ===== */
-/*
-   La voce di calendario condivisa: data a sinistra, filo, nome, valore.
-   La costruisce `voceEvento()` in core/ui.js, e la usano la carta Finanze
-   della home e la scheda «In arrivo» dentro Finanze. Una sola, perché due
-   copie della stessa riga fra un mese non si somigliano più.
 
-   Il filo resta spento quasi sempre: se ogni riga è colorata, il colore non
-   dice più «questa».
-*/
+/* ============================================================ eventi =====
+   La voce di calendario condivisa: data, filo, nome, valore. Una sola,
+   perché due copie della stessa riga fra un mese non si somigliano più.
+
+   IL FILO È SPENTO DI SERIE, e resta un grigio da separatore. Si accende
+   solo su `avviso` e `male`, che sono STATI. Prima era colorato su ogni
+   riga e la lista sembrava un equalizzatore: quando tutto è segnalato,
+   niente è segnalato. */
 
 .eventi { list-style: none; display: flex; flex-direction: column; }
 .evento-riga { display: contents; }
 
 .evento {
   display: grid;
-  grid-template-columns: 48px 3px 1fr auto;
+  grid-template-columns: 44px 2px 1fr auto;
   align-items: center;
-  gap: var(--s3);
+  gap: var(--s-12);
   width: 100%;
-  padding: var(--s2) 0;
-  --tinta: var(--filo);
+  min-height: var(--tocco);
+  padding: var(--s-10, 10px) 0;
+  --tinta: var(--riga-marcata);
 }
 .evento.avviso { --tinta: var(--avviso); }
 .evento.male   { --tinta: var(--male); }
 
-/* Quando è toccabile è un `<button>`: si azzera quello che il browser gli
-   mette sopra, non si ridisegna — la griglia è la stessa. */
 button.evento {
   border: 0;
   background: none;
@@ -828,201 +1087,152 @@ button.evento {
   font: inherit;
   text-align: left;
   cursor: pointer;
-  border-radius: var(--r-interno);
-  padding: var(--s2) var(--s2);
-  margin: 0 calc(-1 * var(--s2));
-  width: calc(100% + var(--s4));
-  transition: background var(--veloce) var(--curva);
+  border-radius: var(--r-basso);
+  padding: 10px var(--s-8);
+  margin: 0 calc(-1 * var(--s-8));
+  width: calc(100% + var(--s-16));
+  grid-template-columns: 44px 2px 1fr auto 15px;
+  transition: opacity var(--durata-rapida) var(--curva-standard);
 }
-button.evento:active { background: var(--scheda-alta); }
-button.evento { grid-template-columns: 48px 3px 1fr auto 15px; }
+button.evento:active { opacity: 0.55; }
 
-.evento-data { display: flex; flex-direction: column; line-height: 1.15; }
-.evento-giorno {
-  font-size: var(--t-11);
-  font-weight: 700;
-  text-transform: capitalize;
-  color: var(--testo-3);
-}
-.evento-data.oggi .evento-giorno { color: var(--accento); }
-.evento-mese { font-size: var(--t-10); color: var(--testo-3); white-space: nowrap; }
+.evento-data { display: flex; flex-direction: column; line-height: 1.2; }
+.evento-giorno { font-size: var(--t-13); font-weight: 600; text-transform: capitalize; color: var(--inchiostro-2); }
+.evento-data.oggi .evento-giorno { color: var(--inchiostro); }
+.evento-mese { font-size: var(--t-12); font-weight: 450; letter-spacing: 0; text-transform: none; color: var(--inchiostro-4); white-space: nowrap; }
 
 /* Il filo va da bordo a bordo della riga, non solo dietro il testo: è
    quello che lo fa leggere come la barra di un evento e non come un
    trattino. */
-.evento-filo {
-  align-self: stretch;
-  min-height: 30px;
-  border-radius: 999px;
-  background: var(--tinta);
-}
+.evento-filo { align-self: stretch; min-height: 28px; border-radius: var(--r-tondo); background: var(--tinta); }
 
-.evento-testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.evento-nome {
-  font-size: var(--t-15);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.evento-dett {
-  font-size: var(--t-11);
-  color: var(--testo-3);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+.evento-testo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.evento-nome { font-size: var(--t-15); font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.evento-dett { font-size: var(--t-12); font-weight: 450; letter-spacing: 0; text-transform: none; color: var(--inchiostro-4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .evento.male .evento-dett { color: var(--male); }
-.evento-valore {
-  font-size: var(--t-15);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.evento-valore { font-size: var(--t-15); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.evento-freccia { display: flex; color: var(--inchiostro-4); }
+
+
+/* ============================================================== vuoto ====
+   MAI NASCONDERE IL CONTENITORE: cambia il contenuto interno, mai
+   l'ingombro esterno. */
+
+.vuoto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-6);
+  padding: var(--s-28) var(--s-16);
+  text-align: center;
+  color: var(--inchiostro-3);
 }
-.evento-freccia { display: flex; color: var(--testo-3); }
+.vuoto .grande { font-size: var(--t-15); font-weight: 500; color: var(--inchiostro-2); }
+.vuoto .nota { color: var(--inchiostro-4); }
 
-/* ============================================================== vuoto ==== */
-
-.vuoto { padding: var(--s16) var(--s4); text-align: center; color: var(--testo-3); }
-.vuoto .grande { font-family: var(--font-d); font-size: var(--t-22); font-weight: 700; color: var(--testo); margin-bottom: var(--s2); letter-spacing: -0.02em; }
 
 /* =============================================================== varie === */
 
 code {
   font-family: var(--font-m); font-size: 0.9em;
-  padding: 2px 6px; border-radius: 6px; background: var(--scheda-alta);
+  padding: 2px 6px; border-radius: 6px; background: var(--rilievo-2);
 }
-.diagnostica { font-family: var(--font-m); font-size: var(--t-11); line-height: 1.7; color: var(--testo-2); word-break: break-word; }
-hr { border: 0; height: 1px; background: var(--filo); margin: var(--s4) 0; }
+.diagnostica { font-family: var(--font-m); font-size: var(--t-12); font-weight: 400; letter-spacing: 0; text-transform: none; line-height: 1.7; color: var(--inchiostro-2); word-break: break-word; }
+hr { border: 0; height: 1px; background: var(--riga-fine); margin: var(--s-16) 0; }
 [hidden] { display: none !important; }
 .solo-lettori-schermo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* ========================================================== da scrivania = */
-/* La barra scende dal fondo e diventa colonna. Il contenuto resta una
-   colonna leggibile invece di stirarsi: una riga lunga 1600px non si legge,
-   e una tabella di movimenti larga uno schermo intero nemmeno. */
+
+/* ========================================================== da scrivania =
+   La barra scende dal fondo e diventa una COLONNA DA 96px.
+
+   NON è una griglia, ed è deliberato: con `display: grid`
+   l'auto-placement metteva barra e contenuto su due righe, e il risultato
+   era la barra a metà pagina con mille pixel di fondo sotto. */
+
+#barra .marchio { display: none; }
 
 @media (min-width: 900px) {
-  #app { padding-left: 244px; }
+  #app { padding-left: 96px; }
 
   #barra {
     top: 0; bottom: 0; right: auto;
-    width: 244px;
+    width: 96px;
+    min-height: 0;
     flex-direction: column;
     justify-content: flex-start;
     align-items: stretch;
     gap: 2px;
-    padding: var(--s6) var(--s3);
+    padding: var(--s-20) var(--s-8);
     border-top: 0;
-    border-right: 1px solid var(--filo);
-    background: var(--fondo-alto);
-    backdrop-filter: none;
+    border-right: 1px solid var(--riga-fine);
+    background: var(--fondo);
   }
   #barra .marchio {
+    display: block;
     font-family: var(--font-d);
-    font-size: var(--t-22);
+    font-size: var(--t-12);
     font-weight: 700;
-    letter-spacing: -0.02em;
-    padding: 0 var(--s3) var(--s6);
+    letter-spacing: 0.14em;
+    text-align: center;
+    color: var(--inchiostro-3);
+    padding-bottom: var(--s-20);
   }
   .tab {
     flex: none;
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: var(--s3);
-    min-height: 46px;
-    padding: 0 var(--s3);
-    border-radius: var(--r-campo);
-    font-size: var(--t-15);
-    font-weight: 500;
+    padding: var(--s-12) var(--s-4);
+    gap: var(--s-6);
+    font-size: 11px;
   }
-  /* Il glifo non si stringe mai, l'etichetta sì: senza questi due, con la
-     colonna stretta il testo scavalcava l'icona. */
-  .tab svg { width: 21px; height: 21px; flex: none; }
-  .tab > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tab svg { width: 22px; height: 22px; flex: none; }
   /* Impostazioni scende in fondo alla colonna: non è un modulo come gli
-     altri, è il posto dove si va quando qualcosa non va. Metterlo in fila
-     con Oggi e Finanze gli dava lo stesso peso di una cosa che apri ogni
-     giorno. */
+     altri, è il posto dove si va quando qualcosa non va. */
   .tab[data-modulo="impostazioni"] { margin-top: auto; }
-  .tab:hover { background: var(--scheda); }
-  .tab[aria-current="page"] { background: var(--scheda); color: var(--testo); font-weight: 600; }
-  .tab[aria-current="page"] svg { color: var(--accento); }
+  .tab:hover { background: var(--rilievo); color: var(--inchiostro-2); }
+  .tab[aria-current="page"] { background: var(--rilievo-2); color: var(--inchiostro); }
 
-  #vista { max-width: 860px; padding: var(--s10) var(--s8) var(--s16); }
-  .testa h1 { font-size: var(--t-48); }
-  .testa { margin-bottom: var(--s6); }
+  #vista { max-width: 860px; padding: var(--s-52) var(--s-38) var(--s-70); }
+  .testa { margin-top: 0; margin-bottom: var(--s-38); }
 
-  /* Il centro dell'area dei contenuti, non della finestra. */
-  #avvisi { left: calc(50% + 122px); bottom: var(--s8); max-width: calc(100vw - 244px - var(--s8)); }
-
+  /* Il centro dell'area dei contenuti, non della finestra: a sinistra ci
+     sono 96px di colonna, quindi metà di quelli. */
+  #avvisi { left: calc(50% + 48px); bottom: var(--s-38); max-width: calc(100vw - 96px - var(--s-38)); }
 
   .foglio {
-    top: 50%; left: calc(50% + 122px); right: auto; bottom: auto;
-    width: min(560px, calc(100vw - 300px));
+    top: 50%; left: calc(50% + 48px); right: auto; bottom: auto;
+    width: min(560px, calc(100vw - 200px));
     max-height: 84dvh;
-    border-radius: 24px;
-    border: 1px solid var(--filo);
+    border: 1px solid var(--riga-marcata);
+    border-radius: var(--r-alto);
     transform: translate(-50%, -46%) scale(0.98);
     opacity: 0;
-    transition: transform var(--normale) var(--curva), opacity var(--veloce) var(--curva);
+    transition: transform var(--durata-media) var(--curva-decisa),
+                opacity var(--durata-rapida) var(--curva-standard);
   }
   .foglio.aperto { transform: translate(-50%, -50%) scale(1); opacity: 1; }
   .foglio.mezzo { max-height: 84dvh; }
   .foglio-maniglia { display: none; }
-  .foglio-testa { padding-top: var(--s4); }
-}
+  .foglio-testa { padding-top: var(--s-16); }
 
-#barra .marchio { display: none; }
-@media (min-width: 900px) { #barra .marchio { display: block; } }
+  .griglia-tessere { gap: var(--s-16); }
+}
 
 /* ------------------------------------------------------- schermi larghi --
-   Da 1120px in su la colonna si allarga davvero. Restava a 860px su uno
-   schermo da 1920: due terzi di nero a destra e il contenuto impaginato
-   come su un telefono, che è esattamente il difetto che una versione da
-   scrivania dovrebbe togliere.
-
-   Le liste però NON si allargano con lei: una riga di testo lunga 1100px
-   non si legge, si insegue. Sopra i 900px di riga il testo va spezzato in
-   colonne o fermato, mai steso. */
+   Da 1120px la colonna si allarga davvero: restava a 860px su uno schermo
+   da 1920, cioè due terzi di fondo a destra e il contenuto impaginato come
+   su un telefono. Le liste però NON si allargano con lei: una riga di testo
+   lunga 1100px non si legge, si insegue. */
 @media (min-width: 1120px) {
   #vista { max-width: 1180px; }
-
-  /* Le griglie si riempiono da sole: più larghezza, più colonne. */
   .griglia-tessere { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }
-  .riquadri { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }
-
-  /* Una lista di RIGHE resta larga quanto si legge — una riga di testo lunga
-     1100px non si legge, si insegue. Ma il tetto vale solo dove la lista è
-     un dettaglio dentro una schermata: dove la lista È la schermata, come in
-     Abitudini, va a colonne, e ci pensa il modulo. */
+  .riquadri { grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
   .lista, .gruppo-titolo { max-width: 760px; }
-
-  #avvisi { max-width: calc(100vw - 244px - var(--s16)); }
+  #avvisi { max-width: calc(100vw - 96px - var(--s-70)); }
 }
 
-/* --------------------------------------------------------------- il velo --
-   Un alone della tinta del modulo in cima alla pagina, dietro tutto.
-   Serve a una cosa sola: il nero pieno da bordo a bordo è corretto ma muto,
-   e su uno schermo grande sembra che l'app non abbia finito di caricare.
-
-   Sta all'8%: abbastanza da dare un pavimento e un'identità di modulo,
-   troppo poco per spostare il contrasto di qualunque testo — la fascia più
-   luminosa è in alto, dove stanno il saluto e i titoli, cioè testo bianco su
-   quasi-nero, e lì il rapporto resta sopra 18:1. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(110% 55% at 50% -12%,
-      color-mix(in srgb, var(--accento) 8%, transparent), transparent 62%),
-    var(--fondo);
-  transition: background var(--lento) var(--curva);
-}
-
-/* Le emoji prendono il font di sistema che le disegna a colori. Va messo
-   dove le emoji stanno da sole: dentro una riga di testo la pila di `--font`
-   ci arriva comunque per fallback. */
+/* Le emoji prendono il font di sistema che le disegna a colori. Restano:
+   le abitudini le ha scelte l'utente, quindi sono un dato suo, non una
+   scelta di stile. */
 .emoji, .ab-emoji, .tessera-emoji, .fi-catriga-emoji, .ab-parte-nome, .ab-mappa-emoji, .ab-serie-emoji {
   font-family: var(--font-e), var(--font);
 }

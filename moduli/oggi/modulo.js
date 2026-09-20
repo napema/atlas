@@ -264,10 +264,20 @@ const elenco = (n) => n.length === 1 ? n[0] : `${n.slice(0, -1).join(", ")} e ${
    in cinque momenti diversi.
 */
 
-function carta({ emoji, nome, valore, tinta, classe = "", corpo }) {
+/* `ico` è il NOME di un'icona, non un'emoji.
+
+   Le emoji sono uscite dalla home ed è la correzione più visibile di questa
+   schermata: 📋 accanto a 💶 accanto a 🔥 sono tre disegni fatti da tre
+   persone diverse in tre stili diversi, e a quella misura si leggono come
+   tre macchie colorate. Le icone del repertorio condividono griglia, tratto
+   e terminali, quindi le carte sembrano finalmente parte della stessa cosa.
+
+   Le emoji restano dove sono un DATO: quelle che l'utente ha scelto per le
+   sue abitudini. */
+function carta({ ico, nome, valore, tinta, classe = "", corpo }) {
   const c = el("section", { class: `og-carta ${classe}`.trim() }, [
     el("div", { class: "og-carta-testa" }, [
-      emoji && el("span", { class: "og-carta-emoji emoji", testo: emoji }),
+      ico && el("span", { class: "og-carta-ico", html: icona(ico, 17, 1.9) }),
       el("span", { class: "og-carta-nome", testo: nome }),
       valore != null && el("span", { class: "og-carta-valore", testo: String(valore) }),
     ]),
@@ -306,7 +316,7 @@ function cartaResta(q, ridisegna) {
   // Tutto fatto davvero: non resta niente, né adesso né dopo.
   if (!q.resta.length) {
     return carta({
-      emoji: "✅", nome: "Resta da fare", tinta: "var(--ok)", classe: "og-vuota",
+      ico: "fatto", nome: "Resta da fare", tinta: "var(--ok)", classe: "og-vuota",
       corpo: el("p", { class: "og-tuttofatto", testo:
         "Niente. Hai spuntato tutto quello che c'era oggi." }),
     });
@@ -316,7 +326,7 @@ function cartaResta(q, ridisegna) {
   // non va detta allo stesso modo: qui c'è ancora roba, solo non ora.
   if (!q.prio.length) {
     return carta({
-      emoji: "🌤️", nome: "Resta da fare", tinta: "var(--ok)", classe: "og-vuota",
+      ico: "sole", nome: "Resta da fare", tinta: "var(--ok)", classe: "og-vuota",
       corpo: [
         el("p", { class: "og-tuttofatto", testo:
           `Adesso non ti tocca niente. ${plurale(q.dopo, "cosa aspetta", "cose aspettano")} più avanti.` }),
@@ -329,8 +339,8 @@ function cartaResta(q, ridisegna) {
   const nascoste = (q.prio.length - mostrate.length) + q.dopo;
 
   return carta({
-    emoji: "📋", nome: "Adesso", valore: q.prio.length,
-    tinta: "var(--accento)", classe: "og-resta",
+    ico: "spunta", nome: "Adesso", valore: q.prio.length,
+    tinta: "var(--t-lilla)", classe: "og-resta",
     corpo: [
       el("ul", { class: "og-lista" }, mostrate.map((v) => voce(v, ridisegna))),
       nascoste > 0 && collegamentoAbitudini(nascoste),
@@ -392,7 +402,7 @@ function cartaFinanze(q) {
   if (!f) return null;
 
   return carta({
-    emoji: "💶", nome: "Finanze", tinta: "var(--lime)", classe: "og-soldi",
+    ico: "finanze", nome: "Finanze", tinta: "var(--t-ambra)", classe: "og-soldi",
     corpo: [
       el("div", { class: "og-soldi-eroe" }, [
         el("span", { class: "og-soldi-cifra", testo: f.valore ?? "—" }),
@@ -555,7 +565,7 @@ function cartaCostanza() {
   const tot = letti.reduce((s, g) => ({ sp: s.sp + g.spuntate, at: s.at + g.attese }), { sp: 0, at: 0 });
 
   return carta({
-    emoji: "🔥", nome: "Costanza", tinta: "var(--arancio)",
+    ico: "fiamma", nome: "Costanza", tinta: "var(--t-lilla)",
     classe: "og-costanza",
     corpo: [
       el("div", { class: "og-serie-riga" }, [
@@ -615,7 +625,7 @@ function cartaModuli(q) {
   if (!righe.length) return null;
 
   return carta({
-    emoji: "🧭", nome: "I moduli", tinta: "var(--indaco)", classe: "og-moduli",
+    ico: "bersaglio", nome: "I moduli", tinta: "var(--t-grigio)", classe: "og-moduli",
     corpo: el("ul", { class: "og-modlista" }, righe.map((s) => {
       const d = s.dati;
       const a = el("a", { class: "og-modriga", href: d?.azione?.rotta || `#/${s.mod.id}` }, [

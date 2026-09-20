@@ -13,21 +13,42 @@
 
 /* ================================================================ schede == */
 
-.mo-schede { display: flex; gap: var(--s1); margin-bottom: var(--s5); }
+/* Il controllo a segmenti: le misure e gli stati stanno in
+   `redesign/component-specs.md` (Segmenti). Sei moduli se l'erano
+   reimplementato con un nome proprio, e per questo la schermata
+   continuava a sembrare quella di prima anche dopo il cambio dei
+   token. Finche' il nome resta locale, i valori almeno sono quelli. */
+.mo-schede {
+  display: flex;
+  gap: var(--s-4);
+  padding: var(--s-4);
+  margin-bottom: var(--s-20);
+  border-radius: 10px;
+  background: var(--incavo);
+}
 .mo-scheda {
   flex: 1;
-  min-height: 40px;
+  min-width: 0;
+  min-height: var(--tocco);
   border: 0;
-  border-radius: var(--r-pillola);
-  background: var(--scheda);
-  color: var(--testo-2);
+  border-radius: var(--r-basso);
+  background: none;
+  color: var(--inchiostro-3);
   font-family: var(--font);
-  font-size: var(--t-13);
-  font-weight: 600;
+  font-size: var(--t-15);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
-  transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
+  transition: background var(--durata-media) var(--curva-decisa),
+              color var(--durata-media) var(--curva-decisa);
 }
-.mo-scheda.attiva { background: var(--testo); color: var(--fondo); }
+.mo-scheda.attiva {
+  background: var(--rilievo-2);
+  color: var(--inchiostro);
+  font-weight: 700;
+}
 
 /* ============================================================= tipografia = */
 /* I quattro livelli di testo dell'app di partenza, ridisegnati sulla scala
@@ -96,43 +117,43 @@
 
 .btn-primary {
   width: 100%;
-  min-height: 54px;
+  min-height: 52px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--s2);
+  gap: var(--s-8);
   border: 0;
-  border-radius: var(--r-btn);
-  background: var(--testo);
-  color: var(--fondo);
+  border-radius: var(--r-alto);
+  background: var(--segnale);
+  color: var(--segnale-testo);
   font-family: var(--font);
   font-size: var(--t-17);
   font-weight: 600;
   cursor: pointer;
-  transition: transform var(--veloce) var(--molla), opacity var(--veloce) var(--curva);
+  transition: transform var(--durata-rapida) var(--curva-standard);
 }
 .btn-primary:active { transform: scale(0.985); opacity: 0.9; }
 .btn-primary[disabled] { opacity: 0.3; pointer-events: none; }
 
 .btn-secondary {
-  min-height: 46px;
-  padding: 0 var(--s5);
+  min-height: var(--tocco);
+  padding: 0 var(--s-20);
   border: 0;
-  border-radius: var(--r-btn);
-  background: var(--scheda-alta);
-  color: var(--testo);
+  border-radius: var(--r-alto);
+  background: var(--rilievo-2);
+  color: var(--inchiostro);
   font-family: var(--font);
   font-size: var(--t-15);
   font-weight: 600;
   cursor: pointer;
 }
 .btn-side {
-  min-height: 44px;
-  padding: 0 var(--s4);
+  min-height: var(--tocco);
+  padding: 0 var(--s-16);
   border: 0;
-  border-radius: var(--r-btn);
-  background: var(--scheda-alta);
-  color: var(--testo-2);
+  border-radius: var(--r-basso);
+  background: none;
+  color: var(--inchiostro-2);
   font-family: var(--font);
   font-size: var(--t-15);
   cursor: pointer;
@@ -170,16 +191,13 @@
   overflow: hidden;
   margin-bottom: var(--s3);
 }
-/* Un velo dell'accento che sfuma verso l'alto: dà profondità senza mettere
-   testo su un fondo colorato, che è dove la leggibilità si perde. */
-.riquadro-oggi::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 200px;
-  background: linear-gradient(180deg, var(--accento-tenue), transparent);
-  pointer-events: none;
-}
+/* IL VELO TINTO E' STATO TOLTO col redesign, come in Finanze e negli altri
+   eroi. Era un rettangolo di tinta alto 200px che sbiadiva verso il nero:
+   serviva a staccare il blocco principale su un fondo marrone dove tutte
+   le superfici si somigliavano. Su nero la scheda si stacca da sola col
+   suo filo, e il velo restava solo come una macchia colorata sotto cui il
+   testo grigio perdeva contrasto. Il blocco principale si riconosce da
+   quello che contiene: la cifra piu' grande della schermata. */
 .riquadro-oggi > * { position: relative; }
 .riquadro-oggi__durata {
   font-family: var(--font-d);
@@ -430,11 +448,15 @@
   gap: var(--s3);
   padding: var(--s4);
   border-radius: var(--r-interno);
-  background: color-mix(in srgb, var(--avviso) 14%, transparent);
-  color: var(--testo);
+  /* Fondo neutro e filo ambra: il fondo tinto PIU' la barra laterale
+     erano due segnali per un avviso solo, e insieme facevano un blocco
+     giallo grande quanto mezza schermata. L'icona a sinistra e' gia'
+     ambra e basta lei a dare il tono. */
+  background: var(--incavo);
+  color: var(--inchiostro-2);
   font-size: var(--t-15);
   line-height: 1.45;
-  box-shadow: inset 3px 0 0 var(--avviso);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--avviso) 45%, transparent);
 }
 .sess-avviso svg { flex: none; color: var(--avviso); }
 
@@ -496,7 +518,10 @@
   font-weight: 600;
   cursor: pointer;
 }
-.assess-tab.is-active { background: var(--testo); color: var(--fondo); }
+.assess-tab.is-active {
+  background: var(--rilievo-2);
+  color: var(--inchiostro);
+}
 .assess-part { flex: 1; min-height: 0; overflow-y: auto; padding: var(--s5) var(--s4); }
 .assess-intro { margin-bottom: var(--s5); }
 .assess-note { font-size: var(--t-13); color: var(--testo-2); line-height: 1.45; }
@@ -555,7 +580,7 @@
   padding: var(--s5);
   border-radius: var(--r-scheda);
   background: var(--scheda);
-  box-shadow: inset 3px 0 0 var(--accento);
+  box-shadow: inset 0 0 0 1px var(--riga-fine);
   margin-bottom: var(--s4);
 }
 .esito-titolo, .verdict-titolo {
