@@ -1221,12 +1221,26 @@ c'era nel piano, e l'archivio tiene solo gli scostamenti — `aggiunta`,
 `cambio`, `salto`. Stessa forma di Finanze: un'àncora e i movimenti che la
 spostano.
 
-**Decisione aperta per la chat ATLAS: la barra.** Con Pasti le schede
-diventerebbero **sei**, ed è esattamente il numero che il commento in
-`core/registro.js` dice di aver evitato quando è entrato Allenamenti — sei
-etichette da 60px su un telefono diventano illeggibili proprio dove il
-pollice ha meno spazio. Pasti però è una destinazione quotidiana, più di
-Mobilità. Va deciso prima di registrarlo, non dopo.
+**La barra: risolta.** Mobilità e Allenamenti sono diventati un **gruppo**
+(`corpo`) con una scheda sola e un interruttore al posto del titolo, quindi
+Pasti entra restando a cinque. Il gruppo è solo un fatto della barra: archivi,
+canali, `oggi()` e rotte restano separati. Vedi `GRUPPI` in
+`core/registro.js`.
+
+**Il primo database è seminato.** 21 pasti dichiarati dall'utente, in
+`SEMI` dentro `moduli/pasti/dati.js`, con `semina()` e il marcatore `semi`
+unito per unione. `modulo.js`, quando esisterà, deve chiamarla **solo** dopo
+`canale.letturaFatta`.
+
+**Resta da fare in Pasti:** `calcolo.js` (fabbisogno e bilancio), `piano.js`
+(il generatore deterministico), `viste.js`, `modulo.js`, `stile.css`, e poi
+la voce nel registro fra Finanze e Corpo.
+
+**Nota di UX rimasta aperta, fuori perimetro:** dentro Mobilità la
+sottovista «Oggi» ripete il proprio titolo sotto le pillole che lo dicono
+già. Viene dai file portati da `mobility-blueprint`, che si ricopiano tali e
+quali quando cambiano di là: si tocca solo se si rinuncia a quella
+proprietà.
 
 **Richiesta alla chat Allenamenti:** nei giorni di palestra il fabbisogno
 sale. Servirebbe che Allenamenti scrivesse sulla lavagna se oggi è stato

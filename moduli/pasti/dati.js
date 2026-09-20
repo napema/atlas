@@ -141,6 +141,12 @@ export const PREDEFINITO = {
   },
   profiloUp: 0,
 
+  /* I semi gia messi. E un INSIEME unito nella fusione (unione, non
+     "vince il piu recente"): un marcatore che si puo solo aggiungere non
+     puo essere perso da un dispositivo che sincronizza con uno stato
+     vecchio, e quindi non puo far riseminare pasti gia cancellati. */
+  semi: [],
+
   pesi: [],          // { id, data, kg, up, del } — serie, non un numero solo
   pasti: [],         // il database personale
   piani: [],         // un record per settimana
@@ -396,4 +402,93 @@ export function scegliPasto(lunedi, data, fascia, pastoId) {
   const giorni = { ...(p?.giorni || {}) };
   giorni[data] = { ...(giorni[data] || {}), [fascia]: pastoId };
   salvaPiano(lunedi, giorni, { manuale: true });
+}
+
+/* =========================================================================
+   IL PRIMO GIRO — i pasti dichiarati all'assessment, 21 in tutto.
+
+   Stanno nel codice ma NON sono codice come `COMUNI`: sono un seme. Al
+   primo avvio entrano nell'archivio e da quel momento sono record suoi,
+   con il suo `up` — modificabili, spegnibili, cancellabili. Se li
+   cancella restano cancellati: `semi` ricorda che questo seme è già stato
+   messo, e nessun dispositivo lo riporta indietro.
+
+   I valori sono quelli che ha dato lui. Non li ho ritoccati: un'app che
+   corregge in silenzio i numeri dell'utente gli toglie l'unica cosa su
+   cui può fare affidamento.
+   ========================================================================= */
+
+export const SEME = "assessment-2026-09";
+
+export const SEMI = [
+  { nome: "Uova, bacon, pane e succo ACE",
+    fasce: ["colazione"], kcal: 640, p: 32, c: 56, g: 32, prepMin: 10, tag: ["uova", "pane"] },
+  { nome: "Cornetto alla crema in friggitrice e caffè",
+    fasce: ["colazione"], kcal: 330, p: 6, c: 38, g: 17, prepMin: 12, tag: ["cornetto", "cornetto"] },
+  { nome: "Banana",
+    fasce: ["spuntino1", "spuntino2"], kcal: 105, p: 1, c: 27, g: 0, prepMin: 0, tag: ["frutta", "banana"] },
+  { nome: "Mela",
+    fasce: ["spuntino1", "spuntino2"], kcal: 95, p: 1, c: 25, g: 0, prepMin: 0, tag: ["frutta", "mela"] },
+  { nome: "Pollo e riso basmati con insalata",
+    fasce: ["pranzo", "cena"], kcal: 720, p: 54, c: 80, g: 18, prepMin: 20, tag: ["pollo", "riso"] },
+  { nome: "Riso basmati con macinato di manzo e spinaci",
+    fasce: ["pranzo", "cena"], kcal: 830, p: 53, c: 82, g: 31, prepMin: 20, tag: ["manzo", "riso"] },
+  { nome: "Pasta in bianco con parmigiano, pollo e insalata",
+    fasce: ["pranzo", "cena"], kcal: 815, p: 58, c: 88, g: 25, prepMin: 20, tag: ["pollo", "pasta"] },
+  { nome: "Pasta al sugo e bistecca di manzo",
+    fasce: ["pranzo", "cena"], kcal: 830, p: 62, c: 92, g: 23, prepMin: 20, tag: ["manzo", "pasta"] },
+  { nome: "Pasta al sugo con macinato di manzo",
+    fasce: ["pranzo", "cena"], kcal: 850, p: 50, c: 92, g: 30, prepMin: 25, tag: ["manzo", "pasta"] },
+  { nome: "Piadina con pollo e insalata (x2)",
+    fasce: ["pranzo", "cena"], kcal: 870, p: 58, c: 102, g: 25, prepMin: 15, tag: ["pollo", "piadina"] },
+  { nome: "Piadina con macinato e insalata (x2)",
+    fasce: ["pranzo", "cena"], kcal: 895, p: 47, c: 102, g: 33, prepMin: 15, tag: ["manzo", "piadina"] },
+  { nome: "Piadina con mozzarella fusa e maiale sfilacciato (x2)",
+    fasce: ["pranzo", "cena"], kcal: 1110, p: 57, c: 101, g: 53, prepMin: 20, tag: ["maiale", "piadina"] },
+  { nome: "Frittata al parmigiano, patate in friggitrice e pane",
+    fasce: ["pranzo", "cena"], kcal: 940, p: 45, c: 96, g: 42, prepMin: 25, tag: ["uova", "patate"] },
+  { nome: "Bistecca di manzo, patate in friggitrice, insalata e pane",
+    fasce: ["pranzo", "cena"], kcal: 880, p: 65, c: 95, g: 26, prepMin: 25, tag: ["manzo", "patate"] },
+  { nome: "Lonza di maiale, patate in friggitrice, insalata e pane",
+    fasce: ["pranzo", "cena"], kcal: 940, p: 66, c: 95, g: 33, prepMin: 25, tag: ["maiale", "patate"] },
+  { nome: "Pollo ai ferri, patate, spinaci e pane",
+    fasce: ["pranzo", "cena"], kcal: 870, p: 76, c: 95, g: 20, prepMin: 25, tag: ["pollo", "patate"] },
+  { nome: "Merluzzo al forno, patate, insalata e pane",
+    fasce: ["pranzo", "cena"], kcal: 915, p: 69, c: 106, g: 23, prepMin: 30, tag: ["pesce", "patate"] },
+  { nome: "Bastoncini di merluzzo e patate in friggitrice con insalata",
+    fasce: ["pranzo", "cena"], kcal: 725, p: 38, c: 87, g: 24, prepMin: 20, tag: ["pesce", "patate"] },
+  { nome: "Hamburger di manzo con pane e insalata",
+    fasce: ["pranzo", "cena"], kcal: 730, p: 52, c: 68, g: 27, prepMin: 15, tag: ["manzo", "pane"] },
+  { nome: "Uova strapazzate, pane e spinaci",
+    fasce: ["pranzo"], kcal: 640, p: 40, c: 58, g: 27, prepMin: 10, tag: ["uova", "pane"] },
+  { nome: "Mozzarella, pane e insalata",
+    fasce: ["pranzo"], kcal: 740, p: 35, c: 70, g: 36, prepMin: 5, tag: ["mozzarella", "pane"] },
+];
+
+/**
+ * Mette il primo giro di pasti nell'archivio. Una volta sola, per sempre.
+ *
+ * NON CHIAMARLA PRIMA CHE IL CANALE ABBIA LETTO. È una scrittura che parte
+ * da sé, cioè la categoria che in ATLAS ha già resuscitato dati cancellati
+ * due volte: un telefono appena installato che semina prima di aver letto
+ * il repo rimette in tavola i pasti che l'altro dispositivo aveva tolto.
+ * Il guardiano sta in `modulo.js`, sopra la chiamata:
+ *
+ *     if (canale.letturaFatta || canale.stato === "off") semina();
+ *
+ * E il controllo del già-fatto sta FUORI dalla scrittura di proposito: con
+ * un `casella.aggiorna` che non cambia niente si notifica comunque un
+ * cambiamento, il sync lo prende per una modifica locale e parte un giro
+ * infinito. È successo con `semina()` in Abitudini.
+ */
+export function semina() {
+  const gia = Array.isArray(stato().semi) ? stato().semi : [];
+  if (gia.includes(SEME)) return [];
+
+  const messi = salvaPasti(SEMI.map((p) => ({ ...p, fonte: "assessment" })));
+  casella.aggiorna((s) => {
+    if (!Array.isArray(s.semi)) s.semi = [];
+    if (!s.semi.includes(SEME)) s.semi.push(SEME);
+  });
+  return messi;
 }
