@@ -86,10 +86,26 @@ export function intestazione(titolo, occhiello = "", azione = null) {
   ]);
 }
 
-export function scheda(titolo, corpo, { accento, classe = "" } = {}) {
-  const s = el("section", { class: `scheda ${classe}`.trim() }, [
-    titolo && el("div", { class: "scheda-titolo", testo: titolo }),
+/**
+ * La scheda: il contenitore di primo livello.
+ *
+ * `ico` è il nome di un'icona del repertorio e disegna un `.chip` prima del
+ * titolo. Sta qui e non nei moduli perché la testata con chip è ormai la
+ * forma di OGNI scheda dell'app — le carte della home, le quattro di Corpo,
+ * la giornata di Pasti — e riscriverla in sette file voleva dire sette
+ * varianti che dopo un mese non si somigliavano più.
+ *
+ * Senza `ico` la testata resta il solo titolo: una scheda che non ha
+ * un'icona sensata non ne inventa una.
+ */
+export function scheda(titolo, corpo, { accento, classe = "", ico, tinta } = {}) {
+  const testa = titolo && el("div", { class: "scheda-titolo" }, [
+    ico && el("span", { class: "chip piccolo", html: icona(ico, 17, 1.8) }),
+    el("span", { testo: titolo }),
   ]);
+  if (testa && tinta) testa.style.setProperty("--tinta", tinta);
+
+  const s = el("section", { class: `scheda ${classe}`.trim() }, [testa]);
   if (accento) s.style.setProperty("--accento", accento);
   aggiungi(s, [].concat(corpo).map((c) => (typeof c === "string" ? el("p", { testo: c }) : c)));
   return s;

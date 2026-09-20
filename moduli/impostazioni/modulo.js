@@ -39,7 +39,7 @@ function bloccoAspetto() {
       else { localStorage.setItem("atlas.tema", v); document.documentElement.dataset.tema = v; }
     }),
     el("p", { class: "nota", testo: "«Sistema» segue l'impostazione del telefono, e cambia da sola al tramonto se l'hai attivata lì." }),
-  ]);
+  ], { ico: "sole" });
 }
 
 /*
@@ -128,7 +128,7 @@ function bloccoSync(ridisegna) {
 
   contenuto.push(el("p", { class: "nota", testo: "Un file per modulo nello stesso repo privato. Gli sha restano indipendenti, così due moduli salvati insieme non si annullano." }));
 
-  return scheda("Sincronizzazione", contenuto);
+  return scheda("Sincronizzazione", contenuto, { ico: "sync" });
 }
 
 async function bloccoNotifiche(ridisegna) {
@@ -229,7 +229,7 @@ async function bloccoNotifiche(ridisegna) {
     }));
   }
 
-  return scheda("Notifiche", corpo);
+  return scheda("Notifiche", corpo, { ico: "campanella" });
 }
 
 export function interruttore(etichetta, acceso, alCambio, dettaglio = "") {
@@ -272,7 +272,7 @@ async function bloccoSpazio() {
         avviso(ok ? "Persistenza concessa." : "Persistenza negata dal browser.", { tono: ok ? "" : "errore" });
       },
     }),
-  ]);
+  ], { ico: "nuvola" });
 }
 
 function bloccoDati() {
@@ -300,7 +300,7 @@ function bloccoDati() {
       },
     }),
     el("p", { class: "nota", testo: "Serve quando l'app resta indietro dopo un aggiornamento. Non tocca i dati: quelli sono altrove." }),
-  ]);
+  ], { ico: "grafico" });
 }
 
 /* ======================================================== DIAGNOSTICA === */
@@ -318,7 +318,7 @@ function bloccoLavagna() {
                  : el("p", { class: "nota", testo: "Niente scritto oggi." }),
     el("p", { class: "nota",
       testo: "È qui che i moduli si dicono cosa è già successo, senza conoscersi. Quando Mobilità segna la sessione, Abitudini la legge da qui." }),
-  ]);
+  ], { ico: "calendario" });
 }
 
 function bloccoEventi() {
@@ -333,7 +333,7 @@ function bloccoEventi() {
     ]),
     orfani.length > 0 && el("p", { class: "nota negativo",
       testo: `Eventi ascoltati che nessuno annuncia: ${orfani.join(", ")}. Quasi sempre è un refuso in registro.js.` }),
-  ]);
+  ], { ico: "onda" });
 }
 
 function bloccoCaselle() {
@@ -343,7 +343,7 @@ function bloccoCaselle() {
       return riga({ etichetta: id, valore: `${(byte / 1024).toFixed(1)} kB` });
     })),
     el("p", { class: "nota", testo: "Una casella per modulo, isolate fra loro: azzerarne una non tocca le altre." }),
-  ]);
+  ], { ico: "importa" });
 }
 
 /* ============================================================== vista === */

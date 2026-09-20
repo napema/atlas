@@ -84,7 +84,7 @@ Sono separati e non si mescolano. A distinguerli non è solo la tinta: è il
 |---|---|---|
 | **tinte** (14) | *quale?* — quale modulo, categoria, fetta | un punto da 8px, un'icona da 17, un segmento di grafico con legenda |
 | **stati** (3) | *quanto va bene?* | una targhetta tinta, una cifra, un anello, una parola |
-| **segnale** (1) | *tocca qui* | `--segnale`, e nient'altro in tutta l'app |
+| **accento** (1 per modulo) | *questa è un'azione* | i pulsanti, e solo loro |
 
 Ora **ogni `--t-<nome>` è davvero il suo colore**. Nella stesura precedente
 `--t-viola` era un blu e `--t-blu` un verde acqua: chi leggeva il CSS di un
@@ -104,9 +104,28 @@ quindi la famiglia era dichiarata e mai servita. Si usa SF Pro, self-hosted.
 
 ### Forma e movimento
 
-Tre raggi soltanto: `--r-alto` 20px (la scheda), `--r-basso` 12px
-(controlli, pulsanti), `--r-tondo`. Il raggio alto è una promessa — *questo
-si preme* — e ciò che non si preme sta sul fondo, diviso da un filo.
+**Quattro raggi, e nessun file scrive un numero.** Se serve un raggio che
+non è in questa lista, la risposta è che non serve.
+
+| token | | a cosa |
+|---|---|---|
+| `--r-scheda` | 26px | contenitori: schede, tessere, fogli modali |
+| `--r-interno` | 16px | ciò che sta dentro: pulsanti, campi, chip, segmenti |
+| `--r-minimo` | 8px | barre, tacche, celle della settimana |
+| `--r-tondo` | | pillole, pallini, avatar, interruttori |
+
+Il raggio dice **l'annidamento**, non l'importanza: un pulsante dentro una
+scheda ha 16 perché sta dentro, non perché conta meno.
+
+La scala è netta — 26, 16, 8 — perché due raggi vicini (16 e 20) si leggono
+come un errore, non come una gerarchia. Il salto dev'essere evidente o non
+deve esserci.
+
+> Prima erano **24 valori letterali** sparsi nei fogli dei moduli (2, 3, 4,
+> 6, 7, 8, 9, 10, 12, 13, 18, 999…) più otto nomi di token per tre valori
+> veri. Il risultato era una scheda arrotondata accanto a una squadrata
+> accanto a una a metà, e nessuna sensazione che fossero pezzi della stessa
+> app.
 
 Tre durate, due curve, e tutte corte. Un'app che si apre venti volte al
 giorno non deve mai far aspettare.
@@ -138,6 +157,28 @@ Il caso limite: due intensità della stessa tinta in un grafico
 (`.al-barra-piano` al 25% contro `.al-barra-fatto` pieno) sono codifica di
 dati, non decorazione. Vanno bene.
 
+### I pulsanti hanno una sorgente di colore sola
+
+**Un pulsante porta sempre l'accento del modulo in cui si trova.** Non c'è
+un secondo colore per le azioni.
+
+Prima `.btn` era blu fisso (`--segnale`) e `.btn.tinto` color-modulo:
+nella stessa schermata convivevano un pulsante azzurro e uno ambra senza
+che la differenza volesse dire niente. Ora i tre pesi si distinguono per
+**quanto** colore, non per quale:
+
+| classe | | quando |
+|---|---|---|
+| `.btn` | accento pieno, testo nero | l'azione della schermata |
+| `.btn.tinto` | accento al 15% | un'azione fra tante |
+| `.btn.morbido` | nessun colore | l'alternativa che non vuoi spingere |
+
+Il blu sopravvive **solo** dove non è una scelta estetica: l'anello di fuoco
+della tastiera e la selezione del testo. Sono convenzioni di sistema.
+
+Corollario: ogni modulo ha un accento vero nel registro. Oggi e Impostazioni
+avevano un grigio, e con questa regola sarebbe stato un primario grigio.
+
 ### Selezionato si dice col contrasto, non con la tinta
 
 Un elemento scelto in un gruppo si **riempie di bianco** e prende il testo
@@ -149,6 +190,30 @@ né cattiva.
 
 Stessa ragione per cui **la voce attiva della barra è bianca e non blu**: il
 blu vuol dire «tocca qui», e dove sei già non c'è niente da toccare.
+
+---
+
+## 3-bis. I due pezzi che tengono insieme l'app
+
+Sono nati perché sette moduli disegnavano la stessa cosa in sette modi.
+
+**Il chip d'icona** (`.chip`) — un quadrato arrotondato con dentro un glifo,
+tutti e due della stessa tinta: il fondo al 14%, il glifo pieno. Tre misure
+(30, 38, 52) e non si inventa la quarta. Lo porta la testata di ogni scheda
+— `scheda(titolo, corpo, { ico })` in `core/ui.js` lo disegna da sé — le
+righe dei moduli, i pasti, e le abitudini, che dentro ci mettono l'emoji
+scelta dall'utente invece di un glifo del repertorio.
+
+Prima l'icona di una categoria era un glifo nudo appoggiato al testo, e
+cambiava misura, colore e posizione in ogni modulo: **era la ragione
+principale per cui le schermate non si somigliavano.**
+
+**La striscia della settimana** (`.sett`) — sette celle con la lettera sotto
+e gli stati della lavagna in `data-stato`: `pieno`, `parziale`, `vuoto`,
+`riposo`, `futuro`. Ne esistevano tre per la stessa identica cosa — sette
+cerchi con un anello in Abitudini, sette caselle che si riempivano dal basso
+nella Costanza della home, sette pastiglie in Corpo — e tre modi diversi di
+segnare «oggi».
 
 ---
 
