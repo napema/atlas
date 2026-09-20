@@ -31,6 +31,11 @@ import {
 import { vistaImpostazioni } from "./impostazioni.js";
 
 let contenitore = null;
+// Il gruppo della barra (vedi core/registro.js): quando c'e, il suo
+// interruttore prende il posto del titolo invece di stargli sopra. Questa
+// schermata ha gia le sue pillole sotto la testata, e interruttore + titolo
+// + pillole sono tre righe di navigazione prima del primo dato.
+let gruppo = null;
 const staccatori = [];
 const vista = { scheda: "oggi" };
 
@@ -48,7 +53,7 @@ function disegna() {
   const corpoProgressi = el("div", { id: "progressi-body" });
 
   aggiungi(contenitore, [
-    intestazione("Mobilità"),
+    intestazione(gruppo ? gruppo.interruttore() : "Mobilità"),
     el("div", { class: "mo-schede" }, [
       pillolaScheda("oggi", "Oggi"),
       pillolaScheda("progressi", "Progressi"),
@@ -206,6 +211,7 @@ export function avviaSync() {
 export default {
   async monta(cont, posizione) {
     contenitore = cont;
+    gruppo = posizione?.gruppo || null;
     const resto = posizione?.resto || [];
     vista.scheda = resto[0] === "progressi" ? "progressi" : "oggi";
 

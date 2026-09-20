@@ -164,6 +164,16 @@ ul, ol { margin: 0; padding: 0; }
 .testa-occhiello { display: flex; align-items: center; gap: 7px; }
 .testa-azioni { display: flex; gap: var(--s1); flex: none; }
 
+/* L'interruttore di un gruppo (Mobilità | Training) sta AL POSTO del titolo,
+   non sopra: vedi `intestazione()` in core/ui.js. Quindi deve avere il peso
+   di un titolo e non quello di un filtro — segmenti più alti, testo più
+   grande — e la testata si centra, perché due elementi della stessa altezza
+   allineati in alto sembrano sfalsati. */
+.testa-con-gruppo { align-items: center; }
+.testa-gruppo { flex: 1 1 auto; max-width: 300px; }
+.testa-gruppo .segmenti { padding: 4px; }
+.testa-gruppo .segmento { min-height: 40px; font-size: var(--t-15); }
+
 /* ============================================================ barra tab == */
 
 #barra {

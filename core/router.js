@@ -14,7 +14,8 @@
 // usa `link()` per stare dentro casa propria e `vaiA()` per uscire. È il
 // motivo per cui rinominare un modulo non rompe i suoi collegamenti interni.
 
-import { MODULI, prendiModulo } from "./registro.js";
+import { MODULI, prendiModulo, gruppoDi, ricordaMembro } from "./registro.js";
+import { segmenti } from "./ui.js";
 import { annuncia, EVENTI } from "./bus.js";
 
 const PREDEFINITA = "oggi";
@@ -56,10 +57,29 @@ export function osservaRotta(fn) {
  * Gliela passa il router come secondo argomento di `monta`.
  */
 function posizioneDi(id, resto) {
+  const gruppo = gruppoDi(id);
   return {
     id,
     resto,                                  // i pezzi dopo il nome del modulo
     base: `#/${id}`,
+
+    /**
+     * Se il modulo sta in un gruppo, qui c'è come disegnarne l'interruttore.
+     *
+     * È una FABBRICA e non un nodo di proposito: i moduli si ridisegnano in
+     * continuazione, e un nodo solo verrebbe spostato di padre a ogni giro —
+     * sparendo dal posto in cui era. Chiamarla restituisce un interruttore
+     * nuovo, che il modulo passa a `intestazione()` al posto del titolo.
+     */
+    gruppo: gruppo && {
+      id: gruppo.id,
+      nome: gruppo.nome,
+      interruttore: () => segmenti(
+        gruppo.membri.map((x) => [x, MODULI.find((m) => m.id === x)?.nome || x]),
+        id,
+        (scelto) => { if (scelto !== id) vaiA(scelto); },
+      ),
+    },
 
     /** Un collegamento dentro il proprio modulo: link("nuovo") → "#/finanze/nuovo" */
     link: (...pezzi) => [`#/${id}`, ...pezzi.map(encodeURIComponent)].join("/"),
@@ -128,6 +148,16 @@ async function disegna() {
   contenitore.innerHTML = "";
   contenitore.dataset.modulo = id;
   attuale = mod;
+
+  // Toccare la scheda del gruppo deve riportarti dove eri, non sempre sul
+  // primo membro: chi vive in Allenamenti farebbe due tocchi ogni volta.
+  const g = gruppoDi(id);
+  if (g) {
+    ricordaMembro(g.id, id);
+    contenitore.dataset.gruppo = g.id;
+  } else {
+    delete contenitore.dataset.gruppo;
+  }
 
   try {
     await mod.monta(contenitore, posizioneDi(id, resto));

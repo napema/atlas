@@ -68,6 +68,7 @@ export const MODULI = [
   {
     id: "mobilita",
     nome: "Mobilità",
+    gruppo: "corpo",
     icona: "corpo",
     accento: "var(--ciano)",
     stile: true,
@@ -81,6 +82,7 @@ export const MODULI = [
   {
     id: "allenamenti",
     nome: "Training",
+    gruppo: "corpo",
     // Non `corpo`, che è di Mobilità: quello dice «il tuo corpo», questo dice
     // «un numero da colpire entro dicembre», e sono due cose diverse anche
     // quando si fanno con le stesse gambe.
@@ -113,22 +115,77 @@ export const MODULI = [
   },
 ];
 
+/* =========================================================================
+   I GRUPPI — due moduli, una scheda sola nella barra.
+
+   Mobilità e Allenamenti raccontano la stessa cosa da due lati: uno è «il
+   tuo corpo», l'altro è «un numero da colpire entro dicembre». Meritavano
+   due moduli separati — archivi diversi, file di sync diversi, ritmi
+   diversi — ma non due schede su cinque.
+
+   IL GRUPPO È SOLO UN FATTO DELLA BARRA. Non fonde niente: ogni membro
+   tiene la sua casella, il suo canale, il suo `oggi()` nella home e le sue
+   rotte. `#/mobilita` e `#/mobilita/inizia` continuano a funzionare
+   esattamente come prima — e devono, perché sono gli indirizzi che aprono
+   le NOTIFICHE. Un gruppo che rinominasse gli id romperebbe il tocco su
+   una notifica arrivata ieri.
+   ========================================================================= */
+
+export const GRUPPI = [
+  {
+    id: "corpo",
+    nome: "Corpo",
+    icona: "corpo",
+    membri: ["mobilita", "allenamenti"],
+  },
+];
+
+export const gruppoDi = (idModulo) => GRUPPI.find((g) => g.membri.includes(idModulo)) || null;
+
+/* Quale membro aprire quando tocchi la scheda del gruppo: l'ultimo che hai
+   guardato. È una preferenza di questo dispositivo, come il tema — non un
+   dato, quindi localStorage diretto e niente sync. Tornare sempre sul primo
+   membro vorrebbe dire due tocchi ogni volta per chi vive nell'altro. */
+const CHIAVE_MEMBRO = (idGruppo) => `atlas.gruppo.${idGruppo}`;
+
+export function membroRicordato(gruppo) {
+  try {
+    const v = localStorage.getItem(CHIAVE_MEMBRO(gruppo.id));
+    if (v && gruppo.membri.includes(v)) return v;
+  } catch { /* privata o piena: si riparte dal primo */ }
+  return gruppo.membri[0];
+}
+
+export function ricordaMembro(idGruppo, idModulo) {
+  try { localStorage.setItem(CHIAVE_MEMBRO(idGruppo), idModulo); } catch { /* vedi sopra */ }
+}
+
 /**
- * I moduli con una scheda nella barra: tutti TRANNE Impostazioni.
+ * Le VOCI della barra: i moduli senza gruppo, più una voce per gruppo.
  *
- * Impostazioni ci era entrata per una ragione buona — prima stava dentro un
- * pulsante in Oggi e le impostazioni dei moduli non le trovava nessuno,
- * perché Finanze aveva il suo Setup dentro di sé e Mobilità non ne aveva
- * affatto. Quel problema però è stato risolto dall'AVER RADUNATO le
- * impostazioni in una schermata sola, non dall'averle messe nella barra.
+ * Impostazioni resta fuori. Ci era entrata per una ragione buona — prima
+ * stava dentro un pulsante in Oggi e le impostazioni dei moduli non le
+ * trovava nessuno — ma quel problema l'ha risolto l'AVER RADUNATO le
+ * impostazioni in una schermata sola, non l'averle messe nella barra.
  *
- * E la barra ha un costo che cresce: con Allenamenti sarebbero sei schede su
- * un telefono, cioè sei etichette da 60px che diventano illeggibili proprio
- * mentre il pollice ha meno spazio per sbagliare. Le cinque che restano sono
- * i posti dove vai ogni giorno; le impostazioni le apri una volta al mese, e
- * un ingranaggio in alto a destra in Oggi è dove tutti le cercano.
+ * E la barra ha un costo che cresce: a sei schede le etichette da 60px
+ * diventano illeggibili proprio dove il pollice ha meno spazio per
+ * sbagliare. Cinque è il tetto, e i gruppi sono il modo di restarci sotto
+ * senza rinunciare a un modulo.
  */
-export const MODULI_IN_BARRA = MODULI.filter((m) => m.id !== "impostazioni");
+export const MODULI_IN_BARRA = (() => {
+  const visti = new Set();
+  const voci = [];
+  for (const m of MODULI) {
+    if (m.id === "impostazioni") continue;
+    const g = m.gruppo && GRUPPI.find((x) => x.id === m.gruppo);
+    if (!g) { voci.push({ id: m.id, nome: m.nome, icona: m.icona, rotte: [m.id] }); continue; }
+    if (visti.has(g.id)) continue;
+    visti.add(g.id);
+    voci.push({ id: g.id, nome: g.nome, icona: g.icona, rotte: g.membri, gruppo: g });
+  }
+  return voci;
+})();
 
 /** I tre moduli veri: quelli che hanno dati propri e una scheda nella home. */
 export const MODULI_DATI = MODULI.filter((m) => !["oggi", "impostazioni"].includes(m.id));

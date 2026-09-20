@@ -5,7 +5,7 @@
 // 3. i sync partono DOPO, in sottofondo: la rete non deve ritardare il primo tocco
 // 4. il service worker per ultimo: serve al secondo avvio, non al primo
 
-import { MODULI_IN_BARRA, avviaTuttiISync, prendiModulo } from "./registro.js";
+import { MODULI_IN_BARRA, avviaTuttiISync, prendiModulo, membroRicordato } from "./registro.js";
 import { avviaRouter, osservaRotta, rottaCorrente, vaiA } from "./router.js";
 import { osservaStato, configurato } from "./sync.js";
 import { icona } from "./icone.js";
@@ -23,22 +23,35 @@ function costruisciBarra() {
   // laterale senza nome è disorientante.
   barra.append(el("div", { class: "marchio", testo: "ATLAS" }));
 
-  for (const m of MODULI_IN_BARRA) {
+  // Una voce può essere un modulo o un GRUPPO di moduli (vedi registro.js).
+  // `data-rotte` elenca gli id che accendono questa scheda: per un gruppo
+  // sono i suoi membri, e serve perché l'indirizzo resta `#/mobilita`, non
+  // diventa mai `#/corpo`.
+  for (const v of MODULI_IN_BARRA) {
     barra.append(el("a", {
       class: "tab",
-      href: `#/${m.id}`,
-      "data-modulo": m.id,
+      href: `#/${v.gruppo ? membroRicordato(v.gruppo) : v.id}`,
+      "data-modulo": v.id,
+      "data-rotte": v.rotte.join(" "),
     }, [
-      el("span", { html: icona(m.icona, 24) }),
-      el("span", { testo: m.nome }),
+      el("span", { html: icona(v.icona, 24) }),
+      el("span", { testo: v.nome }),
     ]));
   }
 }
 
 function evidenziaBarra({ id }) {
   for (const s of document.querySelectorAll(".tab")) {
-    if (s.dataset.modulo === id) s.setAttribute("aria-current", "page");
-    else s.removeAttribute("aria-current");
+    const rotte = (s.dataset.rotte || s.dataset.modulo || "").split(" ");
+    if (rotte.includes(id)) {
+      s.setAttribute("aria-current", "page");
+      // La scheda del gruppo punta all'ultimo membro visto: se non si
+      // riscrive qui, il link resta quello di quando la barra è stata
+      // costruita e riporta sul membro sbagliato per tutta la sessione.
+      if (rotte.length > 1) s.setAttribute("href", `#/${id}`);
+    } else {
+      s.removeAttribute("aria-current");
+    }
   }
 }
 

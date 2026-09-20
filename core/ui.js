@@ -66,11 +66,22 @@ export const svuota = (n) => { while (n.firstChild) n.removeChild(n.firstChild);
  */
 export function intestazione(titolo, occhiello = "", azione = null) {
   const azioni = [].concat(azione || []).filter(Boolean);
-  return el("header", { class: "testa" }, [
-    el("div", { class: "testa-testo" }, [
-      occhiello && el("div", { class: "micro", testo: occhiello }),
-      el("h1", { testo: titolo }),
-    ]),
+
+  // `titolo` può essere un NODO invece di una stringa, ed è così che i due
+  // moduli di un gruppo mettono l'interruttore «Mobilità | Training» AL
+  // POSTO del proprio h1 invece che sopra. Messi uno sull'altro dicono la
+  // stessa cosa due volte e si mangiano la riga più preziosa dello schermo —
+  // e in Allenamenti, che ha già le sue pillole sotto il titolo, diventavano
+  // pillole, titolo, pillole.
+  const testa = titolo instanceof Node
+    ? el("div", { class: "testa-testo testa-gruppo" }, [titolo])
+    : el("div", { class: "testa-testo" }, [
+        occhiello && el("div", { class: "micro", testo: occhiello }),
+        el("h1", { testo: titolo }),
+      ]);
+
+  return el("header", { class: titolo instanceof Node ? "testa testa-con-gruppo" : "testa" }, [
+    testa,
     azioni.length > 0 && el("div", { class: "testa-azioni" }, azioni),
   ]);
 }

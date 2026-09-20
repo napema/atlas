@@ -24,6 +24,11 @@ import {
 } from "./viste.js";
 
 let contenitore = null;
+// Il gruppo della barra (vedi core/registro.js): quando c'e, il suo
+// interruttore prende il posto del titolo invece di stargli sopra. Questa
+// schermata ha gia le sue pillole sotto la testata, e interruttore + titolo
+// + pillole sono tre righe di navigazione prima del primo dato.
+let gruppo = null;
 let settimana = settimanaCorrente();
 let vista = "settimana";
 const staccatori = [];
@@ -36,7 +41,7 @@ function disegna() {
   contenitore.replaceChildren();
 
   aggiungi(contenitore, [
-    intestazione("Allenamenti", "", el("button", {
+    intestazione(gruppo ? gruppo.interruttore() : "Allenamenti", "", el("button", {
       class: "btn-icona", type: "button", "aria-label": "Importa",
       html: icona("importa", 23, 1.9),
       onClick: () => apriImport(disegna, vista === "andamento" ? "corse" : "allenamenti"),
@@ -121,6 +126,7 @@ export function avviaSync() {
 export default {
   async monta(cont, posizione) {
     contenitore = cont;
+    gruppo = posizione?.gruppo || null;
     settimana = settimanaCorrente();
     const resto = posizione?.resto || [];
     vista = resto[0] === "andamento" ? "andamento" : "settimana";
