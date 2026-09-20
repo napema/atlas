@@ -108,9 +108,14 @@ export const COMUNI = [
 function settimanaTipoIniziale() {
   const giorno = (pranzoACasa) => ({
     colazione: "casa",
-    spuntino1: "salto",
+    /* GLI SPUNTINI SONO ACCESI, e non è un'ipotesi: con colazione, mensa e
+       cena il totale si ferma a 2341 kcal contro un bersaglio di 2975 —
+       sotto il mantenimento, cioè un piano che NON fa crescere nessuno.
+       Le due fasce mancanti valgono 600 kcal e sono la differenza fra un
+       bulk e un pareggio. Si spengono in un tocco, se non le vuole. */
+    spuntino1: "casa",
     pranzo: pranzoACasa ? "casa" : "fuori",
-    spuntino2: "salto",
+    spuntino2: "casa",
     cena: "casa",
   });
   // lun mar mer gio = pranzo fuori; ven sab dom = pranzo a casa
@@ -124,18 +129,31 @@ export const PREDEFINITO = {
      con un timestamp suo (`profiloUp`) come fa `config` in Allenamenti. Un
      remoto a zero non deve poter vincere su un locale che è stato toccato. */
   profilo: {
-    fatto: false,           // l'assessment è stato completato?
+    fatto: false,           // l'assessment è stato confermato dall'utente?
     sesso: "m",
-    nascita: "",            // ISO. L'età si calcola, non si salva: invecchia
-    altezzaCm: 0,
+    nascita: "",            // ISO, se la sa. Altrimenti i due campi qui sotto
+    etaDichiarata: 23,
+    etaDichiarataIl: "2026-09-20",
+    altezzaCm: 173,
     attivita: "moderato",   // vedi ATTIVITA
     obiettivo: "massa",
     surplusKcal: 400,       // sopra il mantenimento
+
+    /* PROTEINE E GRASSI SI FISSANO SUL PESO, i carboidrati prendono l'avanzo.
+       1,2 g/kg di grassi e non 0,9: a 0,9 il bersaglio sarebbe 62 g, ma il
+       cibo che mangia davvero — bacon, mozzarella, piadine — ne porta oltre
+       cento. Un bersaglio che sfori tutti i giorni non è un bersaglio, è
+       rumore che insegna a ignorare i numeri. 1,2 g/kg fa 83 g, cioè il 25%
+       delle calorie: dentro l'intervallo sano, vicino a come mangia, e
+       lascia ai carboidrati un numero umano invece di 535 g. */
     proteineGkg: 2.0,
-    grassiGkg: 0.9,
+    grassiGkg: 1.2,
     bersagliManuali: null,  // { kcal, p, c, g } se li fissa a mano
     settimanaTipo: settimanaTipoIniziale(),
-    stimeFuori: {},         // { <fascia>: { kcal, p, c, g } }
+    /* La mensa: primo, secondo e pane. È una stima, non una misura, e sta
+       qui perché uno zero al posto del pranzo renderebbe bugiardo il
+       bilancio di quattro giorni su sette. */
+    stimeFuori: { pranzo: { kcal: 1000, p: 50, c: 125, g: 30 } },
     veti: [],               // cose che non mangia, per il generatore
     note: "",
   },
@@ -420,6 +438,10 @@ export function scegliPasto(lunedi, data, fascia, pastoId) {
 
 export const SEME = "assessment-2026-09";
 
+/* Il peso di partenza. È una SERIE, non un numero: in massa si muove, e il
+   fabbisogno deve muoversi con lui. */
+export const PESO_INIZIALE = { kg: 69, data: "2026-09-20" };
+
 export const SEMI = [
   { nome: "Uova, bacon, pane e succo ACE",
     fasce: ["colazione"], kcal: 640, p: 32, c: 56, g: 32, prepMin: 10, tag: ["uova", "pane"] },
@@ -486,6 +508,7 @@ export function semina() {
   if (gia.includes(SEME)) return [];
 
   const messi = salvaPasti(SEMI.map((p) => ({ ...p, fonte: "assessment" })));
+  registraPeso(PESO_INIZIALE.kg, PESO_INIZIALE.data);
   casella.aggiorna((s) => {
     if (!Array.isArray(s.semi)) s.semi = [];
     if (!s.semi.includes(SEME)) s.semi.push(SEME);

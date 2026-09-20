@@ -24,14 +24,36 @@ import { oggiISO, daISO } from "../../core/ui.js";
    IL FABBISOGNO
    ========================================================================= */
 
-/** Anni compiuti. Si calcola, non si salva: un numero salvato invecchia male. */
-export function eta(nascita = profilo().nascita) {
-  if (!nascita) return null;
-  const n = daISO(nascita), o = new Date();
-  let a = o.getFullYear() - n.getFullYear();
-  const m = o.getMonth() - n.getMonth();
-  if (m < 0 || (m === 0 && o.getDate() < n.getDate())) a -= 1;
-  return a >= 10 && a <= 100 ? a : null;
+/**
+ * Anni compiuti.
+ *
+ * Due strade, e la seconda esiste per un motivo pratico: l'utente l'età la
+ * dice («23»), la data di nascita quasi mai. Un 23 salvato liscio però
+ * invecchia male — fra due anni il fabbisogno sarebbe calcolato su un
+ * ventitreenne che non esiste più. Quindi si salva insieme al GIORNO in cui
+ * è stata dichiarata, e da lì si contano gli anni passati. Non è preciso al
+ * mese come una data di nascita, ma non mente col tempo.
+ */
+export function eta(p = profilo()) {
+  if (p?.nascita) {
+    const n = daISO(p.nascita), o = new Date();
+    let a = o.getFullYear() - n.getFullYear();
+    const m = o.getMonth() - n.getMonth();
+    if (m < 0 || (m === 0 && o.getDate() < n.getDate())) a -= 1;
+    return a >= 10 && a <= 100 ? a : null;
+  }
+  if (p?.etaDichiarata && p?.etaDichiarataIl) {
+    // Anni di CALENDARIO, non millisecondi diviso un anno medio: dividendo
+    // per 365,2425 il giorno dell'anniversario dà 1,998 e il floor lo taglia
+    // a 1. Sbagliava di un anno esattamente quando doveva scattare.
+    const da = daISO(p.etaDichiarataIl), o = new Date();
+    let passati = o.getFullYear() - da.getFullYear();
+    const m = o.getMonth() - da.getMonth();
+    if (m < 0 || (m === 0 && o.getDate() < da.getDate())) passati -= 1;
+    const a = Number(p.etaDichiarata) + Math.max(0, passati);
+    return a >= 10 && a <= 100 ? a : null;
+  }
+  return null;
 }
 
 /**
@@ -52,7 +74,7 @@ export const ETA_DI_RIPIEGO = 25;
 export function metabolismoBasale({ kg = pesoAttuale(), p = profilo() } = {}) {
   const cm = Number(p.altezzaCm) || 0;
   if (!kg || !cm) return 0;
-  const anni = eta(p.nascita) ?? ETA_DI_RIPIEGO;
+  const anni = eta(p) ?? ETA_DI_RIPIEGO;
   const base = 10 * kg + 6.25 * cm - 5 * anni;
   return Math.round(base + (p.sesso === "f" ? -161 : 5));
 }
