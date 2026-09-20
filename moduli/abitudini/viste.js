@@ -39,6 +39,17 @@ export function strisciaSettimana(giornoScelto, alCambio) {
       "aria-pressed": String(g === giornoScelto),
       "aria-label": dataUmana(g),
       disabled: futuro,
+      /* Gli stessi quattro nomi che usa la carta Costanza della home, e non
+         per simmetria: le due strisce leggono lo stesso dato e chi le
+         guarda una dopo l'altra si aspetta che dicano la stessa cosa.
+         `riposo` è quello che mancava — vedi `progressoGiorno()`. */
+      dataset: {
+        stato: futuro ? "futuro"
+          : p.riposo ? "riposo"
+          : p.fatte === 0 ? "vuoto"
+          : p.frazione >= 1 ? "pieno"
+          : "parziale",
+      },
       onClick: () => { tocco(6); alCambio(g); },
     }, [
       el("span", { class: "ab-giorno-lettera", testo: GIORNI_INIZIALI[(daISO(g).getDay() + 6) % 7] }),
@@ -81,9 +92,15 @@ export function riepilogo(giorno) {
           : tutto ? plurale(p.fatte, "abitudine spuntata", "abitudini spuntate")
           : `${plurale(restano, "abitudine", "abitudini")} · ${p.fatte} di ${p.attese} già fatte` }),
       ]),
-      el("div", { class: "ab-eroe-anello" }, [
+      /* In una giornata libera l'anello resta vuoto e al posto della
+         percentuale c'è un trattino. Prima diceva «100%» accanto a
+         «Giornata libera · nessuna abitudine prevista»: la stessa carta si
+         contraddiceva a due centimetri di distanza. Uno «0%» sarebbe stato
+         l'errore opposto — non hai mancato niente. */
+      el("div", { class: "ab-eroe-anello" + (p.riposo ? " riposo" : "") }, [
         anello(p.frazione, { misura: 82, spessore: 7, colore: "var(--ok)" }),
-        el("span", { class: "ab-eroe-pct", testo: `${Math.round(p.frazione * 100)}%` }),
+        el("span", { class: "ab-eroe-pct",
+          testo: p.riposo ? "—" : `${Math.round(p.frazione * 100)}%` }),
       ]),
     ]),
   ]);

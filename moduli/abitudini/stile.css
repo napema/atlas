@@ -26,6 +26,14 @@
 }
 .ab-giorno:active { background: var(--scheda); }
 .ab-giorno.futuro { opacity: 0.32; pointer-events: none; }
+/* RIPOSO: non c'era niente in programma. Si spegne l'ANELLO e non tutta la
+   casella, perché il numero dentro è la data e serve per navigare: la home
+   può permettersi di smorzare l'intera cella (`.og-sett-g[data-stato="riposo"]`)
+   perché lì dentro non c'è niente da leggere.
+
+   Non è un fallimento e non va segnalato: un giorno senza abitudini non lo
+   hai mancato. Spento e basta. */
+.ab-giorno[data-stato="riposo"] .ab-giorno-anello { opacity: 0.4; }
 .ab-giorno.scelto { background: var(--scheda); }
 .ab-giorno-lettera { font-size: var(--t-10); font-weight: 700; letter-spacing: 0.06em; }
 .ab-giorno.scelto .ab-giorno-lettera,
@@ -82,6 +90,9 @@
 .ab-eroe-numeri .cifra-xl { font-size: clamp(48px, 15vw, 66px); line-height: 0.95; }
 .ab-eroe-nota { margin: var(--s2) 0 0; font-size: var(--t-13); color: var(--testo-2); }
 .ab-eroe-anello { position: relative; display: grid; place-items: center; flex: none; }
+/* Stessa ragione della striscia: in una giornata libera l'anello è un
+   binario vuoto, e il trattino al centro non deve pesare come una cifra. */
+.ab-eroe-anello.riposo { opacity: 0.5; }
 .ab-eroe-anello svg { display: block; }
 .ab-eroe-pct {
   position: absolute;

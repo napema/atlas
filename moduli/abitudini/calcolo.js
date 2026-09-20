@@ -111,7 +111,33 @@ export function progressoGiorno(iso = oggiISO()) {
     attese++;
     if (eFatta(h.id, iso)) fatte++;
   }
-  return { attese, fatte, frazione: attese ? fatte / attese : 1 };
+  /* UN GIORNO SENZA NIENTE IN PROGRAMMA NON È UN GIORNO COMPLETATO.
+
+     `frazione` valeva 1 quando `attese` era 0 — zero su zero letto come
+     «tutto fatto» — e il risultato si vedeva in due punti: la striscia
+     della settimana mostrava sei anelli verdi pieni, e la carta eroe
+     scriveva «Giornata libera · nessuna abitudine prevista» accanto a un
+     anello al 100%. Nello stesso momento la carta Costanza della home
+     diceva «7 giorni senza spuntare niente», perché lei il caso lo
+     trattava già a parte (stato `riposo`). Due schermate sullo stesso
+     dato che dicevano il contrario.
+
+     Ora il caso è DICHIARATO invece che nascosto dentro un numero:
+
+       · `riposo` dice che non c'era niente da fare. Non è «bene» e non è
+         «male»: non hai mancato nulla, e infatti non spezza la serie.
+       · `frazione` vale 0, non 1. È un valore che finisce dentro un
+         riempimento — un anello, una barra — e un riempimento pieno vuol
+         dire «completato». Quando non c'è niente da completare il pieno è
+         una bugia; il vuoto almeno non afferma niente. È anche la scelta
+         che fa già `allenamenti/calcolo.js` sulla stessa forma.
+
+     CHI LEGGE `frazione` DEVE GUARDARE PRIMA `riposo`: lo 0 da solo si
+     legge come «non hai fatto niente», che è l'altra bugia. La convenzione
+     per mostrarlo è quella della home — spento e più tenue, mai un rosso o
+     uno zero in evidenza. Vedi `.og-sett-g[data-stato="riposo"]`. */
+  const riposo = attese === 0;
+  return { attese, fatte, riposo, frazione: riposo ? 0 : fatte / attese };
 }
 
 /**

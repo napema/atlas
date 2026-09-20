@@ -278,7 +278,11 @@ export default {
       // e ordinate per momento della giornata.
       resta: restaOggi(giornoCorrente()),
       // La barra della tessera dice a che punto sei, non è decorativa.
-      avanzamento: p.attese ? p.fatte / p.attese : 0,
+      // `frazione` è già questo conto: la riga qui lo ripeteva, e due copie
+      // della stessa regola sono due posti da cui può scappare. Il caso
+      // `attese === 0` non arriva fin qui — c'è il `return null` sopra — ma
+      // ora anche se arrivasse darebbe 0 e non 1.
+      avanzamento: p.frazione,
       // I promemoria della fascia in corso: la home non deve dire «ti
       // mancano 4 integratori», deve dire «prendi il magnesio».
       promemoria: promemoriaAdesso(giornoCorrente()),
