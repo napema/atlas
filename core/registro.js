@@ -66,6 +66,19 @@ export const MODULI = [
     ascolta: ["giorno:cambiato"],
   },
   {
+    id: "pasti",
+    nome: "Pasti",
+    icona: "piatto",
+    // Non verde (vuol dire «fatto») e non lime, che e' di Finanze. Il rosa
+    // non lo usava nessuno ed e' abbastanza lontano dall'arancio di Training
+    // da non confondersi nella stessa barra.
+    accento: "var(--rosa)",
+    stile: true,
+    carica: () => import("../moduli/pasti/modulo.js"),
+    pubblica: [],
+    ascolta: ["giorno:cambiato"],
+  },
+  {
     id: "mobilita",
     nome: "Mobilità",
     gruppo: "corpo",

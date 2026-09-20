@@ -436,13 +436,13 @@ export function scegliPasto(lunedi, data, fascia, pastoId) {
    cui può fare affidamento.
    ========================================================================= */
 
-export const SEME = "assessment-2026-09";
+const SEME_ASSESSMENT = "assessment-2026-09";
 
 /* Il peso di partenza. È una SERIE, non un numero: in massa si muove, e il
    fabbisogno deve muoversi con lui. */
 export const PESO_INIZIALE = { kg: 69, data: "2026-09-20" };
 
-export const SEMI = [
+const SEMI_ASSESSMENT = [
   { nome: "Uova, bacon, pane e succo ACE",
     fasce: ["colazione"], kcal: 640, p: 32, c: 56, g: 32, prepMin: 10, tag: ["uova", "pane"] },
   { nome: "Cornetto alla crema in friggitrice e caffè",
@@ -503,15 +503,74 @@ export const SEMI = [
  * cambiamento, il sync lo prende per una modifica locale e parte un giro
  * infinito. È successo con `semina()` in Abitudini.
  */
+const SEMI_COLAZIONI = [
+  { nome: "Uova strapazzate, pane e banana",
+    fasce: ["colazione"], kcal: 705, p: 35, c: 83, g: 26, prepMin: 10, tag: ["uova", "pane"] },
+  { nome: "Frittata con patate in friggitrice, pane e succo ACE",
+    fasce: ["colazione"], kcal: 730, p: 34, c: 90, g: 26, prepMin: 20, tag: ["uova", "patate"] },
+  { nome: "Piadina con uova strapazzate e mozzarella, banana",
+    fasce: ["colazione"], kcal: 760, p: 37, c: 78, g: 34, prepMin: 12, tag: ["uova", "piadina"] },
+  { nome: "Cornetto alla crema, 4 uova strapazzate e banana",
+    fasce: ["colazione"], kcal: 720, p: 32, c: 66, g: 37, prepMin: 15, tag: ["uova", "cornetto"] },
+  { nome: "Panino con pollo",
+    fasce: ["spuntino1", "spuntino2"], kcal: 400, p: 37, c: 55, g: 3, prepMin: 5, tag: ["pollo", "pane"] },
+  { nome: "Panino con mozzarella",
+    fasce: ["spuntino1", "spuntino2"], kcal: 415, p: 20, c: 56, g: 12, prepMin: 3, tag: ["mozzarella", "pane"] },
+  { nome: "Riso basmati e pollo (porzione piccola)",
+    fasce: ["spuntino1", "spuntino2"], kcal: 360, p: 27, c: 47, g: 7, prepMin: 5, tag: ["pollo", "riso"] },
+  { nome: "Piadina con pollo",
+    fasce: ["spuntino1", "spuntino2"], kcal: 395, p: 26, c: 50, g: 10, prepMin: 8, tag: ["pollo", "piadina"] },
+  { nome: "3 uova strapazzate, pane e mela",
+    fasce: ["spuntino1", "spuntino2"], kcal: 445, p: 23, c: 54, g: 16, prepMin: 8, tag: ["uova", "pane"] },
+];
+
+/**
+ * Le semine, in ordine. Ognuna ha la sua chiave e si mette una volta sola.
+ *
+ * È una LISTA e non un array solo per una ragione precisa: aggiungendo pasti
+ * a un elenco già seminato, un dispositivo che ha già la chiave salterebbe
+ * anche i nuovi, e uno che non ce l'ha rimetterebbe pure quelli che l'utente
+ * aveva cancellato. Una chiave per infornata risolve entrambe le cose.
+ */
+export const SEMINE = [
+  { chiave: SEME_ASSESSMENT, pasti: SEMI_ASSESSMENT },
+  { chiave: "colazioni-spuntini-2026-09", pasti: SEMI_COLAZIONI },
+];
+
+/**
+ * Mette nell'archivio le infornate che mancano. Ognuna una volta sola.
+ *
+ * NON CHIAMARLA PRIMA CHE IL CANALE ABBIA LETTO. È una scrittura che parte
+ * da sé, cioè la categoria che in ATLAS ha già resuscitato dati cancellati
+ * due volte: un telefono appena installato che semina prima di aver letto il
+ * repo rimette in tavola i pasti che l'altro dispositivo aveva tolto. Il
+ * guardiano sta in `modulo.js`, sopra la chiamata:
+ *
+ *     if (canale.letturaFatta || canale.stato === "off") semina();
+ *
+ * E il controllo del già-fatto sta FUORI dalla scrittura di proposito: con
+ * un `casella.aggiorna` che non cambia niente si notifica comunque un
+ * cambiamento, il sync lo prende per una modifica locale e parte un giro
+ * infinito. È successo con `semina()` in Abitudini.
+ */
 export function semina() {
   const gia = Array.isArray(stato().semi) ? stato().semi : [];
-  if (gia.includes(SEME)) return [];
+  const daFare = SEMINE.filter((s) => !gia.includes(s.chiave));
+  if (!daFare.length) return [];
 
-  const messi = salvaPasti(SEMI.map((p) => ({ ...p, fonte: "assessment" })));
-  registraPeso(PESO_INIZIALE.kg, PESO_INIZIALE.data);
-  casella.aggiorna((s) => {
-    if (!Array.isArray(s.semi)) s.semi = [];
-    if (!s.semi.includes(SEME)) s.semi.push(SEME);
+  const messi = [];
+  for (const s of daFare) messi.push(...salvaPasti(s.pasti.map((x) => ({ ...x, fonte: "assessment" }))));
+
+  // Il peso di partenza viaggia con la prima infornata: senza un peso il
+  // fabbisogno non si calcola, e una schermata di bersagli a zero al primo
+  // avvio sembra un'app rotta.
+  if (daFare.some((s) => s.chiave === SEME_ASSESSMENT)) {
+    registraPeso(PESO_INIZIALE.kg, PESO_INIZIALE.data);
+  }
+
+  casella.aggiorna((st) => {
+    if (!Array.isArray(st.semi)) st.semi = [];
+    for (const s of daFare) if (!st.semi.includes(s.chiave)) st.semi.push(s.chiave);
   });
   return messi;
 }

@@ -1232,9 +1232,19 @@ canali, `oggi()` e rotte restano separati. Vedi `GRUPPI` in
 unito per unione. `modulo.js`, quando esisterà, deve chiamarla **solo** dopo
 `canale.letturaFatta`.
 
-**Resta da fare in Pasti:** `calcolo.js` (fabbisogno e bilancio), `piano.js`
-(il generatore deterministico), `viste.js`, `modulo.js`, `stile.css`, e poi
-la voce nel registro fra Finanze e Corpo.
+**Pasti è in piedi** e sta nella barra fra Finanze e Corpo. 30 pasti nel
+database, bersagli 2975 kcal / 138 P / 419 C / 83 G, piano settimanale
+generato in casa.
+
+**Due correzioni a core arrivate da qui**, e valgono per tutti i moduli:
+
+1. `assicuraStile()` è ora esportata da `core/router.js`. Impostazioni
+   disegna dentro di sé le sezioni di TUTTI i moduli, e quelle usano le
+   classi dei moduli — ma il foglio lo caricava solo il router al momento di
+   montare quel modulo. Aprendo ATLAS direttamente su `#/impostazioni` la
+   sezione di un modulo mai visitato compariva senza stile.
+2. La sezione di un modulo in Impostazioni prende il **suo** accento. Senza,
+   tutto ciò che si tinge con `var(--accento)` lì dentro diventava grigio.
 
 **Nota di UX rimasta aperta, fuori perimetro:** dentro Mobilità la
 sottovista «Oggi» ripete il proprio titolo sotto le pillole che lo dicono

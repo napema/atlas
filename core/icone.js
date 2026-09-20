@@ -99,6 +99,16 @@ const TRATTI = {
   play:       '<path d="M7.5 4.8 19 12 7.5 19.2z"/>',
   avviso:     '<path d="M12 4.2 21 19.6H3z"/><path d="M12 10v3.6M12 16.6v.6"/>',
   bersaglio:  '<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.2"/>',
+
+  /* Forchetta e coltello. Il piatto visto dall'alto sarebbe un cerchio con
+     dentro un arco, e a 24px un cerchio con dentro un arco e' un cerchio:
+     si confonde con `bersaglio`, che sta due schede piu' in la nella stessa
+     barra. Le posate no, a nessuna misura. */
+  piatto:
+    '<path d="M6.1 3.4v4.3a1.9 1.9 0 0 0 1.9 1.9 1.9 1.9 0 0 0 1.9-1.9V3.4"/>' +
+    '<path d="M8 3.4v4.3"/><path d="M8 9.6v11"/>' +
+    '<path d="M17.4 3.4v17.2"/>' +
+    '<path d="M17.4 3.4c1.7 1.4 2.6 3.5 2.6 5.9 0 1.9-1.1 3.3-2.6 3.7"/>',
   onda:       '<path d="M2.5 12h3l2.5-6 4 12 3-8 2 2h4.5"/>',
   fotocamera: '<path d="M3.5 8.5h3.2l1.5-2.4h7.6l1.5 2.4h3.2a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.4"/>',
   pausa:     '<path d="M9 5.2v13.6M15 5.2v13.6"/>',

@@ -108,6 +108,20 @@ const scorrimenti = new Map();
  */
 const stiliCaricati = new Set();
 
+/**
+ * Garantisce che il foglio di stile di un modulo sia in pagina.
+ *
+ * Esportata perché non serve solo al router: Impostazioni disegna dentro di
+ * sé le sezioni di TUTTI i moduli, e quelle sezioni usano le classi dei
+ * moduli. Senza questa chiamata, aprendo ATLAS direttamente su
+ * `#/impostazioni` — che è quello che succede tornando da una notifica o
+ * ricaricando — la sezione di un modulo mai visitato compare senza stile:
+ * la griglia della settimana tipo di Pasti diventava cinque righe di testo.
+ */
+export function assicuraStile(mod) {
+  return caricaStile(mod);
+}
+
 function caricaStile(mod) {
   if (!mod.stile || stiliCaricati.has(mod.id)) return Promise.resolve();
   stiliCaricati.add(mod.id);

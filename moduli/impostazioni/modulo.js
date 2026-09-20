@@ -17,6 +17,7 @@ import { esportaTutto, caselleAperte } from "../../core/storage.js";
 import { spazio, chiediPersistenza } from "../../core/blobs.js";
 import { ultimiEventi, chiAscolta } from "../../core/bus.js";
 import { MODULI_DATI, prendiModulo, mappaEventi } from "../../core/registro.js";
+import { assicuraStile } from "../../core/router.js";
 import { fattiDelGiorno, giornoCorrente } from "../../core/contesto.js";
 import * as notifiche from "../../core/notifiche.js";
 
@@ -383,6 +384,18 @@ async function disegna() {
     aggiungi(corpo, [bloccoLavagna(), bloccoEventi(), bloccoCaselle()]);
   } else {
     const mod = await prendiModulo(sezione);
+
+    // Il CSS del modulo va aspettato PRIMA di disegnare: la sua sezione usa
+    // le sue classi, e qui dentro quel foglio non l'ha caricato nessuno.
+    if (mod) await assicuraStile(mod);
+
+    /* La sezione di un modulo prende il SUO accento, non quello di
+       Impostazioni. Senza, i componenti che si tingono con `var(--accento)`
+       diventano grigi qui dentro: la griglia della settimana tipo di Pasti
+       perdeva la differenza fra «a casa» e «fuori», che è l'unica cosa che
+       quella griglia deve dire. */
+    if (mod?.accento) corpo.style.setProperty("--accento", mod.accento);
+
     const suo = mod?.impostazioni?.();
     corpo.append(suo || el("div", { class: "vuoto" }, [
       el("p", { class: "grande", testo: "Niente da configurare" }),
