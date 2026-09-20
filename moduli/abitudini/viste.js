@@ -28,21 +28,29 @@ const EMOJI_PREDEFINITA = "⭐️";
 
 export function strisciaSettimana(giornoScelto, alCambio) {
   const oggi = oggiISO();
-  const barra = el("nav", { class: "ab-settimana", "aria-label": "Settimana" });
+  const barra = el("nav", { class: "sett ab-settimana", "aria-label": "Settimana" });
 
   for (const g of giorniSettimana(giornoScelto)) {
     const futuro = g > oggi;
     const p = progressoGiorno(g);
+
+    /* LA STRISCIA E' QUELLA CONDIVISA (`.sett` in base.css), la stessa che
+       usano la carta Costanza della home e la settimana di Corpo.
+
+       Prima erano tre strisce diverse per la stessa identica cosa: qui
+       sette cerchi con un anello dentro, nella home sette caselle che si
+       riempivano dal basso, in Corpo sette pastiglie — e tre modi diversi
+       di segnare «oggi». Chi apriva due schermate di fila non poteva
+       imparare a leggerne una sola.
+
+       Gli stati sono i quattro della lavagna. `riposo` e' quello che
+       mancava: vedi `progressoGiorno()`. */
     const b = el("button", {
-      class: "ab-giorno" + (g === giornoScelto ? " scelto" : "") + (g === oggi ? " oggi" : "") + (futuro ? " futuro" : ""),
+      class: "sett-g" + (g === giornoScelto ? " scelto" : "") + (g === oggi ? " oggi" : ""),
       type: "button",
       "aria-pressed": String(g === giornoScelto),
       "aria-label": dataUmana(g),
       disabled: futuro,
-      /* Gli stessi quattro nomi che usa la carta Costanza della home, e non
-         per simmetria: le due strisce leggono lo stesso dato e chi le
-         guarda una dopo l'altra si aspetta che dicano la stessa cosa.
-         `riposo` è quello che mancava — vedi `progressoGiorno()`. */
       dataset: {
         stato: futuro ? "futuro"
           : p.riposo ? "riposo"
@@ -52,18 +60,8 @@ export function strisciaSettimana(giornoScelto, alCambio) {
       },
       onClick: () => { tocco(6); alCambio(g); },
     }, [
-      el("span", { class: "ab-giorno-lettera", testo: GIORNI_INIZIALI[(daISO(g).getDay() + 6) % 7] }),
-      el("span", { class: "ab-giorno-anello" }, [
-        /* VERDE, non la tinta del modulo. Un anello di completamento
-           risponde a «quanto va bene», e quella domanda in ATLAS ha tre
-           risposte sole: `--ok`, `--avviso`, `--male`.
-
-           Col lilla la striscia della settimana era sette cerchi viola
-           in fila: il colore diceva «Abitudini», che si legge gia' nel
-           titolo, e non diceva quello per cui la striscia esiste. */
-        anello(futuro ? 0 : p.frazione, { misura: 34, spessore: 3, colore: "var(--ok)" }),
-        el("span", { class: "ab-giorno-numero", testo: String(daISO(g).getDate()) }),
-      ]),
+      el("span", { class: "sett-cella", testo: String(daISO(g).getDate()) }),
+      el("span", { class: "sett-lettera", testo: GIORNI_INIZIALI[(daISO(g).getDay() + 6) % 7] }),
     ]);
     barra.append(b);
   }
@@ -160,7 +158,7 @@ function rigaAbitudine(h, giorno, ridisegna, { spenta = false } = {}) {
     type: "button",
     onClick: () => apriDettaglio(h.id, ridisegna),
   }, [
-    el("span", { class: "ab-emoji", testo: h.emoji || EMOJI_PREDEFINITA }),
+    el("span", { class: "chip piccolo emoji ab-emoji", testo: h.emoji || EMOJI_PREDEFINITA }),
     el("span", { class: "ab-testo" }, [
       el("span", { class: "ab-nome" + (fatta ? " fatta" : ""), testo: h.name }),
       el("span", { class: "nota", testo: etichettaPiano(h) }),

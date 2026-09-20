@@ -1,64 +1,17 @@
 /* moduli/abitudini — stile specifico. */
 
-/* ============================================================ settimana == */
-/* Sette colonne, ognuna un anello con dentro il giorno del mese. Si tocca
-   per cambiare giorno, e i giorni futuri sono spenti e non toccabili. */
+/* ============================================================ settimana ==
+   La striscia e' quella CONDIVISA: `.sett` in base.css, la stessa che usano
+   la carta Costanza della home e la settimana di Corpo.
 
-.ab-settimana {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: var(--s1);
-  margin-bottom: var(--s4);
-}
-.ab-giorno {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: var(--s2) 0;
-  border: 0;
-  border-radius: var(--r-interno);
-  background: none;
-  color: var(--testo-3);
-  font-family: var(--font);
-  cursor: pointer;
-  transition: background var(--veloce) var(--curva);
-}
-.ab-giorno:active { background: var(--scheda); }
-.ab-giorno.futuro { opacity: 0.32; pointer-events: none; }
-/* RIPOSO: non c'era niente in programma. Si spegne l'ANELLO e non tutta la
-   casella, perché il numero dentro è la data e serve per navigare: la home
-   può permettersi di smorzare l'intera cella (`.og-sett-g[data-stato="riposo"]`)
-   perché lì dentro non c'è niente da leggere.
+   Prima questo file ne disegnava una tutta sua — sette cerchi con un anello
+   dentro — mentre la home ne aveva una a caselle e Corpo una a pastiglie.
+   Tre strisce per la stessa cosa, con tre modi diversi di segnare «oggi»:
+   chi apriva due schermate di fila non poteva impararne una sola.
 
-   Non è un fallimento e non va segnalato: un giorno senza abitudini non lo
-   hai mancato. Spento e basta. */
-.ab-giorno[data-stato="riposo"] .ab-giorno-anello { opacity: 0.4; }
-.ab-giorno.scelto { background: var(--scheda); }
-.ab-giorno-lettera { font-size: var(--t-10); font-weight: 700; letter-spacing: 0.06em; }
-.ab-giorno.scelto .ab-giorno-lettera,
-.ab-giorno.oggi .ab-giorno-lettera { color: var(--testo); }
-
-.ab-giorno-anello { position: relative; display: grid; place-items: center; }
-.ab-giorno-anello svg { display: block; }
-.ab-giorno-numero {
-  position: absolute;
-  font-size: var(--t-13);
-  font-weight: 600;
-  color: var(--testo-2);
-  font-variant-numeric: tabular-nums;
-}
-.ab-giorno.scelto .ab-giorno-numero { color: var(--testo); font-weight: 700; }
-/* Oggi è cerchiato anche quando stai guardando un altro giorno: senza,
-   scorrendo la settimana si perde il punto di riferimento. */
-.ab-giorno.oggi .ab-giorno-anello::after {
-  content: "";
-  position: absolute;
-  bottom: -5px;
-  width: 4px; height: 4px;
-  border-radius: 50%;
-  background: var(--accento);
-}
+   Qui resta solo il margine, che e' l'unica cosa specifica di questa
+   schermata. */
+.ab-settimana { margin-bottom: var(--s-20); }
 
 /* ================================================================= eroe == */
 
@@ -141,7 +94,10 @@
 .ab-spunta svg { display: block; }
 
 .ab-riga { flex: 1; min-width: 0; gap: var(--s3); }
-.ab-emoji { font-size: 21px; line-height: 1; flex: none; }
+/* L'emoji sta dentro un `.chip` (base.css), che le da' forma, misura e
+   fondo: qui non serve piu' ridimensionarla a mano. E' lo stesso
+   quadrato che porta le icone nelle carte della home e in Pasti — con
+   dentro un dato dell'utente invece di un glifo del repertorio. */
 .ab-testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .ab-nome {
   font-size: var(--t-15);

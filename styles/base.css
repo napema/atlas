@@ -539,6 +539,75 @@ button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-col
 /* Neutro: quando la cosa non ha una tinta propria. */
 .chip.spento { background: var(--rilievo-2); color: var(--inchiostro-3); }
 
+/* ----------------------------------------------------- la settimana ----
+   Sette celle, una per giorno, con la lettera sotto. Tre moduli ne avevano
+   una a testa — la Costanza della home, Abitudini e Mobilità — disegnate
+   in tre momenti diversi e mai uguali: caselle piene contro cerchi contro
+   pastiglie, e tre modi diversi di dire «oggi». Qui ce n'è una sola.
+
+   Gli stati sono i quattro di sempre, in `data-stato`, con gli stessi nomi
+   che usa la lavagna:
+
+     pieno      fatto tutto        verde tenue, cifra verde
+     parziale   qualcosa           filo verde, cifra bianca
+     vuoto      niente, e c'era    superficie nuda
+     riposo     non c'era niente   spento: non hai mancato nulla
+     futuro     non è ancora       molto spento, non si tocca
+
+   Il verde è `--ok` e non una tinta di modulo: qui «pieno» vuol dire
+   davvero FATTO, ed è uno dei pochi posti dove il verde è al suo posto. */
+.sett { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s-6); }
+/* `padding-bottom` riserva lo spazio del puntino IN TUTTE le celle, anche
+   dove non c'e': senza, la colonna che lo porta diventava piu' alta delle
+   altre sei e la striscia sembrava storta. */
+.sett-g {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--s-6); min-width: 0;
+  padding-bottom: 10px;
+}
+.sett-cella {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-minimo);
+  background: var(--incavo);
+  font-size: var(--t-13);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--inchiostro-3);
+}
+.sett-lettera { font-size: var(--t-12); font-weight: 650; letter-spacing: 0.05em; color: var(--inchiostro-4); }
+/* Una cella puo' essere un pulsante (Abitudini ci cambia giorno). */
+button.sett-g { border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+button.sett-g[disabled] { pointer-events: none; }
+/* Il giorno che stai guardando: filo d'accento attorno alla cella. */
+.sett-g.scelto .sett-cella { box-shadow: inset 0 0 0 2px var(--accento); color: var(--inchiostro); }
+.sett-g.scelto .sett-lettera { color: var(--inchiostro); }
+
+.sett-g[data-stato="pieno"] .sett-cella {
+  background: color-mix(in srgb, var(--ok) 18%, transparent);
+  color: var(--ok);
+}
+.sett-g[data-stato="parziale"] .sett-cella {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ok) 55%, transparent);
+  color: var(--inchiostro);
+}
+.sett-g[data-stato="riposo"] .sett-cella { opacity: 0.4; }
+.sett-g[data-stato="futuro"] { opacity: 0.3; }
+/* Oggi è CERCHIATO, non riempito: riempirlo lo farebbe sembrare il giorno
+   con il valore più alto, che è un'altra informazione. */
+.sett-g.oggi .sett-cella { box-shadow: inset 0 0 0 1.5px var(--inchiostro); color: var(--inchiostro); }
+.sett-g.oggi .sett-lettera { color: var(--inchiostro); }
+/* Il puntino sotto la lettera: un segnaposto del calendario (il giorno di
+   palestra, una scadenza). Neutro, perché non dice se è andata bene. */
+.sett-segno {
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%; background: var(--inchiostro-4);
+}
+
 /* Il gettone: badge tondo. 20px da contatore, 56 da avatar. */
 .gettone {
   width: 34px; height: 34px;

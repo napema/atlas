@@ -315,12 +315,12 @@ function mostraRipresa(container, passi, tipo, progresso) {
           <div style="color:var(--blu)">${icona("orologio", 40)}</div>
           <h2 class="titolo-2">Avevi lasciato a metà</h2>
           <p class="corpo">Eri all'esercizio <strong>${fatti} di ${totale}</strong>: ${prossimo ? prossimo.nome : ""}.</p>
-          <p class="didascalia">Il resto della sessione è ancora quello di prima.</p>
+          <p class="nota">Il resto della sessione è ancora quello di prima.</p>
         </div>
       </div>
       <div class="sess-piede">
-        <button class="btn btn-primary" id="btn-riprendi">Riprendi da qui</button>
-        <button class="btn btn-secondary" id="btn-ricomincia" style="margin-top:8px">Ricomincia da capo</button>
+        <button class="btn pieno" id="btn-riprendi">Riprendi da qui</button>
+        <button class="btn morbido" id="btn-ricomincia" style="margin-top:8px">Ricomincia da capo</button>
       </div>
     </div>`;
 
@@ -340,10 +340,10 @@ function mostraAvvisoCollo(container, passi, tipo) {
         <div class="sess-gate">
           <h2 class="titolo-2">Prima del modulo collo</h2>
           <div class="sess-avviso">${icona("avviso", 20)}<span>${G1.avviso}</span></div>
-          <p class="didascalia">Intensità ${G1.intensita}. Compare una sola volta.</p>
+          <p class="nota">Intensità ${G1.intensita}. Compare una sola volta.</p>
         </div>
       </div>
-      <div class="sess-piede"><button class="btn btn-primary" id="btn-gate-continua">Ho capito, continua</button></div>
+      <div class="sess-piede"><button class="btn pieno" id="btn-gate-continua">Ho capito, continua</button></div>
     </div>`;
   container.querySelector("#btn-gate-continua").addEventListener("click", () => {
     updateState((s) => { s.programma.avvisoColloMostrato = true; });
@@ -366,7 +366,7 @@ function avviaMotore(container, passiLavoro, tipo, riprendiDa = null) {
         <div class="sess-media" id="sess-media"></div>
         <div class="sess-riga-timer">
           <div style="min-width:0">
-            <div class="occhiello" id="sess-stato"></div>
+            <div class="micro" id="sess-stato"></div>
             <h2 class="testata" id="sess-titolo" style="margin-top:2px"></h2>
           </div>
           <div class="sess-countdown-compatto" id="sess-countdown">--</div>
@@ -376,9 +376,9 @@ function avviaMotore(container, passiLavoro, tipo, riprendiDa = null) {
         <div id="sess-cambio" class="sess-cambio" hidden></div>
         <div class="sess-chip-riga" id="sess-chip" style="margin-bottom:16px"></div>
         <ol class="sess-passi" id="sess-passi"></ol>
-        <p class="didascalia" id="sess-nota" style="margin-top:16px" hidden></p>
+        <p class="nota" id="sess-nota" style="margin-top:16px" hidden></p>
       </div>
-      <div class="sess-piede"><button class="btn btn-primary" id="btn-avanti"></button></div>
+      <div class="sess-piede"><button class="btn pieno" id="btn-avanti"></button></div>
     </div>`;
 
   container.querySelector("#btn-avanti").addEventListener("click", () => {
@@ -579,10 +579,10 @@ function completaSessione(container, passiLavoro, tipo) {
           <div style="color:var(--verde)">${icona("spunta", 44)}</div>
           <h2 class="titolo-2">Fatta</h2>
           <p class="corpo">${Math.round(durata / 60)} minuti · ${streak} ${streak === 1 ? "giorno" : "giorni"} di fila.</p>
-          <p class="didascalia">Due buchi a settimana sono dentro il piano.</p>
+          <p class="nota">Due buchi a settimana sono dentro il piano.</p>
         </div>
       </div>
-      <div class="sess-piede"><button class="btn btn-primary" id="btn-fine-sessione">Chiudi</button></div>
+      <div class="sess-piede"><button class="btn pieno" id="btn-fine-sessione">Chiudi</button></div>
     </div>`;
   document.getElementById("sessione-progress").textContent = "";
   container.querySelector("#btn-fine-sessione").addEventListener("click", () => {

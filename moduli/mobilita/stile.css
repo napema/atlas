@@ -664,3 +664,89 @@
   transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
 }
 .chip-scelta.is-active { background: var(--accento); color: var(--fondo); }
+
+
+/* ====================================================== la vista Oggi ====
+   Quello che resta di locale dopo il redesign: solo cio' che qui esiste e
+   altrove no. Schede, testate, segmenti, liste, righe, pulsanti e la
+   striscia della settimana vengono tutti da base.css — prima erano
+   reimplementati qui con altri nomi (`vetro`, `scheda__testa`,
+   `chip-scelta`, `btn-primary`, `elenco-moduli`), ed e' il motivo per cui
+   Corpo sembrava un'altra app.
+   ========================================================================= */
+
+.mo-data {
+  margin: 0 0 var(--s-20);
+  font-size: var(--t-15);
+  color: var(--inchiostro-3);
+}
+.mo-data::first-letter { text-transform: uppercase; }
+
+/* La durata e' il dato della scheda: grande, e l'unita' piccola accanto,
+   non sotto. «14» e «min» su due righe facevano due dati invece di uno. */
+.mo-eroe { display: flex; align-items: baseline; gap: var(--s-12); flex-wrap: wrap; }
+.mo-durata {
+  font-size: clamp(40px, 11vw, 52px);
+  font-weight: var(--t-42-peso);
+  letter-spacing: var(--t-42-traccia);
+  line-height: 1;
+}
+.mo-unita {
+  margin-left: 0.14em;
+  font-size: 0.4em;
+  font-weight: 650;
+  letter-spacing: 0;
+  color: var(--inchiostro-3);
+}
+.mo-conta { font-size: var(--t-13); color: var(--inchiostro-3); }
+.mo-perche { margin: var(--s-12) 0 var(--s-16); line-height: 1.45; }
+.mo-perche b { color: var(--inchiostro-2); font-weight: 650; }
+
+.mo-modulo-nome { font-size: var(--t-15); font-weight: 600; }
+/* L'unita' dentro un valore incolonnato non deve pesare come il numero:
+   la colonna si legge sui numeri. */
+.mo-min { font-size: 0.8em; font-weight: 500; color: var(--inchiostro-4); }
+
+.lista + .btn { margin-top: var(--s-16); }
+
+/* ----------------------------------------------- il programma nel tempo
+   Due colonne fisse e la nota a capo: la settimana a sinistra incolonnata,
+   i minuti subito dopo, e il testo sotto. Era una lista puntata dove ogni
+   voce mandava a capo due volte in mezzo a un grassetto. */
+.mo-piano { list-style: none; display: flex; flex-direction: column; }
+.mo-fase {
+  display: grid;
+  grid-template-columns: 52px auto 1fr;
+  align-items: baseline;
+  column-gap: var(--s-12);
+  padding: var(--s-12) 0;
+  border-bottom: 1px solid var(--riga-fine);
+}
+.mo-piano > li:last-child { border-bottom: 0; }
+.mo-fase-sett {
+  font-size: var(--t-12);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--inchiostro-4);
+}
+.mo-fase-min {
+  font-family: var(--font-d);
+  font-size: var(--t-17);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--inchiostro-2);
+}
+.mo-fase-cosa {
+  grid-column: 2 / -1;
+  margin-top: 2px;
+  font-size: var(--t-13);
+  line-height: 1.4;
+  color: var(--inchiostro-3);
+}
+/* La fase di adesso e' l'unica accesa: accento sui minuti e testo bianco.
+   Niente pillola «ora» — una targhetta in piu' in una lista di cinque
+   righe e' una sesta cosa da leggere. */
+.mo-fase.ora .mo-fase-sett { color: var(--accento); }
+.mo-fase.ora .mo-fase-min  { color: var(--accento); }
+.mo-fase.ora .mo-fase-cosa { color: var(--inchiostro); }
+.mo-fase.passata { opacity: 0.45; }

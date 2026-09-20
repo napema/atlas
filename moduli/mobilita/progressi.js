@@ -93,38 +93,38 @@ function renderProgressi(container) {
       <p class="sottotitolo">Costanza, volume e i cinque bersagli</p>
     </div>
 
-    <div class="vetro scheda">
-      <div class="scheda__testa">${icona("fiamma", 20)}<span class="occhiello">Costanza</span></div>
+    <div class="scheda">
+      <div class="scheda-titolo">${icona("fiamma", 20)}<span class="micro">Costanza</span></div>
       <div style="display:flex;gap:32px;align-items:baseline">
         <div>
           <div class="riquadro-oggi__durata">${state.streak.giorniConsecutivi}</div>
-          <div class="didascalia">giorni di fila</div>
+          <div class="nota">giorni di fila</div>
         </div>
         <div>
           <div class="riquadro-oggi__durata">${state.storicoSessioni.length}</div>
-          <div class="didascalia">sessioni totali</div>
+          <div class="nota">sessioni totali</div>
         </div>
       </div>
-      <p class="didascalia" style="margin-top:16px">È la metrica che conta davvero: il programma riesce se i giorni si accumulano, non se guadagni gradi in fretta.</p>
+      <p class="nota" style="margin-top:16px">È la metrica che conta davvero: il programma riesce se i giorni si accumulano, non se guadagni gradi in fretta.</p>
       ${renderGriglia(completate, oggi)}
     </div>
 
-    <div class="vetro scheda">
-      <div class="scheda__testa">${icona("onda", 20)}<span class="occhiello">Volume ultimi 7 giorni</span></div>
+    <div class="scheda">
+      <div class="scheda-titolo">${icona("onda", 20)}<span class="micro">Volume ultimi 7 giorni</span></div>
       ${gruppi.length === 0
-        ? '<p class="didascalia" style="margin:0">Nessuna sessione registrata negli ultimi 7 giorni: qui comparirà quanto lavoro ha ricevuto ogni gruppo muscolare.</p>'
+        ? '<p class="nota" style="margin:0">Nessuna sessione registrata negli ultimi 7 giorni: qui comparirà quanto lavoro ha ricevuto ogni gruppo muscolare.</p>'
         : gruppi.map(([gruppo, sec]) => renderRigaVolume(gruppo, sec)).join("") +
-          `<p class="didascalia" style="margin-top:12px">Soglia di adattamento: 5 minuti a settimana per gruppo. ${
+          `<p class="nota" style="margin-top:12px">Soglia di adattamento: 5 minuti a settimana per gruppo. ${
             sottodosati > 0
               ? `<strong>${sottodosati} ${sottodosati === 1 ? "gruppo è" : "gruppi sono"} sotto soglia</strong> — normale nei primi giorni, si riempie con la costanza.`
               : "Tutti i gruppi sono sopra soglia."
           }</p>`}
     </div>
 
-    <div class="vetro scheda">
-      <div class="scheda__testa">${icona("bersaglio", 20)}<span class="occhiello">I cinque bersagli</span></div>
+    <div class="scheda">
+      <div class="scheda-titolo">${icona("bersaglio", 20)}<span class="micro">I cinque bersagli</span></div>
       <div id="bersagli-elenco"></div>
-      <p class="didascalia" id="prossima-foto" style="margin-top:12px"></p>
+      <p class="nota" id="prossima-foto" style="margin-top:12px"></p>
     </div>
   `;
 

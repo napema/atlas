@@ -65,7 +65,7 @@ function renderAssessment(container) {
     <div class="assess-part" data-parte="test2"></div>
     <div class="assess-part" data-parte="test3"></div>
     <div class="assess-footer">
-      <button class="btn btn-primary" id="btn-completa-assessment">Completa assessment</button>
+      <button class="btn pieno" id="btn-completa-assessment">Completa assessment</button>
       <p class="assess-note">Puoi tornare qui in qualsiasi momento da Impostazioni → Rifai assessment: i valori già inseriti restano.</p>
     </div>
   `;
