@@ -207,8 +207,68 @@ export function campo({ etichetta, valore = "", tipo = "text", segnaposto = "", 
   ]);
 }
 
+const frazioneValida = (n) => Math.max(0, Math.min(1, Number(n) || 0));
+
+/* =========================================================================
+   LA GUIDA — l'oggetto caratteristico di ATLAS.
+
+   Un binario incassato, un riempimento della tinta che dice DOVE SEI, e una
+   tacca che dice DOVE DOVRESTI ESSERE.
+
+   La tacca è la ragione per cui questo componente ha sostituito la barra col
+   cursore triangolare: il triangolo dava un punto preciso su cui posare
+   l'occhio, ma quel punto era di nuovo «dove sei». Sapere di aver speso il
+   54% del budget non dice niente finché non sai che oggi è il 20 del mese.
+   Con la tacca la stessa barra risponde a colpo d'occhio.
+
+   IL VERSO lo dichiara chi chiama, e la guida non lo indovina: superare il
+   bersaglio in Training è verde, in Finanze è rosso. È l'unico punto del
+   sistema in cui un colore di STATO entra in un componente di dato, ed entra
+   solo sulla parte in eccesso — mai su tutto il riempimento.
+
+   @param {number}  frazione    0–1, dove sei
+   @param {number}  [bersaglio] 0–1, dove dovresti essere. Niente = niente tacca
+   @param {string}  [verso]     "su" (oltre è bene) | "giu" (oltre è male)
+   @param {string}  [colore]    forza la tinta del riempimento
+   @param {string}  [taglia]    "" (7px) | "sottile" (4px) | "alta" (12px)
+   @param {string}  [stato]     "" | "avviso" | "oltre" — il semaforo di prima
+   ========================================================================= */
+export function guida(frazione, { bersaglio = null, verso = "su", colore = null,
+                                  taglia = "", stato = "" } = {}) {
+  const f = frazioneValida(frazione);
+  const b = bersaglio == null ? null : frazioneValida(bersaglio);
+  const oltre = b != null && f > b;
+
+  // `stato` è il semaforo della prima stesura, e i moduli lo passano ancora.
+  // Le sue classi si chiamano `tono-*` e NON `oltre`: `.oltre` qui dentro
+  // vuol già dire «il riempimento ha superato la tacca», e due significati
+  // sulla stessa classe è esattamente il guasto che ha trasformato
+  // `.micro.avviso` in una pillola bianca grande quanto la tessera.
+  const tono = stato === "avviso" ? "tono-avviso" : stato === "oltre" ? "tono-male" : "";
+
+  const g = el("div", {
+    class: ["guida", taglia, verso === "giu" && "giu", oltre && "oltre", tono]
+      .filter(Boolean).join(" "),
+  });
+
+  const pieno = el("i", { stile: { width: `${(oltre ? b : f) * 100}%` } });
+  if (colore) pieno.style.background = colore;
+  aggiungi(g, [pieno]);
+
+  if (oltre) {
+    aggiungi(g, [el("i", {
+      class: "eccesso",
+      stile: { left: `${b * 100}%`, width: `${(f - b) * 100}%` },
+    })]);
+  }
+  if (b != null) aggiungi(g, [el("b", { stile: { left: `${b * 100}%` } })]);
+
+  return g;
+}
+
 /**
- * Barra di avanzamento.
+ * Barra di avanzamento. È la guida senza tacca, e resta come nome perché i
+ * moduli la chiamano così in una trentina di punti.
  *
  * `stato` ("" | "avviso" | "oltre") colora la barra per SEMAFORO, e va usato
  * solo dove il colore significa davvero "quanto sei messo male". Dove invece
@@ -216,11 +276,9 @@ export function campo({ etichetta, valore = "", tipo = "text", segnaposto = "", 
  * si passa `colore` e si lascia `stato` vuoto: due significati sullo stesso
  * rosso, nella stessa schermata, non si distinguono più.
  */
-export function traccia(frazione, stato = "", { sottile = false, colore = null } = {}) {
-  const pct = Math.max(0, Math.min(1, Number(frazione) || 0)) * 100;
-  const barra = el("div", { class: `barra ${stato}`.trim(), stile: { width: `${Math.max(3, pct)}%` } });
-  if (colore) barra.style.background = colore;
-  return el("div", { class: `traccia ${sottile ? "sottile" : ""}`.trim() }, [barra]);
+export function traccia(frazione, stato = "", { sottile = false, colore = null,
+                                                bersaglio = null, verso = "su" } = {}) {
+  return guida(frazione, { bersaglio, verso, colore, stato, taglia: sottile ? "sottile" : "" });
 }
 
 /**
@@ -238,7 +296,7 @@ export function anello(frazione, { misura = 44, spessore = 4, colore = "var(--ac
   svg.setAttribute("width", misura);
   svg.setAttribute("height", misura);
   svg.setAttribute("aria-hidden", "true");
-  for (const [stroke, dash] of [["var(--traccia)", null], [colore, off]]) {
+  for (const [stroke, dash] of [["var(--incavo)", null], [colore, off]]) {
     const cer = document.createElementNS(ns, "circle");
     cer.setAttribute("cx", misura / 2);
     cer.setAttribute("cy", misura / 2);
@@ -598,51 +656,61 @@ export function nuovoId(prefisso = "r") {
 }
 
 /* =========================================================================
-   LA TESSERA A BARRA
-   L'oggetto caratteristico di ATLAS. Nome in alto, cifra grande al centro,
-   e in fondo una barra colorata col cursore che dice a che punto sei.
+   LA TESSERA
+   Icona e nome in alto, la cifra appoggiata al fondo, e in fondo il piede:
+   l'etichetta minuscola e la guida.
 
-   Perché il cursore a triangolo e non solo la barra piena: una barra al 40%
-   e una al 45% sono indistinguibili di sfuggita, e su una griglia di sei
-   tessere è proprio di sfuggita che si guardano. Il triangolo dà un punto
-   preciso su cui posare l'occhio.
+   L'ETICHETTA È SCESA SOTTO LA CIFRA. Stava sopra, e su una griglia di sei
+   tessere l'occhio incontrava sei etichette minuscole prima di incontrare il
+   primo numero. Adesso incontra i numeri, e l'etichetta la legge solo su
+   quello su cui si è fermato.
+
+   I QUATTRO STATI HANNO LA STESSA ALTEZZA, e ci sono sempre tutti:
+
+     `stato: ""`        ha un numero
+     `stato: "vuota"`   il modulo non c'è ancora — tratteggiata
+     `stato: "urgente"` va fatto adesso — bordo giallo
+     cifra "—"          c'è, e oggi non ha niente da dire
+
+   Una home che nasconde ciò che non ha dati cambia forma ogni giorno, e una
+   cosa che cambia forma non si impara a leggere con la coda dell'occhio.
    ========================================================================= */
 
 /**
  * @param {object} o
- * @param {string} o.nome       il titolo della tessera
- * @param {string} [o.emoji]    simbolo davanti al nome
- * @param {string} [o.icona]    in alternativa all'emoji, una chiave di icone.js
- * @param {string} [o.sotto]    la riga di contesto sotto il nome
- * @param {string} [o.micro]    l'etichetta minuscola sopra la cifra
+ * @param {string} o.nome        il titolo della tessera
+ * @param {string} [o.emoji]     simbolo davanti al nome
+ * @param {string} [o.icona]     in alternativa all'emoji, una chiave di icone.js
+ * @param {string} [o.sotto]     la riga di contesto sotto il nome
+ * @param {string} [o.micro]     l'etichetta minuscola, nel piede
  * @param {string} [o.tonoMicro] "" | "ok" | "avviso" | "male"
- * @param {string} o.cifra      HTML della cifra (di solito da euroGrande)
- * @param {string} [o.coda]     la riga sotto la cifra
- * @param {number} [o.frazione] 0–1, quanto è piena la barra
- * @param {string} [o.tinta]    il colore della tessera
+ * @param {string} o.cifra       HTML della cifra (di solito da euroGrande)
+ * @param {string} [o.coda]      la riga sotto la cifra
+ * @param {number} [o.frazione]  0–1, dove sei
+ * @param {number} [o.bersaglio] 0–1, dove dovresti essere. Niente = niente tacca
+ * @param {string} [o.verso]     "su" | "giu" — vedi `guida()`
+ * @param {string} [o.stato]     "" | "vuota" | "urgente"
+ * @param {string} [o.tinta]     il colore della tessera
  * @param {Function} [o.azione]
  */
 export function tessera({ nome, emoji, icona: nomeIcona, sotto, micro, tonoMicro = "",
-                          cifra, coda, frazione = 0, tinta, azione }) {
-  const f = Math.max(0, Math.min(1, Number(frazione) || 0));
+                          cifra, coda, frazione = 0, bersaglio = null, verso = "su",
+                          stato = "", tinta, azione }) {
   const t = el(azione ? "button" : "div", {
-    class: "tessera",
+    class: `tessera ${stato}`.trim(),
     ...(azione ? { type: "button", onClick: azione } : {}),
   }, [
     el("div", { class: "tessera-testa" }, [
       emoji && el("span", { class: "tessera-emoji", testo: emoji }),
-      nomeIcona && el("span", { class: "tessera-icona", html: icona(nomeIcona, 16) }),
+      nomeIcona && el("span", { class: "tessera-icona", html: icona(nomeIcona, 20) }),
       el("span", { class: "tessera-nome", testo: nome }),
     ]),
     sotto && el("div", { class: "tessera-sotto", testo: sotto }),
-    micro && el("div", { class: `micro ${tonoMicro}`.trim(), testo: micro }),
     el("div", { class: "cifra tessera-cifra", html: String(cifra ?? "—") }),
     coda && el("div", { class: "tessera-coda", testo: coda }),
-    el("div", { class: "barra-cursore" }, [
-      el("i", { stile: { width: `${f * 100}%` } }),
-      // Il triangolo si ferma prima dei bordi: a 0% e a 100% mezzo cursore
-      // uscirebbe dalla tessera e verrebbe tagliato dall'overflow.
-      el("b", { stile: { left: `${Math.min(97, Math.max(3, f * 100))}%` } }),
+    el("div", { class: "tessera-piede" }, [
+      micro && el("div", { class: `micro ${tonoMicro}`.trim(), testo: micro }),
+      guida(frazione, { bersaglio, verso }),
     ]),
   ]);
   if (tinta) t.style.setProperty("--tinta", tinta);
@@ -656,12 +724,12 @@ export function tessera({ nome, emoji, icona: nomeIcona, sotto, micro, tonoMicro
  *
  * @param {Array<{etichetta, valore, tinta}>} voci
  */
-export function spezzata(voci, { legenda = true, quante = 4 } = {}) {
+export function spezzata(voci, { legenda = true, quante = 5 } = {}) {
   const totale = voci.reduce((s, v) => s + v.valore, 0) || 1;
   const ordinate = [...voci].sort((a, b) => b.valore - a.valore);
   const mostrate = ordinate.slice(0, quante);
   const resto = ordinate.slice(quante).reduce((s, v) => s + v.valore, 0);
-  if (resto > 0) mostrate.push({ etichetta: "Altro", valore: resto, tinta: "var(--testo-4)" });
+  if (resto > 0) mostrate.push({ etichetta: "Altro", valore: resto, tinta: "var(--inchiostro-4)" });
 
   const barra = el("div", { class: "spezzata" }, mostrate.map((v) => {
     const i = el("i", { stile: { width: `${(v.valore / totale) * 100}%` } });

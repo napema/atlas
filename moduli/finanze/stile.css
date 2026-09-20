@@ -33,7 +33,7 @@
   gap: var(--s-4);
   padding: var(--s-4);
   margin-bottom: var(--s-20);
-  border-radius: 10px;
+  border-radius: var(--r-interno);
   background: var(--incavo);
 }
 .fi-scheda {
@@ -41,7 +41,7 @@
   min-width: 0;
   min-height: var(--tocco);
   border: 0;
-  border-radius: var(--r-basso);
+  border-radius: var(--r-interno);
   background: none;
   color: var(--inchiostro-3);
   font-family: var(--font);
@@ -93,7 +93,7 @@
   flex: 1;
   display: flex;
   align-items: flex-end;
-  border-radius: 8px;
+  border-radius: var(--r-minimo);
   /* Il binario è un accenno, non un blocco. Prima era --traccia pieno: le
      sette caselle si leggevano come sette rettangoli grigi tutti uguali e
      la barretta colorata in fondo sembrava un bordo sbagliato, non un dato. */
@@ -104,7 +104,7 @@
   display: block;
   width: 100%;
   min-height: 3px;
-  border-radius: 8px;
+  border-radius: var(--r-minimo);
   background: var(--accento);
   transition: height var(--lento) var(--curva);
 }
@@ -185,7 +185,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   padding: 2px 7px;
-  border-radius: var(--r-pillola);
+  border-radius: var(--r-tondo);
   background: var(--scheda-alta);
   color: var(--testo-2);
   margin-left: 7px;
@@ -358,7 +358,7 @@
   display: inline-flex; align-items: center; gap: 7px;
   margin-top: var(--s3);
   padding: 6px 14px;
-  border-radius: var(--r-pillola);
+  border-radius: var(--r-tondo);
   background: var(--scheda-alta);
   font-size: var(--t-13);
 }
@@ -522,7 +522,7 @@
   padding: var(--s-20);
   margin-bottom: var(--s-12);
   border: 1px solid var(--riga-fine);
-  border-radius: var(--r-alto);
+  border-radius: var(--r-scheda);
   background: var(--rilievo);
 }
 .fi-numero-testa {
@@ -535,13 +535,13 @@
 
 .fi-consumo {
   height: 8px; margin-top: var(--s4);
-  border-radius: var(--r-pillola);
+  border-radius: var(--r-tondo);
   background: var(--traccia);
   overflow: hidden;
 }
 .fi-consumo > i {
   display: block; height: 100%;
-  border-radius: var(--r-pillola);
+  border-radius: var(--r-tondo);
   background: var(--accento);
   transition: width var(--lento) var(--curva);
 }
@@ -704,12 +704,12 @@
 .fi-catriga-cifra { grid-area: cifra; font-size: var(--t-13); color: var(--testo-2); }
 .fi-catriga-barra {
   grid-area: barra;
-  height: 6px; border-radius: var(--r-pillola);
+  height: 6px; border-radius: var(--r-tondo);
   background: var(--traccia); overflow: hidden;
 }
 .fi-catriga-barra > i {
   display: block; height: 100%;
-  border-radius: var(--r-pillola);
+  border-radius: var(--r-tondo);
   background: var(--tinta, var(--accento));
   transition: width var(--lento) var(--curva);
 }
@@ -718,14 +718,14 @@
 
 .fi-come-barra {
   display: flex; height: 12px; margin: var(--s3) 0;
-  border-radius: var(--r-pillola); overflow: hidden; background: var(--traccia);
+  border-radius: var(--r-tondo); overflow: hidden; background: var(--traccia);
 }
 .fi-come-barra > i { display: block; height: 100%; transition: width var(--lento) var(--curva); }
 .fi-come-barra > i.necessario    { background: var(--ciano); }
 .fi-come-barra > i.discrezionale { background: var(--arancio); }
 .fi-come-legenda { display: flex; flex-wrap: wrap; gap: var(--s4); font-size: var(--t-13); color: var(--testo-2); }
 .fi-come-legenda > span { display: inline-flex; align-items: center; gap: 7px; }
-.fi-come-legenda i { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+.fi-come-legenda i { width: 9px; height: 9px; border-radius: var(--r-minimo); flex: none; }
 .fi-come-legenda i.necessario    { background: var(--ciano); }
 .fi-come-legenda i.discrezionale { background: var(--arancio); }
 
@@ -925,7 +925,7 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
 .fi-check-serie {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 10px;
-  border-radius: var(--r-pillola);
+  border-radius: var(--r-tondo);
   background: var(--scheda-alta);
   font-size: var(--t-13);
   font-weight: 700;
@@ -955,7 +955,7 @@ div.fi-importo::after { content: " €"; font-size: 0.42em; font-weight: 700; co
 .fi-check-punto {
   flex: 1;
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--r-tondo);
   background: var(--scheda-viva);
 }
 .fi-check-punto.ok         { background: var(--ok); }

@@ -46,8 +46,11 @@ export const MODULI = [
   {
     id: "oggi",
     nome: "Oggi",
-    icona: "sole",
-    accento: "var(--pesca)",
+    icona: "oggi",
+    // SENZA TINTA, ed e' una scelta: la home e' il fondo su cui gli altri si
+    // appoggiano, non un modulo fra gli altri. Una tinta qui la metteva in
+    // concorrenza con le tessere che deve far leggere.
+    accento: "var(--t-blu)",
     stile: true,
     carica: () => import("../moduli/oggi/modulo.js"),
     pubblica: [],
@@ -56,10 +59,12 @@ export const MODULI = [
   {
     id: "finanze",
     nome: "Finanze",
-    icona: "portafoglio",
+    icona: "finanze",
     // Non verde: il verde in ATLAS vuol dire "fatto", e una tinta che
-    // significa due cose non ne significa nessuna.
-    accento: "var(--lime)",
+    // significa due cose non ne significa nessuna. Dalla seconda stesura la
+    // tinta e' gessosa: il pieno e' riservato agli stati.
+    accento: "var(--t-ambra)",
+    verso: "giu",
     stile: true,
     carica: () => import("../moduli/finanze/modulo.js"),
     pubblica: ["finanze:movimento-registrato"],
@@ -68,11 +73,11 @@ export const MODULI = [
   {
     id: "pasti",
     nome: "Pasti",
-    icona: "piatto",
-    // Non verde (vuol dire «fatto») e non lime, che e' di Finanze. Il rosa
-    // non lo usava nessuno ed e' abbastanza lontano dall'arancio di Training
-    // da non confondersi nella stessa barra.
-    accento: "var(--rosa)",
+    icona: "pasti",
+    // Abbastanza lontano dall'ambra di Finanze e dall'argilla di Training da
+    // non confondersi nella stessa barra.
+    accento: "var(--t-corallo)",
+    verso: "giu",
     stile: true,
     carica: () => import("../moduli/pasti/modulo.js"),
     pubblica: [],
@@ -83,7 +88,8 @@ export const MODULI = [
     nome: "Mobilità",
     gruppo: "corpo",
     icona: "corpo",
-    accento: "var(--ciano)",
+    accento: "var(--t-acqua)",
+    verso: "su",
     stile: true,
     carica: () => import("../moduli/mobilita/modulo.js"),
     // "mobilita:sessione-completata" è l'annuncio che evita all'utente di
@@ -100,7 +106,8 @@ export const MODULI = [
     // «un numero da colpire entro dicembre», e sono due cose diverse anche
     // quando si fanno con le stesse gambe.
     icona: "bersaglio",
-    accento: "var(--arancio)",
+    accento: "var(--t-argilla)",
+    verso: "su",
     stile: true,
     carica: () => import("../moduli/allenamenti/modulo.js"),
     pubblica: [],
@@ -109,8 +116,9 @@ export const MODULI = [
   {
     id: "abitudini",
     nome: "Abitudini",
-    icona: "spunta",
-    accento: "var(--viola)",
+    icona: "abitudini",
+    accento: "var(--t-lilla)",
+    verso: "su",
     stile: true,
     carica: () => import("../moduli/abitudini/modulo.js"),
     pubblica: [],
@@ -119,8 +127,10 @@ export const MODULI = [
   {
     id: "impostazioni",
     nome: "Impostazioni",
-    icona: "ingranaggio",
-    accento: "var(--grigio)",
+    icona: "impostazioni",
+    // Neutro come Oggi: e' il posto dove si va quando qualcosa non va, non
+    // una destinazione con un'identita' da difendere.
+    accento: "var(--t-blu)",
     stile: true,
     carica: () => import("../moduli/impostazioni/modulo.js"),
     pubblica: [],
@@ -215,6 +225,10 @@ export async function prendiModulo(id) {
     ...mod,
     id: voce.id, nome: voce.nome, icona: voce.icona,
     accento: voce.accento,
+    // Da che parte del bersaglio si sta bene. Lo legge `guida()` tramite la
+    // home: superare il bersaglio in Training e' verde, in Finanze e' rosso,
+    // e il componente non puo' indovinarlo.
+    verso: voce.verso || "su",
     stile: Boolean(voce.stile),
     pubblica: voce.pubblica || [], ascolta: voce.ascolta || [],
   };

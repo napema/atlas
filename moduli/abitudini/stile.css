@@ -156,7 +156,7 @@
   display: inline-flex; align-items: center; gap: 3px;
   flex: none;
   padding: 3px 9px;
-  border-radius: var(--r-pillola);
+  border-radius: var(--r-tondo);
   color: var(--arancio);
   background: var(--pillola-tinta);
   font-size: var(--t-11);
@@ -172,7 +172,7 @@
   width: 56px; height: 56px;
   flex: none;
   display: grid; place-items: center;
-  border-radius: 18px;
+  border-radius: var(--r-scheda);
   background: var(--accento-tenue);
   font-size: 28px;
 }
@@ -194,7 +194,7 @@
 }
 .ab-cella {
   aspect-ratio: 1;
-  border-radius: 6px;
+  border-radius: var(--r-minimo);
   background: var(--scheda-viva);
 }
 .ab-cella.piena { background: var(--accento); }
@@ -406,7 +406,7 @@
   gap: var(--s-4);
   padding: var(--s-4);
   margin-bottom: var(--s-20);
-  border-radius: 10px;
+  border-radius: var(--r-interno);
   background: var(--incavo);
 }
 .ab-scheda {
@@ -414,7 +414,7 @@
   min-width: 0;
   min-height: var(--tocco);
   border: 0;
-  border-radius: var(--r-basso);
+  border-radius: var(--r-interno);
   background: none;
   color: var(--inchiostro-3);
   font-family: var(--font);
@@ -507,13 +507,13 @@
 .ab-serie-barra {
   grid-area: barra;
   height: 5px;
-  border-radius: var(--r-pillola);
+  border-radius: var(--r-tondo);
   background: var(--traccia);
   overflow: hidden;
 }
 .ab-serie-barra > i {
   display: block; height: 100%;
-  border-radius: var(--r-pillola);
+  border-radius: var(--r-tondo);
   background: var(--accento);
   transition: width var(--lento) var(--curva);
 }
@@ -526,7 +526,7 @@
 .ab-mappa-celle { display: grid; grid-template-columns: repeat(28, 1fr); gap: 2px; flex: 1; min-width: 0; }
 .ab-mappa-cella {
   aspect-ratio: 1;
-  border-radius: 2px;
+  border-radius: var(--r-minimo);
   background: var(--scheda-viva);
 }
 .ab-mappa-cella.spenta { background: transparent; }

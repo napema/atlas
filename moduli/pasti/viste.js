@@ -39,6 +39,18 @@ const TINTE = {
 };
 const NOMI_MACRO = { p: "Proteine", c: "Carboidrati", g: "Grassi" };
 
+/* Un'icona per fascia. Sono tutte dal repertorio (`core/icone.js`), quindi
+   condividono griglia e tratto: dentro un `.chip` da 30px si leggono come
+   una famiglia e non come cinque simboli presi in giro. */
+const ICONE_FASCIA = {
+  colazione: "sole",
+  spuntino1: "fiamma",
+  pranzo:    "piatto",
+  spuntino2: "orologio",
+  cena:      "luna",
+};
+
+
 const kcal = (n) => `${numero(Math.round(n))}`;
 const gr = (n) => `${Math.round(n)} g`;
 
@@ -62,23 +74,28 @@ export function testataGiorno(iso) {
   return scheda(null, [
     el("div", { class: "pa-testata" }, [
       el("div", { class: "pa-anello" }, [
-        /* L'anello risponde a «quanto va bene», non a «quale modulo»:
-           quindi porta uno STATO, non la tinta di Pasti.
+        /* L'ANELLO NON DÀ UN GIUDIZIO, ed è una correzione.
 
-           Prima era sempre corallo — l'accento del modulo — e a 3510 kcal
-           su 2975 mostrava un anello rosa pieno identico a quello di una
-           giornata perfetta. Il numero diceva «hai sforato», il colore
-           diceva «Pasti», e l'unica cosa che si vedeva da lontano era il
-           secondo.
+           Per un giro era stato colorato di stato — verde, ambra, rosso
+           sopra il bersaglio — con la logica che «quanto va bene» è una
+           domanda da stati. Ma qui la domanda non si pone: l'obiettivo
+           dichiarato di questo modulo è la MASSA, quindi stare sopra le
+           calorie non è un errore, è il piano che funziona. Un anello
+           rosso a 3510 su 2975 diceva «hai sbagliato» a una giornata
+           andata bene.
 
-           Lo spessore e' sceso da 10 a 7: a 116px di diametro un tratto da
-           10 e' una ciambella, e la cifra dentro ci sta stretta. */
+           E soprattutto contraddiceva la regola di tono scritta in cima a
+           questo file e nel briefing del modulo: niente semafori sulla
+           giornata, niente percentuali di fallimento. Una schermata che
+           ogni sera apre in rosso è l'app che si disinstalla a gennaio.
+
+           Quindi: l'accento del modulo, sempre. Quanto sei sopra o sotto
+           lo dice la cifra accanto, con le parole, senza colore.
+
+           Lo spessore è sceso da 10 a 7: a 116px di diametro un tratto da
+           10 è una ciambella, e la cifra dentro ci sta stretta. */
         anello(b.kcal ? t.kcal / b.kcal : 0, {
-          misura: 116,
-          spessore: 7,
-          colore: t.kcal > b.kcal ? "var(--male)"
-            : t.kcal >= b.kcal * 0.9 ? "var(--avviso)"
-            : "var(--ok)",
+          misura: 116, spessore: 7, colore: "var(--accento)",
         }),
         el("div", { class: "pa-anello-testo" }, [
           el("div", { class: "pa-kcal", testo: kcal(t.kcal) }),
@@ -134,11 +151,41 @@ export function elencoFasce(iso, ridisegna) {
         ? null
         : `${kcal(macro.kcal || 0)} kcal · ${Math.round(macro.p || 0)} g prot.`;
 
-      return riga({
-        etichetta: nome,
-        dettaglio: [cosa, conti].filter(Boolean).join("  ·  "),
-        azione: () => foglioFascia(iso, f.fascia, ridisegna),
-      });
+      /* La riga di un pasto NON è più la riga generica etichetta/dettaglio.
+         Con quella, «Colazione» e «Frittata con patate in friggitrice,
+         pane e succo ACE · 730 kcal · 34 g prot.» finivano nella stessa
+         colonna di testo, su tre righe, e la giornata si leggeva come un
+         paragrafo: nessun numero incolonnato, niente da scorrere con
+         l'occhio.
+
+         Ora ha la forma che ha in ogni app di questo tipo: chip a
+         sinistra, nome e piatto al centro, i conti incolonnati a destra.
+         I kcal si possono confrontare fra una fascia e l'altra senza
+         leggere, che è tutto il punto di una colonna di numeri. */
+      const ora = FASCE.find((x) => x.id === f.fascia)?.ora;
+      // NON `vuoto`: quel nome e' gia' la funzione di stato vuoto importata
+      // da ui.js, e qui la coprirebbe dentro tutto il blocco.
+      const senzaPasto = saltato || (!f.nome && !sost);
+
+      return el("li", {}, [el("button", {
+        class: "pa-pasto" + (senzaPasto ? " senza" : ""),
+        type: "button",
+        onClick: () => foglioFascia(iso, f.fascia, ridisegna),
+      }, [
+        el("span", { class: "chip piccolo" + (senzaPasto ? " spento" : ""),
+          html: icona(ICONE_FASCIA[f.fascia] || "piatto", 17, 1.8) }),
+        el("span", { class: "pa-pasto-testo" }, [
+          el("span", { class: "pa-pasto-capo" }, [
+            el("span", { class: "pa-pasto-nome", testo: nome }),
+            ora && el("span", { class: "pa-pasto-ora", testo: ora }),
+          ]),
+          el("span", { class: "pa-pasto-cosa", testo: cosa }),
+        ]),
+        conti && el("span", { class: "pa-pasto-conti" }, [
+          el("span", { class: "pa-pasto-kcal", testo: kcal(macro.kcal || 0) }),
+          el("span", { class: "pa-pasto-prot", testo: `${Math.round(macro.p || 0)} g prot.` }),
+        ]),
+      ])]);
     })),
 
     el("button", {

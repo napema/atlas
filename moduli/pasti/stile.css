@@ -3,28 +3,42 @@
 
 /* ------------------------------------------------------------- schede -- */
 
+/* Il controllo a segmenti: le misure e gli stati stanno in
+   `redesign/component-specs.md` (Segmenti). Sei moduli se l'erano
+   reimplementato con un nome proprio, e per questo la schermata
+   continuava a sembrare quella di prima anche dopo il cambio dei
+   token. Finche' il nome resta locale, i valori almeno sono quelli. */
 .pa-schede {
   display: flex;
-  gap: 2px;
-  padding: 3px;
-  margin-bottom: var(--s4);
-  border-radius: var(--r-pillola);
-  background: var(--scheda-alta);
+  gap: var(--s-4);
+  padding: var(--s-4);
+  margin-bottom: var(--s-20);
+  border-radius: var(--r-interno);
+  background: var(--incavo);
 }
 .pa-scheda {
   flex: 1;
-  min-height: 38px;
+  min-width: 0;
+  min-height: var(--tocco);
   border: 0;
-  border-radius: var(--r-pillola);
+  border-radius: var(--r-interno);
   background: none;
-  color: var(--testo-2);
+  color: var(--inchiostro-3);
   font-family: var(--font);
-  font-size: var(--t-13);
-  font-weight: 600;
+  font-size: var(--t-15);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
-  transition: background var(--veloce) var(--curva), color var(--veloce) var(--curva);
+  transition: background var(--durata-media) var(--curva-decisa),
+              color var(--durata-media) var(--curva-decisa);
 }
-.pa-scheda.attiva { background: var(--scheda-viva); color: var(--testo); }
+.pa-scheda.attiva {
+  background: var(--rilievo-2);
+  color: var(--inchiostro);
+  font-weight: 700;
+}
 
 /* ------------------------------------------------------- la testata --- */
 
@@ -98,7 +112,7 @@
   font-size: var(--t-13);
   line-height: 1.5;
   background: var(--scheda-alta);
-  border-radius: var(--r-campo);
+  border-radius: var(--r-interno);
   padding: var(--s3);
   margin-top: var(--s3);
   overflow-x: auto;
@@ -151,7 +165,7 @@
   aspect-ratio: 1;
   min-height: 34px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--r-minimo);
   cursor: pointer;
   transition: background var(--veloce) var(--curva);
 }
@@ -170,3 +184,87 @@
   .pa-tipo { max-width: 520px; }
   .pa-cella { min-height: 40px; }
 }
+
+
+/* --------------------------------------------------- la riga di un pasto
+   Chip · nome e piatto · conti incolonnati a destra.
+
+   Prima era la riga generica `etichetta`/`dettaglio` di ui.js, e produceva
+   questo: «Colazione» sopra, e sotto «Frittata con patate in friggitrice,
+   pane e succo ACE · 730 kcal · 34 g prot.» tutto nella stessa colonna, su
+   tre righe. Cinque fasce cosi' sono quindici righe di testo corrente: la
+   giornata si leggeva come un paragrafo e i numeri non si potevano
+   confrontare fra loro, che e' l'unica cosa per cui uno li guarda.
+
+   Le kcal ora stanno in colonna, allineate a destra e in cifre tabulari:
+   si scorrono con l'occhio senza leggerle. */
+.pa-pasto {
+  display: flex;
+  align-items: center;
+  gap: var(--s-12);
+  width: 100%;
+  min-height: 62px;
+  padding: var(--s-12) 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity var(--durata-rapida) var(--curva-standard);
+}
+.pa-pasto:active { opacity: 0.55; }
+.lista > li:not(:last-child) > .pa-pasto { border-bottom: 1px solid var(--riga-fine); }
+
+.pa-pasto-testo { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pa-pasto-capo { display: flex; align-items: baseline; gap: var(--s-8); min-width: 0; }
+.pa-pasto-nome {
+  font-size: var(--t-15);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--inchiostro);
+}
+/* L'ora e' contesto: sta accanto al nome, piccola, e non compete. */
+.pa-pasto-ora {
+  flex: none;
+  font-size: var(--t-12);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--inchiostro-4);
+}
+/* Il piatto su UNA riga sola, troncato. I nomi dei pasti sono lunghi e
+   andare a capo due volte faceva righe alte il doppio delle altre: una
+   lista con le righe di altezza diversa non si scorre, si legge. */
+.pa-pasto-cosa {
+  font-size: var(--t-13);
+  color: var(--inchiostro-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.pa-pasto-conti {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  text-align: right;
+}
+.pa-pasto-kcal {
+  font-family: var(--font-d);
+  font-size: var(--t-17);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--inchiostro);
+}
+.pa-pasto-prot {
+  font-size: var(--t-12);
+  font-variant-numeric: tabular-nums;
+  color: var(--inchiostro-4);
+  white-space: nowrap;
+}
+
+/* Saltato o ancora da scegliere: la riga resta, il testo si spegne. Non si
+   nasconde e non si colora — non e' un errore, e' una casella vuota. */
+.pa-pasto.senza .pa-pasto-nome { color: var(--inchiostro-2); }
+.pa-pasto.senza .pa-pasto-cosa { color: var(--inchiostro-4); font-style: italic; }

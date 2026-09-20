@@ -277,7 +277,7 @@ const elenco = (n) => n.length === 1 ? n[0] : `${n.slice(0, -1).join(", ")} e ${
 function carta({ ico, nome, valore, tinta, classe = "", corpo }) {
   const c = el("section", { class: `og-carta ${classe}`.trim() }, [
     el("div", { class: "og-carta-testa" }, [
-      ico && el("span", { class: "og-carta-ico", html: icona(ico, 17, 1.9) }),
+      ico && el("span", { class: "chip", html: icona(ico, 20, 1.8) }),
       el("span", { class: "og-carta-nome", testo: nome }),
       valore != null && el("span", { class: "og-carta-valore", testo: String(valore) }),
     ]),
@@ -629,7 +629,7 @@ function cartaModuli(q) {
     corpo: el("ul", { class: "og-modlista" }, righe.map((s) => {
       const d = s.dati;
       const a = el("a", { class: "og-modriga", href: d?.azione?.rotta || `#/${s.mod.id}` }, [
-        el("span", { class: "og-modicona", html: icona(s.mod.icona, 18) }),
+        el("span", { class: "chip piccolo og-modicona", html: icona(s.mod.icona, 17, 1.8) }),
         el("span", { class: "og-modnome", testo: s.mod.nome }),
         el("span", { class: `og-modstato ${d?.fatto === true ? "ok" : d?.fatto === false ? "avviso" : ""}`.trim(),
           testo: d ? String(d.valore ?? "—") : "—" }),

@@ -74,7 +74,7 @@ input, textarea, [contenteditable] { -webkit-user-select: text; user-select: tex
 :focus-visible {
   outline: 2px solid var(--segnale);
   outline-offset: 2px;
-  border-radius: var(--r-basso);
+  border-radius: var(--r-interno);
 }
 
 
@@ -272,7 +272,7 @@ ul, ol { margin: 0; padding: 0; }
   gap: 5px;
   padding: var(--s-6) 2px;
   border: 0;
-  border-radius: var(--r-basso);
+  border-radius: var(--r-interno);
   background: none;
   color: var(--inchiostro-4);
   font-family: inherit;
@@ -307,7 +307,7 @@ ul, ol { margin: 0; padding: 0; }
   position: relative;
   background: var(--rilievo);
   border: 1px solid var(--riga-fine);
-  border-radius: var(--r-alto);
+  border-radius: var(--r-scheda);
   padding: var(--s-20);
   margin-bottom: var(--s-12);
   transition: background var(--durata-rapida) var(--curva-standard),
@@ -368,7 +368,7 @@ button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-col
   gap: var(--s-4);
   padding: var(--s-16) var(--s-16) var(--s-20);
   border: 1px solid var(--riga-fine);
-  border-radius: var(--r-alto);
+  border-radius: var(--r-scheda);
   background: var(--rilievo);
   color: inherit;
   text-align: left;
@@ -442,7 +442,7 @@ button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-col
   flex-direction: column;
   gap: var(--s-4);
   padding: var(--s-16);
-  border-radius: var(--r-basso);
+  border-radius: var(--r-interno);
   background: var(--incavo);
 }
 .riquadro .cifra {
@@ -505,6 +505,40 @@ button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-col
 .riga > div { min-width: 0; flex: 1 1 auto; }
 .riga > div > div:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* ------------------------------------------------------- il chip d'icona
+   Un quadrato arrotondato con dentro un glifo, tutti e due della stessa
+   tinta: il fondo al 14%, il glifo pieno.
+
+   È il pezzo che tiene insieme l'app. Prima l'icona di una categoria era
+   un glifo nudo appoggiato al testo, e cambiava misura, colore e posizione
+   in ogni modulo — la ragione principale per cui sette schermate non
+   sembravano la stessa app. Qui la forma è una sola e la tinta è l'unica
+   cosa che varia.
+
+   Tre misure e basta: 30 in una riga di lista, 38 in un'intestazione di
+   scheda, 52 quando è il soggetto del blocco. Non si inventa la quarta. */
+.chip {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px; height: 38px;
+  border-radius: var(--r-interno);
+  background: color-mix(in srgb, var(--tinta, var(--accento)) 14%, transparent);
+  color: var(--tinta, var(--accento));
+}
+.chip svg { display: block; width: 20px; height: 20px; }
+.chip.piccolo { width: 30px; height: 30px; border-radius: var(--r-minimo); }
+.chip.piccolo svg { width: 17px; height: 17px; }
+.chip.grande { width: 52px; height: 52px; }
+.chip.grande svg { width: 26px; height: 26px; }
+/* Un'emoji dentro il chip è un dato dell'utente: niente `color`, che sulle
+   emoji a colori non fa niente, e corpo invece di misura del glifo. */
+.chip.emoji { font-size: 19px; line-height: 1; }
+.chip.piccolo.emoji { font-size: 16px; }
+.chip.grande.emoji  { font-size: 26px; }
+/* Neutro: quando la cosa non ha una tinta propria. */
+.chip.spento { background: var(--rilievo-2); color: var(--inchiostro-3); }
+
 /* Il gettone: badge tondo. 20px da contatore, 56 da avatar. */
 .gettone {
   width: 34px; height: 34px;
@@ -543,9 +577,19 @@ button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-col
    Le azioni stanno accanto alla cosa su cui agiscono: nessun tondo fisso in
    basso a destra — un tondo solo non può rappresentare due gesti diversi.
 
-   Il raggio è quello BASSO (12px), non quello alto: a 52px di altezza il
-   raggio alto fa una pastiglia, e una pastiglia blu larga quanto lo schermo
-   è la cosa più vistosa che si possa mettere in una schermata. */
+   UN PULSANTE PORTA SEMPRE L'ACCENTO DEL MODULO IN CUI SI TROVA. Non c'è
+   un secondo colore per le azioni, e in particolare non c'è più il blu
+   fisso: prima `.btn` era blu e `.btn.tinto` era color-modulo, quindi
+   nella stessa schermata convivevano un pulsante azzurro e uno ambra senza
+   che la differenza volesse dire niente.
+
+   Tre pesi, e la differenza NON è il colore: è quanto colore.
+
+     .btn            accento pieno, testo nero — l'azione della schermata
+     .btn.tinto      accento al 15%, testo accento — un'azione fra tante
+     .btn.morbido    nessun colore — l'alternativa che non vuoi spingere
+
+   Il raggio è `--r-interno` come ogni cosa che sta dentro una scheda. */
 
 .btn {
   display: inline-flex;
@@ -555,12 +599,12 @@ button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-col
   min-height: 52px;
   padding: 0 var(--s-28);
   border: 0;
-  border-radius: var(--r-basso);
-  background: var(--segnale);
-  color: var(--segnale-testo);
+  border-radius: var(--r-interno);
+  background: var(--accento);
+  color: var(--accento-testo);
   font-family: var(--font);
   font-size: var(--t-17);
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: -0.1px;
   cursor: pointer;
   transition: opacity var(--durata-rapida) var(--curva-standard),
@@ -570,15 +614,15 @@ button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-col
 .btn[disabled] { opacity: 0.4; pointer-events: none; }
 .btn.pieno { width: 100%; }
 
-/* Il tinto porta la tinta del MODULO, non il segnale: parla del dato di
-   quel modulo, non dell'azione principale della schermata. */
+/* Stesso colore, meno intensità: un'azione che c'è ma non è LA cosa da
+   fare adesso. */
 .btn.tinto {
   background: color-mix(in srgb, var(--accento) 15%, transparent);
   color: var(--accento);
 }
 
-/* Il morbido è il secondario: superficie dei controlli, testo bianco.
-   Il filo lo tiene separato dalla scheda su cui appoggia. */
+/* Il morbido è l'unico senza colore, e serve esattamente a quello: sta
+   accanto a un pulsante d'accento e non se lo contende. */
 .btn.morbido {
   background: var(--rilievo-2);
   border: 1px solid var(--riga-fine);
@@ -587,10 +631,10 @@ button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-col
 
 .btn.nudo {
   background: none;
-  color: var(--segnale);
+  color: var(--accento);
   min-height: var(--tocco);
   padding: 0 var(--s-12);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* Tinto a riposo, mai pieno: pieno, in una lista di impostazioni, diventa
@@ -602,7 +646,7 @@ button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-col
 }
 .btn.distruttivo.nudo { background: none; color: var(--male); }
 
-.btn.piccolo { min-height: 38px; padding: 0 var(--s-16); font-size: var(--t-15); border-radius: var(--r-basso); }
+.btn.piccolo { min-height: 38px; padding: 0 var(--s-16); font-size: var(--t-15); border-radius: var(--r-interno); }
 .btn.grande  { min-height: 56px; }
 
 .btn-icona {
@@ -625,7 +669,7 @@ button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-col
 .tasto {
   min-height: 62px;
   border: 0;
-  border-radius: var(--r-basso);
+  border-radius: var(--r-interno);
   background: none;
   color: var(--inchiostro);
   font-family: var(--font-d);
@@ -651,7 +695,7 @@ button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-col
   min-height: 50px;
   padding: 0 var(--s-16);
   border: 1px solid transparent;
-  border-radius: var(--r-basso);
+  border-radius: var(--r-interno);
   background: var(--incavo);
   color: var(--inchiostro);
   font-family: var(--font);
@@ -660,7 +704,7 @@ button.scheda:active, a.scheda:active { background: var(--rilievo-2); border-col
               background var(--durata-rapida) var(--curva-standard);
 }
 .campo::placeholder { color: var(--inchiostro-4); }
-.campo:focus { outline: none; border-color: var(--segnale); background: var(--rilievo-2); }
+.campo:focus { outline: none; border-color: var(--accento); background: var(--rilievo-2); }
 .campo.male  { border-color: var(--male); }
 .campo[disabled] { opacity: 0.45; }
 select.campo { appearance: none; }
@@ -692,7 +736,7 @@ textarea.campo { padding: var(--s-12) var(--s-16); line-height: 1.45; resize: ve
   min-height: var(--tocco);
   padding: 0 var(--s-8);
   border: 0;
-  border-radius: var(--r-basso);
+  border-radius: var(--r-interno);
   background: none;
   color: var(--inchiostro);
   font-family: var(--font);
@@ -708,7 +752,7 @@ textarea.campo { padding: var(--s-12) var(--s-16); line-height: 1.45; resize: ve
   display: flex;
   gap: 3px;
   padding: 3px;
-  border-radius: 13px;              /* --r-basso + il padding, così i due
+  border-radius: var(--r-interno);              /* --r-basso + il padding, così i due
                                        raggi restano concentrici */
   background: var(--incavo);
 }
@@ -716,7 +760,7 @@ textarea.campo { padding: var(--s-12) var(--s-16); line-height: 1.45; resize: ve
   flex: 1;
   min-height: 38px;
   border: 0;
-  border-radius: var(--r-basso);
+  border-radius: var(--r-interno);
   background: none;
   color: var(--inchiostro-3);
   font-family: var(--font);
@@ -790,7 +834,7 @@ textarea.campo { padding: var(--s-12) var(--s-16); line-height: 1.45; resize: ve
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   transition: transform var(--durata-media) var(--curva-decisa);
 }
-.interruttore.acceso { background: var(--segnale); }
+.interruttore.acceso { background: var(--accento); }
 .interruttore.acceso .interruttore-pallina { transform: translateX(19px); }
 
 
@@ -892,7 +936,7 @@ textarea.campo { padding: var(--s-12) var(--s-16); line-height: 1.45; resize: ve
   display: flex;
   flex-direction: column;
   border-top: 1px solid var(--riga-marcata);
-  border-radius: var(--r-alto) var(--r-alto) 0 0;
+  border-radius: var(--r-scheda) var(--r-scheda) 0 0;
   background: var(--rilievo);
   box-shadow: var(--ombra);
   transform: translateY(101%);
@@ -922,7 +966,7 @@ textarea.campo { padding: var(--s-12) var(--s-16); line-height: 1.45; resize: ve
   letter-spacing: -0.2px; text-align: center; white-space: nowrap;
 }
 .foglio-testa .btn.nudo:first-child { justify-self: start; }
-.foglio-testa .btn.nudo:last-child { justify-self: end; font-weight: 650; }
+.foglio-testa .btn.nudo:last-child { justify-self: end; font-weight: 700; }
 /* `overscroll-behavior: contain`: arrivato in fondo al foglio, lo
    scorrimento NON prosegue sulla pagina sotto. `overflow-x: hidden` non è
    pignoleria: le pillole a riga unica escono di proposito dai margini, e un
@@ -963,7 +1007,7 @@ textarea.campo { padding: var(--s-12) var(--s-16); line-height: 1.45; resize: ve
   display: flex; align-items: center; gap: var(--s-8);
   padding: var(--s-12) var(--s-16);
   border: 1px solid var(--riga-marcata);
-  border-radius: var(--r-basso);
+  border-radius: var(--r-interno);
   background: var(--rilievo-3);
   color: var(--inchiostro);
   font-size: var(--t-15);
@@ -1048,7 +1092,7 @@ textarea.campo { padding: var(--s-12) var(--s-16); line-height: 1.45; resize: ve
   transition: background var(--durata-media) var(--curva-standard);
 }
 .sync-pallino.is-ok       { background: var(--ok); }
-.sync-pallino.is-corso    { background: var(--segnale); animation: pulsa 1.3s ease-in-out infinite; }
+.sync-pallino.is-corso    { background: var(--accento); animation: pulsa 1.3s ease-in-out infinite; }
 .sync-pallino.is-err      { background: var(--male); }
 .sync-pallino.is-off      { background: none; box-shadow: inset 0 0 0 1px var(--inchiostro-4); }
 .sync-pallino.is-inattivo { background: var(--inchiostro-4); }
@@ -1087,7 +1131,7 @@ button.evento {
   font: inherit;
   text-align: left;
   cursor: pointer;
-  border-radius: var(--r-basso);
+  border-radius: var(--r-interno);
   padding: 10px var(--s-8);
   margin: 0 calc(-1 * var(--s-8));
   width: calc(100% + var(--s-16));
@@ -1135,7 +1179,7 @@ button.evento:active { opacity: 0.55; }
 
 code {
   font-family: var(--font-m); font-size: 0.9em;
-  padding: 2px 6px; border-radius: 6px; background: var(--rilievo-2);
+  padding: 2px 6px; border-radius: var(--r-minimo); background: var(--rilievo-2);
 }
 .diagnostica { font-family: var(--font-m); font-size: var(--t-12); font-weight: 400; letter-spacing: 0; text-transform: none; line-height: 1.7; color: var(--inchiostro-2); word-break: break-word; }
 hr { border: 0; height: 1px; background: var(--riga-fine); margin: var(--s-16) 0; }
@@ -1203,7 +1247,7 @@ hr { border: 0; height: 1px; background: var(--riga-fine); margin: var(--s-16) 0
     width: min(560px, calc(100vw - 200px));
     max-height: 84dvh;
     border: 1px solid var(--riga-marcata);
-    border-radius: var(--r-alto);
+    border-radius: var(--r-scheda);
     transform: translate(-50%, -46%) scale(0.98);
     opacity: 0;
     transition: transform var(--durata-media) var(--curva-decisa),

@@ -319,12 +319,35 @@
   --s-20: 20px; --s-28: 28px; --s-38: 40px; --s-52: 56px; --s-70: 76px;
 
   /* --------------------------------------------------------------- forma --
-     Tre raggi. Più larghi della stesura precedente: 16px su una scheda a
-     tutta larghezza legge quasi squadrato, 20 no. Il raggio alto resta una
-     promessa — QUESTO SI PREME — e ciò che non si preme sta sul fondo,
-     diviso da un filo. */
-  --r-alto:  20px;
-  --r-basso: 12px;
+     QUATTRO RAGGI, E NON UNO DI PIÙ. Nessun file, in nessun modulo, scrive
+     un numero: se serve un raggio che non è in questa lista, la risposta è
+     che non serve.
+
+     Prima erano ventiquattro valori letterali sparsi nei fogli dei moduli
+     (2, 3, 4, 6, 7, 8, 9, 10, 12, 13, 18, 999…) più otto nomi di token per
+     tre valori veri. Il risultato era esattamente quello che si vedeva:
+     una scheda arrotondata accanto a una squadrata accanto a una a metà,
+     e nessuna sensazione che fossero pezzi della stessa app.
+
+     La scala è netta — 26, 16, 8 — perché due raggi vicini (16 e 20) si
+     leggono come un errore, non come una gerarchia. Il salto deve essere
+     evidente o non deve esserci.
+
+       --r-scheda   26px  tutto ciò che è un CONTENITORE: schede, tessere,
+                          tessere della griglia, fogli modali.
+       --r-interno  16px  tutto ciò che sta DENTRO un contenitore:
+                          pulsanti, campi, chip d'icona, blocchi interni,
+                          segmenti.
+       --r-minimo    8px  le cose piccole e basse: barre, tacche, etichette
+                          minuscole, celle di una striscia.
+       --r-tondo          pillole, pallini, avatar, interruttori.
+
+     La regola di lettura: il raggio dice L'ANNIDAMENTO, non l'importanza.
+     Un pulsante dentro una scheda ha 16 perché sta dentro, non perché
+     conta meno. */
+  --r-scheda:  26px;
+  --r-interno: 16px;
+  --r-minimo:   8px;
   --r-tondo: 9999px;
 
   /* ----------------------------------------------------------- movimento --
@@ -376,9 +399,25 @@
   --segnale-tenue: color-mix(in srgb, var(--segnale) 16%, transparent);
   --segnale-velo:  color-mix(in srgb, var(--segnale) 30%, transparent);
 
-  /* L'accento del MODULO, scritto su <html> dal router leggendolo dal
-     registro. Dice DOVE SEI, non cosa si tocca: quello è `--segnale`. */
-  --accento:       var(--t-grigio);
+  /* L'ACCENTO DEL MODULO, scritto su <html> dal router leggendolo dal
+     registro. È il colore delle AZIONI, e in questa app è l'unico.
+
+     Cambio di regola rispetto alla stesura precedente. Prima c'era un blu
+     unico (`--segnale`) che voleva dire «tocca qui», e l'accento del
+     modulo diceva solo «dove sei». In pratica si vedevano pulsanti azzurri
+     accanto a pulsanti color modulo nella stessa schermata, e nessuno dei
+     due sapeva più cosa stesse dicendo.
+
+     Ora è uno solo: **un pulsante porta sempre l'accento del modulo in cui
+     si trova**. Il blu resta esclusivamente dove non è una scelta
+     estetica — l'anello di fuoco della tastiera e la selezione del testo —
+     perché quelli sono convenzioni di sistema, non decisioni di questa app.
+
+     `--accento-testo` è il colore del testo SOPRA l'accento pieno. Le tinte
+     sono chiare e sature, quindi è il fondo: nero nel tema scuro, e resta
+     leggibile perché ogni tinta sta sopra 4,5:1 sul nero. */
+  --accento:       var(--t-blu);
+  --accento-testo: var(--fondo);
   --accento-tenue: color-mix(in srgb, var(--accento) 16%, transparent);
   --accento-velo:  color-mix(in srgb, var(--accento) 32%, transparent);
 
@@ -442,11 +481,14 @@
   --s12: var(--s-52);
   --s16: var(--s-70);
 
-  /* ----------------------------------------------------------------- forma */
-  --r-scheda:  var(--r-alto);
-  --r-btn:     var(--r-basso);
-  --r-campo:   var(--r-basso);
-  --r-interno: var(--r-basso);
+  /* ----------------------------------------------------------------- forma
+     Gli otto nomi vecchi collassano sui quattro veri. `--r-alto` e
+     `--r-basso` restano perché i moduli li citano, ma non sono due valori
+     in più: sono gli stessi. */
+  --r-alto:    var(--r-scheda);
+  --r-basso:   var(--r-interno);
+  --r-btn:     var(--r-interno);
+  --r-campo:   var(--r-interno);
   --r-pillola: var(--r-tondo);
 
   /* ------------------------------------------------------------- movimento */

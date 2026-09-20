@@ -132,6 +132,61 @@ const TRATTI = {
   fatto:     '<circle cx="12" cy="12" r="8.4"/><path d="M8.2 12.2l2.6 2.6 5-5.4"/>',
   cuore:     '<path d="M12 20s-7.4-4.6-7.4-9.4A4.2 4.2 0 0 1 12 8.2a4.2 4.2 0 0 1 7.4 2.4C19.4 15.4 12 20 12 20z"/>',
   stella:    '<path d="M12 3.8l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>',
+
+  /* ------------------------------------------------- la consegna «Quadrante v2»
+     Le 24 icone di `redesign/icone.zip`, inserite come sono: arrivavano gia
+     sulla griglia 24x24 con tratto 1,7 e `currentColor`, cioe' esattamente la
+     geometria di questo file. I nomi con il trattino stanno fra virgolette.
+     Ne mancano ~16 sulle ~40 dell'app: quelle restano quelle di prima. */
+  abitudini:
+    '<path d="M5 6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v13.2c0 .9-1 1.4-1.7.9L12 17l-5.3 3.1c-.7.5-1.7 0-1.7-.9V6Z"/><path d="m9 11 2 2 4-4"/>',
+  "avviso-triangolo":
+    '<path d="M12 4 21 19H3Z"/><path d="M12 10v4"/><circle cx="12" cy="16.6" r=".2" fill="currentColor"/>',
+  bell:
+    '<path d="M12 4.5c-2.3 0-4 1.9-4 4.5v2.8c0 .8-.3 1.6-.9 2.2l-.7.7c-.6.6-.2 1.6.6 1.6h9.9c.8 0 1.2-1 .6-1.6l-.6-.7c-.6-.6-.9-1.4-.9-2.2V9c0-2.6-1.7-4.5-4-4.5Z"/><path d="M10.2 19a1.9 1.9 0 0 0 3.6 0"/>',
+  calendario:
+    '<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8 3.5v3M16 3.5v3"/>',
+  cestino:
+    '<path d="M5.5 7h13M9.5 7V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2M7 7l.7 12a1.5 1.5 0 0 0 1.5 1.4h5.6a1.5 1.5 0 0 0 1.5-1.4L17 7"/>',
+  "chevron-d":
+    '<path d="m6 9 6 6 6-6"/>',
+  "chevron-r":
+    '<path d="m9 6 6 6-6 6"/>',
+  close:
+    '<path d="M6 6l12 12M18 6 6 18"/>',
+  corpo:
+    '<circle cx="12" cy="5.2" r="2.2"/><path d="M8 11.2c1-1 2.4-1.5 4-1.5s3 .5 4 1.5M8 11.2 6 20M16 11.2l2 8.8M9.6 14h4.8"/>',
+  down:
+    '<path d="M12 5v14M5 12l7 7 7-7"/>',
+  fiamma:
+    '<path d="M12 3.5c1 2.5-3 4-3 7.5a3 3 0 0 0 6 0c0-1-.5-1.8-1-2.5.6 3-1.5 4-1.5 6.5a3.5 3.5 0 0 1-7 0c0-4.5 4-6 6.5-11.5Z"/>',
+  filtro:
+    '<path d="M4 5.5h16L14.5 12.5v5L9.5 20v-7.5Z"/>',
+  finanze:
+    '<path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h12a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5h-12A2.5 2.5 0 0 1 4 15.5v-7Z"/><path d="M4 8.5V7a2 2 0 0 1 2-2h9"/><circle cx="16.2" cy="13" r="1.4"/>',
+  fotocamera:
+    '<path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="12.5" r="3.2"/>',
+  impostazioni:
+    '<circle cx="12" cy="12" r="2.8"/><path d="M12 3.6v2.1M12 18.3v2.1M20.4 12h-2.1M5.7 12H3.6M17.5 6.5l-1.5 1.5M8 16l-1.5 1.5M17.5 17.5 16 16M8 8 6.5 6.5"/>',
+  matita:
+    '<path d="M14.5 5.5 18.5 9.5 8 20H4v-4L14.5 5.5Z"/>',
+  oggi:
+    '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-13Z"/><path d="M4 10h16"/><path d="M9 4v3"/><path d="M15 4v3"/>',
+  pasti:
+    '<path d="M7 3.5v6a1.5 1.5 0 0 0 3 0v-6M7 3.5v3M10 3.5v3M8.5 9.5v11M16.5 3.5c-1.4 0-2.5 1.6-2.5 4.3 0 2 1 3.2 2 3.5v9"/>',
+  plus:
+    '<path d="M12 5v14M5 12h14"/>',
+  ricerca:
+    '<circle cx="10.5" cy="10.5" r="6"/><path d="m20 20-4.8-4.8"/>',
+  spunta:
+    '<path d="m5 13 4.5 4.5L19 7"/>',
+  sync:
+    '<path d="M5 12a7 7 0 0 1 11.6-5.3M19 12a7 7 0 0 1-11.6 5.3"/><path d="M16 4.5V7h2.5M8 19.5V17H5.5"/>',
+  up:
+    '<path d="M12 19V5M5 12l7-7 7 7"/>',
+  wallet:
+    '<path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h9a1.5 1.5 0 0 1 1.5 1.5V17a2 2 0 0 1-2 2H6.5A2.5 2.5 0 0 1 4 16.5v-8Z"/><path d="M17 10.8h1.6c.8 0 1.4.6 1.4 1.4v1.6c0 .8-.6 1.4-1.4 1.4H17"/>',
+
 };
 
 /* ======================================================== le maschere ==
