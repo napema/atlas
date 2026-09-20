@@ -1201,3 +1201,35 @@ fotografarlo all'avvio, e riparte da solo quando arriva a pagina già aperta.
 Le tre app di partenza hanno avuto lo stesso trattamento e non sincronizzano
 più: restano leggibili in locale, e i loro repo dati (`mobilita-dati`,
 `abitudini-dati`, `finance-tracker`) non sono stati toccati.
+
+---
+
+## 20 settembre 2026 — nasce Pasti *(architettura, non ancora in barra)*
+
+Nuovo modulo `moduli/pasti/`: database dei pasti, piano settimanale
+generato in casa, e il conto di quanto si mangia davvero. Obiettivo
+dichiarato la massa. Briefing completo in `moduli/pasti/CLAUDE.md`.
+
+Per ora ci sono **solo il briefing e `dati.js`** — lo schema, le costanti,
+le scritture. Niente `modulo.js`, quindi **non è registrato in
+`core/registro.js`**: registrarlo senza il modulo significherebbe una
+scheda nella barra che non si apre.
+
+**La decisione che regge tutto: il piano È il registro.** L'utente non
+loggherà, quindi l'assunzione predefinita è che abbia mangiato quello che
+c'era nel piano, e l'archivio tiene solo gli scostamenti — `aggiunta`,
+`cambio`, `salto`. Stessa forma di Finanze: un'àncora e i movimenti che la
+spostano.
+
+**Decisione aperta per la chat ATLAS: la barra.** Con Pasti le schede
+diventerebbero **sei**, ed è esattamente il numero che il commento in
+`core/registro.js` dice di aver evitato quando è entrato Allenamenti — sei
+etichette da 60px su un telefono diventano illeggibili proprio dove il
+pollice ha meno spazio. Pasti però è una destinazione quotidiana, più di
+Mobilità. Va deciso prima di registrarlo, non dopo.
+
+**Richiesta alla chat Allenamenti:** nei giorni di palestra il fabbisogno
+sale. Servirebbe che Allenamenti scrivesse sulla lavagna se oggi è stato
+fatto un allenamento e di che tipo (`scriviFatto("allenamenti", …)`).
+Pasti lo leggerebbe con `leggiFatto`, mai con un import diretto. Finché non
+c'è, il fabbisogno usa il fattore di attività fisso del profilo.
