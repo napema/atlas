@@ -1,0 +1,205 @@
+/* =========================================================================
+   ATLAS — token di iOS 27.
+
+   Fonte: seunghan91/ios27-design-system (MIT).
+
+   I NOMI vengono dal pacchetto Svelte del repo (`packages/svelte/tokens.css`)
+   e sono il vocabolario di sistema: `--label-primary`, `--bg-grouped-*`,
+   `--fill-*`, `--separator`. Chi conosce UIKit li legge senza dizionario.
+
+   I VALORI vengono invece dai JSON MISURATI dello stesso repo
+   (`packages/tokens/src/*.json`), non dal CSS del pacchetto. Il pacchetto è
+   rimasto indietro: nello scuro dà ancora il blu #0a84ff e il separatore
+   rgba(84,84,88,.65) di iOS 18, mentre il kit 27.0.2 misurato dà #0091ff e
+   rgba(255,255,255,.17). Dove i due non coincidono vince la misura.
+
+   Il tema lo sceglie `data-tema` su <html>: "auto" segue il telefono,
+   "scuro" e "chiaro" lo forzano. Il nome è quello di sempre di ATLAS, così
+   la preferenza salvata sul dispositivo vale anche qui.
+   ========================================================================= */
+
+/* ---------------------------------------------------------------- scuro -- */
+
+:root,
+:root[data-tema="scuro"] {
+  color-scheme: dark;
+
+  /* colori di sistema — accents, valori dark del kit 27.0.2 */
+  --color-red:    #ff4245;
+  --color-orange: #ff9230;
+  --color-yellow: #ffd600;
+  --color-green:  #30d158;
+  --color-mint:   #00dac3;
+  --color-teal:   #00d2e0;
+  --color-cyan:   #3cd3fe;
+  --color-blue:   #0091ff;
+  --color-indigo: #6d7cff;
+  --color-purple: #db34f2;
+  --color-pink:   #ff375f;
+  --color-brown:  #b78a66;
+  --color-gray:   #8e8e93;
+
+  /* etichette — #ebebf5 a 0.7 / 0.3 / 0.16 */
+  --label-primary:    #ffffff;
+  --label-secondary:  rgba(235, 235, 245, 0.70);
+  --label-tertiary:   rgba(235, 235, 245, 0.30);
+  --label-quaternary: rgba(235, 235, 245, 0.16);
+
+  /* fondi raggruppati: la pagina è nera, i gruppi salgono */
+  --bg-grouped-primary:   #000000;
+  --bg-grouped-secondary: #1c1c1e;
+  --bg-grouped-tertiary:  #2c2c2e;
+  --bg-elevated:          #2c2c2e;   /* fogli e menu, sopra un gruppo */
+
+  /* riempimenti: veli grigi che prendono il colore di ciò che hanno sotto */
+  --fill-primary:    rgba(120, 120, 128, 0.36);
+  --fill-secondary:  rgba(120, 120, 128, 0.32);
+  --fill-tertiary:   rgba(118, 118, 128, 0.24);
+  --fill-quaternary: rgba(118, 118, 128, 0.18);
+
+  --separator:        rgba(255, 255, 255, 0.17);
+  --separator-opaque: #38383a;
+
+  /* LIQUID GLASS «regular», dalla ricetta web misurata del repo.
+     Sfocatura 6px e NON 20 o 40: il nativo misurato è sigma 5,4pt e
+     `blur()` prende il raggio come sigma (5,4 / 0,9). Le riproduzioni web
+     sbagliano di un fattore quattro. `saturate(1.8)` perché il materiale
+     alza la croma di ciò che ha sotto: senza viene fuori una patina.
+     Il bordo è un anello grigio CHIARO, non una riga scura. */
+  --glass-bg:       rgba(26, 26, 26, 0.70);
+  --glass-rim:      rgba(166, 166, 166, 0.45);
+  --glass-shadow:   0 8px 48px rgba(0, 0, 0, 0.45);
+  --shadow-sheet:   0 -8px 48px rgba(0, 0, 0, 0.5);
+
+  /* il cursore del controllo a segmenti e la manopola dell'interruttore */
+  --thumb:          #636366;
+  --thumb-shadow:   0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
+  --dim:            rgba(0, 0, 0, 0.48);   /* il velo dietro un foglio */
+  /* Un foglio sale di un gradino: il suo fondo è il grigio dei gruppi e i
+     suoi gruppi salgono ancora. Nero su nero, dentro un foglio, non si legge. */
+  --foglio-fondo:   #1c1c1e;
+  --foglio-lastra:  #2c2c2e;
+}
+
+/* --------------------------------------------------------------- chiaro --
+   Misurato, non invertito: la pagina è grigia e i gruppi bianchi. */
+
+:root[data-tema="chiaro"] {
+  color-scheme: light;
+
+  --color-red:    #ff383c;
+  --color-orange: #ff8d28;
+  --color-yellow: #ffcc00;
+  --color-green:  #34c759;
+  --color-mint:   #00c8b3;
+  --color-teal:   #00c3d0;
+  --color-cyan:   #00c0e8;
+  --color-blue:   #0088ff;
+  --color-indigo: #6155f5;
+  --color-purple: #cb30e0;
+  --color-pink:   #ff2d55;
+  --color-brown:  #ac7f5e;
+  --color-gray:   #8e8e93;
+
+  --label-primary:    #000000;
+  --label-secondary:  rgba(60, 60, 67, 0.60);
+  --label-tertiary:   rgba(60, 60, 67, 0.30);
+  --label-quaternary: rgba(60, 60, 67, 0.18);
+
+  --bg-grouped-primary:   #f2f2f7;
+  --bg-grouped-secondary: #ffffff;
+  --bg-grouped-tertiary:  #f2f2f7;
+  --bg-elevated:          #ffffff;
+
+  --fill-primary:    rgba(120, 120, 128, 0.20);
+  --fill-secondary:  rgba(120, 120, 128, 0.16);
+  --fill-tertiary:   rgba(118, 118, 128, 0.12);
+  --fill-quaternary: rgba(116, 116, 128, 0.08);
+
+  --separator:        rgba(0, 0, 0, 0.12);
+  --separator-opaque: #c6c6c8;
+
+  --glass-bg:     rgba(255, 255, 255, 0.70);
+  --glass-rim:    rgba(219, 219, 219, 0.90);
+  --glass-shadow: 0 8px 48px rgba(0, 0, 0, 0.25);
+  --shadow-sheet: 0 -8px 48px rgba(0, 0, 0, 0.18);
+
+  --thumb:        #ffffff;
+  --thumb-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
+  --dim:          rgba(0, 0, 0, 0.2);
+  --foglio-fondo:  #f2f2f7;
+  --foglio-lastra: #ffffff;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="scuro"]):not([data-tema="chiaro"]) {
+    color-scheme: light;
+    --color-red: #ff383c; --color-orange: #ff8d28; --color-yellow: #ffcc00; --color-green: #34c759;
+    --color-mint: #00c8b3; --color-teal: #00c3d0; --color-cyan: #00c0e8; --color-blue: #0088ff;
+    --color-indigo: #6155f5; --color-purple: #cb30e0; --color-pink: #ff2d55; --color-brown: #ac7f5e;
+    --label-primary: #000000; --label-secondary: rgba(60, 60, 67, 0.60);
+    --label-tertiary: rgba(60, 60, 67, 0.30); --label-quaternary: rgba(60, 60, 67, 0.18);
+    --bg-grouped-primary: #f2f2f7; --bg-grouped-secondary: #ffffff;
+    --bg-grouped-tertiary: #f2f2f7; --bg-elevated: #ffffff;
+    --fill-primary: rgba(120, 120, 128, 0.20); --fill-secondary: rgba(120, 120, 128, 0.16);
+    --fill-tertiary: rgba(118, 118, 128, 0.12); --fill-quaternary: rgba(116, 116, 128, 0.08);
+    --separator: rgba(0, 0, 0, 0.12); --separator-opaque: #c6c6c8;
+    --glass-bg: rgba(255, 255, 255, 0.70); --glass-rim: rgba(219, 219, 219, 0.90);
+    --glass-shadow: 0 8px 48px rgba(0, 0, 0, 0.25); --shadow-sheet: 0 -8px 48px rgba(0, 0, 0, 0.18);
+    --thumb: #ffffff; --dim: rgba(0, 0, 0, 0.2);
+    --foglio-fondo: #f2f2f7; --foglio-lastra: #ffffff;
+  }
+}
+
+/* ------------------------------------------------------ tipografia e misure */
+
+:root {
+  --font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-display: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+
+  /* Gli undici stili, con corpo · interlinea · crenatura misurati. */
+  --text-large-title: 34px; --lh-large-title: 41px; --ls-large-title: 0.4px;
+  --text-title1: 28px;      --lh-title1: 34px;      --ls-title1: 0.38px;
+  --text-title2: 22px;      --lh-title2: 28px;      --ls-title2: -0.26px;
+  --text-title3: 20px;      --lh-title3: 25px;      --ls-title3: -0.45px;
+  --text-headline: 17px;    --lh-headline: 22px;    --ls-headline: -0.43px;
+  --text-body: 17px;        --lh-body: 22px;        --ls-body: -0.43px;
+  --text-callout: 16px;     --lh-callout: 21px;     --ls-callout: -0.31px;
+  --text-subheadline: 15px; --lh-subheadline: 20px; --ls-subheadline: -0.23px;
+  --text-footnote: 13px;    --lh-footnote: 18px;    --ls-footnote: -0.08px;
+  --text-caption1: 12px;    --lh-caption1: 16px;    --ls-caption1: 0px;
+  --text-caption2: 11px;    --lh-caption2: 13px;    --ls-caption2: 0.06px;
+
+  /* «emphasized» di un corpo è Semibold, non Medium: il kit 27 lo segna come
+     misurato due volte. */
+  --weight-regular: 400; --weight-medium: 500; --weight-semibold: 600; --weight-bold: 700;
+
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --space-12: 48px; --space-16: 64px;
+  --content-inset: 16px;      /* contentMargin.iphone */
+  --readable-width: 672px;    /* contentMargin.readableWidth */
+
+  --radius-xs: 4px; --radius-sm: 8px; --radius-md: 10px; --radius-lg: 12px;
+  --radius-xl: 16px; --radius-xxl: 20px; --radius-xxxl: 26px;
+  --radius-glass: 34px; --radius-full: 9999px;
+
+  --list-row-height: 52px;
+  --list-row-height-tall: 68px;
+  --button-height: 50px;
+  --button-height-medium: 34px;
+  --touch-target: 44px;
+  --navbar-height: 44px;       /* la riga compatta della navigazione */
+
+  /* durate e curve di iOS; la molla è l'approssimazione CSS di «snappy» */
+  --duration-micro: 0.1s; --duration-fast: 0.2s; --duration-normal: 0.3s; --duration-slow: 0.4s;
+  --ease-default: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-out: cubic-bezier(0, 0, 0.6, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --duration-micro: 0s; --duration-fast: 0s; --duration-normal: 0s; --duration-slow: 0s; }
+}

@@ -1,9 +1,15 @@
 # Pubblica ATLAS su GitHub Pages.
 #
-# Il sito è statico e senza build: si copia la cartella così com'è, tolte
-# le parti che servono solo a chi sviluppa. Niente npm, niente bundler —
-# è una scelta, non una mancanza: un'app che deve durare anni non deve
-# dipendere da una catena di strumenti che invecchia.
+# DUE APP, UN SITO, finché la nuova non ha preso il posto della vecchia:
+#
+#   /atlas/      la app di prima, statica: si copia così com'è
+#   /atlas/v2/   la app nuova (Svelte + TypeScript), compilata qui
+#
+# La compilazione della nuova NON può fermare la pubblicazione della
+# vecchia: quella è la app che si usa ogni giorno, e un errore di tipo in
+# una schermata nuova non deve impedire di segnare una spesa. Per questo i
+# passi della v2 hanno `continue-on-error` e la copia in `_sito/v2` avviene
+# solo se la build è arrivata in fondo.
 
 name: Pubblica su Pages
 
@@ -48,7 +54,7 @@ jobs:
         run: |
           set -e
           if git diff --quiet HEAD~1 HEAD -- sw.js 2>/dev/null; then
-            if ! git diff --quiet HEAD~1 HEAD -- index.html core styles moduli 2>/dev/null; then
+            if ! git diff --quiet HEAD~1 HEAD -- index.html core styles 'moduli/*/modulo.js' 'moduli/*/viste.js' 'moduli/*/*.css' 2>/dev/null; then
               echo "::warning file=sw.js::Il guscio è cambiato ma sw.js no: alza VERSIONE."
             fi
           fi

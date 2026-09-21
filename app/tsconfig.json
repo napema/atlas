@@ -1,0 +1,29 @@
+{
+  "extends": "@tsconfig/svelte/tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+
+    /* LA LOGICA DEI MODULI RESTA JAVASCRIPT, ED È CONDIVISA.
+       `moduli/<id>/dati.js` e `calcolo.js` sono usati sia dalla app di
+       prima sia da questa: una copia sola, così una correzione fatta da
+       un'altra chat arriva a tutte e due. Si leggono (`allowJs`) ma non si
+       controllano (`checkJs: false`): portarli a TypeScript si fa quando la
+       app di prima viene spenta, non adesso — altrimenti le copie
+       diventerebbero due e comincerebbero a divergere. */
+    "allowJs": true,
+    "checkJs": false,
+
+    "types": ["svelte", "vite/client"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.svelte", "src/**/*.js"]
+}

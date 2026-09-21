@@ -1,0 +1,101 @@
+/* =========================================================================
+   ATLAS — lo stile globale. Il meno possibile.
+
+   Nella app di prima c'erano sei fogli globali da centinaia di righe, e ogni
+   classe di ogni modulo poteva pestarne un'altra: `.vuoto` di una lista e
+   `.vuoto` di una casella si sono scontrati davvero, e un <button> senza
+   azzeramento ha mostrato il grigio del browser su due schermate diverse.
+
+   Qui lo stile di un componente sta DENTRO il componente, e Svelte lo
+   circoscrive da sé: nessuna classe può uscire dal file dove è scritta.
+   Questo foglio contiene solo ciò che vale davvero per tutta la app: i
+   font, l'azzeramento, il fondo, e gli undici stili tipografici.
+   ========================================================================= */
+
+@import "./tokens.css";
+
+/* SF Pro self-hosted. I file stanno in `assets/fonts/` alla radice del repo,
+   condivisi con la app di prima: Vite li copia nella build con un nome che
+   cambia quando cambia il contenuto, quindi la cache non serve mai un font
+   vecchio. */
+@font-face { font-family: "SF Pro Text"; font-weight: 400; font-style: normal; font-display: swap;
+  src: url("../../../../assets/fonts/sf-pro-text-regular.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Text"; font-weight: 500; font-style: normal; font-display: swap;
+  src: url("../../../../assets/fonts/sf-pro-text-medium.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Text"; font-weight: 600; font-style: normal; font-display: swap;
+  src: url("../../../../assets/fonts/sf-pro-text-semibold.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Text"; font-weight: 700; font-style: normal; font-display: swap;
+  src: url("../../../../assets/fonts/sf-pro-text-bold.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Display"; font-weight: 600; font-style: normal; font-display: swap;
+  src: url("../../../../assets/fonts/sf-pro-display-semibold.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Display"; font-weight: 700; font-style: normal; font-display: swap;
+  src: url("../../../../assets/fonts/sf-pro-display-bold.woff2") format("woff2"); }
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  background: var(--bg-grouped-primary);
+  -webkit-text-size-adjust: 100%;
+  /* Niente zoom col pizzico, ma lo scorrimento resta: `pan-x pan-y` e non
+     `none`. Su Safari il pizzico passa lo stesso e lo chiude main.ts. */
+  touch-action: pan-x pan-y;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  letter-spacing: var(--ls-body);
+  color: var(--label-primary);
+  background: var(--bg-grouped-primary);
+  -webkit-font-smoothing: antialiased;
+  font-synthesis: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  overscroll-behavior-y: none;
+}
+
+/* Ogni <button> e ogni <input> partono NUDI. È la riga che la app di prima
+   non aveva in un posto solo, ed è costata due schermate con le pastiglie
+   grigie del browser e il testo centrato. */
+button, input, textarea, select {
+  font: inherit; color: inherit; letter-spacing: inherit;
+  margin: 0; padding: 0; border: 0; background: none;
+  text-align: inherit;
+}
+button { cursor: pointer; }
+input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
+a { color: inherit; text-decoration: none; }
+h1, h2, h3, h4, p, ul, ol, figure { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+img, svg { display: block; }
+
+:focus-visible { outline: 2px solid var(--accento, var(--color-blue)); outline-offset: 2px; border-radius: var(--radius-sm); }
+::selection { background: color-mix(in srgb, var(--accento, var(--color-blue)) 30%, transparent); }
+
+/* -------------------------------------------- i undici stili tipografici --
+   Stessi nomi del pacchetto del repo, così un componente dice `text-footnote`
+   e si legge come si leggerebbe in UIKit. */
+.text-large-title { font-family: var(--font-display); font-size: var(--text-large-title); line-height: var(--lh-large-title); letter-spacing: var(--ls-large-title); font-weight: var(--weight-bold); }
+.text-title1 { font-family: var(--font-display); font-size: var(--text-title1); line-height: var(--lh-title1); letter-spacing: var(--ls-title1); font-weight: var(--weight-bold); }
+.text-title2 { font-family: var(--font-display); font-size: var(--text-title2); line-height: var(--lh-title2); letter-spacing: var(--ls-title2); font-weight: var(--weight-bold); }
+.text-title3 { font-size: var(--text-title3); line-height: var(--lh-title3); letter-spacing: var(--ls-title3); font-weight: var(--weight-semibold); }
+.text-headline { font-size: var(--text-headline); line-height: var(--lh-headline); letter-spacing: var(--ls-headline); font-weight: var(--weight-semibold); }
+.text-body { font-size: var(--text-body); line-height: var(--lh-body); letter-spacing: var(--ls-body); }
+.text-callout { font-size: var(--text-callout); line-height: var(--lh-callout); letter-spacing: var(--ls-callout); }
+.text-subheadline { font-size: var(--text-subheadline); line-height: var(--lh-subheadline); letter-spacing: var(--ls-subheadline); }
+.text-footnote { font-size: var(--text-footnote); line-height: var(--lh-footnote); letter-spacing: var(--ls-footnote); }
+.text-caption1 { font-size: var(--text-caption1); line-height: var(--lh-caption1); letter-spacing: var(--ls-caption1); }
+.text-caption2 { font-size: var(--text-caption2); line-height: var(--lh-caption2); letter-spacing: var(--ls-caption2); }
+
+.secondario { color: var(--label-secondary); }
+.terziario  { color: var(--label-tertiary); }
+.semibold   { font-weight: var(--weight-semibold); }
+.cifre      { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.emoji      { font-family: var(--font-emoji), var(--font-family); }
+.ok   { color: var(--color-green); }
+.male { color: var(--color-red); }
+.avviso { color: var(--color-orange); }
+
+.solo-lettori { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

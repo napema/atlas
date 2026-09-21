@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="it" data-tema="auto">
+<head>
+<meta charset="utf-8">
+<!-- `maximum-scale` e `user-scalable` bloccano lo zoom su Android; Safari li
+     ignora, e lì lo chiudono `touch-action` in app.css e i `gesture*` in
+     main.ts. Servono tutti e tre. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>ATLAS</title>
+<meta name="description" content="Finanze, pasti, corpo e abitudini in una sola app.">
+
+<link rel="manifest" href="./manifest.webmanifest">
+<!-- Una per tema: con una sola, la barra di stato resta del colore
+     dell'altro tema e si vede una striscia sopra la pagina. -->
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ATLAS">
+<!-- Le icone le copia la pubblicazione da `assets/icons/`: una sola
+     sorgente per le due app. Il `?v` scavalca la cache delle icone, che non
+     guarda gli header. -->
+<link rel="icon" type="image/png" sizes="64x64" href="./icons/favicon-64.png?v=77">
+<link rel="apple-touch-icon" href="./icons/icona-1024.png?v=77">
+
+<!-- Il tema scelto su questo dispositivo, PRIMA del primo disegno: deciderlo
+     in main.ts vorrebbe dire un lampo di pagina scura sul tema chiaro. -->
+<script>
+  try {
+    var t = localStorage.getItem("atlas.tema");
+    if (t === "chiaro" || t === "scuro") document.documentElement.dataset.tema = t;
+  } catch (e) { /* navigazione privata: resta «auto» */ }
+</script>
+</head>
+<body>
+<div id="app"></div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

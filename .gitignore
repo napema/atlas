@@ -32,3 +32,8 @@ moduli/mobilita/video/
 
 # La lista per lo scaricatore dei video: file di lavoro, non codice.
 links.txt
+
+# La app nuova: le dipendenze e la build si rifanno in CI, non si committano.
+app/node_modules/
+app/dist/
+.anteprima/
