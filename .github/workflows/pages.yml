@@ -45,8 +45,51 @@ jobs:
                    --exclude '.github' \
                    --exclude 'docs' \
                    --exclude 'legacy' \
+                   --exclude 'app' \
+                   --exclude 'node_modules' \
                    --exclude '_sito' \
                    ./ _sito/
+
+      # ---------------------------------------------------- la app nuova --
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: v2 · dipendenze
+        id: dipendenze
+        continue-on-error: true
+        working-directory: app
+        run: npm install --no-audit --no-fund
+
+      - name: v2 · controllo dei tipi
+        # Il controllo parla ma non ferma: gli errori finiscono nel log e
+        # nelle annotazioni della corsa, la build prosegue.
+        continue-on-error: true
+        if: steps.dipendenze.outcome == 'success'
+        working-directory: app
+        run: npm run controlla
+
+      - name: v2 · compilazione
+        id: v2
+        continue-on-error: true
+        if: steps.dipendenze.outcome == 'success'
+        working-directory: app
+        run: npm run build
+
+      - name: v2 · nel sito
+        if: steps.v2.outcome == 'success'
+        run: cp -r app/dist _sito/v2
+
+      - name: v2 · copia da scaricare
+        # La stessa build, scaricabile con `gh run download`: serve a
+        # guardarla in locale sullo stesso indirizzo della app di prima,
+        # cioè con gli stessi dati sul dispositivo.
+        if: steps.v2.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-v2
+          path: app/dist
+          retention-days: 7
 
       - name: Controlla che il service worker sia stato aggiornato
         # Un guscio nuovo servito con la versione vecchia resta appiccicato
