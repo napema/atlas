@@ -19,6 +19,7 @@
     titolo,
     conferma,
     onchiuso,
+    destra,
     children,
   }: {
     aperto: boolean;
@@ -26,6 +27,8 @@
     /** La spunta in alto a destra. Senza, il foglio si chiude e basta. */
     conferma?: { fai: () => void | boolean | Promise<void | boolean>; disabilitata?: boolean; etichetta?: string };
     onchiuso?: () => void;
+    /** Al posto della spunta: un'azione di testo («Modifica»). */
+    destra?: Snippet;
     children: Snippet;
   } = $props();
 
@@ -83,6 +86,9 @@
   /* ---- trascinamento per chiudere ---- */
   let inizioY = 0, inizioT = 0, trascina = false;
   function giu(e: PointerEvent) {
+    // Sui bottoni della testata niente cattura: si prenderebbe il tocco e
+    // la X non chiuderebbe più.
+    if ((e.target as Element).closest("button, a")) return;
     trascina = true; inizioY = e.clientY; inizioT = performance.now();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
@@ -125,7 +131,9 @@
       <div class="testa-riga">
         <Pulsante variante="vetro" misura="media" tondo icona="chiudi" etichetta="Chiudi" onclick={() => (aperto = false)} />
         <h2 class="text-headline">{titolo ?? ""}</h2>
-        {#if conferma}
+        {#if destra}
+          <span class="destra">{@render destra()}</span>
+        {:else if conferma}
           <Pulsante
             variante="pieno" misura="media" tondo icona="spunta"
             etichetta={conferma.etichetta ?? "Fatto"}
@@ -180,9 +188,10 @@
     display: block; width: 36px; height: 5px; margin: 0 auto 6px;
     border-radius: var(--radius-full); background: var(--label-tertiary);
   }
-  .testa-riga { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: var(--space-2); }
+  .testa-riga { display: grid; grid-template-columns: minmax(44px, auto) 1fr minmax(44px, auto); align-items: center; gap: var(--space-2); }
   .testa-riga h2 { text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .vuoto { width: 44px; }
+  .destra { display: flex; justify-content: flex-end; }
 
   .contenuto {
     flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;

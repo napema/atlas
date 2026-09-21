@@ -26,7 +26,7 @@
   import { dati } from "$lib/core/reattivo.svelte";
   import { statoSync } from "$lib/core/statoSync.svelte";
   import { tinta } from "$lib/core/tinte";
-  import { tocco, dataUmana } from "$lib/core/ui";
+  import { tocco, dataUmana, maiuscola } from "$lib/core/ui";
   import { quadro, verdetto, saluto, costanza, fraseSerie, type Scheda, type VoceResta } from "./giornata";
 
   let { resto = [] }: { resto?: string[] } = $props();
@@ -57,7 +57,7 @@
   const nascoste = $derived(q.prio.length - mostrate.length + q.dopo);
   const f = $derived(q.finanze);
 
-  const dataLunga = $derived(ora.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" }));
+  const dataLunga = $derived(maiuscola(ora.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })));
 
   function tocca(v: VoceResta) {
     // Una sessione non si spunta, si fa: toccarla apre il player.

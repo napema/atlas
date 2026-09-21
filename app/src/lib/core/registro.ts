@@ -57,27 +57,27 @@ export const MODULI: VoceModulo[] = [
   {
     id: "finanze", nome: "Finanze", icona: "finanze", accento: "var(--color-orange)", verso: "giu",
     vista: () => import("../../moduli/finanze/Vista.svelte"),
-    contratto: () => import("../../../../moduli/finanze/contratto.js"),
+    contratto: () => import("$condivisi/finanze/contratto.js"),
   },
   {
     id: "pasti", nome: "Pasti", icona: "pasti", accento: "var(--color-pink)", verso: "giu",
     vista: () => import("../../moduli/pasti/Vista.svelte"),
-    contratto: () => import("../../../../moduli/pasti/contratto.js"),
+    contratto: () => import("$condivisi/pasti/contratto.js"),
   },
   {
     id: "mobilita", nome: "Mobilità", icona: "corpo", accento: "var(--color-mint)", gruppo: "corpo",
     vista: () => import("../../moduli/mobilita/Vista.svelte"),
-    contratto: () => import("../../../../moduli/mobilita/contratto.js"),
+    contratto: () => import("$condivisi/mobilita/contratto.js"),
   },
   {
     id: "allenamenti", nome: "Training", icona: "bersaglio", accento: "var(--color-red)", gruppo: "corpo",
     vista: () => import("../../moduli/allenamenti/Vista.svelte"),
-    contratto: () => import("../../../../moduli/allenamenti/contratto.js"),
+    contratto: () => import("$condivisi/allenamenti/contratto.js"),
   },
   {
     id: "abitudini", nome: "Abitudini", icona: "abitudini", accento: "var(--color-indigo)",
     vista: () => import("../../moduli/abitudini/Vista.svelte"),
-    contratto: () => import("../../../../moduli/abitudini/contratto.js"),
+    contratto: () => import("$condivisi/abitudini/contratto.js"),
   },
   {
     id: "impostazioni", nome: "Impostazioni", icona: "impostazioni", accento: "var(--color-blue)",

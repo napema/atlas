@@ -11,7 +11,7 @@
 <script lang="ts">
   import { daISO, GIORNI_INIZIALI } from "$lib/core/ui";
 
-  export type StatoCasella = "pieno" | "parziale" | "vuoto" | "riposo";
+  export type StatoCasella = "pieno" | "parziale" | "vuoto" | "riposo" | "futuro";
 
   let {
     giorni,
@@ -40,6 +40,7 @@
         title={g.titolo}
         aria-label={g.titolo}
         aria-pressed={onscegli ? scelto === g.iso : undefined}
+        disabled={onscegli ? g.stato === "futuro" : undefined}
         onclick={onscegli ? () => onscegli(g.iso) : undefined}
         role={onscegli ? undefined : "img"}
       >
@@ -72,6 +73,7 @@
   [data-stato="pieno"] .cerchio { background: var(--color-green); color: #fff; }
   [data-stato="parziale"] .cerchio { background: color-mix(in srgb, var(--color-green) 22%, transparent); box-shadow: inset 0 0 0 2px var(--color-green); }
   [data-stato="riposo"] .cerchio { background: none; color: var(--label-tertiary); box-shadow: inset 0 0 0 1px var(--separator); }
+  [data-stato="futuro"] .cerchio { background: none; color: var(--label-tertiary); }
   .oggi .cerchio { font-weight: var(--weight-bold); }
   /* Il giorno scelto si riconosce da un anello nel colore del modulo, fuori
      dal cerchio: dentro c'è già lo stato, e i due non devono confondersi. */

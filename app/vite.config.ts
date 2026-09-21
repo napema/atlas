@@ -76,7 +76,12 @@ export default defineConfig({
   base: "./",
 
   resolve: {
-    alias: { "$lib": path.resolve(qui, "src/lib") },
+    alias: {
+      "$lib": path.resolve(qui, "src/lib"),
+      // La logica dei moduli CONDIVISA con la app di prima: `dati.js`,
+      // `calcolo.js`, `contratto.js`. Sta fuori da `app/`, in `moduli/`.
+      "$condivisi": path.resolve(radiceRepo, "moduli"),
+    },
   },
 
   server: {

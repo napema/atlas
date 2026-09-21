@@ -145,7 +145,7 @@
     min-height: 100dvh;
   }
   .larga { --readable-width: 1040px; }
-  .sopra { margin: 0 0 2px; text-transform: capitalize; min-height: var(--lh-footnote); }
+  .sopra { margin: 0 0 2px; min-height: var(--lh-footnote); }
   .titolo-grande { margin-bottom: var(--space-4); }
   .titolo-grande h1 { overflow-wrap: anywhere; }
   .contenuto { display: flex; flex-direction: column; gap: var(--space-6); }

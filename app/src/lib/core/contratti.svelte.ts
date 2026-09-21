@@ -6,6 +6,7 @@
 // aspettare il più lento.
 
 import { MODULI_DATI, prendiContratto, type Contratto } from "./registro";
+import { dati } from "./reattivo.svelte";
 
 let pronti = $state.raw<Record<string, Contratto>>({});
 
@@ -19,4 +20,22 @@ export function caricaContratti() {
       .then((c) => { if (c) pronti = { ...pronti, [m.id]: c }; })
       .catch((e) => console.error(`[contratti] "${m.id}" non caricato`, e));
   }
+
+  /* LA LAVAGNA SI RISCRIVE A OGNI CAMBIAMENTO, per tutti i moduli.
+
+     Nella app di prima ogni `disegna()` chiamava `pubblicaSullaLavagna()`:
+     la lavagna restava allineata perché ogni scrittura finiva in un
+     ridisegno. Qui non c'è più un ridisegno a mano, quindi il gancio sta
+     sul segnale dei dati. Non gira in tondo: ogni modulo scrive un fatto
+     solo quando è DIVERSO da quello che c'è già, e alla seconda passata
+     non trova niente da cambiare. */
+  $effect.root(() => {
+    $effect(() => {
+      dati.versione;
+      for (const [id, c] of Object.entries(pronti)) {
+        try { c.pubblicaSullaLavagna?.(); }
+        catch (e) { console.error(`[contratti] lavagna di "${id}"`, e); }
+      }
+    });
+  });
 }

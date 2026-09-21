@@ -90,6 +90,10 @@ export function dataUmana(iso: string) {
 
 export const dataBreve = (iso: string) => `${daISO(iso).getDate()} ${MESI_BREVI[daISO(iso).getMonth()]}`;
 
+/** «lunedì» → «Lunedì». Solo la prima lettera: «Settembre» in mezzo a una
+    data italiana è un errore, e `text-transform: capitalize` lo fa. */
+export const maiuscola = (s: string) => (s ? s[0].toLocaleUpperCase("it-IT") + s.slice(1) : s);
+
 /** "1 giorno", "3 giorni". «1 giorni di fila» in una schermata che si
     guarda ogni sera si nota tutte le sere. */
 export const plurale = (n: number, singolare: string, plur: string) => `${n} ${n === 1 ? singolare : plur}`;
