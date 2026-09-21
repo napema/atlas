@@ -30,3 +30,13 @@ osservaTutto(tocca);
 // A mezzanotte nessuna casella cambia, ma «oggi» sì: la home deve passare
 // al giorno nuovo anche se nessuno ha scritto niente.
 ascolta(EVENTI.GIORNO_CAMBIATO, tocca);
+
+// E una volta al minuto, allineata al cambio del minuto: le fasce della
+// giornata («adesso», «in ritardo», «di sera») dipendono dall'ora, e alle
+// 18:00 la sessione deve entrare in «Adesso» senza che nessuno scriva niente.
+// Nascosta la app, niente battito: al ritorno ci pensa `visibilitychange`.
+function battito() {
+  setTimeout(() => { if (!document.hidden) tocca(); battito(); }, 60_000 - (Date.now() % 60_000) + 50);
+}
+battito();
+document.addEventListener("visibilitychange", () => { if (!document.hidden) tocca(); });

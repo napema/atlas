@@ -11,6 +11,7 @@
     misura = 28,
     parziale = 0,
     etichetta,
+    finta = false,
     onclick,
   }: {
     fatta?: boolean;
@@ -18,6 +19,9 @@
     /** Da 0 a 1: le abitudini a parti mostrano quanto manca. */
     parziale?: number;
     etichetta?: string;
+    /** Solo il disegno, senza bottone: quando a toccare è la riga intera
+        (un bottone dentro un bottone non è HTML valido). */
+    finta?: boolean;
     onclick?: () => void;
   } = $props();
 
@@ -25,15 +29,17 @@
   const giro = $derived(2 * Math.PI * r);
 </script>
 
-<button
-  type="button"
+<svelte:element
+  this={finta ? "span" : "button"}
+  type={finta ? undefined : "button"}
   class="spunta"
   class:fatta
   style:width="{misura}px"
   style:height="{misura}px"
-  aria-pressed={fatta}
-  aria-label={etichetta}
-  onclick={(e) => { e.stopPropagation(); e.preventDefault(); onclick?.(); }}
+  aria-pressed={finta ? undefined : fatta}
+  aria-label={finta ? undefined : etichetta}
+  aria-hidden={finta ? "true" : undefined}
+  onclick={finta ? undefined : (e: MouseEvent) => { e.stopPropagation(); e.preventDefault(); onclick?.(); }}
 >
   <svg viewBox="0 0 {misura} {misura}" aria-hidden="true">
     <circle class="bordo" cx={misura / 2} cy={misura / 2} r={r} />
@@ -51,7 +57,7 @@
       d="M{misura * 0.29} {misura * 0.52} L{misura * 0.44} {misura * 0.66} L{misura * 0.72} {misura * 0.36}"
     />
   </svg>
-</button>
+</svelte:element>
 
 <style>
   .spunta { flex: none; display: grid; place-items: center; border-radius: var(--radius-full); position: relative; }
@@ -69,5 +75,5 @@
   .fatta .pieno { transform: scale(1); }
   .fatta .segno { stroke-dashoffset: 0; }
   .fatta .bordo { stroke: transparent; }
-  .spunta:active { transform: scale(0.9); transition: transform var(--duration-micro); }
+  button.spunta:active { transform: scale(0.9); transition: transform var(--duration-micro); }
 </style>

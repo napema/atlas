@@ -46,6 +46,9 @@
   const misuraIcona = $derived(misura === "grande" ? 22 : misura === "media" ? 19 : 16);
 </script>
 
+<!-- Il tag è sempre <a> o <button> quando c'è un tocco da gestire: il
+     compilatore non lo può sapere, perché lo sceglie una variabile. -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <svelte:element
   this={href ? "a" : "button"}
   class="pulsante {variante} {misura}"

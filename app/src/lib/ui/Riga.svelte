@@ -48,6 +48,9 @@
   const tag = $derived(href ? "a" : onclick ? "button" : "div");
 </script>
 
+<!-- Il tag è sempre <a> o <button> quando c'è un tocco da gestire: il
+     compilatore non lo può sapere, perché lo sceglie una variabile. -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <svelte:element
   this={tag}
   class="riga"
@@ -86,23 +89,28 @@
     text-align: left;
     color: var(--label-primary);
   }
-  .riga.con-inizio { --inizio-testo: calc(var(--space-4) + 30px + var(--space-3)); }
+  .riga.con-inizio { --inizio-testo: calc(var(--space-4) + var(--inizio-l, 30px) + var(--space-3)); }
 
   /* Il separatore sopra ogni riga tranne la prima. `:global` perché quella
-     prima può essere un'altra istanza, o un altro componente nella lastra. */
-  :global(* + .riga)::before {
+     prima può essere un'altra istanza, o un altro componente nella lastra.
+     `.avvolge` è per chi mette una riga dentro un contenitore suo (per
+     animarla, per darle un colore): il separatore lo guarda da fuori. */
+  :global(* + .riga)::before,
+  :global(* + .avvolge > .riga:first-child)::before {
     content: ""; position: absolute; top: 0; right: 0;
     left: var(--inizio-testo);
     border-top: 0.5px solid var(--separator);
   }
-  .riga:first-child::before { display: none; }
 
   .attiva { cursor: pointer; transition: background-color var(--duration-micro) linear; }
   .attiva:active { background: var(--fill-quaternary); }
   .disabilitata { opacity: 0.4; pointer-events: none; }
 
+  /* Larga 30 come le icone di Impostazioni; chi ci mette qualcosa di più
+     largo (il giorno di un'uscita) lo dice con `--inizio-l`, e il
+     separatore si sposta con lui. */
   .inizio {
-    flex: none; width: 30px; min-height: 30px;
+    flex: none; width: var(--inizio-l, 30px); min-height: 30px;
     display: grid; place-items: center;
   }
   .corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }

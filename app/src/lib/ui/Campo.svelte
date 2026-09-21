@@ -58,7 +58,6 @@
     content: ""; position: absolute; top: 0; right: 0; left: var(--space-4);
     border-top: 0.5px solid var(--separator);
   }
-  .campo:first-child::before { display: none; }
   .etichetta { flex: none; min-width: 96px; }
   input {
     flex: 1; min-width: 0; height: var(--list-row-height);

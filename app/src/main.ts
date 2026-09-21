@@ -9,6 +9,7 @@ import { mount } from "svelte";
 import App from "./App.svelte";
 import { avviaTuttiISync } from "./lib/core/registro";
 import { vaiA } from "./lib/core/router.svelte";
+import { caricaContratti } from "./lib/core/contratti.svelte";
 
 /**
  * Il pizzico su Safari. `user-scalable=no` lo ignora per scelta, e
@@ -26,12 +27,13 @@ mount(App, { target: document.getElementById("app")! });
 // In sottofondo: i dati di TUTTI i moduli, anche di quelli che non guardi,
 // altrimenti la home racconta la giornata di ieri.
 avviaTuttiISync();
-
-if ("serviceWorker" in navigator) registraServiceWorker();
+caricaContratti();
 
 // Va letto PRIMA della registrazione: dopo, `controller` c'è anche al primo
 // avvio e non si distingue più l'installazione dall'aggiornamento.
 const controlloreIniziale = Boolean(navigator.serviceWorker?.controller);
+
+if ("serviceWorker" in navigator) registraServiceWorker();
 
 /**
  * Il service worker e il suo aggiornamento. Alzare la versione non basta:

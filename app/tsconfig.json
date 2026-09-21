@@ -12,6 +12,7 @@
     "isolatedModules": true,
     "skipLibCheck": true,
     "sourceMap": true,
+    "noEmit": true,
 
     /* LA LOGICA DEI MODULI RESTA JAVASCRIPT, ED È CONDIVISA.
        `moduli/<id>/dati.js` e `calcolo.js` sono usati sia dalla app di
@@ -23,7 +24,10 @@
     "allowJs": true,
     "checkJs": false,
 
-    "types": ["svelte", "vite/client"]
+    "types": ["svelte", "vite/client"],
+    // Lo stesso alias di vite.config.ts: senza, il controllo dei tipi non
+    // trova nessun `$lib/…` anche se la build li trova tutti.
+    "paths": { "$lib": ["./src/lib"], "$lib/*": ["./src/lib/*"] }
   },
   "include": ["src/**/*.ts", "src/**/*.svelte", "src/**/*.js"]
 }

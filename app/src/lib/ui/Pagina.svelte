@@ -21,6 +21,7 @@
     indietro,
     azioni,
     testata,
+    larga = false,
     children,
   }: {
     titolo: string;
@@ -32,6 +33,8 @@
     azioni?: Snippet;
     /** Qualcosa al posto del titolo grande (il selettore di un gruppo). */
     testata?: Snippet;
+    /** Più larga sullo schermo del PC: la home a due colonne. */
+    larga?: boolean;
     children: Snippet;
   } = $props();
 
@@ -56,7 +59,7 @@
   const vaiIndietro = () => (typeof indietro === "object" ? indietro.fai() : tornaIndietro());
 </script>
 
-<header class="barra" class:compatta>
+<header class="barra" class:compatta class:larga>
   <div class="barra-riga">
     <div class="lato sinistra">
       {#if indietro}
@@ -71,7 +74,7 @@
   </div>
 </header>
 
-<main class="pagina">
+<main class="pagina" class:larga>
   {#if sopra}
     <p class="sopra text-footnote secondario">
       {#if typeof sopra === "string"}{sopra}{:else}{@render sopra()}{/if}
@@ -141,6 +144,7 @@
     padding: calc(var(--altezza-barra) + 2px) var(--content-inset) var(--spazio-schede);
     min-height: 100dvh;
   }
+  .larga { --readable-width: 1040px; }
   .sopra { margin: 0 0 2px; text-transform: capitalize; min-height: var(--lh-footnote); }
   .titolo-grande { margin-bottom: var(--space-4); }
   .titolo-grande h1 { overflow-wrap: anywhere; }
