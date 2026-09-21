@@ -1,7 +1,20 @@
 /* moduli/allenamenti — iOS 27.
-   Le tredici settimane verso i 5 km: la striscia delle settimane, i
-   giorni, gli slot di una seduta, le corse importate. */
+   =========================================================================
+   Le tredici settimane verso i 5 km. Tre pezzi, dall'alto:
 
+   1. la striscia delle settimane, che scorre in orizzontale;
+   2. la testata della settimana scelta — quanti slot restano da piazzare;
+   3. i due gruppi di slot, Corsa e Palestra, come liste raggruppate.
+
+   UNA LEZIONE SCRITTA QUI PERCHÉ È COSTATA DUE VOLTE. `.al-slot-corpo`,
+   `.al-sett` e `.al-spunta` sono <button>. Un bottone senza reset prende il
+   fondo grigio del browser e CENTRA il testo: era esattamente quello che si
+   vedeva — pastiglie grigie larghe quanto lo schermo, con «35' Z2» in mezzo.
+   Ogni <button> di questo foglio azzera `border`, `background`, `font`,
+   `color` e `text-align` alla sua prima riga.
+   ========================================================================= */
+
+/* Il segmentato Settimana | Corse | … */
 .al-schede { display: flex; gap: 2px; padding: 2px; margin-bottom: var(--s-4); border-radius: var(--r-md); background: var(--incavo); }
 .al-scheda {
   flex: 1; min-height: var(--h-btn-m);
@@ -13,28 +26,192 @@
 }
 .al-scheda.attiva { background: var(--rilievo); box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-weight: var(--p-semibold); }
 
-.al-testata-alto { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-3); }
-.al-fase { font-size: var(--t-footnote); color: var(--inchiostro-3); }
-.al-micro { font-size: var(--t-caption1); color: var(--inchiostro-3); }
-.al-sotto { font-size: var(--t-footnote); line-height: var(--t-footnote-i); color: var(--inchiostro-2); }
-.al-cifra { font-family: var(--font-d); font-size: clamp(38px, 11vw, 48px); font-weight: var(--p-bold); letter-spacing: -1.2px; line-height: 1; font-variant-numeric: tabular-nums; }
 
-/* ------------------------------------------------------- le tredici barre
-   Ogni settimana è una barra: il piano al 25% dell'accento, il fatto
-   pieno, e il rosso quando si è andati oltre il +10%. Due intensità della
-   stessa tinta sono codifica di dati, non decorazione — e infatti sotto
-   c'è una legenda che le nomina. */
+/* ======================================================= la striscia =====
+   Tredici riquadri che scorrono. Il numero sta al centro, la barra sotto
+   dice quanto è chiusa: si legge senza contare. */
+
+.al-striscia {
+  display: flex; gap: var(--s-2);
+  overflow-x: auto; scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  margin: 0 calc(-1 * var(--gronda)) var(--s-4);
+  padding: 2px var(--gronda) var(--s-1);
+}
+.al-striscia::-webkit-scrollbar { display: none; }
+
+.al-sett {
+  flex: none;
+  width: 52px;
+  display: flex; flex-direction: column; align-items: center; gap: var(--s-2);
+  padding: var(--s-3) 0 var(--s-2);
+  border: 0; border-radius: var(--r-lg);
+  background: var(--rilievo);
+  color: var(--inchiostro-2);
+  font: inherit;
+  scroll-snap-align: center;
+  cursor: pointer;
+  transition: background var(--d-fast) var(--curva), color var(--d-fast) var(--curva);
+}
+.al-sett:active { opacity: 0.6; }
+.al-sett-n { font-family: var(--font-d); font-size: var(--t-title3); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; line-height: 1; }
+.al-sett-barra { width: 28px; height: 3px; border-radius: var(--r-full); background: var(--incavo); overflow: hidden; }
+.al-sett-barra > i { display: block; height: 100%; border-radius: var(--r-full); background: var(--accento); }
+/* La settimana di oggi si segna col filo; quella che stai guardando si
+   riempie dell'accento. Sono due informazioni diverse e possono cadere
+   sulla stessa. */
+.al-sett.ora { box-shadow: inset 0 0 0 1.5px var(--inchiostro-3); color: var(--inchiostro); }
+.al-sett.scelta { background: var(--accento); color: #fff; box-shadow: none; }
+.al-sett.scelta .al-sett-barra { background: rgba(255, 255, 255, 0.3); }
+.al-sett.scelta .al-sett-barra > i { background: #fff; }
+.al-sett.chiusa:not(.scelta) .al-sett-n { color: var(--inchiostro-3); }
+
+
+/* ======================================================== la testata =====
+   Il numero grande è QUANTO TI RESTA questa settimana, non quanto hai
+   fatto: il piano non assegna giorni, quindi la domanda è «quanto devo
+   ancora piazzare, e in quanti giorni». */
+
+.al-testata {
+  padding: var(--s-5);
+  margin-bottom: var(--s-4);
+  border-radius: var(--r-xl);
+  background: var(--rilievo);
+}
+.al-testata-alto { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-2); }
+.al-micro { font-size: var(--t-footnote); letter-spacing: 0.06em; text-transform: uppercase; color: var(--inchiostro-3); }
+.al-fase { font-size: var(--t-footnote); font-weight: var(--p-semibold); color: var(--accento); }
+
+.al-cifra {
+  font-family: var(--font-d);
+  font-size: clamp(48px, 14vw, 60px);
+  font-weight: var(--p-bold);
+  letter-spacing: -1.4px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.al-cifra.chiusa { color: var(--ok); font-size: var(--t-title1); letter-spacing: var(--t-title1-c); }
+/* Il colore sta in un posto solo: gli slot aperti sono più dei giorni
+   rimasti. È aritmetica, non pessimismo. */
+.al-testata.avviso .al-cifra { color: var(--avviso); }
+.al-testata.male .al-cifra { color: var(--male); }
+.al-sotto { margin: var(--s-1) 0 var(--s-4); font-size: var(--t-subheadline); line-height: var(--t-subheadline-i); color: var(--inchiostro-2); }
+
+/* Le tre cifre in fondo: tre colonne uguali, staccate dal filo. Prima
+   stavano ammassate a sinistra, «0/3 0/3 0km» attaccati come un numero
+   solo. */
+.al-piede {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 0.5px solid var(--riga-fine);
+}
+.al-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.al-stat-valore { font-family: var(--font-d); font-size: var(--t-title3); font-weight: var(--p-semibold); letter-spacing: var(--t-title3-c); font-variant-numeric: tabular-nums; }
+.al-stat-eti { font-size: var(--t-caption1); color: var(--inchiostro-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.al-consiglio, .al-avvertenza {
+  display: flex; gap: var(--s-2);
+  margin: var(--s-4) 0 0;
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--incavo);
+  font-size: var(--t-footnote);
+  line-height: var(--t-footnote-i);
+  color: var(--inchiostro-2);
+}
+.al-consiglio-segno { flex: none; display: flex; color: var(--accento); margin-top: 1px; }
+.al-avvertenza-segno { flex: none; display: flex; color: var(--avviso); margin-top: 1px; }
+.al-consiglio.avviso .al-consiglio-segno { color: var(--avviso); }
+.al-consiglio.male .al-consiglio-segno { color: var(--male); }
+
+
+/* ========================================================= gli slot ======
+   Due liste raggruppate, come le Impostazioni di iOS: l'intestazione sta
+   FUORI dal gruppo, sul fondo; il gruppo è la superficie con le righe. */
+
+.al-gruppo { margin-bottom: var(--s-5); }
+.al-gruppo-testa { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-2); padding: 0 var(--s-4) var(--s-2); }
+.al-gruppo-nome { font-size: var(--t-footnote); letter-spacing: 0.06em; text-transform: uppercase; color: var(--inchiostro-3); }
+.al-gruppo-conta { font-size: var(--t-footnote); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
+
+.al-slot {
+  list-style: none;
+  display: flex; flex-direction: column;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-xl);
+  background: var(--rilievo);
+}
+/* Il filo parte dopo la spunta, non dal bordo: un separatore rientrato
+   dice «la stessa lista continua», uno da bordo a bordo taglia a fette. */
+.al-slot-li { display: flex; align-items: flex-start; gap: var(--s-3); position: relative; }
+.al-slot-li:not(:last-child)::after {
+  content: ""; position: absolute; left: 36px; right: 0; bottom: 0;
+  height: 0.5px; background: var(--riga-fine);
+}
+
+.al-spunta {
+  width: 36px; height: var(--h-riga); flex: none;
+  display: grid; place-items: center;
+  border: 0; background: none; padding: 0;
+  cursor: pointer;
+  margin-left: -6px;
+}
+.al-spunta-cerchio {
+  width: 24px; height: 24px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--inchiostro-4);
+  transition: background var(--d-fast) var(--molla), box-shadow var(--d-fast) var(--curva), color var(--d-fast) var(--curva);
+}
+.al-spunta.fatta .al-spunta-cerchio { background: var(--accento); box-shadow: inset 0 0 0 1.5px var(--accento); color: #fff; }
+.al-spunta.appena .al-spunta-cerchio { animation: al-molla var(--d-slow) var(--molla); }
+.al-spunta-cerchio svg { display: block; }
+@keyframes al-molla { from { transform: scale(0.6); } }
+
+/* Il corpo della riga è un <button>: reset completo, testo a SINISTRA. */
+.al-slot-corpo {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: var(--s-3) 0;
+  border: 0; background: none;
+  color: inherit; font: inherit; text-align: left;
+  cursor: pointer;
+  transition: opacity var(--d-micro) var(--curva);
+}
+.al-slot-corpo:active { opacity: 0.4; }
+.al-slot-alto { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.al-slot-nome { font-size: var(--t-body); font-weight: var(--p-semibold); letter-spacing: var(--t-body-c); }
+.al-slot-nome.fatta { color: var(--inchiostro-3); text-decoration: line-through; }
+/* Il lavoro principale: la riga che dice cosa fare. */
+.al-slot-testo { margin: 0; font-size: var(--t-subheadline); line-height: var(--t-subheadline-i); color: var(--inchiostro-2); }
+/* Gli accessori sono contesto: una riga sola, troncata. */
+.al-slot-accessori { margin: 0; font-size: var(--t-footnote); color: var(--inchiostro-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.al-slot-li.fatta .al-slot-testo, .al-slot-li.fatta .al-slot-accessori { color: var(--inchiostro-4); }
+
+.al-stella { display: flex; color: var(--a-giallo); }
+.al-tag { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: var(--r-full); background: var(--riempi); font-size: var(--t-caption2); font-weight: var(--p-semibold); color: var(--inchiostro-2); }
+/* Il giorno in cui lo slot è stato fatto, a destra del nome. */
+.al-giorno { margin-left: auto; flex: none; font-size: var(--t-caption1); color: var(--inchiostro-3); }
+
+
+/* ======================================================= il grafico ======
+   Ogni settimana è una barra: il piano al 25% dell'accento, il fatto pieno,
+   rosso oltre il +10%. Due intensità della stessa tinta sono codifica di
+   dati — e infatti sotto c'è una legenda che le nomina. */
 
 .al-barre { display: flex; flex-direction: column; gap: var(--s-2); }
 .al-barra { display: grid; grid-template-columns: 26px 1fr 44px; align-items: center; gap: var(--s-2); }
 .al-barra-n { font-size: var(--t-caption1); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
-.al-barra-binario { position: relative; height: 10px; border-radius: var(--r-full); background: var(--incavo); overflow: hidden; }
+.al-barra-binario { position: relative; height: 8px; border-radius: var(--r-full); background: var(--incavo); overflow: hidden; }
 .al-barra-piano { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--accento) 25%, transparent); border-radius: var(--r-full); }
 .al-barra-fatto { position: absolute; inset: 0 auto 0 0; background: var(--accento); border-radius: var(--r-full); }
 /* Oltre il +10% il colore cambia SIGNIFICATO, non intensità: è la regola
    del piano che si è rotta, non un valore alto. */
 .al-barra-fatto.sopra { background: var(--male); }
-.al-barra-km { flex: none; font-size: var(--t-caption1); font-variant-numeric: tabular-nums; color: var(--inchiostro-3); text-align: right; }
+.al-barra-km { font-size: var(--t-caption1); font-variant-numeric: tabular-nums; color: var(--inchiostro-3); text-align: right; }
 
 .al-legenda { display: flex; flex-wrap: wrap; gap: var(--s-4); margin-top: var(--s-3); font-size: var(--t-caption1); color: var(--inchiostro-3); }
 .al-legenda-voce { display: inline-flex; align-items: center; gap: 5px; }
@@ -47,76 +224,34 @@
 .al-proiezione-cifra { font-family: var(--font-d); font-size: var(--t-title1); font-weight: var(--p-bold); letter-spacing: var(--t-title1-c); font-variant-numeric: tabular-nums; }
 .al-proiezione-passo { font-size: var(--t-footnote); color: var(--inchiostro-3); }
 
-/* ---------------------------------------------------------- la settimana */
 
-.al-sett { display: flex; align-items: center; gap: var(--s-2); }
-.al-sett-n { font-size: var(--t-footnote); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
-.al-sett-barra { flex: 1; height: 4px; border-radius: var(--r-full); background: var(--incavo); overflow: hidden; }
-.al-striscia { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s-1); }
+/* ========================================================== le corse ===== */
 
-.al-giorni { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--s-1); }
-.al-giorno { display: flex; flex-direction: column; align-items: center; gap: var(--s-1); min-width: 0; }
-.al-giorno-btn {
-  width: 100%; max-width: 38px; aspect-ratio: 1;
-  display: grid; place-items: center;
-  border: 0; border-radius: var(--r-full);
-  background: none; color: var(--inchiostro);
-  font-family: var(--font); font-size: var(--t-subheadline);
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
+.al-corse {
+  list-style: none;
+  display: flex; flex-direction: column;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-xl);
+  background: var(--rilievo);
 }
-.al-giorno-btn.fatto { background: var(--accento); color: #fff; font-weight: var(--p-semibold); }
-.al-giorno-btn.oggi { box-shadow: inset 0 0 0 1.5px var(--inchiostro-3); }
-.al-giorno-btn.riposo { color: var(--inchiostro-4); }
-
-/* -------------------------------------------------------------- gli slot */
-
-.al-gruppi { display: flex; flex-direction: column; gap: var(--s-5); }
-.al-gruppo-testa { display: flex; align-items: baseline; gap: var(--s-2); margin-bottom: var(--s-2); }
-.al-gruppo-nome { font-size: var(--t-caption1); font-weight: var(--p-semibold); letter-spacing: 0.06em; text-transform: uppercase; color: var(--inchiostro-2); }
-.al-gruppo-conta { margin-left: auto; font-size: var(--t-caption1); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
-
-.al-slot { list-style: none; display: flex; flex-direction: column; }
-.al-slot-li { display: flex; align-items: center; gap: var(--s-2); min-height: var(--h-riga); box-shadow: inset 0 -0.5px 0 var(--riga-fine); }
-.al-slot li:last-child .al-slot-li { box-shadow: none; }
-.al-slot-corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.al-slot-alto { display: flex; align-items: baseline; gap: var(--s-2); min-width: 0; }
-.al-slot-nome { font-size: var(--t-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.al-slot-testo { font-size: var(--t-footnote); color: var(--inchiostro-3); }
-.al-slot-accessori { font-size: var(--t-caption1); color: var(--inchiostro-4); }
-
-.al-spunta { width: var(--tocco); height: var(--tocco); flex: none; display: grid; place-items: center; border: 0; background: none; cursor: pointer; margin-left: calc(-1 * var(--s-2)); }
-.al-spunta-cerchio {
-  width: 26px; height: 26px; display: grid; place-items: center;
-  border-radius: 50%; color: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--inchiostro-4);
-  transition: background var(--d-fast) var(--molla), box-shadow var(--d-fast) var(--curva), color var(--d-fast) var(--curva);
+.al-corsa {
+  display: grid; grid-template-columns: 56px 1fr auto auto 34px;
+  align-items: center; gap: var(--s-2);
+  min-height: var(--h-riga);
+  box-shadow: inset 0 -0.5px 0 var(--riga-fine);
 }
-.al-spunta.fatta .al-spunta-cerchio { background: var(--accento); box-shadow: inset 0 0 0 1.5px var(--accento); color: #fff; }
-
-/* ------------------------------------------------------------- le corse */
-
-.al-corse { list-style: none; display: flex; flex-direction: column; }
-.al-corsa { display: grid; grid-template-columns: 52px 1fr auto auto; align-items: center; gap: var(--s-2); min-height: var(--h-riga); box-shadow: inset 0 -0.5px 0 var(--riga-fine); }
-.al-corse li:last-child .al-corsa { box-shadow: none; }
-.al-corsa-data { font-size: var(--t-caption1); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
-.al-corsa-tit { font-size: var(--t-subheadline); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.al-corse li:last-child.al-corsa, .al-corse > li:last-child { box-shadow: none; }
+.al-corsa-data { font-size: var(--t-footnote); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
+.al-corsa-tit { font-size: var(--t-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .al-corsa-km { font-family: var(--font-d); font-size: var(--t-body); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; }
-.al-corsa-passo { font-size: var(--t-caption1); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
+.al-corsa-passo { font-size: var(--t-footnote); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
 .al-corsa-x { width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: var(--r-full); background: none; color: var(--inchiostro-4); cursor: pointer; }
+.al-corsa-x:active { background: var(--riempi); }
 
-/* --------------------------------------------------------- vario e fogli */
 
-.al-stat { display: flex; flex-direction: column; gap: 2px; }
-.al-stat-eti { font-size: var(--t-caption1); color: var(--inchiostro-3); }
-.al-stat-valore { font-family: var(--font-d); font-size: var(--t-title3); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; }
-.al-tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--r-full); background: var(--riempi); font-size: var(--t-caption2); font-weight: var(--p-semibold); color: var(--inchiostro-2); }
-.al-stella { color: var(--a-giallo); }
-.al-piede { margin-top: var(--s-4); display: flex; gap: var(--s-2); }
-.al-piede .btn { flex: 1; }
-.al-regole, .al-consiglio-segno, .al-avvertenza { font-size: var(--t-footnote); line-height: var(--t-footnote-i); color: var(--inchiostro-2); }
-.al-avvertenza { display: flex; gap: var(--s-2); padding: var(--s-3); border-radius: var(--r-md); background: var(--incavo); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--avviso) 45%, transparent); }
-.al-avvertenza-segno { flex: none; color: var(--avviso); }
+/* ========================================================= vario e fogli */
+
+.al-regole { font-size: var(--t-footnote); line-height: var(--t-footnote-i); color: var(--inchiostro-2); }
 .al-vuoto-cifra { font-family: var(--font-d); font-size: var(--t-title1); font-weight: var(--p-bold); color: var(--inchiostro-4); }
 .al-area { width: 100%; min-height: 140px; padding: var(--s-3); border: 0; border-radius: var(--r-md); background: var(--incavo); color: var(--inchiostro); font-family: var(--font-m); font-size: var(--t-footnote); line-height: 1.5; resize: vertical; }
 .al-file-input { display: none; }
@@ -126,3 +261,13 @@
 .al-passi-guida { font-size: var(--t-footnote); color: var(--inchiostro-2); line-height: var(--t-footnote-i); }
 .al-foglio-testo { font-size: var(--t-subheadline); line-height: var(--t-subheadline-i); color: var(--inchiostro-2); }
 .al-foglio-accessori { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
+.al-giorni { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--s-1); }
+.al-giorno-btn {
+  width: 100%; aspect-ratio: 1; max-width: 38px;
+  display: grid; place-items: center;
+  border: 0; border-radius: var(--r-full);
+  background: none; color: var(--inchiostro);
+  font: inherit; font-size: var(--t-subheadline); font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.al-giorno-btn.fatto, .al-giorno-btn.scelto { background: var(--accento); color: #fff; font-weight: var(--p-semibold); }
