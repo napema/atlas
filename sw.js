@@ -14,7 +14,7 @@
  * che stanno in core/app.js. Il perché è scritto lì.
  */
 
-const VERSIONE = "atlas-v91";
+const VERSIONE = "atlas-v92";
 const GUSCIO = `guscio-${VERSIONE}`;
 
 /* I FILE PESANTI STANNO IN UNA CACHE CHE NON PORTA LA VERSIONE.
@@ -74,12 +74,14 @@ const DA_PRECARICARE = [
   "./moduli/oggi/modulo.js",
   "./moduli/impostazioni/modulo.js",
   "./moduli/pasti/modulo.js",
+  "./moduli/pasti/contratto.js",
   "./moduli/pasti/dati.js",
   "./moduli/pasti/calcolo.js",
   "./moduli/pasti/piano.js",
   "./moduli/pasti/importa.js",
   "./moduli/pasti/viste.js",
   "./moduli/finanze/modulo.js",
+  "./moduli/finanze/contratto.js",
   "./moduli/finanze/dati.js",
   "./moduli/finanze/calcolo.js",
   "./moduli/finanze/viste.js",
@@ -87,6 +89,7 @@ const DA_PRECARICARE = [
   "./moduli/finanze/importa.js",
   "./moduli/finanze/esporta.js",
   "./moduli/mobilita/modulo.js",
+  "./moduli/mobilita/contratto.js",
   "./moduli/mobilita/dati.js",
   "./moduli/mobilita/sessione.js",
   "./moduli/mobilita/oggi.js",
@@ -99,10 +102,12 @@ const DA_PRECARICARE = [
   "./moduli/mobilita/clip.js",
   "./moduli/mobilita/engine.js",
   "./moduli/abitudini/modulo.js",
+  "./moduli/abitudini/contratto.js",
   "./moduli/abitudini/dati.js",
   "./moduli/abitudini/calcolo.js",
   "./moduli/abitudini/viste.js",
   "./moduli/allenamenti/modulo.js",
+  "./moduli/allenamenti/contratto.js",
   "./moduli/allenamenti/dati.js",
   "./moduli/allenamenti/calcolo.js",
   "./moduli/allenamenti/viste.js",

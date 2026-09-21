@@ -9,17 +9,13 @@
 // Tre schermate: Riepilogo, Movimenti, Analisi. Il Setup è la sezione
 // "Finanze" di Impostazioni — tutte le impostazioni in un posto solo.
 
-import { el, aggiungi, intestazione, oggiISO, euro, plurale, daISO, dataBreve } from "../../core/ui.js";
+import { el, aggiungi, intestazione } from "../../core/ui.js";
 import { icona } from "../../core/icone.js";
-import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
-import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
-import { annuncia, ascolta } from "../../core/bus.js";
-import { casella, stato, movimentiVivi, migra, checkFatto, completaTravasi } from "./dati.js";
-import {
-  statistiche, budgetTotale, cassaSettimana, verdetto, meseDi, spostaMese,
-  nomeMese, importoEffettivo, proiezione,
-  cicloDi, settimana, orizzonte, inArrivo, spesoOggi, ricorrentiDiOggi, alert, calendarioUscite, giorniADomenica,
-} from "./calcolo.js";
+import { ascolta } from "../../core/bus.js";
+import { meseDi, spostaMese, nomeMese } from "./calcolo.js";
+// Sync, lavagna e la scheda della home stanno in `contratto.js`, CONDIVISO
+// con la app nuova: una sola regola di fusione dei dati per tutte e due.
+import { quandoCambia, pubblicaSullaLavagna, avviaSync, oggi } from "./contratto.js";
 import {
   vistaHome, vistaMovimenti, vistaAnalisi, vistaSetup,
   apriMovimento, apriCategoria, apriSottocategoria, apriDettaglio,
@@ -37,6 +33,8 @@ const vista = { scheda: "home", mese: meseDi(), grafico: "settimana", filtro: "t
 // schermata Impostazioni, insieme a quelle degli altri moduli. Sparso nei
 // moduli non lo trovava nessuno.
 const SCHEDE = [["home", "Riepilogo"], ["movimenti", "Movimenti"], ["analisi", "Analisi"]];
+
+quandoCambia(() => { if (contenitore) disegna(); });
 
 /* --------------------------------------------------------------- vista -- */
 
@@ -138,208 +136,6 @@ function navigatoreMese() {
   ]);
 }
 
-/**
- * La prima uscita ricorrente in arrivo, pronta da mostrare.
- *
- * Serve alla home, che di «in arrivo» vuole sapere una cosa sola: la
- * prossima. L'elenco intero sta in Finanze, dove c'è lo spazio per leggerlo.
- */
-function prossimaUscita(iso) {
-  const v = inArrivo(30, iso).voci[0];
-  if (!v) return null;
-  const quando = v.fra === 0 ? "oggi" : v.fra === 1 ? "domani" : `fra ${v.fra} gg`;
-  return {
-    quando,
-    nome: v.nome,
-    importo: v.stimato
-      ? `${euro(v.stimaMin, { tondo: true })}–${euro(v.stimaMax, { tondo: true })}`
-      : euro(v.importo, { tondo: true }),
-  };
-}
-
-
-/**
- * Il check di oggi come voce della checklist della home, o niente.
- *
- * Dalle 18 in poi, e solo se non è già stato fatto. Prima di quell'ora la
- * giornata non è ancora andata come andrà, e un check fatto a metà pomeriggio
- * dice di una giornata che non c'è ancora: sarebbe una spunta comprata a
- * poco, e le spunte comprate a poco svuotano di senso la serie.
- */
-function checkDaFare(iso) {
-  const ora = new Date().getHours();
-  if (ora < 18 || checkFatto(iso)) return [];
-  return [{
-    chiave: "finanze:check", apre: "#/finanze",
-    nome: "Check di oggi", dentro: "Finanze", emoji: "💶", tint: "lime",
-    nomeFascia: "Sera", fascia: "sera",
-    quando: ora >= 22 ? "tardi" : "adesso",
-  }];
-}
-
-/* ------------------------------------------------------------- lavagna -- */
-
-function pubblicaSullaLavagna() {
-  const oggi = giornoCorrente();
-  const diOggi = movimentiVivi().filter((m) => m.data === oggi && m.tipo === "out");
-  const speso = diOggi.reduce((s, m) => s + importoEffettivo(m), 0);
-  if (leggiFatto("finanze", "movimenti") !== diOggi.length) scriviFatto("finanze", "movimenti", diOggi.length);
-  if (leggiFatto("finanze", "speso") !== speso) scriviFatto("finanze", "speso", speso);
-}
-
-/* ---------------------------------------------------------------- sync -- */
-
-export function avviaSync() {
-  // La migrazione gira all'apertura del canale, cioè all'avvio dell'app e
-  // non al montaggio del modulo: la home legge `oggi()` senza montare
-  // Finanze, e leggerebbe uno stato senza pocket.
-  migra();
-
-  const canale = apriCanale({
-    id: "finanze",
-    file: "finanze.json",
-    impacchetta: () => {
-      const s = stato();
-      return {
-        v: 5,
-        movs: s.movs,
-        // RICORRENTI E PREVISTI VIAGGIANO FUORI DA `meta`, ed è il punto.
-        // Dentro si fondevano come un blocco unico sul confronto di un solo
-        // `metaUp`: bastava che un dispositivo con una configurazione
-        // vecchia scrivesse qualunque cosa perché l'elenco dei ricorrenti
-        // dell'altro venisse sostituito da quello vecchio. Fuori, si
-        // fondono per record come i movimenti.
-        ricorrenti: s.ricorrenti,
-        previsti: s.previsti,
-        // I pocket qui fuori insieme agli altri: dentro `meta` un
-        // dispositivo che non aveva mai ricevuto i saldi spediva i suoi
-        // quattro zeri e li faceva vincere. Dentro c'è il denaro: è il
-        // record che meno di tutti può permettersi una fusione a blocchi.
-        pockets: s.pockets,
-        // Una copia dentro `meta` per i dispositivi non ancora aggiornati,
-        // che sanno leggerli solo lì. Costa duecento byte e evita che un
-        // telefono fermo alla versione di ieri smetta di vedere i
-        // ricorrenti nuovi finché non si aggiorna.
-        meta: {
-          cats: s.cats, profili: s.profili, rules: s.rules, config: s.config,
-          pockets: s.pockets, ricorrenti: s.ricorrenti, soglie: s.soglie,
-          up: s.metaUp || 0,
-          // Il timestamp dei PROFILI, staccato da quello del blocco: vedi
-          // `applica` qui sotto.
-          profiliUp: s.profiliUp || 0,
-        },
-      };
-    },
-    applica: (remoto) => {
-      casella.aggiorna((s) => {
-        s.movs = potaLapidi(fondiRecord(s.movs, remoto.movs));
-
-        // Per record, e SEMPRE — non sotto il confronto di `metaUp`. Un
-        // pacchetto vecchio non può più cancellare un ricorrente che non ha
-        // mai visto: può solo riportare indietro quelli che ha toccato lui.
-        // `remoto.meta.ricorrenti` è il ripiego per i pacchetti vecchi, che
-        // li mandavano solo lì.
-        const ricRemoti = remoto.ricorrenti ?? remoto.meta?.ricorrenti;
-        if (Array.isArray(ricRemoti)) {
-          s.ricorrenti = potaLapidi(fondiRecord(s.ricorrenti || [], ricRemoti));
-        }
-        if (Array.isArray(remoto.previsti)) {
-          s.previsti = potaLapidi(fondiRecord(s.previsti || [], remoto.previsti));
-        }
-        // I pocket non si potano: sono quattro, fissi, e una lapide su un
-        // pocket vorrebbe dire perdere un saldo.
-        const pkRemoti = remoto.pockets ?? remoto.meta?.pockets;
-        if (Array.isArray(pkRemoti)) {
-          s.pockets = fondiRecord(s.pockets || [], pkRemoti);
-        }
-
-        const rm = remoto.meta;
-
-        /* QUELLO CHE SI ACCUMULA SI SOMMA SEMPRE, FUORI DAL CANCELLO.
-
-           `metaUp` è un cancello per le impostazioni, e per quelle va bene:
-           il profilo, le categorie, le soglie sono valori che si
-           sostituiscono, e vince chi ha scritto per ultimo. Ma il
-           vocabolario appreso e i check giornalieri non sono impostazioni:
-           sono STORIA, si aggiungono e non si tolgono mai. Metterli dietro
-           lo stesso cancello vuol dire che basta un `metaUp` più fresco per
-           cancellarli, e un `metaUp` più fresco lo produce qualunque
-           scrittura — perfino salvare i saldi.
-
-           È successo il 2 settembre, due volte in un'ora. La seconda con
-           questa sequenza: alle 21:17 il repo aveva 17 regole e 6 check,
-           alle 21:22 il telefono ha salvato i saldi (che alza `metaUp` in
-           locale, prima ancora di leggere), alle 21:24 ha letto e ha
-           RIFIUTATO il blocco remoto perché «vecchio», alle 21:35 ha
-           rispedito il suo, che di regole ne aveva zero. Una gara che chi
-           ha i dati buoni perde sempre.
-
-           Sommandoli sempre, un dispositivo con la memoria vuota non può
-           più cancellare niente: al massimo non aggiunge. L'unione non
-           toglie mai una chiave, quindi non c'è un caso in cui questo
-           faccia perdere qualcosa. */
-        if (rm?.rules) s.rules = { ...s.rules, ...rm.rules };
-        if (rm?.config?.checks) {
-          s.config.checks = { ...rm.config.checks, ...(s.config.checks || {}) };
-        }
-
-        /* I PROFILI HANNO UN CONFRONTO LORO, FUORI DAL CANCELLO.
-
-           Dentro, bastava un `metaUp` più fresco per un motivo qualunque —
-           il check della sera, un saldo salvato — perché un dispositivo con
-           i profili di fabbrica sostituisse quelli veri dell'altro. Nella
-           cronologia di atlas-dati `cassaCats` rimbalza fra 9 e 3 dal 26
-           agosto: non era un valore perso, erano due dispositivi che se lo
-           rimandavano.
-
-           È la terza volta che questo schema si ripete — prima i ricorrenti,
-           poi i pocket, adesso i profili — e la cura è sempre la stessa: un
-           `up` per la cosa, e il confronto fra le due versioni DI QUELLA
-           COSA. Un `profiliUp` a zero è la fabbrica, e non vince mai. */
-        const profUp = rm?.profiliUp || 0;
-        if (rm?.profili && profUp > (s.profiliUp || 0)) {
-          s.profili = rm.profili;
-          s.profiliUp = profUp;
-        }
-
-        if (rm && (rm.up || 0) > (s.metaUp || 0)) {
-          if (rm.cats?.length) s.cats = rm.cats;
-          // `checks` sopravvive allo spread: l'ha appena unito la riga di
-          // sopra, e qui il blocco remoto lo riporterebbe a quelli suoi.
-          if (rm.config) s.config = { ...s.config, ...rm.config, checks: s.config.checks };
-          if (rm.soglie) s.soglie = { ...s.soglie, ...rm.soglie };
-          s.metaUp = rm.up;
-        }
-      }, { origine: "sync", tocca: false });
-    },
-    ridisegna: () => {
-      // La riparazione dei travasi a metà gira QUI, dopo che il canale ha
-      // letto il repo, e non in `migra()` all'avvio. Riparare prima di
-      // leggere darebbe a un record un `up` più fresco di una lapide messa
-      // dall'altro dispositivo — e un movimento cancellato sul PC tornerebbe
-      // in vita dal telefono. È la regola «chi non ha letto non scrive»,
-      // applicata a una scrittura che parte da sola.
-      if (canale.letturaFatta) completaTravasi();
-      pubblicaSullaLavagna();
-      if (contenitore) disegna();
-    },
-  });
-
-  // La lavagna si aggiorna anche a modulo chiuso: la home la legge, e se si
-  // scrivesse solo al montaggio mostrerebbe i numeri dell'ultima volta che
-  // sei passato di qui.
-  pubblicaSullaLavagna();
-
-  casella.osserva((_, origine) => {
-    if (origine === "sync") return;
-    canale.segnalaModifica();
-    annuncia("finanze:movimento-registrato", {});
-  });
-
-  canale.avvia();
-  return canale;
-}
-
 /* ------------------------------------------------------------ contratto -- */
 
 export default {
@@ -371,89 +167,7 @@ export default {
     return vistaSetup(meseDi(), () => { if (contenitore) disegna(); });
   },
 
-  /**
-   * Quello che la home di ATLAS mostra di Finanze.
-   *
-   * Il numero è il saldo del Principale — «quanto posso spendere» — e non
-   * più il totale speso nel mese: speso 1.034 € non dice se stasera posso
-   * uscire a cena, restano 67 € sì.
-   *
-   * `dettaglio` porta la cosa che ribalta la risposta al numero, in ordine
-   * di quanto la ribalta: prima cosa esce OGGI, poi quanto è già uscito
-   * oggi, poi quanti giorni mancano a lunedì.
-   */
-  oggi() {
-    migra();
-    const iso = oggiISO();
-    const st = statistiche(meseDi());
-    if (!st.nMovimenti && !budgetTotale(meseDi())) return null;
-
-    const s = settimana(iso);
-    const o = orizzonte(iso);
-    const oggiRic = ricorrentiDiOggi(iso);
-    const speso = spesoOggi(iso);
-    const av = alert(iso);
-
-    const pezzi = [];
-    if (oggiRic.length) {
-      // Un addebito che esce oggi viene prima di tutto: è l'unica cosa che
-      // può rendere sbagliato il numero grande nel giro di poche ore.
-      pezzi.push(oggiRic.length === 1
-        ? `Oggi esce ${oggiRic[0].nome.toLowerCase()} · ${euro(oggiRic[0].importo, { tondo: true })}`
-        : `Oggi escono ${oggiRic.length} addebiti · ${euro(oggiRic.reduce((t, r) => t + r.importo, 0), { tondo: true })}`);
-    }
-    if (speso > 0) pezzi.push(`Oggi ${euro(speso, { tondo: true })}`);
-    // L'orizzonte e non la domenica: è la finestra su cui quei soldi devono
-    // davvero arrivare, e su cui si misura il ritmo che ti puoi permettere.
-    pezzi.push(o.disponibile <= 0
-      ? `le tasche sono a zero · ${plurale(o.giorni, "giorno", "giorni")} allo stipendio`
-      : `${euro(o.alGiorno, { tondo: true })} al giorno per ${plurale(o.giorni, "giorno", "giorni")}`);
-
-    return {
-      titolo: "Finanze",
-      valore: euro(o.disponibile),
-      // L'etichetta la scrive il modulo, non la home: era «restano questa
-      // settimana» scritto a mano lì, e diceva una cosa falsa — quel numero
-      // è quanto hai nelle tasche spendibili, e deve bastare fino allo
-      // stipendio, non fino a domenica.
-      eti: `da far bastare fino al ${dataBreve(o.fine)}`,
-      dettaglio: pezzi.join(" · "),
-      // La home lo mette in una frase: «ti manca segnare le spese» non ha
-      // senso — Finanze non è una cosa da fare, è una cosa da guardare. Solo
-      // quando la settimana è finita c'è davvero qualcosa da decidere.
-      mancaTesto: s.finita ? "una decisione sui soldi" : null,
-      urgente: s.finita || av.some((a) => a.livello === "critico"),
-      avanzamento: s.frazione,
-      // Il testo per la carta larga della home, quando Finanze è la cosa
-      // più urgente: è l'alert vero, non un riassunto.
-      allarme: av[0]?.testo || null,
-
-      // I tre numeri della carta in home, già formattati. Li formatta il
-      // modulo e non la home perché è il modulo a sapere che gli importi
-      // sono centesimi: passarli grezzi vorrebbe dire insegnarlo alla home.
-      spesoOggi: euro(speso, { tondo: true }),
-      alGiorno: o.disponibile <= 0 ? "—" : euro(o.alGiorno, { tondo: true }),
-      prossima: prossimaUscita(iso),
-      // Le uscite di QUESTA SETTIMANA, fino a domenica. Sono la cosa che
-      // riempie la carta di Finanze in home, ed è giusto che la riempia
-      // questa: «cosa esce prima di lunedì» è il dato che cambia la risposta
-      // a «posso spendere stasera».
-      //
-      // La settimana e non trenta giorni, perché la carta sta accanto al
-      // numero della settimana: due finestre diverse nella stessa carta
-      // fanno sembrare che i conti non tornino. I trenta giorni restano
-      // dentro Finanze, in «In arrivo», che è la schermata fatta per
-      // guardare più in là.
-      calendario: calendarioUscite(iso, 6, giorniADomenica(iso)),
-
-      // Il check entra nella checklist della home solo dal pomeriggio: è un
-      // gesto di chiusura, e chiederlo alle otto del mattino vuol dire
-      // chiederlo su una giornata che non è ancora successa.
-      resta: checkDaFare(iso),
-
-      azione: { rotta: "#/finanze" },
-    };
-  },
+  oggi,
 
   avviaSync,
 };
