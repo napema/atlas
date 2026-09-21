@@ -50,8 +50,8 @@ export const MODULI = [
     // SENZA TINTA, ed e' una scelta: la home e' il fondo su cui gli altri si
     // appoggiano, non un modulo fra gli altri. Una tinta qui la metteva in
     // concorrenza con le tessere che deve far leggere.
-    accento: null,   // da ridecidere col sistema nuovo
-    stile: false,   // azzerato: il foglio del modulo non esiste piu'
+    accento: "var(--a-blu)",
+    stile: true,
     carica: () => import("../moduli/oggi/modulo.js"),
     pubblica: [],
     ascolta: ["giorno:cambiato", "fatto:scritto", "dati:arrivati"],
@@ -63,9 +63,9 @@ export const MODULI = [
     // Non verde: il verde in ATLAS vuol dire "fatto", e una tinta che
     // significa due cose non ne significa nessuna. Dalla seconda stesura la
     // tinta e' gessosa: il pieno e' riservato agli stati.
-    accento: null,   // da ridecidere col sistema nuovo
+    accento: "var(--a-arancio)",
     verso: "giu",
-    stile: false,   // azzerato: il foglio del modulo non esiste piu'
+    stile: true,
     carica: () => import("../moduli/finanze/modulo.js"),
     pubblica: ["finanze:movimento-registrato"],
     ascolta: ["giorno:cambiato"],
@@ -76,9 +76,9 @@ export const MODULI = [
     icona: "pasti",
     // Abbastanza lontano dall'ambra di Finanze e dall'argilla di Training da
     // non confondersi nella stessa barra.
-    accento: null,   // da ridecidere col sistema nuovo
+    accento: "var(--a-rosa)",
     verso: "giu",
-    stile: false,   // azzerato: il foglio del modulo non esiste piu'
+    stile: true,
     carica: () => import("../moduli/pasti/modulo.js"),
     pubblica: [],
     ascolta: ["giorno:cambiato"],
@@ -88,9 +88,9 @@ export const MODULI = [
     nome: "Mobilità",
     gruppo: "corpo",
     icona: "corpo",
-    accento: null,   // da ridecidere col sistema nuovo
+    accento: "var(--a-menta)",
     verso: "su",
-    stile: false,   // azzerato: il foglio del modulo non esiste piu'
+    stile: true,
     carica: () => import("../moduli/mobilita/modulo.js"),
     // "mobilita:sessione-completata" è l'annuncio che evita all'utente di
     // spuntare a mano un'abitudine che ha appena fatto. È il caso concreto
@@ -106,9 +106,9 @@ export const MODULI = [
     // «un numero da colpire entro dicembre», e sono due cose diverse anche
     // quando si fanno con le stesse gambe.
     icona: "bersaglio",
-    accento: null,   // da ridecidere col sistema nuovo
+    accento: "var(--a-rosso)",
     verso: "su",
-    stile: false,   // azzerato: il foglio del modulo non esiste piu'
+    stile: true,
     carica: () => import("../moduli/allenamenti/modulo.js"),
     pubblica: [],
     ascolta: ["giorno:cambiato"],
@@ -117,9 +117,9 @@ export const MODULI = [
     id: "abitudini",
     nome: "Abitudini",
     icona: "abitudini",
-    accento: null,   // da ridecidere col sistema nuovo
+    accento: "var(--a-indaco)",
     verso: "su",
-    stile: false,   // azzerato: il foglio del modulo non esiste piu'
+    stile: true,
     carica: () => import("../moduli/abitudini/modulo.js"),
     pubblica: [],
     ascolta: ["mobilita:sessione-completata", "giorno:cambiato"],
@@ -130,8 +130,8 @@ export const MODULI = [
     icona: "impostazioni",
     // Neutro come Oggi: e' il posto dove si va quando qualcosa non va, non
     // una destinazione con un'identita' da difendere.
-    accento: null,   // da ridecidere col sistema nuovo
-    stile: false,   // azzerato: il foglio del modulo non esiste piu'
+    accento: "var(--a-blu)",
+    stile: true,
     carica: () => import("../moduli/impostazioni/modulo.js"),
     pubblica: [],
     ascolta: [],

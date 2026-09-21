@@ -1,0 +1,139 @@
+/* moduli/pasti — iOS 27.
+   =========================================================================
+   IL TONO, che viene prima di ogni dettaglio: niente semafori sulla
+   giornata, niente percentuali di fallimento. L'obiettivo del modulo è la
+   massa, quindi stare sopra le calorie non è un errore — è il piano che
+   funziona. L'anello porta l'accento del modulo, non uno stato.
+   ========================================================================= */
+
+/* Il segmentato Oggi | Settimana usa `.segmenti` di base.css: questi due
+   nomi locali restano perché il modulo li emette. */
+.pa-schede { display: flex; gap: 2px; padding: 2px; margin-bottom: var(--s-4); border-radius: var(--r-md); background: var(--incavo); }
+.pa-scheda {
+  flex: 1; min-width: 0; min-height: var(--h-btn-m);
+  border: 0; border-radius: 8px;
+  background: none; color: var(--inchiostro);
+  font-family: var(--font); font-size: var(--t-subheadline); font-weight: var(--p-medium);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer;
+  transition: background var(--d-normal) var(--molla);
+}
+.pa-scheda.attiva { background: var(--rilievo); box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-weight: var(--p-semibold); }
+
+/* ------------------------------------------------------------- la testata */
+
+.pa-testata { display: flex; align-items: center; gap: var(--s-5); margin-bottom: var(--s-5); }
+.pa-anello { position: relative; flex: none; display: grid; place-items: center; }
+.pa-anello .anello { transform: rotate(-90deg); }
+.pa-anello-testo { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.pa-kcal {
+  font-family: var(--font-d);
+  font-size: var(--t-title1);
+  font-weight: var(--p-bold);
+  letter-spacing: var(--t-title1-c);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.pa-manca { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pa-manca-cifra {
+  font-family: var(--font-d);
+  font-size: clamp(34px, 9vw, 42px);
+  font-weight: var(--p-bold);
+  letter-spacing: -1px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- i macro
+   Tre barre da 4px con la loro etichetta. I tre colori sono fissi in tutto
+   il modulo e non sono verde o rosso: quei due vogliono già dire «fatto» e
+   «male», e una tinta che significa due cose non ne significa nessuna. */
+
+.pa-macro { display: grid; gap: var(--s-3); }
+.pa-macro-voce { display: grid; gap: 6px; }
+.pa-macro-riga { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-2); }
+.pa-macro-nome { font-size: var(--t-subheadline); color: var(--inchiostro-2); }
+.pa-macro-cifra { font-size: var(--t-subheadline); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; }
+
+/* --------------------------------------------------- la riga di un pasto
+   Chip · nome e ora · piatto troncato · kcal incolonnate a destra.
+
+   Prima era la riga generica etichetta/dettaglio, e «Colazione» finiva
+   sopra «Frittata con patate in friggitrice, pane e succo ACE · 730 kcal ·
+   34 g prot.» nella stessa colonna di testo, su tre righe: cinque fasce
+   facevano quindici righe di paragrafo e i numeri non si potevano
+   confrontare fra loro, che è tutto il punto di una colonna di numeri. */
+
+.pa-pasto {
+  display: flex; align-items: center; gap: var(--s-3);
+  width: 100%; min-height: var(--h-riga-2);
+  padding: var(--s-2) 0;
+  border: 0; background: none;
+  color: inherit; font: inherit; text-align: left;
+  cursor: pointer;
+  transition: opacity var(--d-micro) var(--curva);
+}
+.pa-pasto:active { opacity: 0.4; }
+.lista > li:not(:last-child) > .pa-pasto { box-shadow: inset 0 -0.5px 0 var(--riga-fine); }
+
+.pa-pasto-testo { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pa-pasto-capo { display: flex; align-items: baseline; gap: var(--s-2); min-width: 0; }
+.pa-pasto-nome { font-size: var(--t-body); font-weight: var(--p-semibold); letter-spacing: var(--t-body-c); }
+.pa-pasto-ora { flex: none; font-size: var(--t-caption1); font-variant-numeric: tabular-nums; color: var(--inchiostro-3); }
+/* Il piatto su UNA riga sola, troncato: i nomi sono lunghi e andare a capo
+   due volte faceva righe alte il doppio delle altre. Una lista con righe
+   di altezza diversa non si scorre, si legge. */
+.pa-pasto-cosa { font-size: var(--t-footnote); color: var(--inchiostro-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pa-pasto-conti { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; text-align: right; }
+.pa-pasto-kcal { font-family: var(--font-d); font-size: var(--t-body); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; }
+.pa-pasto-prot { font-size: var(--t-caption1); font-variant-numeric: tabular-nums; color: var(--inchiostro-3); white-space: nowrap; }
+
+/* Saltato o da scegliere: la riga resta, il testo si spegne. Non si
+   nasconde e non si colora — non è un errore, è una casella vuota. */
+.pa-pasto.senza .pa-pasto-nome { color: var(--inchiostro-2); }
+.pa-pasto.senza .pa-pasto-cosa { color: var(--inchiostro-4); font-style: italic; }
+
+/* ------------------------------------------------------------- i fogli -- */
+
+.pa-fascia-scelta { margin-bottom: var(--s-4); }
+.pa-fascia-scelta .micro { margin-bottom: var(--s-2); }
+.pa-area, .pa-prompt {
+  width: 100%; min-height: 160px;
+  padding: var(--s-3);
+  border: 0; border-radius: var(--r-md);
+  background: var(--incavo);
+  color: var(--inchiostro);
+  font-family: var(--font-m); font-size: var(--t-footnote); line-height: 1.5;
+  resize: vertical;
+}
+.pa-griglia-macro { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: var(--s-3); }
+.pa-spazio { height: var(--s-4); }
+.pa-libero { font-size: var(--t-footnote); color: var(--inchiostro-3); }
+.pa-altro { margin-top: var(--s-3); }
+.pa-elimina { margin-top: var(--s-5); }
+
+/* --------------------------------------------------- la settimana tipo --
+   Una griglia 5x7: le fasce sulle righe, i giorni sulle colonne. */
+
+.pa-tipo { display: flex; flex-direction: column; gap: var(--s-2); }
+.pa-tipo-riga { display: grid; grid-template-columns: 78px repeat(7, minmax(0, 1fr)); gap: 3px; align-items: center; }
+.pa-tipo-capo { font-size: var(--t-caption1); color: var(--inchiostro-3); text-align: center; }
+.pa-tipo-nome { font-size: var(--t-footnote); color: var(--inchiostro-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pa-cella {
+  min-height: 34px;
+  display: grid; place-items: center;
+  border: 0; border-radius: var(--r-sm);
+  background: var(--incavo);
+  color: var(--inchiostro-3);
+  font-family: var(--font); font-size: var(--t-caption1); font-weight: var(--p-semibold);
+  cursor: pointer;
+  transition: background var(--d-fast) var(--curva), color var(--d-fast) var(--curva);
+}
+.pa-cella[data-regime="casa"]  { background: var(--accento); color: #fff; }
+.pa-cella[data-regime="fuori"] { background: color-mix(in srgb, var(--accento) 22%, transparent); color: var(--accento); }
+.pa-cella[data-regime="salto"] { background: var(--incavo); color: var(--inchiostro-4); }
+
+@media (min-width: 900px) {
+  .pa-cella { min-height: 40px; font-size: var(--t-footnote); }
+}

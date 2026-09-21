@@ -1,0 +1,36 @@
+/* moduli/impostazioni — iOS 27.
+   Una fila di pillole che scorre, e sotto i gruppi. È la forma delle
+   Impostazioni di sistema: sezioni brevi con un'intestazione grigia. */
+
+.im-sezioni {
+  display: flex; gap: var(--s-2);
+  overflow-x: auto; scrollbar-width: none;
+  margin-inline: calc(-1 * var(--gronda));
+  padding: 0 var(--gronda) var(--s-1);
+  margin-bottom: var(--s-4);
+}
+.im-sezioni::-webkit-scrollbar { display: none; }
+
+.im-sezione {
+  flex: none;
+  padding: var(--s-2) var(--s-3);
+  border: 0;
+  border-radius: var(--r-full);
+  background: var(--riempi);
+  color: var(--inchiostro);
+  font-family: var(--font);
+  font-size: var(--t-subheadline);
+  font-weight: var(--p-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--d-fast) var(--curva), color var(--d-fast) var(--curva);
+}
+/* La scelta si riempie dell'accento, come `.pillola[aria-pressed]` in
+   base.css: è lo stesso gesto, quindi ha lo stesso segno. */
+.im-sezione.attiva { background: var(--accento); color: var(--accento-testo); font-weight: var(--p-semibold); }
+
+.im-corpo { display: flex; flex-direction: column; }
+
+@media (min-width: 900px) {
+  .im-sezioni { margin-inline: 0; padding-inline: 0; flex-wrap: wrap; overflow: visible; }
+}

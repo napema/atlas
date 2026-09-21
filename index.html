@@ -3,20 +3,21 @@
 <head>
 <meta charset="utf-8">
 <!-- `maximum-scale` e `user-scalable` bloccano lo zoom su Android. Safari li
-     ignora di proposito, per accessibilità: lì lo zoom si toglieva con
-     `touch-action` in base.css — che ora e' vuoto, quindi quella difesa va
-     rimessa col sistema nuovo — e con i `gesture*` in core/app.js. -->
+     ignora di proposito, per accessibilità: lì lo zoom si toglie con
+     `touch-action` in base.css e con i `gesture*` in core/app.js. Servono
+     tutti e tre insieme, nessuno dei tre basta da solo. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>ATLAS</title>
 <meta name="description" content="Finanze, mobilità e abitudini in una sola app.">
 
 <!-- PWA -->
 <link rel="manifest" href="./manifest.webmanifest">
-<!-- I due `theme-color` sono stati tolti con l'azzeramento dello stile:
-     erano i valori del fondo della stesura precedente, copiati a mano
-     perche' qui le variabili CSS non arrivano. Vanno rimessi — due, una
-     per tema — quando il sistema nuovo avra' un colore di fondo. Senza,
-     Safari usa il bianco di serie. -->
+<!-- Due, una per tema: con una sola, la barra di stato di Safari restava
+     del colore dell'altro tema e si vedeva una striscia chiara sopra una
+     pagina scura. Sono i `backgroundsGrouped.primary` di iOS 27 — #000 e
+     #f2f2f7 — copiati a mano perche' qui le variabili CSS non arrivano. -->
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ATLAS">
@@ -41,22 +42,16 @@
 <link rel="icon" type="image/png" sizes="64x64" href="./assets/icons/favicon-64.png?v=77">
 <link rel="apple-touch-icon" href="./assets/icons/icona-1024.png?v=77">
 
-<!-- I due fogli SONO VUOTI: lo stile di ATLAS e' stato azzerato il 20
-     settembre 2026 e si riparte da zero. I collegamenti restano perche'
-     l'ordine conta — i token prima, sempre — e perche' cosi' si ricomincia
-     scrivendo dentro, senza rimettere mano a questo file. -->
+<!-- I fogli sono due e in quest'ordine: i token prima, sempre. -->
 <link rel="stylesheet" href="./styles/tokens.css">
 <link rel="stylesheet" href="./styles/base.css">
 
-<!-- NESSUN PRECARICO DI FONT, per ora.
-     I `@font-face` stavano in `tokens.css`, che e' stato azzerato: senza
-     una famiglia dichiarata, precaricare un woff2 vuol dire scaricarlo a
-     ogni avvio e non usarlo mai — il browser lo segnala anche in console.
-
-     I FILE RESTANO IN `assets/fonts/`: SF Pro (sei tagli) e le emoji
-     Apple. Il font non cambia, cambia tutto il resto. Quando il sistema
-     nuovo dichiara di nuovo la famiglia, qui tornano due righe di
-     `<link rel="preload">` per i due tagli che si vedono per primi. -->
+<!-- SF Pro e' self-hosted: precaricare i due tagli che si vedono per
+     primi evita il lampo di testo di sistema al primo avvio, che su una
+     PWA installata si nota parecchio. Gli altri quattro li chiede
+     `tokens.css` quando servono. -->
+<link rel="preload" href="./assets/fonts/sf-pro-text-regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./assets/fonts/sf-pro-display-bold.woff2" as="font" type="font/woff2" crossorigin>
 
 <!-- La configurazione NON è un modulo ES: deve essere già in memoria quando
      core/sync.js viene valutato. Perciò script normale, prima di tutto. -->

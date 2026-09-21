@@ -1,0 +1,305 @@
+/* moduli/finanze — iOS 27.
+   =========================================================================
+   Il modulo più grande: riepilogo, movimenti, analisi. La forma è quella
+   di sistema — gruppi su un fondo, righe alte 52, separatori rientrati —
+   e il colore entra solo dai chip e dai tre stati.
+   ========================================================================= */
+
+/* ============================================================ navigatore = */
+
+.fi-mese { display: flex; align-items: center; gap: var(--s-1); margin-bottom: var(--s-3); }
+.fi-mese-nome {
+  flex: 1; min-height: var(--tocco);
+  border: 0; background: none; color: var(--inchiostro);
+  font-family: var(--font-d);
+  font-size: var(--t-title3);
+  font-weight: var(--p-semibold);
+  letter-spacing: var(--t-title3-c);
+  text-transform: capitalize; text-align: center;
+  cursor: pointer;
+}
+
+.fi-schede { display: flex; gap: 2px; padding: 2px; margin-bottom: var(--s-4); border-radius: var(--r-md); background: var(--incavo); }
+.fi-scheda {
+  flex: 1; min-width: 0; min-height: var(--h-btn-m);
+  border: 0; border-radius: 8px;
+  background: none; color: var(--inchiostro);
+  font-family: var(--font); font-size: var(--t-subheadline); font-weight: var(--p-medium);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer;
+  transition: background var(--d-normal) var(--molla);
+}
+.fi-scheda.attiva { background: var(--rilievo); box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-weight: var(--p-semibold); }
+
+/* ================================================================= eroe == */
+
+.fi-eroe { padding: var(--s-2) 0 var(--s-5); }
+.fi-eroe-testa { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-2); }
+.fi-eroe-testa .segmenti { flex: none; width: 168px; }
+.fi-eroe .cifra-xl { font-size: clamp(42px, 13vw, 56px); }
+.fi-eroe-nota { margin: var(--s-2) 0 0; font-size: var(--t-footnote); color: var(--inchiostro-2); }
+
+/* Le sette colonne della settimana: barre vere, non un grafico. L'altezza
+   è l'unica variabile e si legge senza assi né numeri. */
+.fi-settimana { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--s-2); height: 88px; margin: var(--s-4) 0 var(--s-2); }
+.fi-giorno { display: flex; flex-direction: column; gap: var(--s-2); }
+.fi-colonna { flex: 1; display: flex; align-items: flex-end; border-radius: var(--r-sm); background: var(--incavo); overflow: hidden; }
+.fi-colonna > i { display: block; width: 100%; min-height: 3px; border-radius: var(--r-sm); background: var(--accento); transition: height var(--d-slow) var(--uscita); }
+.fi-giorno-lettera { text-align: center; font-size: var(--t-caption2); color: var(--inchiostro-3); }
+.fi-giorno.oggi .fi-giorno-lettera { color: var(--inchiostro); font-weight: var(--p-semibold); }
+/* Oggi non è «pieno»: è cerchiato. Riempirlo lo faceva sembrare il giorno
+   con la spesa più alta, che è un'altra informazione. */
+.fi-giorno.oggi .fi-colonna { box-shadow: inset 0 0 0 1.5px var(--inchiostro-3); }
+
+/* ================================================================ avvisi = */
+
+.fi-avvisi { display: flex; flex-direction: column; gap: var(--s-2); margin-bottom: var(--s-4); }
+.fi-avviso { display: flex; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: var(--r-xl); background: var(--rilievo); }
+.fi-avviso b { display: block; font-size: var(--t-subheadline); font-weight: var(--p-semibold); margin-bottom: 1px; }
+.fi-avviso-testo { font-size: var(--t-footnote); line-height: var(--t-footnote-i); color: var(--inchiostro-2); }
+.fi-avviso-punto { width: 8px; height: 8px; border-radius: 50%; background: var(--tinta); flex: none; margin-top: 6px; }
+.fi-avviso-icona { flex: none; color: var(--tinta); }
+
+/* =============================================================== numero == */
+
+/* Una scheda vera, con la sua superficie. */
+.fi-numero { position: relative; padding: var(--s-5); margin-bottom: var(--s-4); border-radius: var(--r-xl); background: var(--rilievo); }
+.fi-numero-testa { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-2); }
+.fi-numero .cifra-xl { font-size: clamp(44px, 14vw, 60px); }
+.fi-numero-nota { margin: var(--s-2) 0 0; font-size: var(--t-subheadline); color: var(--inchiostro-2); }
+.fi-numero-ritmo { margin: var(--s-3) 0 0; font-size: var(--t-subheadline); }
+.fi-numero-scelta { display: flex; gap: var(--s-2); margin-top: var(--s-4); }
+.fi-numero-scelta .btn { flex: 1; }
+.fi-numero-piano { margin: var(--s-3) 0 0; font-size: var(--t-footnote); }
+.fi-numero-piede { display: flex; gap: var(--s-5); padding-top: var(--s-4); margin-top: var(--s-4); border-top: 0.5px solid var(--riga-fine); }
+.fi-oggi-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fi-oggi-stat b { font-family: var(--font-d); font-size: var(--t-title3); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; }
+.fi-oggi-stat span { font-size: var(--t-caption1); color: var(--inchiostro-3); }
+.fi-consumo { height: 4px; margin-top: var(--s-4); border-radius: var(--r-full); background: var(--incavo); overflow: hidden; }
+.fi-consumo > i { display: block; height: 100%; border-radius: var(--r-full); background: var(--accento); transition: width var(--d-slow) var(--uscita); }
+.fi-numero.male .fi-consumo > i { background: var(--male); }
+
+/* ================================================== il check giornaliero =
+   Il colore dice l'esito e basta: verde in pari, ambra una cosa da
+   guardare, rosso c'è da fare qualcosa. Il titolo lo porta, il fondo no —
+   un pannello rosso pieno con testo sopra è la cosa che nell'app di
+   partenza non si riusciva a leggere in pieno sole. */
+
+.fi-check { display: block; width: 100%; margin-bottom: var(--s-4); padding: var(--s-5); border: 0; border-radius: var(--r-xl); background: var(--rilievo); color: inherit; font: inherit; text-align: left; cursor: pointer; position: relative; overflow: hidden; transition: opacity var(--d-fast) var(--curva); }
+.fi-check:active { opacity: 0.7; }
+.fi-check.ok { --tinta: var(--ok); }
+.fi-check.attenzione { --tinta: var(--avviso); }
+.fi-check.male { --tinta: var(--male); }
+.fi-check-testa { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-2); }
+.fi-check-eti { font-size: var(--t-footnote); letter-spacing: 0.06em; text-transform: uppercase; color: var(--inchiostro-3); }
+.fi-check-serie { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: var(--r-full); background: var(--riempi); font-size: var(--t-caption1); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; }
+.fi-check-titolo { font-family: var(--font-d); font-size: var(--t-title2); font-weight: var(--p-bold); letter-spacing: var(--t-title2-c); color: var(--tinta); }
+.fi-check-sotto { margin: var(--s-1) 0 0; font-size: var(--t-subheadline); line-height: var(--t-subheadline-i); color: var(--inchiostro-2); }
+/* I quattro pallini: l'esito delle quattro voci senza aprire il foglio. */
+.fi-check-punti { display: flex; gap: 6px; margin-top: var(--s-4); }
+.fi-check-punto { flex: 1; height: 4px; border-radius: var(--r-full); background: var(--incavo); }
+.fi-check-punto.ok { background: var(--ok); }
+.fi-check-punto.attenzione { background: var(--avviso); }
+.fi-check-punto.male { background: var(--male); }
+.fi-check-azione { display: inline-flex; align-items: center; gap: 4px; margin-top: var(--s-4); font-size: var(--t-body); color: var(--accento); }
+.fi-check-fatto { display: flex; align-items: center; gap: var(--s-3); }
+.fi-check-fatto-titolo { font-size: var(--t-body); font-weight: var(--p-semibold); }
+.fi-check-fatto-nota { font-size: var(--t-footnote); color: var(--inchiostro-3); }
+.fi-check-spunta { color: var(--ok); flex: none; }
+.fi-check-lista { list-style: none; display: flex; flex-direction: column; }
+.fi-check-voce-titolo { font-size: var(--t-body); }
+.fi-check-voce-nota { font-size: var(--t-footnote); color: var(--inchiostro-3); }
+.fi-check-voce-num { font-family: var(--font-d); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; }
+.fi-check-scelte { display: flex; gap: var(--s-2); margin-top: var(--s-3); }
+.fi-check-scelte .btn { flex: 1; }
+.fi-check-domanda { font-size: var(--t-body); font-weight: var(--p-semibold); margin-bottom: var(--s-2); }
+.fi-check-segno { flex: none; }
+.fi-check-freccia { flex: none; color: var(--inchiostro-4); }
+
+/* ========================================================= barra azioni ==
+   Fissa sopra la barra delle schede. Il contenitore è trasparente ai
+   puntatori, i bottoni no: ai lati non c'è niente da intercettare. */
+
+.fi-azioni {
+  position: fixed; left: 0; right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 84px);
+  z-index: 55;
+  display: flex; gap: var(--s-2);
+  width: min(var(--leggibile), calc(100vw - var(--s-8)));
+  margin: 0 auto; padding: 0;
+  pointer-events: none;
+}
+.fi-azioni > * { pointer-events: auto; }
+.fi-azioni .btn { min-height: 46px; }
+/* Uscita ed Entrata non sono tinte nel fondo: sono due DIREZIONI, non un
+   giudizio, e due pastiglie rossa e verde direbbero «male» e «bene». */
+.fi-uscita, .fi-entrata { flex: 1; background: var(--riempi); font-weight: var(--p-semibold); }
+.fi-uscita { color: var(--male); }
+.fi-entrata { color: var(--ok); }
+.fi-altro { flex: none; width: 52px; padding: 0; background: var(--riempi); color: var(--inchiostro-2); font-size: var(--t-title3); }
+
+@media (min-width: 900px) {
+  .fi-azioni { bottom: var(--s-6); left: 132px; right: auto; width: min(420px, calc(100vw - 220px)); }
+}
+
+/* ============================================================ movimenti = */
+
+.fi-filtri { margin-bottom: var(--s-4); }
+.fi-giorno-testa {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 0 var(--s-1) var(--s-2);
+  margin-top: var(--s-5);
+  font-size: var(--t-footnote);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--inchiostro-3);
+}
+.fi-giorno-blocco { margin-bottom: var(--s-2); }
+.fi-mov { gap: var(--s-3); }
+.fi-mov-testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.fi-mov-nota { display: flex; align-items: center; min-width: 0; font-size: var(--t-body); letter-spacing: var(--t-body-c); }
+.fi-mov-nota > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-mov-cifra { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex: none; font-family: var(--font-d); font-size: var(--t-body); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; }
+.fi-mov-cifra .nota { font-size: var(--t-caption2); }
+.fi-mov-colonne { display: flex; align-items: center; gap: var(--s-3); }
+.fi-tag { font-size: var(--t-caption2); font-weight: var(--p-semibold); padding: 2px 7px; border-radius: var(--r-full); background: var(--riempi); color: var(--inchiostro-2); margin-left: 7px; flex: none; }
+.fi-tag.rosso { color: var(--male); }
+.fi-tag.ambra { color: var(--avviso); }
+.fi-badge-cat { font-size: var(--t-caption2); color: var(--inchiostro-3); }
+
+/* ============================================================== analisi = */
+
+/* I pannelli vanno a COLONNE, non a griglia: con la griglia le righe si
+   allineano al pannello più alto e sotto quello corto resta un buco che su
+   schermo largo diventa mezza pagina vuota. */
+.fi-analisi { display: block; }
+@media (min-width: 720px) {
+  .fi-analisi { column-count: 2; column-gap: var(--s-3); }
+  .fi-analisi > * { break-inside: avoid; }
+  .fi-larga { column-span: all; }
+}
+@media (min-width: 1000px) {
+  .fi-analisi { column-count: 2; column-gap: var(--s-5); }
+  .fi-analisi > .scheda { padding: var(--s-5); margin-bottom: var(--s-4); }
+}
+
+.fi-statgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--s-2); }
+.fi-statbox { display: flex; flex-direction: column; gap: 2px; padding: var(--s-3); border-radius: var(--r-md); background: var(--incavo); }
+.fi-grafico { width: 100%; }
+.fi-grafico-basso { height: 120px; }
+.fi-svg { width: 100%; display: block; }
+.fi-ciambella-fuori { display: flex; align-items: center; gap: var(--s-4); flex-wrap: wrap; }
+.fi-legenda { display: flex; flex-direction: column; gap: var(--s-2); min-width: 160px; }
+.fi-legenda-riga { display: flex; align-items: center; gap: var(--s-2); font-size: var(--t-footnote); }
+.fi-legenda-nome { flex: 1; min-width: 0; color: var(--inchiostro-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-legenda-cifra { font-variant-numeric: tabular-nums; font-weight: var(--p-semibold); }
+.fi-legenda-pct { font-size: var(--t-caption1); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
+.fi-punto { width: 10px; height: 10px; border-radius: 50%; background: var(--tinta); flex: none; }
+
+.fi-catlista { list-style: none; display: flex; flex-direction: column; }
+.fi-catriga { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--s-3); width: 100%; min-height: var(--h-riga); padding: var(--s-2) 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; box-shadow: inset 0 -0.5px 0 var(--riga-fine); }
+.fi-catlista li:last-child .fi-catriga { box-shadow: none; }
+.fi-catriga:active { opacity: 0.4; }
+.fi-catriga-emoji { font-size: 20px; line-height: 1; }
+.fi-catriga-nome { min-width: 0; font-size: var(--t-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-catriga-barra { grid-column: 2 / -1; height: 4px; margin-top: 6px; border-radius: var(--r-full); background: var(--incavo); overflow: hidden; }
+.fi-cat-testa { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
+.fi-cat-nome { font-size: var(--t-body); font-weight: var(--p-semibold); }
+.fi-cat-ciclo { font-size: var(--t-caption1); color: var(--inchiostro-3); }
+.fi-cat-riga { display: flex; align-items: center; gap: var(--s-2); }
+
+.fi-sublista { list-style: none; display: flex; flex-direction: column; }
+.fi-subriga { display: flex; align-items: center; gap: var(--s-3); min-height: 44px; box-shadow: inset 0 -0.5px 0 var(--riga-fine); }
+.fi-subriga-testo { flex: 1; min-width: 0; font-size: var(--t-subheadline); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.fi-come { display: flex; flex-direction: column; gap: var(--s-3); }
+.fi-come .micro { color: var(--inchiostro-3); }
+.fi-come-barra { height: 8px; border-radius: var(--r-full); background: var(--incavo); overflow: hidden; display: flex; gap: 2px; }
+.fi-come-legenda { display: flex; flex-wrap: wrap; gap: var(--s-3); font-size: var(--t-caption1); color: var(--inchiostro-3); }
+
+.fi-quadra { padding: var(--s-3); border-radius: var(--r-md); background: var(--incavo); }
+.fi-quadra.ko { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--male) 50%, transparent); }
+.fi-sfor { padding: var(--s-3); border-radius: var(--r-md); background: var(--incavo); }
+.fi-sfor.ok { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ok) 45%, transparent); }
+.fi-sfor.male { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--avviso) 50%, transparent); }
+.fi-cfr { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: 40px; }
+.fi-cfr.adesso { color: var(--inchiostro); font-weight: var(--p-semibold); }
+.fi-confronto { display: flex; flex-direction: column; gap: var(--s-1); }
+.fi-conseguenza { font-size: var(--t-footnote); color: var(--inchiostro-2); line-height: var(--t-footnote-i); }
+.fi-copertura { display: flex; flex-direction: column; gap: var(--s-2); }
+.fi-copertura-titolo { font-size: var(--t-body); font-weight: var(--p-semibold); }
+.fi-copertura-nota { font-size: var(--t-footnote); color: var(--inchiostro-2); }
+.fi-copertura-segno { flex: none; }
+.fi-verdetto-titolo { font-family: var(--font-d); font-size: var(--t-title3); font-weight: var(--p-semibold); letter-spacing: var(--t-title3-c); }
+.fi-verdetto-sotto { font-size: var(--t-footnote); color: var(--inchiostro-2); }
+
+/* ============================================================== in arrivo */
+
+.fi-arrivo { display: flex; flex-direction: column; gap: var(--s-2); }
+.fi-arrivo-testa { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
+.fi-arrivo-eroe { font-family: var(--font-d); font-size: var(--t-title1); font-weight: var(--p-bold); letter-spacing: var(--t-title1-c); font-variant-numeric: tabular-nums; }
+.fi-arrivo-eroe-nota { font-size: var(--t-footnote); color: var(--inchiostro-3); }
+.fi-arrivo-lista { list-style: none; display: flex; flex-direction: column; }
+.fi-ric-stato { font-size: var(--t-caption1); color: var(--inchiostro-3); }
+.fi-ric-range { font-size: var(--t-caption1); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
+.fi-ric-dopo { font-size: var(--t-caption1); color: var(--inchiostro-4); }
+.fi-ric-avviso { font-size: var(--t-footnote); color: var(--avviso); }
+.fi-gia-pagata { opacity: 0.5; }
+.fi-suggerita { font-size: var(--t-footnote); color: var(--inchiostro-3); }
+
+/* ================================================================ sospese */
+
+.fi-sospese { display: flex; flex-direction: column; gap: var(--s-2); }
+.fi-sospese-lista { list-style: none; display: flex; flex-direction: column; gap: var(--s-2); }
+.fi-sospesa { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-md); background: var(--incavo); }
+.fi-sospesa-testo { flex: 1; min-width: 0; }
+.fi-sospesa-cifra { font-family: var(--font-d); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; }
+.fi-sospesa-nota { font-size: var(--t-caption1); color: var(--inchiostro-3); }
+.fi-sospesa-azioni { display: flex; gap: var(--s-2); }
+
+/* ================================================================ pocket */
+
+.fi-pocket { display: flex; flex-direction: column; gap: var(--s-2); }
+.fi-pocket-lista { list-style: none; display: flex; flex-direction: column; }
+.fi-pocket-riga { display: flex; align-items: center; gap: var(--s-3); min-height: var(--h-riga); box-shadow: inset 0 -0.5px 0 var(--riga-fine); }
+.fi-pocket-lista li:last-child .fi-pocket-riga { box-shadow: none; }
+.fi-pocket-nome { flex: 1; min-width: 0; font-size: var(--t-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-pocket-saldo { font-family: var(--font-d); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; }
+.fi-pocket-nota { font-size: var(--t-caption1); color: var(--inchiostro-3); }
+.fi-pocket-totale { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); padding-top: var(--s-3); margin-top: var(--s-2); border-top: 0.5px solid var(--riga-fine); font-weight: var(--p-semibold); }
+.fi-setup-pocket { display: flex; flex-direction: column; gap: var(--s-3); }
+.fi-cassa-check { display: flex; align-items: center; gap: var(--s-2); }
+.fi-risparmio { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
+
+/* ======================================================== fogli e campi == */
+
+.fi-importo { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); }
+.fi-importo-riga { display: flex; align-items: baseline; justify-content: center; gap: 4px; }
+.fi-importo-riga .cifra { font-size: clamp(44px, 14vw, 60px); }
+.fi-tastierino { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-1); margin-top: var(--s-4); }
+.fi-tasto { min-height: 56px; border: 0; border-radius: var(--r-md); background: none; color: var(--inchiostro); font-family: var(--font-d); font-size: var(--t-24); font-variant-numeric: tabular-nums; cursor: pointer; transition: background var(--d-micro) var(--curva); }
+.fi-tasto:active { background: var(--riempi); }
+.fi-select { appearance: none; }
+.fi-campo-corto { max-width: 140px; }
+.fi-campo-mini { max-width: 92px; }
+.fi-campo-staccato { margin-top: var(--s-3); }
+.fi-textarea { min-height: 100px; }
+.fi-doppio-salva { display: flex; gap: var(--s-2); }
+.fi-doppio-salva .btn { flex: 1; }
+.fi-riga-doppia { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
+.fi-setrow { display: flex; align-items: center; gap: var(--s-3); min-height: var(--h-riga); }
+.fi-setnome { flex: 1; min-width: 0; font-size: var(--t-body); }
+.fi-imp-bottoni { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.fi-imp-cifra { font-family: var(--font-d); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; }
+.fi-imp-nota { font-size: var(--t-footnote); color: var(--inchiostro-3); }
+.fi-imp-testo { font-size: var(--t-subheadline); line-height: var(--t-subheadline-i); color: var(--inchiostro-2); }
+.fi-anteprima { font-family: var(--font-m); font-size: var(--t-caption1); color: var(--inchiostro-2); line-height: 1.6; }
+.fi-dett-testa { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-4); }
+.fi-dett-lista { list-style: none; display: flex; flex-direction: column; }
+.fi-dett-riga { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: 44px; box-shadow: inset 0 -0.5px 0 var(--riga-fine); }
+.fi-dett-lista li:last-child .fi-dett-riga { box-shadow: none; }
+.fi-dett-eti { font-size: var(--t-subheadline); color: var(--inchiostro-2); }
+.fi-dett-val { font-size: var(--t-subheadline); font-weight: var(--p-medium); font-variant-numeric: tabular-nums; }
+.fi-dett-nota { font-size: var(--t-footnote); color: var(--inchiostro-3); }
+.fi-dormo-scelta { display: flex; gap: var(--s-2); }
+.fi-dormo-cifra { font-family: var(--font-d); font-weight: var(--p-semibold); }
+.fi-dormo-quanto { font-size: var(--t-footnote); color: var(--inchiostro-3); }

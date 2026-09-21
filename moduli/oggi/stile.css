@@ -1,0 +1,302 @@
+/* moduli/oggi — la home. iOS 27.
+   =========================================================================
+   Quattro gruppi su un fondo, e sopra il titolo grande. È l'impaginazione
+   di sistema: quello che su iOS è una lista raggruppata, qui è una griglia
+   di carte che a due colonne si affiancano e a una si impilano.
+
+   Il colore entra dai chip d'icona — i quadratini pieni delle Impostazioni
+   di iOS — e da nient'altro. Le carte non hanno bordi colorati, le righe
+   non hanno fili laterali, i numeri sono bianchi.
+   ========================================================================= */
+
+/* ------------------------------------------------------- l'intestazione */
+
+.og-testa { position: relative; padding: var(--s-2) 0 var(--s-5); }
+
+/* L'ingranaggio in alto a destra, allineato alla riga della data. */
+.og-ingranaggio {
+  position: absolute; top: 0; right: -10px; z-index: 2;
+  width: var(--tocco); height: var(--tocco);
+  display: grid; place-items: center;
+  border-radius: var(--r-full);
+  color: var(--accento);
+  transition: opacity var(--d-fast) var(--curva);
+}
+.og-ingranaggio svg { display: block; }
+.og-ingranaggio:active { opacity: 0.4; }
+@media (pointer: coarse) { .og-ingranaggio svg { width: 24px; height: 24px; } }
+
+/* Data e stato: la riga di contesto sopra il titolo grande, in footnote
+   grigia. `padding-right` la tiene lontana dall'ingranaggio. */
+.og-meta {
+  display: flex; align-items: center; gap: var(--s-2);
+  padding-right: 48px;
+  margin-bottom: var(--s-1);
+  font-size: var(--t-footnote);
+  color: var(--inchiostro-2);
+}
+.og-meta-data { white-space: nowrap; text-transform: capitalize; }
+.og-meta-stato { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.og-meta-parola { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.og-meta-parola::first-letter { text-transform: uppercase; }
+
+/* Il large title di iOS: 34/41, Bold. */
+.og-saluto {
+  font-family: var(--font-d);
+  font-size: var(--t-large);
+  line-height: var(--t-large-i);
+  letter-spacing: var(--t-large-c);
+  font-weight: var(--p-bold);
+  text-wrap: balance;
+}
+.og-saluto-parola { text-transform: lowercase; }
+.og-punto { color: var(--inchiostro-4); }
+
+.og-verdetto {
+  margin: var(--s-1) 0 0;
+  max-width: 46ch;
+  font-size: var(--t-subheadline);
+  line-height: var(--t-subheadline-i);
+  color: var(--inchiostro-2);
+}
+
+/* ------------------------------------------------------------ la griglia */
+
+.og-griglia { display: flex; flex-direction: column; gap: var(--s-4); }
+.og-col { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+
+/* Su telefono l'ordine è quello dell'importanza, non quello delle colonne.
+   Il blocco è chiuso in un max-width e non lasciato a cascata perché da
+   scrivania questi `order` vanno spenti TUTTI: `.og-col > *` pesa meno di
+   `.og-col-dx > .og-resta` e perderebbe. */
+@media (max-width: 999.98px) {
+  .og-col-sx, .og-col-dx { display: contents; }
+  .og-col-dx > .og-resta, .og-col-dx > .og-vuota { order: 1; }
+  .og-col-sx > .og-soldi { order: 2; }
+  .og-col-dx > .og-costanza { order: 3; }
+  .og-col-sx > .og-moduli { order: 4; }
+  .og-molla { display: none; }
+}
+
+/* --------------------------------------------------------------- la carta
+   Tutte le carte sono la stessa carta: stesso fondo, stesso raggio, stessa
+   intestazione. Con carte uguali l'occhio impara a leggerle una volta
+   sola; con carte diverse deve ricominciare da ogni riquadro. */
+
+.og-carta {
+  position: relative;
+  display: flex; flex-direction: column;
+  padding: var(--s-4);
+  border-radius: var(--r-xl);
+  background: var(--rilievo);
+}
+.og-carta-testa { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-3); }
+/* Il nome della carta è footnote maiuscola grigia, come l'intestazione di
+   una sezione su iOS. Il protagonista è il numero sotto. */
+.og-carta-nome {
+  flex: 1; min-width: 0;
+  font-size: var(--t-footnote);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--inchiostro-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.og-carta-valore {
+  flex: none;
+  font-size: var(--t-footnote);
+  font-weight: var(--p-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--inchiostro-3);
+}
+.og-carta-corpo { flex: 1; display: flex; flex-direction: column; }
+
+/* ------------------------------------------------------- resta da fare --
+   Righe piane separate dal filo, come una lista di sistema. */
+
+.og-lista { list-style: none; display: flex; flex-direction: column; }
+.og-voce {
+  display: flex; align-items: center; gap: var(--s-3);
+  width: 100%; min-height: var(--h-riga);
+  padding: var(--s-2) 0;
+  border: 0; background: none;
+  color: inherit; font: inherit; text-align: left;
+  cursor: pointer;
+  transition: opacity var(--d-micro) var(--curva);
+}
+.og-lista li:not(:last-child) .og-voce { box-shadow: inset 0 -0.5px 0 var(--riga-fine); }
+.og-voce:active { opacity: 0.4; }
+
+/* Il cerchio è un CONTROLLO, quindi è neutro: di che abitudine si tratti
+   lo dice la riga sotto il nome. Premendo si riempie di verde, che è
+   l'unico momento in cui questa riga parla di «fatto». */
+.og-voce-cerchio {
+  width: 24px; height: 24px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--inchiostro-4);
+  transition: background var(--d-micro) var(--curva), box-shadow var(--d-micro) var(--curva), color var(--d-micro) var(--curva);
+}
+.og-voce:active .og-voce-cerchio { background: var(--ok); box-shadow: inset 0 0 0 1.5px var(--ok); color: #fff; }
+.og-voce-cerchio svg { display: block; }
+
+.og-voce-testo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.og-voce-nome { font-size: var(--t-body); letter-spacing: var(--t-body-c); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.og-voce-dentro { font-size: var(--t-footnote); color: var(--inchiostro-3); }
+.og-voce-quando { flex: none; font-size: var(--t-footnote); color: var(--inchiostro-3); }
+.og-voce.tardi .og-voce-quando { color: var(--avviso); }
+.og-voce-freccia { flex: none; display: flex; color: var(--inchiostro-4); }
+
+.og-tuttofatto { margin: 0; font-size: var(--t-subheadline); line-height: var(--t-subheadline-i); color: var(--inchiostro-2); }
+
+/* ------------------------------------------------------------- finanze -- */
+
+.og-soldi-eroe { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--s-4); }
+.og-soldi-cifra {
+  font-family: var(--font-d);
+  font-size: clamp(34px, 9vw, 44px);
+  font-weight: var(--p-bold);
+  letter-spacing: -1px;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.og-soldi-eti { font-size: var(--t-footnote); color: var(--inchiostro-3); }
+
+.og-soldi-riga {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 0.5px solid var(--riga-fine);
+}
+.og-soldi-voce { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.og-soldi-num {
+  font-family: var(--font-d);
+  font-size: var(--t-title3);
+  font-weight: var(--p-semibold);
+  letter-spacing: var(--t-title3-c);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.og-soldi-voce .og-soldi-nota { font-size: var(--t-caption1); color: var(--inchiostro-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* L'avviso dentro la carta di cui parla. Il punto rosso è l'unico segno di
+   stato: niente fondo tinto, che su una riga di testo fa una macchia
+   grande quanto la carta. */
+.og-soldi-avviso {
+  display: flex; align-items: flex-start; gap: var(--s-2);
+  margin: var(--s-4) 0 0;
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--incavo);
+  font-size: var(--t-footnote);
+  line-height: var(--t-footnote-i);
+  color: var(--inchiostro-2);
+}
+.og-soldi-punto { width: 7px; height: 7px; flex: none; margin-top: 5px; border-radius: 50%; background: var(--male); }
+
+/* Il rimando in fondo a una carta: testo d'accento, come un link di iOS. */
+.og-apri {
+  display: inline-flex; align-items: center; gap: 4px;
+  align-self: flex-start;
+  margin-top: var(--s-4);
+  min-height: var(--tocco);
+  color: var(--accento);
+  font-size: var(--t-body);
+  transition: opacity var(--d-fast) var(--curva);
+}
+.og-apri:active { opacity: 0.4; }
+.og-apri svg { width: 14px; height: 14px; }
+.og-apri-piano { color: var(--inchiostro-3); font-size: var(--t-footnote); }
+
+/* ------------------------------------------------------------ costanza -- */
+
+.og-serie-riga { display: flex; align-items: baseline; gap: var(--s-2); margin-bottom: var(--s-4); }
+.og-serie-cifra {
+  font-family: var(--font-d);
+  font-size: clamp(40px, 10vw, 48px);
+  font-weight: var(--p-bold);
+  letter-spacing: -1.2px;
+  line-height: 1;
+  color: var(--accento);
+  font-variant-numeric: tabular-nums;
+}
+.og-serie-cifra.magra { color: var(--inchiostro-3); }
+.og-serie-eti { font-size: var(--t-footnote); color: var(--inchiostro-3); white-space: nowrap; }
+.og-serie-sett { margin-left: auto; text-align: right; }
+.og-serie-sett b {
+  display: block;
+  font-family: var(--font-d);
+  font-size: var(--t-title3);
+  font-weight: var(--p-semibold);
+  letter-spacing: var(--t-title3-c);
+  font-variant-numeric: tabular-nums;
+}
+.og-serie-sett span { display: block; margin-top: 1px; font-size: var(--t-caption1); color: var(--inchiostro-3); }
+.og-nota { margin: var(--s-4) 0 0; font-size: var(--t-footnote); line-height: var(--t-footnote-i); color: var(--inchiostro-2); }
+
+/* -------------------------------------------------------------- moduli -- */
+
+.og-modlista { list-style: none; display: flex; flex-direction: column; }
+.og-modriga {
+  display: flex; align-items: center; gap: var(--s-3);
+  min-height: var(--h-riga);
+  color: inherit;
+  box-shadow: inset 0 -0.5px 0 var(--riga-fine);
+}
+.og-modlista li:last-child .og-modriga { box-shadow: none; }
+.og-modnome { flex: 1 1 auto; min-width: 3.5em; font-size: var(--t-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Il valore si tronca e il NOME ha la precedenza: `oggi()` di Pasti
+   restituisce il nome del pasto per esteso, e con `flex: none` usciva
+   dalla carta coprendo la colonna del nome. Un valore tagliato si capisce
+   lo stesso, una riga senza nome no. */
+.og-modstato {
+  flex: 0 1 auto; min-width: 0; max-width: 60%;
+  text-align: right;
+  font-size: var(--t-body);
+  color: var(--inchiostro-2);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.og-modstato.ok { color: var(--inchiostro-2); }
+.og-modstato.avviso { color: var(--avviso); }
+.og-modfreccia { flex: none; display: none; color: var(--inchiostro-4); }
+
+.og-soldi .og-cal { margin-top: var(--s-2); }
+.og-cal-vuoto { margin: var(--s-3) 0 0; font-size: var(--t-footnote); color: var(--inchiostro-3); }
+
+/* --------------------------------------------------------- da scrivania -- */
+
+@media (min-width: 1000px) {
+  /* Due colonne UGUALI. Erano 1fr e 1.05fr — ventisei pixel di differenza,
+     che non si leggono come una scelta ma come un errore. */
+  .og-griglia {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(320px, 1fr));
+    gap: var(--s-4);
+    align-items: stretch;
+  }
+  .og-col-sx, .og-col-dx { display: flex; gap: 0; }
+
+  /* LA MOLLA: dove va l'avanzo. Le due colonne hanno contenuto
+     indipendente e lo scarto fra le due, misurato sulle giornate vere, va
+     da 26 a 319px E CAMBIA SEGNO. Il tetto è basso di proposito: a 120 le
+     colonne finiscono quasi pari, ma fra le due carte si apre una fascia
+     vuota più alta della carta piccola, e a quel punto non sembra spazio —
+     sembra una carta che manca. */
+  .og-molla { display: block; flex: 1 1 0; min-height: var(--s-4); max-height: 28px; }
+
+  .og-carta { padding: var(--s-5); }
+  .og-testa { display: grid; grid-template-columns: 1fr auto auto; align-items: center; column-gap: var(--s-4); padding: var(--s-4) 0 var(--s-6); }
+  .og-saluto { grid-column: 1; grid-row: 1; }
+  .og-meta { position: static; grid-column: 2; grid-row: 1; justify-self: end; flex-direction: column; align-items: flex-end; gap: 2px; margin: 0; padding-right: 0; text-align: right; }
+  .og-ingranaggio { position: static; grid-column: 3; grid-row: 1; justify-self: end; margin-right: -10px; }
+  .og-verdetto { grid-column: 1 / -1; grid-row: 2; margin-top: var(--s-2); }
+
+  /* Cinque tessere su tre colonne lasciavano un buco grande quanto una
+     tessera in basso a destra, dove l'occhio cade per ultimo. L'ultima si
+     allarga e la riga si chiude. */
+  .og-modlista { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); }
+  .og-modlista > li:last-child:nth-child(3n + 2) { grid-column: span 2; }
+  .og-modriga { flex-wrap: wrap; align-content: center; gap: var(--s-1); min-height: 0; padding: var(--s-3); border-radius: var(--r-md); background: var(--incavo); box-shadow: none; }
+  .og-modstato { flex: 1 0 100%; max-width: none; text-align: left; font-size: var(--t-title3); font-weight: var(--p-semibold); color: var(--inchiostro); }
+}

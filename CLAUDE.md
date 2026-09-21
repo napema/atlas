@@ -168,10 +168,7 @@ Queste non si discutono senza una ragione scritta.
 7. **Nessun colore letterale nei moduli.** Solo token, e l'accento del modulo
    lo sceglie il registro, non il modulo. Un colore vuol dire **una cosa
    sola**: verde è "fatto" e rosso è uno stato negativo, quindi nessun modulo
-   e nessuna categoria può prenderseli. **Il sistema visivo è stato
-   azzerato il 20 set 2026: `styles/` è vuoto e non c'è più un documento
-   del linguaggio visivo.** Questa regola resta come principio, e il nuovo
-   sistema la eredita.
+   e nessuna categoria può prenderseli. Il resto in `docs/DESIGN.md`.
 8. **Niente dipendenze esterne, niente build.** Nessun CDN: offline non
    c'è. Se serve una libreria pesante (3D, grafici), sta in un solo modulo
    e si carica pigramente.
@@ -263,6 +260,7 @@ carica da solo quando quella chat lavora lì dentro.
 | `docs/SCHEMI.md` | i tre schemi letti dai dati veri, con le trappole. **Da leggere prima di scrivere codice** |
 | `docs/CANTIERE.md` | chi sta facendo cosa, richieste a core, decisioni aperte |
 | `docs/MIGRAZIONE.md` | la procedura di porting e la lista di controllo |
+| `docs/DESIGN.md` | il linguaggio visivo: iOS 27, token misurati. **Da leggere prima di aggiungere una schermata** |
 | `docs/SYNC.md` | come è configurato il sync e i guasti da cui nascono le sue regole |
 
 ## 7. Note per chi scrive il codice

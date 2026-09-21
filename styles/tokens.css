@@ -1,34 +1,451 @@
 /* =========================================================================
-   ATLAS — token di design.
+   ATLAS — token di design. iOS 27.
 
-   VUOTO DI PROPOSITO. Azzerato il 20 settembre 2026 su richiesta: si
-   riparte da zero, e questa volta da zero davvero.
+   I VALORI DI QUESTO FILE NON SONO INVENTATI. Vengono da
+   `seunghan91/ios27-design-system` (MIT), che li ha MISURATI: i colori e le
+   metriche dallo UI Kit ufficiale di iOS 27.0.2, il materiale Liquid Glass
+   fotografando un pannello `.glassEffect()` sul simulatore e adattando il
+   profilo del bordo a una funzione d'errore.
 
-   Qui dentro non c'è più niente: né colori, né corpi, né spazi, né raggi.
-   L'app gira lo stesso — l'impalcatura, la sincronizzazione e i dati non
-   passano da qui — ma è senza stile, e deve esserlo finché il sistema
-   nuovo non viene deciso.
+   Il repo distribuisce pacchetti npm. ATLAS non ha build, non ha
+   dipendenze e non usa CDN, quindi i token sono riscritti qui a mano dai
+   sorgenti JSON (`packages/tokens/src/*.json`). Chi aggiorna riparte da
+   lì, non da questo file.
 
-   COSA È STATO TOLTO (6.041 righe in tutto):
-     · questo file e `base.css`;
-     · i sette fogli dei moduli (`moduli/<id>/stile.css`), cancellati, con
-       `stile: false` nel registro perché il router non li chieda più;
-     · `docs/DESIGN.md`, il documento del linguaggio visivo;
-     · `redesign/`, la consegna del designer da cui era nata la stesura
-       precedente.
+   TRE COSE DA SAPERE PRIMA DI TOCCARE QUALCOSA
 
-   COSA NON È STATO TOLTO, e non va toccato quando si ricomincia:
-     · `core/` — router, sync, storage, lavagna, bus, blobs, registro;
-     · `core/ui.js` e `core/icone.js` — costruiscono i nodi e le icone. I
-       nomi di classe che emettono sono GANCI, non stile: servono a dare un
-       appiglio al CSS, e il CSS che li usava non c'è più;
-     · i moduli: `dati.js`, `calcolo.js`, `modulo.js`, `viste.js`;
-     · i dati veri e il file di configurazione.
+   1. I NOMI SONO QUELLI DI ATLAS, I VALORI QUELLI DI APPLE. `--fondo`,
+      `--rilievo`, `--inchiostro`, `--t-17`: il codice dei moduli li chiama
+      così da mesi. Rinominarli vorrebbe dire riscrivere sette moduli
+      insieme. Dove il nome di ATLAS e il concetto di iOS non coincidono
+      c'è scritto a quale token Apple corrisponde.
 
-   Tutto quello che è stato cancellato resta nella storia di git ed è
-   recuperabile: `git show 5c0efa4:styles/tokens.css` e simili. Non è un
-   invito a ripescarlo — è per dire che cancellare non ha bruciato niente.
+   2. SCURO E CHIARO SONO DUE PALETTE MISURATE, non una l'inversione
+      dell'altra. Su iOS il fondo scuro è nero pieno e le schede salgono
+      (#1c1c1e); il fondo chiaro è grigio (#f2f2f7) e le schede sono
+      bianche. Sono due logiche opposte e vanno tenute tutte e due.
 
-   QUANDO SI RIPARTE, il primo file da riempire è questo: è quello da cui
-   dipendono tutti gli altri.
+   3. IL VETRO È UN MATERIALE, NON UN COLORE. Vive su `--vetro-*` e si
+      applica in un posto solo: la barra delle schede. Il resto dell'app è
+      opaco. Su iOS il vetro serve dove il contenuto ci scorre sotto — se
+      lo metti ovunque diventa una patina e il testo perde contrasto.
    ========================================================================= */
+
+/* ------------------------------------------------------------- il corpo --
+   SF Pro, self-hosted, i sei tagli già nel repo. `fontFamily` nei token è
+   "SF Pro" con ripiego `-apple-system, system-ui, sans-serif`: su iPhone e
+   su Mac il sistema la fornisce da sé, altrove servono i file. */
+@font-face { font-family: "SF Pro Text"; font-weight: 400; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/sf-pro-text-regular.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Text"; font-weight: 500; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/sf-pro-text-medium.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Text"; font-weight: 600; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/sf-pro-text-semibold.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Text"; font-weight: 700; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/sf-pro-text-bold.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Display"; font-weight: 600; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/sf-pro-display-semibold.woff2") format("woff2"); }
+@font-face { font-family: "SF Pro Display"; font-weight: 700; font-style: normal; font-display: swap;
+  src: url("../assets/fonts/sf-pro-display-bold.woff2") format("woff2"); }
+
+
+/* =========================================================================
+   SCURO
+   ========================================================================= */
+
+:root,
+:root[data-tema="scuro"] {
+  color-scheme: dark;
+
+  /* ------------------------------------------------- superfici (grouped)
+     ATLAS impagina a schede su un fondo, che su iOS è il «grouped
+     background». Non il `backgrounds` semplice: quello serve alle viste a
+     tutto schermo, e userebbe #000 per la pagina E #1c1c1e per le schede
+     al contrario di come le vogliamo. */
+  --fondo:     #000000;   /* backgroundsGrouped.primary   */
+  --rilievo:   #1c1c1e;   /* backgroundsGrouped.secondary */
+  --rilievo-2: #2c2c2e;   /* backgroundsGrouped.tertiary  */
+  --rilievo-3: #3a3a3c;   /* tertiaryElevated             */
+
+  /* L'incavo è `fills.quaternary`: su iOS i campi e i binari non sono una
+     superficie più scura, sono un velo grigio semitrasparente che prende
+     il colore di quello che ha sotto. */
+  --incavo: rgba(118, 118, 128, 0.18);   /* fills.quaternary */
+  --riempi: rgba(120, 120, 128, 0.36);   /* fills.primary    */
+
+  /* I separatori. `nonOpaque` è quello delle liste, `opaque` quello che
+     deve reggere anche su una superficie traslucida. */
+  --riga-fine:    rgba(255, 255, 255, 0.17);   /* separators.nonOpaque */
+  --riga-marcata: #38383a;                      /* separators.opaque    */
+
+  /* ------------------------------------------------------------ etichette
+     Quattro livelli, su #ebebf5 con opacità decrescente. Il terzo è
+     l'unico valore non misurato di questo blocco: iOS passa da 0,7 a 0,3 e
+     non ha niente in mezzo, ma ATLAS usa tre livelli di grigio e a 0,3 le
+     sue etichette non si leggono. 0,55 è la via di mezzo, ed è segnata
+     come tale perché non venga presa per un valore di Apple. */
+  --inchiostro:   #ffffff;                       /* labels.primary    */
+  --inchiostro-2: rgba(235, 235, 245, 0.70);     /* labels.secondary  */
+  --inchiostro-3: rgba(235, 235, 245, 0.55);     /* interpolato       */
+  --inchiostro-4: rgba(235, 235, 245, 0.30);     /* labels.tertiary   */
+
+  /* ------------------------------------------------------------- accenti
+     I dodici di sistema, valori dark del kit. Sono le tinte che iOS usa
+     per le azioni e per l'identità: qui servono a distinguere i moduli e a
+     colorare i pulsanti. */
+  --a-rosso:   #ff4245;
+  --a-arancio: #ff9230;
+  --a-giallo:  #ffd600;
+  --a-verde:   #30d158;
+  --a-menta:   #00dac3;
+  --a-acqua:   #00d2e0;
+  --a-ciano:   #3cd3fe;
+  --a-blu:     #0091ff;
+  --a-indaco:  #6d7cff;
+  --a-viola:   #db34f2;
+  --a-rosa:    #ff375f;
+  --a-marrone: #b78a66;
+  --a-grigio:  #98989f;
+
+  /* --------------------------------------------------------------- stati
+     Sono tre accenti con un compito preciso, non tinte in più. Verde vuol
+     dire «fatto», rosso «c'è un problema», arancio «guarda questo». */
+  --ok:     var(--a-verde);
+  --avviso: var(--a-arancio);
+  --male:   var(--a-rosso);
+
+  /* ---------------------------------------------------------- IL VETRO --
+     Liquid Glass «regular», che è la variante di sistema per le barre.
+
+     La sfocatura è 6px e non 20 o 40: il repo lo annota come l'errore che
+     fanno quasi tutte le riproduzioni web. Il valore nativo misurato è
+     sigma 5,4pt, e `blur()` in CSS prende il raggio COME sigma, quindi
+     5,4 / 0,9 = 6. Il nativo è molto meno sfocato di quanto sembri.
+
+     `saturate(1.8)` non è decorazione: il materiale di Apple alza la croma
+     di quello che ha sotto, e senza il vetro viene fuori una patina piatta.
+
+     Il bordo è un anello grigio CHIARO, non una riga scura: misurato come
+     ombra esterna a sfocatura zero con spread positivo. */
+  --vetro-fondo:       rgba(26, 26, 26, 0.70);
+  --vetro-sfocatura:   6px;
+  --vetro-saturazione: 1.8;
+  --vetro-bordo:       rgba(166, 166, 166, 0.45);
+  --vetro-ombra:       0 8px 48px rgba(0, 0, 0, 0.45);
+
+  /* L'ombra delle superfici sollevate (fogli modali). */
+  --ombra: 0 8px 48px rgba(0, 0, 0, 0.45);
+}
+
+
+/* =========================================================================
+   CHIARO — misurato, non invertito.
+   ========================================================================= */
+
+:root[data-tema="chiaro"] {
+  color-scheme: light;
+
+  --fondo:     #f2f2f7;
+  --rilievo:   #ffffff;
+  --rilievo-2: #f2f2f7;
+  --rilievo-3: #e5e5ea;
+
+  --incavo: rgba(116, 116, 128, 0.08);
+  --riempi: rgba(120, 120, 128, 0.20);
+
+  --riga-fine:    rgba(0, 0, 0, 0.12);
+  --riga-marcata: #c6c6c8;
+
+  --inchiostro:   #000000;
+  --inchiostro-2: rgba(60, 60, 67, 0.60);
+  --inchiostro-3: rgba(60, 60, 67, 0.45);
+  --inchiostro-4: rgba(60, 60, 67, 0.30);
+
+  --a-rosso:   #ff383c;
+  --a-arancio: #ff8d28;
+  --a-giallo:  #ffcc00;
+  --a-verde:   #34c759;
+  --a-menta:   #00c8b3;
+  --a-acqua:   #00c3d0;
+  --a-ciano:   #00c0e8;
+  --a-blu:     #0088ff;
+  --a-indaco:  #6155f5;
+  --a-viola:   #cb30e0;
+  --a-rosa:    #ff2d55;
+  --a-marrone: #ac7f5e;
+  --a-grigio:  #8e8e93;
+
+  --vetro-fondo:       rgba(255, 255, 255, 0.70);
+  --vetro-sfocatura:   6px;
+  --vetro-saturazione: 1.8;
+  --vetro-bordo:       rgba(219, 219, 219, 0.9);
+  --vetro-ombra:       0 8px 48px rgba(0, 0, 0, 0.25);
+
+  --ombra: 0 8px 48px rgba(0, 0, 0, 0.25);
+}
+
+/* «Sistema»: il tema di serie è `data-tema="auto"` e segue il telefono.
+   I valori sono ripetuti perché una variabile CSS non si può ereditare da
+   un altro selettore. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="scuro"]):not([data-tema="chiaro"]) {
+    color-scheme: light;
+
+    --fondo:     #f2f2f7;
+    --rilievo:   #ffffff;
+    --rilievo-2: #f2f2f7;
+    --rilievo-3: #e5e5ea;
+
+    --incavo: rgba(116, 116, 128, 0.08);
+    --riempi: rgba(120, 120, 128, 0.20);
+
+    --riga-fine:    rgba(0, 0, 0, 0.12);
+    --riga-marcata: #c6c6c8;
+
+    --inchiostro:   #000000;
+    --inchiostro-2: rgba(60, 60, 67, 0.60);
+    --inchiostro-3: rgba(60, 60, 67, 0.45);
+    --inchiostro-4: rgba(60, 60, 67, 0.30);
+
+    --a-rosso:   #ff383c;
+    --a-arancio: #ff8d28;
+    --a-giallo:  #ffcc00;
+    --a-verde:   #34c759;
+    --a-menta:   #00c8b3;
+    --a-acqua:   #00c3d0;
+    --a-ciano:   #00c0e8;
+    --a-blu:     #0088ff;
+    --a-indaco:  #6155f5;
+    --a-viola:   #cb30e0;
+    --a-rosa:    #ff2d55;
+    --a-marrone: #ac7f5e;
+    --a-grigio:  #8e8e93;
+
+    --vetro-fondo:       rgba(255, 255, 255, 0.70);
+    --vetro-bordo:       rgba(219, 219, 219, 0.9);
+    --vetro-ombra:       0 8px 48px rgba(0, 0, 0, 0.25);
+    --ombra:             0 8px 48px rgba(0, 0, 0, 0.25);
+  }
+}
+
+
+/* =========================================================================
+   TIPOGRAFIA — gli undici stili di iOS 27.
+
+   Ogni stile porta corpo, interlinea e crenatura misurati dal kit. Le
+   interlinee sono in PIXEL e non in multipli: è così che le pubblica
+   Apple, ed è l'unico modo perché le righe di due stili diversi si
+   allineino sulla stessa griglia.
+   ========================================================================= */
+
+:root {
+  --font:   "SF Pro Text", -apple-system, system-ui, sans-serif;
+  --font-d: "SF Pro Display", "SF Pro Text", -apple-system, system-ui, sans-serif;
+  --font-m: ui-monospace, "SF Mono", Menlo, monospace;
+  --font-e: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+
+  /* stile           corpo  interlinea  crenatura */
+  --t-caption2:      11px;  --t-caption2-i:   13px; --t-caption2-c:   0.06px;
+  --t-caption1:      12px;  --t-caption1-i:   16px; --t-caption1-c:   0px;
+  --t-footnote:      13px;  --t-footnote-i:   18px; --t-footnote-c:  -0.08px;
+  --t-subheadline:   15px;  --t-subheadline-i: 20px; --t-subheadline-c: -0.23px;
+  --t-callout:       16px;  --t-callout-i:    21px; --t-callout-c:   -0.31px;
+  --t-body:          17px;  --t-body-i:       22px; --t-body-c:      -0.43px;
+  --t-title3:        20px;  --t-title3-i:     25px; --t-title3-c:    -0.45px;
+  --t-title2:        22px;  --t-title2-i:     28px; --t-title2-c:    -0.26px;
+  --t-title1:        28px;  --t-title1-i:     34px; --t-title1-c:     0.38px;
+  --t-large:         34px;  --t-large-i:      41px; --t-large-c:      0.4px;
+
+  /* I pesi di SF. `emphasized` di un corpo è Semibold, non Medium: è una
+     correzione che il kit 27 segna come misurata due volte. */
+  --p-regular:  400;
+  --p-medium:   500;
+  --p-semibold: 600;
+  --p-bold:     700;
+
+  /* --------------------------------------------------------- spaziatura
+     La scala di iOS è a passi di 4 su una base di 8. `--gronda` è il
+     margine orizzontale del contenuto: 16 su iPhone. */
+  --s-0:  0;    --s-1: 4px;  --s-2: 8px;  --s-3: 12px;
+  --s-4:  16px; --s-5: 20px; --s-6: 24px; --s-8: 32px;
+  --s-10: 40px; --s-12: 48px; --s-16: 64px; --s-20: 80px;
+  --gronda: 16px;
+  --leggibile: 672px;   /* contentMargin.readableWidth */
+
+  /* -------------------------------------------------------------- forma
+     La scala dei raggi del kit, per intero. `--r-glass` (34) è quello del
+     pannello di vetro e non va usato per altro. */
+  --r-xs:    4px;
+  --r-sm:    8px;
+  --r-md:   10px;
+  --r-lg:   12px;
+  --r-xl:   16px;
+  --r-xxl:  20px;
+  --r-xxxl: 26px;
+  --r-glass: 34px;
+  --r-full: 9999px;
+
+  /* ---------------------------------------------------------- movimento
+     Durate e curve di iOS. `--molla` è l'approssimazione CSS della molla
+     «snappy» — quella della barra delle schede e dei pulsanti. */
+  --d-micro:  0.1s;
+  --d-fast:   0.2s;
+  --d-normal: 0.3s;
+  --d-slow:   0.4s;
+  --curva:  cubic-bezier(0.25, 0.46, 0.45, 0.94);   /* appleDefault */
+  --uscita: cubic-bezier(0.0, 0, 0.6, 1.0);         /* appleEaseOut */
+  --molla:  cubic-bezier(0.34, 1.56, 0.64, 1.0);    /* spring.snappy */
+
+  /* Bersaglio minimo: 44pt, il pavimento attestato dal kit. */
+  --tocco: 44px;
+
+  /* Metriche dei componenti, misurate. */
+  --h-riga:   52px;   /* listRow.heightRegular */
+  --h-riga-2: 68px;   /* listRow.heightTall    */
+  --h-btn:    50px;   /* button.heightLarge    */
+  --h-btn-m:  34px;   /* button.heightMedium   */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --d-micro: 0s; --d-fast: 0s; --d-normal: 0s; --d-slow: 0s; }
+}
+
+
+/* =========================================================================
+   IL PONTE
+
+   I nomi che `core/ui.js` e i sette moduli usano oggi, mappati sui token
+   di sopra. Non si aggiungono righe qui: si tolgono, un modulo alla volta,
+   sostituendo il nome vecchio con quello nuovo nel CSS del modulo.
+   ========================================================================= */
+
+:root {
+  /* L'accento del modulo: lo scrive il router su <html> leggendolo dal
+     registro. È il colore delle AZIONI — pulsanti, voce attiva della
+     barra — e non serve ad altro. */
+  --accento:       var(--a-blu);
+  --accento-testo: #ffffff;
+
+  /* superfici */
+  --scheda:      var(--rilievo);
+  --scheda-alta: var(--rilievo-2);
+  --scheda-viva: var(--rilievo-3);
+  --fondo-alto:  var(--incavo);
+  --traccia:     var(--incavo);
+  --filo:        var(--riga-fine);
+  --righello:    var(--riga-fine);
+  --righello-2:  var(--riga-marcata);
+
+  /* inchiostro */
+  --testo:   var(--inchiostro);
+  --testo-2: var(--inchiostro-2);
+  --testo-3: var(--inchiostro-3);
+  --testo-4: var(--inchiostro-4);
+
+  /* tinte: i nomi italiani dei moduli sugli accenti di sistema */
+  --rosso:   var(--a-rosso);
+  --arancio: var(--a-arancio);
+  --pesca:   var(--a-arancio);
+  --giallo:  var(--a-giallo);
+  --verde:   var(--a-verde);
+  --lime:    var(--a-verde);
+  --menta:   var(--a-menta);
+  --ciano:   var(--a-ciano);
+  --blu:     var(--a-blu);
+  --indaco:  var(--a-indaco);
+  --viola:   var(--a-viola);
+  --rosa:    var(--a-rosa);
+  --grigio:  var(--a-grigio);
+
+  --t-ambra:    var(--a-arancio);
+  --t-terra:    var(--a-rosso);
+  --t-corallo:  var(--a-rosa);
+  --t-rosa:     var(--a-rosa);
+  --t-magenta:  var(--a-viola);
+  --t-lilla:    var(--a-indaco);
+  --t-viola:    var(--a-viola);
+  --t-indaco:   var(--a-indaco);
+  --t-blu:      var(--a-blu);
+  --t-ciano:    var(--a-ciano);
+  --t-turchese: var(--a-menta);
+  --t-verde:    var(--a-verde);
+  --t-giallo:   var(--a-giallo);
+  --t-grigio:   var(--a-grigio);
+  --t-acqua:    var(--a-acqua);
+  --t-argilla:  var(--a-rosso);
+  --t-muschio:  var(--a-verde);
+  --t-lime:     var(--a-verde);
+
+  --segnale:       var(--accento);
+  --segnale-testo: var(--accento-testo);
+  --segnale-tenue: color-mix(in srgb, var(--accento) 15%, transparent);
+  --segnale-velo:  color-mix(in srgb, var(--accento) 30%, transparent);
+  --accento-tenue: color-mix(in srgb, var(--accento) 15%, transparent);
+  --accento-velo:  color-mix(in srgb, var(--accento) 30%, transparent);
+  --pillola-tinta: color-mix(in srgb, currentColor 15%, transparent);
+
+  /* tipografia: i gradini numerici di ATLAS sugli stili di iOS */
+  --t-10: var(--t-caption2);
+  --t-11: var(--t-caption2);
+  --t-12: var(--t-caption1);
+  --t-13: var(--t-footnote);
+  --t-15: var(--t-subheadline);
+  --t-17: var(--t-body);
+  --t-19: var(--t-title3);
+  --t-21: var(--t-title2);
+  --t-22: var(--t-title2);
+  --t-24: 26px;
+  --t-28: var(--t-title1);
+  --t-34: var(--t-large);
+  --t-40: 40px;
+  --t-42: 42px;
+  --t-48: 48px;
+  --t-54: 54px;
+  --t-64: 60px;
+  --t-72: 64px;
+
+  /* i pesi e le interlinee che i moduli citano per gradino */
+  --t-12-peso: var(--p-semibold); --t-12-interlinea: 1.35; --t-12-traccia: 0px;
+  --t-13-peso: var(--p-regular);  --t-13-interlinea: 1.38; --t-13-traccia: -0.08px;
+  --t-15-peso: var(--p-regular);  --t-15-interlinea: 1.33; --t-15-traccia: -0.23px;
+  --t-17-peso: var(--p-regular);  --t-17-interlinea: 1.29; --t-17-traccia: -0.43px;
+  --t-19-peso: var(--p-semibold); --t-19-interlinea: 1.25; --t-19-traccia: -0.45px;
+  --t-21-peso: var(--p-bold);     --t-21-interlinea: 1.27; --t-21-traccia: -0.26px;
+  --t-24-peso: var(--p-bold);     --t-24-interlinea: 1.2;  --t-24-traccia:  0.2px;
+  --t-28-peso: var(--p-bold);     --t-28-interlinea: 1.21; --t-28-traccia:  0.38px;
+  --t-34-peso: var(--p-bold);     --t-34-interlinea: 1.2;  --t-34-traccia:  0.4px;
+  --t-42-peso: var(--p-bold);     --t-42-interlinea: 1.1;  --t-42-traccia: -0.5px;
+  --t-54-peso: var(--p-bold);     --t-54-interlinea: 1.05; --t-54-traccia: -1px;
+  --t-72-peso: var(--p-bold);     --t-72-interlinea: 1.0;  --t-72-traccia: -1.4px;
+  --t-12-largh: 100%; --t-13-largh: 100%; --t-15-largh: 100%; --t-17-largh: 100%;
+  --t-19-largh: 100%; --t-21-largh: 100%; --t-24-largh: 100%; --t-28-largh: 100%;
+  --t-34-largh: 100%; --t-42-largh: 100%; --t-54-largh: 100%; --t-72-largh: 100%;
+  --larga: 100%; --larghis: 100%;
+
+  /* spaziatura: i nomi vecchi sulla scala nuova */
+  --s1: var(--s-1);  --s2: var(--s-2);  --s3: var(--s-3);  --s4: var(--s-4);
+  --s5: var(--s-5);  --s6: var(--s-6);  --s8: var(--s-8);  --s10: var(--s-10);
+  --s12: var(--s-12); --s16: var(--s-16);
+  --s-6: 8px;  --s-20: 20px; --s-28: 28px; --s-38: 40px; --s-52: 56px; --s-70: 76px;
+
+  /* forma */
+  --r-scheda:  var(--r-xl);
+  --r-interno: var(--r-md);
+  --r-minimo:  var(--r-sm);
+  --r-alto:    var(--r-xl);
+  --r-basso:   var(--r-md);
+  --r-btn:     var(--r-full);
+  --r-campo:   var(--r-md);
+  --r-pillola: var(--r-full);
+  --r-tondo:   var(--r-full);
+
+  /* movimento */
+  --veloce:  var(--d-fast);
+  --normale: var(--d-normal);
+  --lento:   var(--d-slow);
+  --durata-rapida: var(--d-fast);
+  --durata-media:  var(--d-normal);
+  --durata-lenta:  var(--d-slow);
+  --curva-standard: var(--curva);
+  --curva-decisa:   var(--uscita);
+}

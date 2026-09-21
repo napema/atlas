@@ -1,0 +1,176 @@
+/* moduli/mobilita — iOS 27.
+   =========================================================================
+   Questa vista usa i componenti condivisi di base.css: `.scheda`,
+   `.scheda-titolo`, `.chip`, `.segmenti`, `.lista`/`.riga`, `.btn`,
+   `.sett`. Qui resta solo ciò che esiste in Mobilità e in nessun altro
+   modulo: il player della sessione, i progressi, l'assessment.
+   ========================================================================= */
+
+/* --------------------------------------------------------- la vista Oggi */
+
+.mo-schede { display: flex; gap: 2px; padding: 2px; margin-bottom: var(--s-4); border-radius: var(--r-md); background: var(--incavo); }
+.mo-scheda {
+  flex: 1; min-height: var(--h-btn-m);
+  border: 0; border-radius: 8px;
+  background: none; color: var(--inchiostro);
+  font-family: var(--font); font-size: var(--t-subheadline); font-weight: var(--p-medium);
+  cursor: pointer;
+  transition: background var(--d-normal) var(--molla);
+}
+.mo-scheda.attiva { background: var(--rilievo); box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-weight: var(--p-semibold); }
+
+.mo-data { margin: 0 0 var(--s-4); font-size: var(--t-subheadline); color: var(--inchiostro-2); }
+.mo-data::first-letter { text-transform: uppercase; }
+
+/* La durata è il dato della scheda: grande, con l'unità piccola accanto e
+   non sotto. «14» e «min» su due righe facevano due dati invece di uno. */
+.mo-eroe { display: flex; align-items: baseline; gap: var(--s-3); flex-wrap: wrap; margin-bottom: var(--s-2); }
+.mo-durata {
+  font-family: var(--font-d);
+  font-size: clamp(40px, 11vw, 50px);
+  font-weight: var(--p-bold);
+  letter-spacing: -1.2px;
+  line-height: 1;
+}
+.mo-unita { margin-left: 0.12em; font-size: 0.4em; font-weight: var(--p-semibold); letter-spacing: 0; color: var(--inchiostro-3); }
+.mo-conta { font-size: var(--t-footnote); color: var(--inchiostro-3); }
+.mo-perche { margin: var(--s-2) 0 var(--s-4); line-height: var(--t-footnote-i); }
+.mo-perche b { color: var(--inchiostro); font-weight: var(--p-semibold); }
+.mo-modulo-nome { font-size: var(--t-body); }
+/* L'unità dentro un valore incolonnato non deve pesare come il numero: la
+   colonna si legge sui numeri. */
+.mo-min { font-size: 0.82em; color: var(--inchiostro-3); }
+.lista + .btn { margin-top: var(--s-4); }
+
+/* ----------------------------------------------- il programma nel tempo */
+
+.mo-piano { list-style: none; display: flex; flex-direction: column; }
+.mo-fase {
+  display: grid; grid-template-columns: 52px auto 1fr;
+  align-items: baseline; column-gap: var(--s-3);
+  padding: var(--s-3) 0;
+  box-shadow: inset 0 -0.5px 0 var(--riga-fine);
+}
+.mo-piano > li:last-child { box-shadow: none; }
+.mo-fase-sett { font-size: var(--t-caption1); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; color: var(--inchiostro-3); }
+.mo-fase-min { font-family: var(--font-d); font-size: var(--t-body); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; color: var(--inchiostro-2); }
+.mo-fase-cosa { grid-column: 2 / -1; margin-top: 2px; font-size: var(--t-footnote); line-height: var(--t-footnote-i); color: var(--inchiostro-3); }
+/* La fase di adesso è l'unica accesa. Niente pillola «ora»: una targhetta
+   in più in una lista di cinque righe è una sesta cosa da leggere. */
+.mo-fase.ora .mo-fase-sett, .mo-fase.ora .mo-fase-min { color: var(--accento); }
+.mo-fase.ora .mo-fase-cosa { color: var(--inchiostro); }
+.mo-fase.passata { opacity: 0.45; }
+
+/* La targhetta tinta che il player e i progressi usano. */
+.mo-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  background: var(--pillola-tinta);
+  font-size: var(--t-caption1);
+  font-weight: var(--p-semibold);
+  white-space: nowrap;
+  color: var(--inchiostro-2);
+}
+.mo-chip.is-verde { color: var(--ok); }
+.mo-chip.is-blu { color: var(--accento); }
+.mo-chip.is-arancio { color: var(--avviso); }
+.sess-chip-riga { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* --------------------------------------------------- il player sessione */
+
+.sess-layout { display: flex; flex-direction: column; gap: var(--s-4); }
+.sess-testa { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.sess-anello { height: 4px; border-radius: var(--r-full); background: var(--incavo); overflow: hidden; }
+.sess-anello__pieno { height: 100%; width: calc(var(--p, 0) * 1%); background: var(--accento); border-radius: var(--r-full); transition: width 1s linear; }
+
+/* Il video è la ragione per cui questo modulo esiste in questa forma: un
+   follow-along senza filmato è una lista di istruzioni scritte.
+   `object-fit: contain` e non `cover`: ritagliare per riempire sembra più
+   ordinato finché non ti accorgi che a sparire sono i piedi, e i piedi
+   sono metà degli esercizi. Meglio due bande nere. */
+.sess-video { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--r-xl); overflow: hidden; background: #000; }
+.sess-video iframe, .sess-video video { width: 100%; height: 100%; border: 0; object-fit: contain; }
+/* Il velo in basso non è decorazione: l'etichetta ci sta sopra, e sul
+   fotogramma chiaro di una palestra il testo bianco senza velo sparisce. */
+.sess-video-velo { position: absolute; inset: auto 0 0; height: 56px; pointer-events: none; background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.72)); }
+.sess-video-eti { position: absolute; left: var(--s-3); right: var(--s-3); bottom: 10px; font-size: var(--t-footnote); color: #fff; }
+
+.sess-media { display: flex; flex-direction: column; gap: var(--s-3); }
+.sess-passi { list-style: none; display: flex; flex-direction: column; }
+.sess-riga-timer { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.sess-countdown-compatto { font-family: var(--font-d); font-size: var(--t-title1); font-weight: var(--p-bold); font-variant-numeric: tabular-nums; }
+.sess-piede { display: flex; gap: var(--s-2); }
+.sess-piede .btn { flex: 1; }
+.sess-scorre { overflow-y: auto; }
+.sess-cambio { font-size: var(--t-footnote); color: var(--inchiostro-3); }
+.sess-gate { display: flex; flex-direction: column; gap: var(--s-3); }
+.sess-fine { display: flex; flex-direction: column; gap: var(--s-4); align-items: center; text-align: center; }
+
+/* L'avviso del collo: fondo neutro e filo ambra. Il fondo tinto PIÙ la
+   barra laterale erano due segnali per un avviso solo, e insieme facevano
+   un blocco giallo grande quanto mezza schermata. */
+.sess-avviso {
+  display: flex; gap: var(--s-3);
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--incavo);
+  color: var(--inchiostro-2);
+  font-size: var(--t-subheadline);
+  line-height: var(--t-subheadline-i);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--avviso) 45%, transparent);
+}
+.sess-avviso svg { flex: none; color: var(--avviso); }
+
+.mo-overlay { position: fixed; inset: 0; z-index: 130; background: var(--fondo); display: flex; flex-direction: column; }
+.mo-overlay-testa { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: calc(env(safe-area-inset-top) + var(--s-3)) var(--gronda) var(--s-3); }
+.mo-overlay-corpo { flex: 1; overflow-y: auto; padding: 0 var(--gronda) calc(env(safe-area-inset-bottom) + var(--s-5)); }
+
+/* ----------------------------------------------------------- i progressi */
+
+.riquadro-oggi__durata { font-family: var(--font-d); font-size: clamp(40px, 12vw, 54px); font-weight: var(--p-bold); letter-spacing: -1.2px; line-height: 1; }
+.riga-volume { display: flex; flex-direction: column; gap: 6px; padding: var(--s-2) 0; }
+.riga-volume__testa { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-2); font-size: var(--t-subheadline); }
+.riga-volume__testa > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.riga-volume__valore { flex: none; color: var(--inchiostro-2); font-variant-numeric: tabular-nums; }
+.barra-volume { height: 4px; border-radius: var(--r-full); background: var(--accento); min-width: 3px; transition: width var(--d-slow) var(--uscita); }
+
+.griglia-mesi { display: grid; grid-template-columns: repeat(auto-fill, minmax(14px, 1fr)); gap: 4px; margin-top: var(--s-3); }
+.griglia-mesi > span { aspect-ratio: 1; border-radius: var(--r-xs); background: var(--riempi); }
+.griglia-mesi > span.is-empty { background: transparent; box-shadow: inset 0 0 0 1px var(--riga-fine); }
+
+.photo-row { display: flex; gap: var(--s-3); flex-wrap: wrap; margin-top: var(--s-3); }
+.photo-thumb { width: 132px; border-radius: var(--r-md); overflow: hidden; background: var(--incavo); }
+.photo-thumb img { width: 100%; display: block; }
+.photo-input-label { display: inline-flex; align-items: center; gap: var(--s-2); cursor: pointer; color: var(--accento); font-size: var(--t-body); }
+
+/* ---------------------------------------------------------- l'assessment */
+
+.choose { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.choose button {
+  flex: 1; min-width: 120px; min-height: var(--h-btn);
+  padding: 0 var(--s-4);
+  border: 0; border-radius: var(--r-full);
+  background: var(--riempi);
+  color: var(--inchiostro);
+  font-family: var(--font); font-size: var(--t-subheadline); font-weight: var(--p-medium);
+  cursor: pointer;
+  transition: background var(--d-fast) var(--curva), color var(--d-fast) var(--curva);
+}
+/* Il selezionato si riempie dell'ACCENTO, come ogni altra scelta
+   dell'app. Prima era una pastiglia turchese piena larga mezza schermata:
+   il colore più forte della pagina su una risposta che non è né buona né
+   cattiva. */
+.choose button.is-active { background: var(--accento); color: var(--accento-testo); font-weight: var(--p-semibold); }
+
+.lat-card { padding: var(--s-4); border-radius: var(--r-xl); background: var(--rilievo); margin-bottom: var(--s-3); }
+.lat-card__q { font-size: var(--t-body); font-weight: var(--p-semibold); margin-bottom: var(--s-2); }
+.lat-card__why { font-size: var(--t-footnote); color: var(--inchiostro-2); margin-bottom: var(--s-3); line-height: var(--t-footnote-i); }
+.lat-card__meta { display: flex; gap: var(--s-2); flex-wrap: wrap; margin-bottom: var(--s-3); }
+.lat-video { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--r-md); background: #000; }
+
+.esito-box, .verdict-box { padding: var(--s-5); border-radius: var(--r-xl); background: var(--rilievo); margin-bottom: var(--s-4); }
+.esito-titolo, .verdict-titolo { font-family: var(--font-d); font-size: var(--t-title3); font-weight: var(--p-semibold); letter-spacing: var(--t-title3-c); margin-bottom: var(--s-2); }
+.verdict-corpo { font-size: var(--t-subheadline); line-height: var(--t-subheadline-i); color: var(--inchiostro-2); }
+
+.field { display: flex; flex-direction: column; gap: var(--s-2); margin-bottom: var(--s-4); }

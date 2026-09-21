@@ -336,41 +336,47 @@ settimana, spuntate su attese — con i dati veri, 14/36 invece di 7/7.
 
 ---
 
-## 20 settembre — LO STILE E' STATO AZZERATO (chat ATLAS)
+## 21 settembre — il sistema visivo e' iOS 27 (chat ATLAS)
 
-Tutto il sistema visivo di ATLAS e' stato cancellato su richiesta, e si
-riparte da zero. Non e' una ritaratura e non e' un rollback a una stesura
-precedente: non c'e' piu' nessuna stesura.
+Lo stile di ATLAS e' stato azzerato (6.041 righe) e ricostruito da zero su
+**iOS 27**, prendendo i token da
+[`seunghan91/ios27-design-system`](https://github.com/seunghan91/ios27-design-system)
+(MIT). Il documento del linguaggio e' `docs/DESIGN.md`, da rileggere prima
+di aggiungere una schermata.
 
-**Cancellati** (6.041 righe):
+**Perche' quel repo e non un'imitazione a occhio.** I valori sono
+MISURATI: colori e metriche dallo UI Kit 27.0.2 con il nodo Figma annotato
+token per token, il materiale Liquid Glass ricavato fotografando un
+pannello `.glassEffect()` sul simulatore e adattando il profilo del bordo a
+una funzione d'errore, le metriche dei componenti lette a runtime via
+UIKit.
 
-- `styles/tokens.css` e `styles/base.css` — svuotati, restano i due file con
-  un'intestazione che spiega cosa c'era;
-- i sette `moduli/<id>/stile.css` — **cancellati**, e `stile: false` nel
-  registro perche' il router non li chieda piu';
-- `docs/DESIGN.md` — il documento del linguaggio visivo;
-- `redesign/` — la consegna del designer da cui era nata quella stesura;
-- `assets/icons/icone/` — il pacchetto di SVG della stessa consegna, mai
-  usato: le icone vere sono inline in `core/icone.js`;
-- gli accenti dei moduli in `core/registro.js`, che puntavano a token
-  inesistenti: ora sono `null` e il router li salta;
-- i `theme-color` in `index.html` e nel manifest.
+Il repo distribuisce npm; ATLAS non ha build (regola 8), quindi i token
+sono **riscritti a mano** in `styles/tokens.css` dai sorgenti JSON. Chi
+aggiorna riparte da `packages/tokens/src/*.json`.
 
-**Non toccati**, e da non toccare quando si ricomincia: tutto `core/`, i
-`dati.js` / `calcolo.js` / `modulo.js` / `viste.js` dei moduli, i dati veri,
-`config.js`, `sw.js`.
+### Cosa cambia per le chat dei moduli
 
-**I ganci restano.** `core/ui.js` e i moduli emettono ancora i nomi di
-classe di sempre (`.scheda`, `.riga`, `.btn`, `.testa`...). Non sono stile:
-sono appigli senza niente attaccato. Chi riscrive puo' riusarli o
-rinominarli — nel secondo caso vanno cambiati anche in `core/ui.js` e nei
-`viste.js`.
+- **I nomi dei token NON sono cambiati.** Il ponte in fondo a `tokens.css`
+  regge tutto il vocabolario di prima (`--scheda`, `--testo-2`, `--s3`,
+  `--t-17`, `--r-scheda`...). I valori sotto pero' sono quelli di Apple.
+- **Gli accenti dei moduli** sono i dodici di sistema: Oggi blu, Finanze
+  arancio, Pasti rosa, Mobilita' menta, Training rosso, Abitudini indaco,
+  Impostazioni blu.
+- **`scheda(titolo, corpo, { ico })`** disegna da se' il chip d'icona nella
+  testata — il quadratino pieno delle Impostazioni di iOS.
+- **`.sett`** e' la striscia della settimana condivisa (home, Abitudini,
+  Corpo): sette tondi come il Calendario di iOS.
+- **Un pulsante porta sempre l'accento del modulo.** Non c'e' un secondo
+  colore per le azioni.
 
-**I font restano** in `assets/fonts/`: SF Pro e le emoji Apple. Il font non
-cambia. I `@font-face` pero' stavano in `tokens.css`, quindi vanno
-ridichiarati.
+### Debito noto
 
-Tutto il cancellato e' nella storia di git (`git show 5c0efa4:<file>`).
+`moduli/mobilita/oggi.js` non e' piu' ricopiabile da
+`mobility_to_consider/js/` con i tre passaggi meccanici del suo briefing:
+usa i componenti condivisi. Quella strategia e un sistema visivo unico sono
+incompatibili — o il file resta una copia dell'app vecchia, o Corpo
+somiglia al resto.
 
 ---
 

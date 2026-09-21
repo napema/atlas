@@ -1,0 +1,162 @@
+/* moduli/abitudini — iOS 27.
+   La striscia della settimana è `.sett` di base.css, la stessa che usano
+   la home e Corpo. Qui resta l'elenco delle abitudini, le parti, le serie
+   e l'editor. */
+
+.ab-settimana { margin-bottom: var(--s-4); }
+
+.ab-schede { display: flex; gap: 2px; padding: 2px; margin-bottom: var(--s-4); border-radius: var(--r-md); background: var(--incavo); }
+.ab-scheda {
+  flex: 1; min-height: var(--h-btn-m);
+  border: 0; border-radius: 8px;
+  background: none; color: var(--inchiostro);
+  font-family: var(--font); font-size: var(--t-subheadline); font-weight: var(--p-medium);
+  cursor: pointer;
+  transition: background var(--d-normal) var(--molla);
+}
+.ab-scheda.attiva { background: var(--rilievo); box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-weight: var(--p-semibold); }
+
+/* ---------------------------------------------------------------- l'eroe */
+
+.ab-eroe { padding: var(--s-4); border-radius: var(--r-xl); background: var(--rilievo); margin-bottom: var(--s-4); }
+.ab-eroe-corpo { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); margin-top: var(--s-2); }
+.ab-eroe-numeri { min-width: 0; }
+.ab-eroe .cifra-xl { font-size: clamp(44px, 13vw, 56px); line-height: 1; }
+.ab-eroe-nota { margin: var(--s-1) 0 0; font-size: var(--t-footnote); line-height: var(--t-footnote-i); color: var(--inchiostro-2); }
+.ab-eroe-anello { position: relative; display: grid; place-items: center; flex: none; }
+.ab-eroe-anello svg { display: block; }
+/* In una giornata libera l'anello resta vuoto e al posto della percentuale
+   c'è un trattino: uno «0%» sarebbe l'errore opposto, perché non hai
+   mancato niente. */
+.ab-eroe-anello.riposo { opacity: 0.5; }
+.ab-eroe-pct { position: absolute; font-size: var(--t-subheadline); font-weight: var(--p-semibold); font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------ la riga abitudine
+   Spunta · emoji nel chip · nome e piano · serie. La spunta disegnata è da
+   26px, il bersaglio da 44: il pollice ha bisogno del secondo, l'occhio
+   del primo. */
+
+.ab-li { display: flex; align-items: center; gap: var(--s-2); }
+.ab-spunta {
+  width: var(--tocco); height: var(--tocco); flex: none;
+  display: grid; place-items: center;
+  border: 0; background: none; cursor: pointer;
+  margin-left: calc(-1 * var(--s-2));
+}
+.ab-spunta[disabled] { opacity: 0.35; }
+.ab-spunta-cerchio {
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--inchiostro-4);
+  transition: background var(--d-fast) var(--molla), box-shadow var(--d-fast) var(--curva), color var(--d-fast) var(--curva);
+}
+.ab-spunta.fatta .ab-spunta-cerchio { background: var(--accento); box-shadow: inset 0 0 0 1.5px var(--accento); color: #fff; }
+.ab-spunta-cerchio svg { display: block; }
+
+.ab-riga { flex: 1; min-width: 0; }
+.ab-testo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ab-nome { font-size: var(--t-body); letter-spacing: var(--t-body-c); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ab-nome.fatta { color: var(--inchiostro-3); text-decoration: line-through; }
+.ab-serie { display: inline-flex; align-items: center; gap: 3px; flex: none; font-size: var(--t-caption1); font-weight: var(--p-semibold); color: var(--avviso); font-variant-numeric: tabular-nums; }
+
+/* «Oggi no»: il terzo stato, azione secondaria a destra. Serve per le
+   abitudini in negativo — se oggi è andata storta, spuntarla è una bugia e
+   lasciarla aperta fino a mezzanotte è un promemoria inutile. */
+.ab-salta {
+  width: 34px; height: 34px; flex: none;
+  display: grid; place-items: center;
+  border: 0; border-radius: var(--r-full);
+  background: none; color: var(--inchiostro-4);
+  cursor: pointer;
+  transition: color var(--d-fast) var(--curva), background var(--d-fast) var(--curva);
+}
+.ab-salta.attiva { background: var(--riempi); color: var(--inchiostro-2); }
+.ab-li.saltata .ab-nome { color: var(--inchiostro-4); }
+.ab-li.saltata .ab-emoji { opacity: 0.45; }
+.ab-riga-fuori { opacity: 0.55; }
+.ab-freccia { flex: none; display: flex; color: var(--inchiostro-4); }
+
+/* ------------------------------------------------------------- le parti */
+
+.ab-gruppi { display: flex; flex-direction: column; gap: var(--s-4); }
+.ab-gruppo { padding-left: var(--s-5); border-left: 1.5px solid var(--riga-fine); }
+.ab-gruppo-testa { display: flex; align-items: baseline; gap: var(--s-2); margin-bottom: var(--s-2); }
+.ab-gruppo-nome { font-size: var(--t-caption1); font-weight: var(--p-semibold); letter-spacing: 0.06em; text-transform: uppercase; color: var(--inchiostro-2); }
+.ab-gruppo-ora { display: inline-flex; align-items: center; gap: 3px; font-size: var(--t-caption1); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
+.ab-gruppo-conta { margin-left: auto; font-size: var(--t-caption1); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
+.ab-parti { list-style: none; display: flex; flex-direction: column; }
+.ab-parte { display: flex; align-items: center; gap: var(--s-2); min-height: 40px; }
+.ab-parte-spunta { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border: 0; background: none; cursor: pointer; }
+.ab-parte-numero { flex: none; width: 1.2em; font-size: var(--t-footnote); color: var(--inchiostro-4); font-variant-numeric: tabular-nums; }
+.ab-parte-nome { flex: 1; min-width: 0; font-size: var(--t-subheadline); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ab-parte.fatta .ab-parte-nome { color: var(--inchiostro-3); text-decoration: line-through; }
+
+/* ------------------------------------------------------------- le serie */
+
+.ab-serie-eroe { position: relative; padding: var(--s-5); border-radius: var(--r-xl); background: var(--rilievo); margin-bottom: var(--s-3); overflow: hidden; }
+.ab-serie-cifra { display: flex; align-items: baseline; gap: var(--s-2); margin-top: var(--s-2); }
+.ab-serie-cifra .cifra-xl { font-size: clamp(48px, 15vw, 64px); color: var(--accento); line-height: 1; }
+.ab-serie-unita { font-size: var(--t-title3); font-weight: var(--p-semibold); color: var(--inchiostro-3); }
+.ab-serie-numeri { display: flex; gap: var(--s-5); margin-top: var(--s-4); }
+.ab-serie-record, .ab-serie-corrente { display: flex; flex-direction: column; gap: 2px; }
+.ab-serie-chi { font-size: var(--t-caption1); color: var(--inchiostro-3); }
+
+.ab-serie-lista { list-style: none; display: flex; flex-direction: column; }
+.ab-serie-riga {
+  display: grid; grid-template-columns: auto 1fr auto;
+  grid-template-areas: "emoji nome numeri";
+  align-items: center; gap: var(--s-3);
+  width: 100%; min-height: var(--h-riga);
+  padding: var(--s-2) 0;
+  border: 0; background: none; color: inherit; font: inherit; text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 -0.5px 0 var(--riga-fine);
+}
+.ab-serie-lista li:last-child .ab-serie-riga { box-shadow: none; }
+.ab-serie-riga:active { opacity: 0.4; }
+.ab-serie-riga.rischio .ab-serie-numeri { color: var(--avviso); }
+.ab-serie-emoji { grid-area: emoji; font-size: 21px; line-height: 1; }
+.ab-serie-nome { grid-area: nome; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ab-serie-nome > span:first-child { font-size: var(--t-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ab-serie-barra { grid-area: numeri; display: flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; }
+
+/* La mappa dei trenta giorni. */
+.ab-mappa { display: flex; flex-direction: column; gap: var(--s-2); }
+.ab-mappa-riga { display: grid; grid-template-columns: 24px 1fr; align-items: center; gap: var(--s-2); }
+.ab-mappa-emoji { font-size: 16px; line-height: 1; }
+.ab-mappa-celle { display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); gap: 2px; }
+.ab-mappa-cella { aspect-ratio: 1; border-radius: 2px; background: var(--incavo); }
+.ab-mappa-cella.fatta { background: var(--accento); }
+.ab-griglia30 { display: grid; grid-template-columns: repeat(auto-fill, minmax(10px, 1fr)); gap: 3px; }
+
+/* ------------------------------------------------------------ l'editor */
+
+.ab-dett-testa { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-4); }
+.ab-dett-emoji { font-size: 34px; line-height: 1; }
+.ab-dett-nome { font-family: var(--font-d); font-size: var(--t-title2); font-weight: var(--p-bold); letter-spacing: var(--t-title2-c); }
+
+.ab-tinte { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.ab-tinta { width: 32px; height: 32px; border: 0; border-radius: 50%; background: var(--tinta); cursor: pointer; transition: transform var(--d-fast) var(--molla); }
+.ab-tinta.scelta { box-shadow: 0 0 0 2px var(--fondo), 0 0 0 4px var(--tinta); }
+.ab-tinta:active { transform: scale(0.9); }
+
+.ab-emoji-testa { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.ab-emoji-scelta { width: 56px; height: 56px; display: grid; place-items: center; border: 0; border-radius: var(--r-md); background: var(--incavo); font-size: 30px; cursor: pointer; }
+.ab-emoji-griglia { max-height: 40vh; overflow-y: auto; }
+.ab-emoji-gruppo { margin-top: var(--s-4); }
+.ab-emoji-gruppo:first-child { margin-top: 0; }
+.ab-emoji-riga { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 4px; }
+.ab-emoji-tasto { aspect-ratio: 1; display: grid; place-items: center; border: 0; border-radius: var(--r-sm); background: none; font-size: 24px; cursor: pointer; transition: transform var(--d-fast) var(--molla), background var(--d-fast) var(--curva); }
+.ab-emoji-tasto:active { transform: scale(0.9); }
+.ab-emoji-tasto.scelta { background: var(--accento-tenue); box-shadow: inset 0 0 0 2px var(--accento); }
+.ab-emoji-libera { text-align: center; font-size: var(--t-body); }
+
+.ab-editor-parti { display: flex; flex-direction: column; gap: var(--s-3); }
+.ab-editor-parte { display: flex; align-items: center; gap: var(--s-2); }
+.ab-editor-parte-testa { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
+.ab-editor-sequenza { display: flex; flex-direction: column; gap: var(--s-2); }
+.ab-editor-ora { display: flex; align-items: center; gap: var(--s-2); }
+.ab-editor-ora-nome { flex: 1; min-width: 0; font-size: var(--t-subheadline); }
+.ab-editor-frecce { display: flex; gap: 2px; }
