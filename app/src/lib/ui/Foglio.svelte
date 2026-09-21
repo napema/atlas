@@ -198,4 +198,8 @@
     padding: var(--space-2) var(--space-4) calc(env(safe-area-inset-bottom, 0px) + var(--space-6));
     display: flex; flex-direction: column; gap: var(--space-6);
   }
+  /* In una colonna flex che scorre, i figli si restringono per starci — e
+     quelli con uno scorrimento proprio (le pillole in riga) arrivano a
+     zero. Nel foglio non si restringe niente: scorre il foglio. */
+  .contenuto > :global(*) { flex-shrink: 0; }
 </style>
