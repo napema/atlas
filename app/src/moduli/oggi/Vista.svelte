@@ -215,7 +215,7 @@
             {#snippet fine()}
               <span class="stato-mod cifre" class:ok={s.dati?.fatto === true}>
                 {#if s.dati?.fatto === true}<Icona nome="spunta" misura={14} tratto={2.6} />{/if}
-                {s.dati ? String(s.dati.valore ?? "—") : "—"}
+                <span class="stato-testo">{s.dati ? String(s.dati.valore ?? "—") : "—"}</span>
               </span>
             {/snippet}
           </Riga>
@@ -314,6 +314,8 @@
     display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px;
     background: var(--colore); color: #fff;
   }
-  .stato-mod { display: inline-flex; align-items: center; gap: 4px; color: var(--label-secondary); }
+  .stato-mod { display: inline-flex; align-items: center; gap: 4px; min-width: 0; color: var(--label-secondary); }
+  .stato-mod :global(.icona) { flex: none; }
+  .stato-testo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .stato-mod.ok { color: var(--color-green); }
 </style>

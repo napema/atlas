@@ -48,68 +48,64 @@ del giorno deve poter essere inserito lo stesso.
 
 ## 2. Architettura
 
+**La app è Svelte 5 + TypeScript, compilata con Vite** (settembre 2026).
+Prima era JavaScript scritto a mano che costruiva il DOM, e ogni schermata
+chiamava `disegna()` dopo ogni scrittura: ogni posto dimenticato era una
+schermata ferma sui numeri vecchi. Adesso le viste si aggiornano da sole.
+
 ```
-index.html          guscio: barra, contenitore, nient'altro
-config.js           owner/repo/token/VAPID — dati, non codice
-sw.js               offline del guscio + notifiche push
-core/
-  app.js            avvio: barra → router → sync → service worker
-  registro.js       ELENCO DEI MODULI e contratto. Unico file da toccare
-                    per aggiungerne uno
-  router.js         navigazione a hash, caricamento pigro, `posizione`
-  storage.js        una casella localStorage per modulo, isolate fra loro
-  sync.js           IL motore di sincronizzazione. Uno solo, mai copiato
-  bus.js            annunci fra moduli. Nessun modulo importa un altro
-  contesto.js       la lavagna del giorno + chi decide che giorno è
-  blobs.js          IndexedDB per foto e allegati
-  ui.js             mattoni condivisi + formati italiani
-  icone.js          SVG inline
-styles/
-  tokens.css        i colori, i corpi, gli spazi. Nessun modulo ne inventa
-  base.css          reset, shell, componenti condivisi
-moduli/<id>/
-  modulo.js         export default che rispetta il contratto
-docs/               architettura, sync, migrazione
-legacy/             sorgenti di partenza, da leggere
+app/                    LA APP — questa si pubblica
+  index.html            la pagina
+  public/sw.js          offline + notifiche push; la VERSIONE la timbra la build
+  public/manifest.webmanifest
+  src/
+    main.ts             avvio: guscio → sync → service worker
+    App.svelte          la schermata della rotta, la barra delle schede
+    lib/core/           IL NUCLEO, in TypeScript
+      registro.ts       ELENCO DEI MODULI. Unico file da toccare per aggiungerne uno
+      router.svelte.ts  navigazione a hash (le rotte delle notifiche restano quelle)
+      storage.ts        una casella localStorage per modulo, isolate fra loro
+      sync.ts           IL motore di sincronizzazione. Uno solo, mai copiato
+      bus.ts            annunci fra moduli
+      contesto.ts       la lavagna del giorno
+      notifiche.ts      iscrizioni push e orari (canale notifiche.json)
+      credenziali.ts    il token, solo su questo dispositivo
+      reattivo.svelte.ts  il ponte fra le caselle e Svelte: `dati.versione`
+    lib/ui/             il kit iOS 27: Pagina, Sezione, Riga, Foglio, …
+    lib/stili/          tokens.css (i valori misurati) + app.css (il minimo globale)
+    moduli/<id>/        LE VISTE di ogni modulo, in Svelte
+moduli/<id>/            LA LOGICA di ogni modulo, JavaScript, condivisa:
+  dati.js calcolo.js …  schema, conti, scritture — nessun DOM
+  contratto.js          canale di sync, lavagna, `oggi()` per la home
+core/ styles/ index.html sw.js   la app di prima, pubblicata come riserva in v1.html
+docs/  legacy/
 ```
+
+**Un nucleo solo.** La logica condivisa importa `../../core/storage.js`: il
+plugin «nucleo unico» in `app/vite.config.ts` gira ogni import che punta in
+`core/` sul file TypeScript omonimo di `app/src/lib/core/`. Senza, nella
+app ci sarebbero due `apriCasella` con due copie degli stessi dati.
 
 ### Il contratto di un modulo
 
-`moduli/<id>/modulo.js` esporta di default:
+Un modulo ha tre parti, e il registro le carica pigramente:
 
-```js
-export default {
-  async monta(contenitore, posizione) {},  // disegna dentro il contenitore
-  smonta() {},                              // stacca ascoltatori, ferma timer
-  oggi() { return null; },                  // la scheda per la home
-  impostazioni() { return null; },          // la propria sezione in #/impostazioni
-
-  avviaSync() {},                           // apre il proprio canale
-};
-```
+| parte | dove | cosa |
+|---|---|---|
+| `vista` | `app/src/moduli/<id>/Vista.svelte` | la schermata; riceve `resto` (i pezzi di rotta dopo il nome) |
+| `contratto` | `moduli/<id>/contratto.js` | `avviaSync()`, `pubblicaSullaLavagna()`, `oggi()`, e le azioni che la home può chiedere |
+| `impostazioni` | `app/src/moduli/<id>/Impostazioni.svelte` | la sua pagina in Impostazioni |
 
 `id`, `nome`, `icona` e `accento` **non** li dichiara il modulo: stanno in
-`core/registro.js`. Un modulo non può spostarsi nella barra da solo.
+`registro.ts`. Un modulo non può spostarsi nella barra da solo.
 
-**`posizione`** è come un modulo sa dove si trova. Contiene `resto` (i pezzi
-di rotta dopo il suo nome), `link(...)` per stare in casa propria,
-`linkA(altro, ...)` per uscire, `vaiA`, `indietro`, `inRadice`. Un modulo non
-scrive mai un URL a mano: così rinominarlo non rompe i suoi collegamenti.
+**Le viste leggono i dati dentro un `$derived` che tocca `dati.versione`**:
+cresce a ogni scrittura in qualunque casella, a ogni cambio di giorno e una
+volta al minuto. È grossolano di proposito — ricalcolare costa microsecondi,
+sbagliare segnale costa una schermata che mente.
 
 **`oggi()`** è sincrona e senza effetti collaterali. Restituisce
 `{ titolo, valore, dettaglio, urgente, azione: { rotta } }` oppure `null`.
-
-Attenzione alla differenza, perché la home la mostra:
-
-| | significato | come appare |
-|---|---|---|
-| `oggi()` assente | il modulo non c'è ancora | riquadro *in migrazione* |
-| `oggi()` → `null` | c'è, e oggi non ha niente da dire | riquadro *tutto a posto* |
-| `oggi()` → oggetto | ha qualcosa da mostrare | il numero |
-
-I tre riquadri della home **ci sono sempre**, anche vuoti. Una home che
-nasconde ciò che non ha dati cambia forma ogni giorno, e una cosa che cambia
-forma non si impara a leggere con la coda dell'occhio.
 
 ### Come i moduli si parlano
 
@@ -169,20 +165,24 @@ Queste non si discutono senza una ragione scritta.
    lo sceglie il registro, non il modulo. Un colore vuol dire **una cosa
    sola**: verde è "fatto" e rosso è uno stato negativo, quindi nessun modulo
    e nessuna categoria può prenderseli. Il resto in `docs/DESIGN.md`.
-8. **Niente dipendenze esterne, niente build.** Nessun CDN: offline non
+8. **Niente dipendenze esterne a runtime.** La build c'è (Vite, in CI: non
+   serve niente installato sul PC) ma quello che arriva al telefono è tutto
+   nel pacchetto. Nessun CDN: offline non
    c'è. Se serve una libreria pesante (3D, grafici), sta in un solo modulo
    e si carica pigramente.
 9. **17px minimo sui campi di testo.** Sotto, iOS zooma al focus e non
    torna indietro.
-10. **`VERSIONE` in `sw.js` va alzata a ogni rilascio.** Altrimenti il
-    guscio vecchio resta appiccicato sui dispositivi.
+10. **La versione del service worker la scrive la build.** Nella app di
+    prima andava alzata a mano ed era la regola che si dimenticava: ora
+    `vite.config.ts` timbra `__VERSIONE__` in `sw.js` a ogni compilazione.
 11. **I binari non stanno in `localStorage`.** Vanno in `core/blobs.js`.
 12. **Nessun modulo importa un altro modulo.** Solo bus e lavagna. Un import
     diretto li salda insieme: niente più caricamento pigro, niente più
     portarne uno senza toccare l'altro.
-13. **Chi ascolta si stacca in `smonta()`.** Senza, ogni visita alla
-    schermata lascia dietro una copia dell'ascoltatore: un ridisegno, poi
-    due, poi quattro.
+13. **Chi ascolta si stacca.** In Svelte: `$effect(() => ascolta(…))` — la
+    funzione che `ascolta` restituisce è la pulizia dell'effetto. Senza, ogni
+    visita alla schermata lascia dietro una copia dell'ascoltatore: un
+    ridisegno, poi due, poi quattro.
 
 ---
 
@@ -209,6 +209,8 @@ Queste non si discutono senza una ragione scritta.
 5. ~~Notifiche unificate: una coppia VAPID, un workflow~~ ✅
 6. **Spegnimento delle tre app di partenza**, una alla volta — vedi
    `docs/CANTIERE.md`
+7. ~~La app riscritta in Svelte + TypeScript e pubblicata alla radice~~ ✅
+   (la precedente resta in `v1.html` finché non la si toglie)
 
 L'ordine dentro il punto 4 era: **schemi → lavagna → calcolo → viste**, e ha
 retto. Leggere i tre `.json` fianco a fianco *prima* di scrivere qualsiasi
@@ -236,7 +238,7 @@ che impedisce a due chat di sovrascriversi senza accorgersene.
 
 | chat | possiede | prefisso dei commit |
 |---|---|---|
-| **ATLAS** | `core/` `styles/` `index.html` `sw.js` `manifest` `config.js` `docs/` `.github/` `moduli/oggi/` `moduli/impostazioni/` | `core:` |
+| **ATLAS** | `app/` tranne `app/src/moduli/<id>/`, `core/` `styles/` `index.html` `sw.js` `docs/` `.github/` | `core:` |
 | **Finanze** | `moduli/finanze/` | `finanze:` |
 | **Mobilità** | `moduli/mobilita/` | `mobilita:` |
 | **Abitudini** | `moduli/abitudini/` | `abitudini:` |

@@ -2,7 +2,7 @@
   "name": "ATLAS",
   "short_name": "ATLAS",
   "description": "Finanze, pasti, corpo e abitudini in una sola app.",
-  "id": "/atlas/v2/",
+  "id": "/atlas/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

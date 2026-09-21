@@ -118,6 +118,8 @@
   .titolo.distruttiva { color: var(--color-red); }
   .titolo.accento { color: var(--accento); }
   .valore { flex: none; max-width: 55%; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .fine { flex: none; display: flex; align-items: center; }
+  /* La coda può restringersi fino a metà riga: un valore lungo (il nome di
+     una cena) si tronca, non esce dalla lastra. */
+  .fine { flex: 0 1 auto; min-width: 0; max-width: 60%; display: flex; align-items: center; justify-content: flex-end; }
   .freccia { flex: none; color: var(--label-tertiary); margin-right: -4px; }
 </style>

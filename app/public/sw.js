@@ -20,7 +20,12 @@
 
 const VERSIONE = "__VERSIONE__";
 const GUSCIO = `atlas2-guscio-${VERSIONE}`;
-const PESANTI = "atlas2-pesanti";   // font e icone: non cambiano mai a parità di nome
+/* I FILE PESANTI — font, icone, i video degli esercizi — stanno in una
+   cache che non porta la versione, e NON si svuota ai rilasci. Il nome è lo
+   stesso della app di prima, apposta: i sessanta mega di video che il
+   telefono ha già messo da parte una sessione alla volta restano lì, e la
+   app nuova li trova invece di riscaricarli. */
+const PESANTI = "atlas-pesanti-v1";
 
 self.addEventListener("install", (e) => {
   e.waitUntil((async () => {
@@ -33,9 +38,13 @@ self.addEventListener("install", (e) => {
 
 self.addEventListener("activate", (e) => {
   e.waitUntil((async () => {
-    // Solo le proprie: la app di prima vive sullo stesso dominio e ha le sue.
+    // Il guscio vecchio se ne va — il proprio e quello della app di prima
+    // (`guscio-atlas-v…`), che dopo il passaggio non serve più a nessuno.
+    // I pesanti restano: sono gli stessi file.
     for (const k of await caches.keys()) {
-      if (k.startsWith("atlas2-") && k !== GUSCIO && k !== PESANTI) await caches.delete(k);
+      const mio = k.startsWith("atlas2-") && k !== GUSCIO;
+      const vecchio = k.startsWith("guscio-atlas-");
+      if (mio || vecchio) await caches.delete(k);
     }
     await self.clients.claim();
   })());
@@ -51,6 +60,26 @@ self.addEventListener("fetch", (e) => {
   // ogni indirizzo è index.html.
   if (req.mode === "navigate") {
     e.respondWith(reteConRiserva(req));
+    return;
+  }
+
+  // I VIDEO DEGLI ESERCIZI: dalla cache, e ci restano. Si salvano uno alla
+  // volta, il giorno che quell'esercizio esce nella rotazione.
+  //
+  // Le richieste con `Range` passano alla rete: Safari chiede i video a
+  // pezzi, e a un pezzo si risponde 206 con quel pezzo. Rispondere 200 con
+  // tutto il file, che è quello che fa `cache.match()`, manda in errore il
+  // player — video nero e nessun messaggio.
+  if (url.pathname.includes("/mobilita/clip/")) {
+    if (req.headers.has("range")) return;
+    e.respondWith(prima(PESANTI, req));
+    return;
+  }
+
+  // Font e icone della app di prima (l'emoji Apple, 45 MB): stessi nomi,
+  // stesso contenuto, dalla cache dei pesanti.
+  if (/\.(woff2?|png|jpe?g|svg|ico)$/.test(url.pathname) && !url.pathname.includes("/assets/")) {
+    e.respondWith(prima(PESANTI, req));
     return;
   }
 

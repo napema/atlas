@@ -64,7 +64,7 @@
       {#each GENERALI as g (g.id)}
         <Riga
           titolo={g.nome}
-          valore={g.id === "aspetto" ? tema : g.id === "sync" ? statoSync.etichetta : undefined}
+          valore={g.id === "aspetto" ? tema : g.id === "sync" ? ({ off: "Spenta", ok: "Attiva", corso: "In corso", err: "Errore", inattivo: "In attesa" } as Record<string, string>)[statoSync.stato] : undefined}
           href="#/impostazioni/{g.id}"
           freccia
         >

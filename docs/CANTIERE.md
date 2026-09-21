@@ -29,6 +29,37 @@ Chi apre una chat comincia da `git log --oneline -20` e da questo file.
 
 ## Stato
 
+### ✅ La app in Svelte + TypeScript (21 settembre 2026)
+
+Tutta la app è stata riscritta in `app/` — Svelte 5, TypeScript 6, Vite 8 —
+e pubblicata alla RADICE del sito. La precedente resta come riserva in
+`/atlas/v1.html` (usa lo stesso service worker nuovo, quindi funziona
+online).
+
+Cosa NON è cambiato, di proposito:
+
+- **i dati**: stesse caselle `atlas.<id>.v1`, stesso token in
+  `atlas-credenziali.v1`, stessi file nel repo `atlas-dati`;
+- **il sync**: `sync.ts` è `sync.js` riga per riga, tipi a parte (letto e
+  confrontato col diff prima del passaggio);
+- **la logica dei moduli**: resta JavaScript in `moduli/<id>/`, condivisa.
+  Sync, lavagna e `oggi()` di ogni modulo sono usciti da `modulo.js` in
+  `contratto.js`, che usano tutte e due le app;
+- **le rotte**: `#/mobilita/inizia`, `#/abitudini/nuova`, `#/finanze/ricarica`
+  aprono le stesse cose — sono gli indirizzi delle notifiche;
+- **il service worker**: stesso URL (`/atlas/sw.js`), quindi stessa
+  registrazione e stessa iscrizione push. La cache dei video
+  (`atlas-pesanti-v1`) è la stessa: i clip già scaricati restano.
+
+Da fare, nell'ordine:
+
+1. Provare sull'iPhone INSTALLATO: notifica di prova, una spunta, una spesa,
+   una sessione con i video offline.
+2. Quando la app nuova regge da una settimana: togliere `v1.html`, `core/`,
+   `styles/`, `moduli/*/modulo.js` e `viste.js`, `stile.css` (la logica in
+   `dati.js`/`calcolo.js`/`contratto.js` resta).
+3. Poi la logica dei moduli può diventare TypeScript senza sdoppiarsi.
+
 ### ✅ Guscio
 
 Shell, router con `posizione`, registro, caselle di storage isolate, motore

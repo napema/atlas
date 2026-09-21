@@ -1,15 +1,13 @@
 # Pubblica ATLAS su GitHub Pages.
 #
-# DUE APP, UN SITO, finché la nuova non ha preso il posto della vecchia:
+# La app è in `app/` (Svelte + TypeScript) e si compila qui, a ogni push.
+# Va alla radice del sito. La app di prima resta pubblicata sotto, come
+# riserva (`/atlas/v1.html`), insieme ai file che le due condividono: la
+# logica dei moduli in `moduli/` e i video degli esercizi.
 #
-#   /atlas/      la app di prima, statica: si copia così com'è
-#   /atlas/v2/   la app nuova (Svelte + TypeScript), compilata qui
-#
-# La compilazione della nuova NON può fermare la pubblicazione della
-# vecchia: quella è la app che si usa ogni giorno, e un errore di tipo in
-# una schermata nuova non deve impedire di segnare una spesa. Per questo i
-# passi della v2 hanno `continue-on-error` e la copia in `_sito/v2` avviene
-# solo se la build è arrivata in fondo.
+# Una compilazione fallita NON lascia il sito vuoto: i passi della app nuova
+# hanno `continue-on-error`, e se la build non arriva in fondo resta online
+# la app di prima. Un errore di tipo non deve impedire di segnare una spesa.
 
 name: Pubblica su Pages
 
@@ -76,9 +74,23 @@ jobs:
         working-directory: app
         run: npm run build
 
-      - name: v2 · nel sito
+      - name: La app nuova al posto della vecchia
+        # La app nuova va alla RADICE, sopra alla vecchia: stessa `index.html`,
+        # stesso `sw.js`, stesso manifest. È quello che la fa arrivare sul
+        # telefono senza reinstallare niente — il service worker nuovo prende
+        # il posto del vecchio nella stessa registrazione, e l'iscrizione alle
+        # notifiche, che è legata a quella registrazione, resta valida.
+        #
+        # La vecchia resta raggiungibile in `v1.html`, come riserva: i suoi
+        # file (core/, moduli/, styles/) sono ancora pubblicati, e i video
+        # degli esercizi in moduli/mobilita/clip/ li usano tutte e due.
+        #
+        # Se la compilazione è fallita questo passo non gira, e resta online
+        # la app di prima: meglio una versione vecchia che nessuna.
         if: steps.v2.outcome == 'success'
-        run: cp -r app/dist _sito/v2
+        run: |
+          mv _sito/index.html _sito/v1.html
+          cp -r app/dist/. _sito/
 
       - name: v2 · copia da scaricare
         # La stessa build, scaricabile con `gh run download`: serve a
@@ -90,17 +102,6 @@ jobs:
           name: atlas-v2
           path: app/dist
           retention-days: 7
-
-      - name: Controlla che il service worker sia stato aggiornato
-        # Un guscio nuovo servito con la versione vecchia resta appiccicato
-        # sui dispositivi: è l'errore che costa più tempo a capire.
-        run: |
-          set -e
-          if git diff --quiet HEAD~1 HEAD -- sw.js 2>/dev/null; then
-            if ! git diff --quiet HEAD~1 HEAD -- index.html core styles 'moduli/*/modulo.js' 'moduli/*/viste.js' 'moduli/*/*.css' 2>/dev/null; then
-              echo "::warning file=sw.js::Il guscio è cambiato ma sw.js no: alza VERSIONE."
-            fi
-          fi
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
