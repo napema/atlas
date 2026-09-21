@@ -5,7 +5,6 @@
   avere comunque numeri veri.
 -->
 <script lang="ts">
-  import { slide } from "svelte/transition";
   import Pagina from "$lib/ui/Pagina.svelte";
   import Pulsante from "$lib/ui/Pulsante.svelte";
   import Segmenti from "$lib/ui/Segmenti.svelte";
@@ -84,18 +83,47 @@
   }
 </script>
 
-<Pagina titolo="Pasti">
+{#snippet strumenti()}
+  <Segmenti opzioni={[{ id: "oggi", testo: "Oggi" }, { id: "settimana", testo: "Settimana" }]} bind:valore={vista} etichetta="Vista" />
+{/snippet}
+
+{#snippet riepilogo()}
+  {#if vista === "oggi"}
+    <Sezione titolo="Il bilancio">
+      <Testata {b} t={g.totale} incerte={g.incerte.length} />
+    </Sezione>
+    <Pulsante variante="pieno" larga icona="piu" onclick={() => { fasciaScelta = null; tipoAggiunta = "aggiunta"; fAggiungi = true; }}>
+      Ho mangiato qualcos'altro
+    </Pulsante>
+  {:else}
+    <Sezione titolo="Media della settimana" piede="La media conta più del singolo giorno: una cena saltata il martedì non è un problema se la settimana torna.">
+      <div class="medie">
+        {#each [{ k: "kcal", nome: "Calorie", colore: "var(--accento)", u: "kcal" }, ...MACRO.map((m) => ({ ...m, u: "g" }))] as m (m.k)}
+          <div class="voce">
+            <div class="riga-m text-subheadline">
+              <span>{m.nome}</span>
+              <span class="cifre secondario">{numero(Math.round(sett.s.media[m.k]))} / {numero(b[m.k])} {m.u}</span>
+            </div>
+            <Traccia valore={b[m.k] ? sett.s.media[m.k] / b[m.k] : 0} colore={m.colore} altezza={6} />
+          </div>
+        {/each}
+      </div>
+    </Sezione>
+    <Pulsante variante="tinto" larga onclick={generaSettimana}>
+      {sett.piano ? "Rigenera la settimana" : "Genera la settimana"}
+    </Pulsante>
+    {#if sett.piano?.bloccato}
+      <p class="text-footnote secondario nota">Questa settimana l'hai modificata a mano, quindi il generatore la lascia stare. Rigenerandola perdi le modifiche.</p>
+    {/if}
+  {/if}
+{/snippet}
+
+<Pagina titolo="Pasti" {strumenti} laterale={riepilogo}>
   {#snippet azioni()}
     <Pulsante variante="vetro" misura="media" tondo icona="importa" etichetta="Importa pasti" onclick={() => (fImport = true)} />
   {/snippet}
 
-  <Segmenti opzioni={[{ id: "oggi", testo: "Oggi" }, { id: "settimana", testo: "Settimana" }]} bind:valore={vista} etichetta="Vista" />
-
   {#if vista === "oggi"}
-    <Sezione>
-      <Testata {b} t={g.totale} incerte={g.incerte.length} />
-    </Sezione>
-
     <Sezione titolo="La giornata">
       {#each righe as r (r.id)}
         <Riga onclick={() => { fasciaScelta = r.id; fFascia = true; }}>
@@ -119,39 +147,19 @@
       {/each}
     </Sezione>
 
-    <Pulsante variante="pieno" larga icona="piu" onclick={() => { fasciaScelta = null; tipoAggiunta = "aggiunta"; fAggiungi = true; }}>
-      Ho mangiato qualcos'altro
-    </Pulsante>
-
     {#if extra.length}
-      <div transition:slide={{ duration: 220 }}>
-        <Sezione titolo="In più, oggi" piede="Tocca una riga per toglierla.">
-          {#each extra as s (s.id)}
-            <Riga
-              titolo={s.nome}
-              sottotitolo={[s.ora, (SCOSTAMENTI as Record<string, string>)[s.tipo]].filter(Boolean).join(" · ")}
-              valore="{kcal(s.kcal)} kcal"
-              onclick={() => togli(s)}
-            />
-          {/each}
-        </Sezione>
-      </div>
+      <Sezione titolo="In più, oggi" piede="Tocca una riga per toglierla.">
+        {#each extra as s (s.id)}
+          <Riga
+            titolo={s.nome}
+            sottotitolo={[s.ora, (SCOSTAMENTI as Record<string, string>)[s.tipo]].filter(Boolean).join(" · ")}
+            valore="{kcal(s.kcal)} kcal"
+            onclick={() => togli(s)}
+          />
+        {/each}
+      </Sezione>
     {/if}
   {:else}
-    <Sezione titolo="Media della settimana" piede="La media conta più del singolo giorno: una cena saltata il martedì non è un problema se la settimana torna.">
-      <div class="medie">
-        {#each [{ k: "kcal", nome: "Calorie", colore: "var(--accento)", u: "kcal" }, ...MACRO.map((m) => ({ ...m, u: "g" }))] as m (m.k)}
-          <div class="voce">
-            <div class="riga-m text-subheadline">
-              <span>{m.nome}</span>
-              <span class="cifre secondario">{numero(Math.round(sett.s.media[m.k]))} / {numero(b[m.k])} {m.u}</span>
-            </div>
-            <Traccia valore={b[m.k] ? sett.s.media[m.k] / b[m.k] : 0} colore={m.colore} altezza={6} />
-          </div>
-        {/each}
-      </div>
-    </Sezione>
-
     <Sezione titolo="I sette giorni">
       {#each sett.s.giorni as giorno, i (giorno.iso)}
         {@const pianoG = sett.piano?.giorni?.[giorno.iso] || {}}
@@ -164,13 +172,6 @@
         />
       {/each}
     </Sezione>
-
-    <Pulsante variante="tinto" larga onclick={generaSettimana}>
-      {sett.piano ? "Rigenera la settimana" : "Genera la settimana"}
-    </Pulsante>
-    {#if sett.piano?.bloccato}
-      <p class="text-footnote secondario nota">Questa settimana l'hai modificata a mano, quindi il generatore la lascia stare. Rigenerandola perdi le modifiche.</p>
-    {/if}
   {/if}
 </Pagina>
 
@@ -197,5 +198,5 @@
   .medie { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
   .voce { display: flex; flex-direction: column; gap: 6px; }
   .riga-m { display: flex; justify-content: space-between; }
-  .nota { padding: 0 var(--space-4); margin-top: calc(-1 * var(--space-4)); }
+  .nota { padding: 0 var(--space-4); }
 </style>

@@ -1,19 +1,14 @@
 <!-- I movimenti del mese, giorno per giorno, con il netto di ogni giorno. -->
 <script lang="ts">
   import Sezione from "$lib/ui/Sezione.svelte";
-  import Pillole from "$lib/ui/Pillole.svelte";
   import Vuoto from "$lib/ui/Vuoto.svelte";
   import RigaMovimento from "./RigaMovimento.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { euro, dataUmana, maiuscola } from "$lib/core/ui";
   import { movimentiDelMese, importoEffettivo } from "$condivisi/finanze/calcolo.js";
 
-  let { mese, filtro = $bindable("tutti") }: { mese: string; filtro: string } = $props();
+  let { mese, filtro }: { mese: string; filtro: string } = $props();
 
-  const FILTRI = [
-    { id: "tutti", testo: "Tutti" }, { id: "out", testo: "Uscite" }, { id: "ecc", testo: "Straordinari" },
-    { id: "in", testo: "Entrate" }, { id: "extra", testo: "Sforamenti" }, { id: "altri", testo: "Altri" },
-  ];
 
   const giorni = $derived.by(() => {
     dati.versione;
@@ -33,8 +28,6 @@
   });
 </script>
 
-<div class="filtri"><Pillole opzioni={FILTRI} scelte={[filtro]} oncambio={(v) => (filtro = v[0])} etichetta="Filtro" /></div>
-
 {#if !giorni.length}
   <Vuoto icona="portafoglio" titolo="Nessun movimento" testo="Con Uscita o Entrata qui in basso ne registri uno." />
 {:else}
@@ -49,9 +42,6 @@
 {/if}
 
 <style>
-  .filtri { overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--content-inset)); padding: 0 var(--content-inset); }
-  .filtri :global(.pillole) { flex-wrap: nowrap; }
-  .filtri :global(button) { flex: none; }
   .entrata { color: var(--color-green); }
-  .uscita { color: var(--label-secondary); }
+  .uscita { color: var(--color-red); }
 </style>

@@ -18,7 +18,8 @@
   import { abitudiniVive } from "$condivisi/abitudini/dati.js";
   import { serie, serieMigliore, costanza, fattaIl, eAttesa, ePrevista } from "$condivisi/abitudini/calcolo.js";
 
-  let { onapri }: { onapri: (id: string) => void } = $props();
+  /** `eroe` è il riepilogo (la colonna di sinistra sul PC), `resto` il resto. */
+  let { onapri, parte = "tutto" }: { onapri: (id: string) => void; parte?: "eroe" | "resto" | "tutto" } = $props();
 
   const righe = $derived.by(() => {
     dati.versione;
@@ -44,11 +45,11 @@
 </script>
 
 {#if !righe.length}
-  <Vuoto icona="fiamma" titolo="Nessuna abitudine" testo="Le serie compaiono appena ne aggiungi una." />
+  {#if parte !== "eroe"}<Vuoto icona="fiamma" titolo="Nessuna abitudine" testo="Le serie compaiono appena ne aggiungi una." />{/if}
 {:else}
-  <Sezione>
+  {#if parte !== "resto"}
+  <Sezione titolo="La più lunga">
     <div class="eroe">
-      <span class="text-footnote secondario">La più lunga in corso</span>
       <div class="cifra-riga">
         <span class="cifra cifre">{migliore.n}</span>
         <span class="text-title3 secondario">{migliore.n === 1 ? "giorno" : "giorni"}</span>
@@ -65,7 +66,9 @@
       {/if}
     </div>
   </Sezione>
+  {/if}
 
+  {#if parte !== "eroe"}
   <Sezione titolo="Tutte le serie">
     {#snippet coda()}<span class="text-footnote secondario">corrente · record</span>{/snippet}
     {#each righe as r (r.h.id)}
@@ -102,6 +105,7 @@
       {/each}
     </div>
   </Sezione>
+  {/if}
 {/if}
 
 <style>

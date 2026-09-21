@@ -31,6 +31,10 @@
       {#if titolo}<h2 class="text-title3">{titolo}</h2>{/if}
       {#if coda}<div class="coda text-body">{@render coda()}</div>{/if}
     </div>
+  {:else}
+    <!-- Lo spazio del titolo, vuoto: lo accende Pagina sul PC per allineare
+         le lastre di una riga. Sul telefono non occupa niente. -->
+    <div class="testa-vuota" aria-hidden="true"></div>
   {/if}
   <div class={nuda ? "nuda" : "lastra"}>
     {@render children()}
@@ -49,6 +53,7 @@
     padding: 0 var(--space-1) var(--space-2);
   }
   .coda { color: var(--accento); }
+  .testa-vuota { display: none; height: calc(var(--lh-title3) + var(--space-2)); }
   .lastra {
     background: var(--bg-grouped-secondary);
     border-radius: var(--radius-xxxl);

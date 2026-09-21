@@ -37,7 +37,8 @@
         : m.tipo === "extra" ? "Sforamento del sistema pocket"
         : m.tipo === "giro" ? "Giroconto · neutro sul budget"
         : ETICHETTA_TIPO[m.tipo],
-      tono: m.tipo === "in" ? "ok" : m.tipo === "extra" ? "male" : m.ecc ? "avviso" : "",
+      // La direzione dei soldi e basta: entrate verdi, uscite rosse.
+      tono: ["in", "rimb", "reso"].includes(m.tipo) ? "ok" : m.tipo === "giro" ? "" : "male",
       agganciato: m.rif ? (movimentiVivi() as any[]).find((x) => x.id === m.rif)?.nota || "spesa non trovata" : null,
     };
   });
@@ -58,7 +59,7 @@
   {/snippet}
   {#if d}
     <div class="testa">
-      <Importo centesimi={d.m.tipo === "in" || d.m.tipo === "giro" ? d.eff : -d.eff} segno={d.m.tipo === "in"} misura={48} tono={d.tono as any} />
+      <Importo centesimi={["in", "rimb", "reso", "giro"].includes(d.m.tipo) ? d.eff : -d.eff} segno={["in", "rimb", "reso"].includes(d.m.tipo)} misura={48} tono={d.tono as any} />
       {#if d.eff !== d.m.imp}<span class="text-footnote secondario">lordo {euro(d.m.imp)} · rimborsato {euro(d.m.imp - d.eff)}</span>{/if}
       <span class="text-title3">{d.m.nota || ETICHETTA_TIPO[d.m.tipo]}</span>
       {#if d.c}

@@ -18,7 +18,8 @@
   } from "$condivisi/mobilita/sessione.js";
   import { fasePerSettimana, rotazionePerSettimana, GRUPPI, PROGRESSIONE } from "$condivisi/mobilita/esercizi.js";
 
-  let { oninizia }: { oninizia: (tipo: string) => void } = $props();
+  /** `lato`: la sessione del giorno (il riepilogo a sinistra sul PC); `resto`: tutto il resto. */
+  let { oninizia, parte }: { oninizia: (tipo: string) => void; parte: "lato" | "resto" } = $props();
 
   const NOMI_TIPO: Record<string, { nome: string; perche: string }> = {
     "post-corsa": { nome: "Post-corsa", perche: "Hai corso: questa sostituisce il quotidiano, non si somma." },
@@ -65,21 +66,7 @@
   }
 </script>
 
-<Sezione titolo="Questa settimana" piede="Il puntino segna il giorno di palestra.{d.streakValida ? '' : ' Più di 3 giorni fermi: lo streak riparte, il programma no.'}">
-  {#snippet coda()}<span class="text-subheadline secondario cifre">{nFatte} di 7</span>{/snippet}
-  <ol class="settimana">
-    {#each d.giorni as g, i (g.iso)}
-      <li class:oggi={g.iso === d.oggi} class:fatta={g.fatta} class:futuro={g.futuro}>
-        <span class="lettera">{GIORNI_INIZIALI[i]}</span>
-        <span class="cerchio cifre">
-          {#if g.fatta}<Icona nome="spunta" misura={16} tratto={2.8} />{:else}{daISO(g.iso).getDate()}{/if}
-        </span>
-        <span class="segno" class:visibile={g.palestra}></span>
-      </li>
-    {/each}
-  </ol>
-</Sezione>
-
+{#if parte === "lato"}
 <Sezione titolo="Hai corso oggi?" piede="È l'unica cosa che devi dirmi: il resto lo decido io.">
   <div class="blocco">
     <Segmenti
@@ -111,6 +98,22 @@
   {/if}
 </div>
 
+{:else}
+<Sezione titolo="Questa settimana" piede="Il puntino segna il giorno di palestra.{d.streakValida ? '' : ' Più di 3 giorni fermi: lo streak riparte, il programma no.'}">
+  {#snippet coda()}<span class="text-subheadline secondario cifre">{nFatte} di 7</span>{/snippet}
+  <ol class="settimana">
+    {#each d.giorni as g, i (g.iso)}
+      <li class:oggi={g.iso === d.oggi} class:fatta={g.fatta} class:futuro={g.futuro}>
+        <span class="lettera">{GIORNI_INIZIALI[i]}</span>
+        <span class="cerchio cifre">
+          {#if g.fatta}<Icona nome="spunta" misura={16} tratto={2.8} />{:else}{daISO(g.iso).getDate()}{/if}
+        </span>
+        <span class="segno" class:visibile={g.palestra}></span>
+      </li>
+    {/each}
+  </ol>
+</Sezione>
+
 <Sezione
   titolo="Il programma nel tempo"
   piede="Il tempo sale solo se la settimana precedente è stata fatta almeno al 70%. Adesso: {d.fase.minuti} minuti, gruppi sopra soglia collo · {d.gruppi}."
@@ -128,6 +131,7 @@
     </div>
   {/each}
 </Sezione>
+{/if}
 
 <style>
   .settimana { display: grid; grid-template-columns: repeat(7, 1fr); padding: var(--space-4) var(--space-2); }
@@ -149,7 +153,7 @@
   .cifra-riga { display: flex; align-items: baseline; gap: var(--space-2); }
   .cifra { font-family: var(--font-display); font-size: 56px; line-height: 60px; font-weight: var(--weight-bold); color: var(--accento); }
   .perche { margin-top: var(--space-2); color: var(--label-secondary); }
-  .azioni { display: flex; flex-direction: column; gap: var(--space-2); margin-top: calc(-1 * var(--space-2)); }
+  .azioni { display: flex; flex-direction: column; gap: var(--space-2); }
 
   .fase { --inizio-l: 44px; }
   .sett { font-size: var(--text-footnote); font-weight: var(--weight-semibold); color: var(--label-secondary); }

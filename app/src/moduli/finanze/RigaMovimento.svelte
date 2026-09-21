@@ -17,7 +17,7 @@
     const cat = categoriaPerId(m.cat);
     const effettivo = importoEffettivo(m);
     const origine = m.rif ? movimentiVivi().find((x: any) => x.id === m.rif) : null;
-    const segno = ({ in: "+", out: "−", extra: "+", giro: "", rimb: "−", reso: "−" } as Record<string, string>)[m.tipo] ?? "−";
+    const segno = ({ in: "+", out: "−", extra: "−", giro: "", rimb: "+", reso: "+" } as Record<string, string>)[m.tipo] ?? "−";
     return {
       descrizione: descriviMovimento(m, cat, origine),
       tinta: m.tipo === "out" ? coloreCat(m.cat) : m.tipo === "in" ? "var(--color-green)" : m.tipo === "extra" ? "var(--color-red)" : "var(--color-gray)",
@@ -41,7 +41,7 @@
   <span class="text-subheadline secondario">{d.descrizione}</span>
   {#snippet fine()}
     <span class="cifra">
-      <span class="cifre" class:entrata={m.tipo === "in"}>{d.cifra}</span>
+      <span class="cifre" class:entrata={["in", "rimb", "reso"].includes(m.tipo)} class:uscita={["out", "extra"].includes(m.tipo)}>{d.cifra}</span>
       {#if d.ridotto}<span class="text-caption1 secondario cifre">lordo {euro(m.imp)}</span>{/if}
     </span>
   {/snippet}
@@ -60,4 +60,5 @@
   .tag.rosso { color: var(--color-red); background: color-mix(in srgb, var(--color-red) 16%, transparent); }
   .cifra { display: flex; flex-direction: column; align-items: flex-end; font-weight: var(--weight-medium); }
   .entrata { color: var(--color-green); }
+  .uscita { color: var(--color-red); }
 </style>

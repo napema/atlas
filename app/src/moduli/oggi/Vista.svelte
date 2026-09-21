@@ -172,7 +172,7 @@
                 <span>{e.nome}</span>
                 {#if e.dettaglio}<span class="text-subheadline secondario">{e.dettaglio}</span>{/if}
                 {#snippet fine()}
-                  <span class="cifre importo" data-tono={e.tono}>{e.valore}</span>
+                  <span class="cifre importo">{e.valore}</span>
                 {/snippet}
               </Riga>
             {/each}
@@ -302,8 +302,8 @@
   .data-g { font-size: 9px; line-height: 10px; font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.3px; opacity: 0.8; }
   .data-n { font-size: var(--text-callout); line-height: 18px; font-weight: var(--weight-semibold); }
   .importo { font-weight: var(--weight-medium); }
-  .importo[data-tono="male"] { color: var(--color-red); }
-  .importo[data-tono="avviso"] { color: var(--color-orange); }
+  /* Un'uscita è rossa, sempre: il colore dice la direzione dei soldi. */
+  .importo { color: var(--color-red); }
 
   .allarme {
     display: flex; align-items: flex-start; gap: var(--space-2);

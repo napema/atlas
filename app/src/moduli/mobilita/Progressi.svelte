@@ -15,6 +15,8 @@
   import { leggiFotoBlob } from "$condivisi/mobilita/foto.js";
   import { oggiISO, addGiorni, giorniTra } from "$condivisi/mobilita/sessione.js";
 
+  let { parte }: { parte: "lato" | "resto" } = $props();
+
   const SOGLIA_SEC = 300;           // 5 minuti per gruppo muscolare
   const GIORNI_TRA_LE_FOTO = 21;    // protocollo foto: ogni 3 settimane
 
@@ -122,6 +124,7 @@
   });
 </script>
 
+{#if parte === "lato"}
 <Sezione titolo="Costanza" piede="È la metrica che conta davvero: il programma riesce se i giorni si accumulano, non se guadagni gradi in fretta.">
   <div class="costanza">
     <div class="numeri">
@@ -137,6 +140,7 @@
   </div>
 </Sezione>
 
+{:else}
 <Sezione
   titolo="Volume, ultimi 7 giorni"
   piede={d.gruppi.length
@@ -171,6 +175,7 @@
     </Riga>
   {/each}
 </Sezione>
+{/if}
 
 <style>
   .costanza { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }

@@ -39,15 +39,21 @@
   });
 </script>
 
-<Pagina titolo="Mobilità" {sopra}>
+{#snippet strumenti()}
+  <Segmenti opzioni={[{ id: "oggi", testo: "Oggi" }, { id: "progressi", testo: "Progressi" }]} bind:valore={vista} etichetta="Vista" />
+{/snippet}
+
+{#snippet riepilogo()}
+  {#if vista === "oggi"}<Oggi parte="lato" oninizia={inizia} />{:else}<Progressi parte="lato" />{/if}
+{/snippet}
+
+<Pagina titolo="Mobilità" {sopra} {strumenti} laterale={riepilogo}>
   {#snippet testata()}<TitoloGruppo id="mobilita" />{/snippet}
 
-  <Segmenti opzioni={[{ id: "oggi", testo: "Oggi" }, { id: "progressi", testo: "Progressi" }]} bind:valore={vista} etichetta="Vista" />
-
   {#if vista === "oggi"}
-    <Oggi oninizia={inizia} />
+    <Oggi parte="resto" oninizia={inizia} />
   {:else}
-    <Progressi />
+    <Progressi parte="resto" />
   {/if}
 </Pagina>
 

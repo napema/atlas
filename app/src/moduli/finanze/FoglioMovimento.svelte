@@ -192,7 +192,7 @@
       />
     </div>
 
-    <label class="importo" class:vuoto={!testo}>
+    <label class="importo" class:vuoto={!testo} class:entrata={["in", "rimb", "reso"].includes(b.tipo)} class:uscita={["out", "extra"].includes(b.tipo)}>
       <input
         type="text"
         inputmode="decimal"
@@ -283,6 +283,9 @@
     letter-spacing: -1px; font-variant-numeric: tabular-nums; caret-color: var(--accento);
   }
   .importo input::placeholder { color: var(--label-tertiary); }
+  /* La cifra prende il colore della direzione: rossa se esce, verde se entra. */
+  .importo.uscita input { color: var(--color-red); }
+  .importo.entrata input { color: var(--color-green); }
   .euro { font-family: var(--font-display); font-size: 32px; font-weight: var(--weight-semibold); color: var(--label-secondary); flex: 1; }
   .categorie { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); padding: var(--space-3); }
   .cat {

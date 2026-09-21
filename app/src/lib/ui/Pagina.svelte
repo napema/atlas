@@ -22,6 +22,8 @@
     azioni,
     testata,
     larga = false,
+    strumenti,
+    laterale,
     children,
   }: {
     titolo: string;
@@ -35,6 +37,11 @@
     testata?: Snippet;
     /** La pagina fa da sé le sue colonne (la home): niente colonne automatiche. */
     larga?: boolean;
+    /** I controlli della pagina (segmenti, strisce di giorni): una riga in
+        cima, a tutta larghezza. */
+    strumenti?: Snippet;
+    /** Il riepilogo del modulo: sul PC è la colonna fissa di sinistra. */
+    laterale?: Snippet;
     children: Snippet;
   } = $props();
 
@@ -92,8 +99,10 @@
   <div class="titolo-grande" bind:this={sentinella}>
     {#if testata}{@render testata()}{:else}<h1 class="text-large-title">{titolo}</h1>{/if}
   </div>
-  <div class="contenuto">
-    {@render children()}
+  <div class="contenuto" class:con-laterale={Boolean(laterale)}>
+    {#if strumenti}<div class="strumenti">{@render strumenti()}</div>{/if}
+    {#if laterale}<aside class="laterale">{@render laterale()}</aside>{/if}
+    <div class="principale">{@render children()}</div>
   </div>
 </main>
 
@@ -162,37 +171,51 @@
   .sopra { margin: 0 0 2px; min-height: var(--lh-footnote); }
   .titolo-grande { margin-bottom: var(--space-4); }
   .titolo-grande h1 { overflow-wrap: anywhere; }
-  .contenuto { display: flex; flex-direction: column; gap: var(--space-6); }
+  /* Sul telefono: una colonna, nell'ordine strumenti → riepilogo → resto. */
+  .contenuto, .strumenti, .laterale, .principale { display: flex; flex-direction: column; gap: var(--space-6); }
+  .principale > :global(*), .laterale > :global(*), .strumenti > :global(*) { min-width: 0; }
 
+  /* SUL PC, UNA GRIGLIA COL RIGHELLO. Tre regole, uguali in ogni modulo:
+
+     1. gli STRUMENTI stanno in una riga a tutta larghezza, allineati a
+        sinistra e non stirati;
+     2. il RIEPILOGO del modulo è una colonna fissa di 380px a sinistra, e
+        resta in vista mentre scorri;
+     3. il RESTO è una griglia di celle da almeno 420px, con i bordi
+        superiori sulla stessa linea in ogni riga.
+
+     Prima le sezioni si versavano in colonne automatiche: ognuna cadeva
+     dove capitava, un titolo a 205px e quello accanto a 238, un bottone da
+     solo in cima alla terza colonna. Qui niente cade: ha un posto. */
   @media (min-width: 1000px) {
     :global(:root) { --larghezza-pagina: min(calc(100vw - 96px), 1640px); }
     .pagina { padding-left: var(--space-8); padding-right: var(--space-8); }
     .barra-riga { padding-left: var(--space-8); padding-right: var(--space-8); }
 
-    /* Le colonne: si riempiono dall'alto in basso e poi si passa alla
-       successiva, e una sezione non si spezza mai fra due colonne. I
-       controlli che valgono per tutta la pagina — i segmenti, le strisce di
-       giorni e di settimane, il mese — attraversano tutte le colonne. */
     .pagina:not(.larga) .contenuto {
-      display: block;
-      column-width: 440px;
-      column-gap: var(--space-6);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      column-gap: var(--space-8); row-gap: var(--space-6);
+      align-items: start;
     }
-    .pagina:not(.larga) .contenuto > :global(*) {
-      break-inside: avoid;
-      margin-bottom: var(--space-6);
+    .pagina:not(.larga) .contenuto.con-laterale { grid-template-columns: 380px minmax(0, 1fr); }
+    .strumenti { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: var(--space-8); row-gap: var(--space-4); }
+    .strumenti > :global(.segmenti) { width: 420px; }
+    .strumenti > :global(.settimana) { width: 520px; }
+    .strumenti > :global(.nastro) { flex: 1 1 100%; margin: 0; padding: 4px 0; }
+    .laterale { position: sticky; top: calc(var(--altezza-barra) + var(--space-4)); }
+    .pagina:not(.larga) .principale {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: var(--space-6);
+      align-items: start;
     }
-    .pagina:not(.larga) .contenuto > :global(.segmenti),
-    .pagina:not(.larga) .contenuto > :global(.nastro),
-    .pagina:not(.larga) .contenuto > :global(.settimana),
-    .pagina:not(.larga) .contenuto > :global(.mese),
-    .pagina:not(.larga) .contenuto > :global(.filtri),
-    .pagina:not(.larga) .contenuto > :global(.intera) {
-      column-span: all;
-    }
-    /* Attraversano le colonne ma non si stirano: sette giorni sparsi su un
-       metro e mezzo di schermo non si leggono più come una settimana. */
-    .pagina:not(.larga) .contenuto > :global(.segmenti) { max-width: 520px; }
-    .pagina:not(.larga) .contenuto > :global(.settimana) { max-width: 560px; }
+    .principale > :global(.vuoto), .principale > :global(.intera) { grid-column: 1 / -1; }
+
+    /* Una sezione senza titolo accanto a una col titolo cominciava 33px più
+       in alto. Sul PC anche lei tiene lo spazio del titolo, vuoto: le lastre
+       partono tutte alla stessa quota. */
+    .principale > :global(.sezione > .testa-vuota),
+    .laterale > :global(.sezione:first-child > .testa-vuota) { display: block; }
   }
 </style>

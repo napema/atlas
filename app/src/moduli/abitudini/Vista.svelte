@@ -76,24 +76,19 @@
   );
 </script>
 
-<Pagina titolo="Abitudini">
-  {#snippet azioni()}
-    <Pulsante variante="vetro" misura="media" tondo icona="piu" etichetta="Nuova abitudine" onclick={() => apriModifica(null)} />
-  {/snippet}
-
+{#snippet strumenti()}
   <Segmenti opzioni={[{ id: "oggi", testo: "Giorno" }, { id: "serie", testo: "Serie" }]} bind:valore={vista} etichetta="Vista" />
-
-  {#if vista === "serie"}
-    <Serie onapri={apriDettaglio} />
-  {:else if !tutte.length}
-    <Vuoto icona="abitudini" titolo="Nessuna abitudine" testo="Aggiungi la prima: una cosa piccola, da fare ogni giorno.">
-      <Pulsante variante="pieno" misura="media" onclick={() => apriModifica(null)}>Nuova abitudine</Pulsante>
-    </Vuoto>
-  {:else}
+  {#if vista === "oggi" && tutte.length}
     <Settimana giorni={settimana} {oggi} scelto={giorno} onscegli={(g) => { tocco(6); giorno = g; }} />
+  {/if}
+{/snippet}
 
+{#snippet riepilogo()}
+  {#if vista === "serie"}
+    <Serie parte="eroe" onapri={apriDettaglio} />
+  {:else}
     <!-- «Quante ne restano» è la domanda, e la risposta è una cifra sola. -->
-    <Sezione>
+    <Sezione titolo="Riepilogo">
       <div class="eroe" class:tutto>
         <div class="numeri">
           <span class="text-footnote etichetta">
@@ -114,7 +109,21 @@
         </Anello>
       </div>
     </Sezione>
+  {/if}
+{/snippet}
 
+<Pagina titolo="Abitudini" {strumenti} laterale={tutte.length ? riepilogo : undefined}>
+  {#snippet azioni()}
+    <Pulsante variante="vetro" misura="media" tondo icona="piu" etichetta="Nuova abitudine" onclick={() => apriModifica(null)} />
+  {/snippet}
+
+  {#if vista === "serie"}
+    <Serie parte="resto" onapri={apriDettaglio} />
+  {:else if !tutte.length}
+    <Vuoto icona="abitudini" titolo="Nessuna abitudine" testo="Aggiungi la prima: una cosa piccola, da fare ogni giorno.">
+      <Pulsante variante="pieno" misura="media" onclick={() => apriModifica(null)}>Nuova abitudine</Pulsante>
+    </Vuoto>
+  {:else}
     {#if attese.length}
       <Sezione titolo={titoloGiorno}>
         {#each attese as h (h.id)}

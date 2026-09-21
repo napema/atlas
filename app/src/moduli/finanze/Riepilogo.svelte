@@ -32,6 +32,9 @@
   /* Ciclo o mese solare nelle categorie: una preferenza di lettura, non un
      dato. Non si salva e non si sincronizza; riparte da «ciclo», che è la
      vista giusta. */
+  /** `lato`: il numero, il check, gli allarmi (la colonna sinistra sul PC). */
+  let { parte }: { parte: "lato" | "resto" } = $props();
+
   let modoCategorie = $state<"ciclo" | "mese">("ciclo");
 
   const d = $derived.by(() => {
@@ -96,8 +99,9 @@
   }
 </script>
 
+{#if parte === "lato"}
 <!-- 1. IL NUMERO ---------------------------------------------------------->
-<Sezione>
+<Sezione titolo="Da spendere">
   <div class="numero" data-tono={tonoOggi}>
     {#if !d.configurato}
       <!-- Zero perché non è configurato non è zero perché hai finito i soldi. -->
@@ -179,6 +183,7 @@
   </div>
 {/if}
 
+{:else}
 <!-- LE IN SOSPESO: «ci dormo su» -->
 {#if d.sospese.length}
   <Sezione titolo="Ci hai dormito su">
@@ -212,7 +217,7 @@
           {/snippet}
           <span>{e.nome}</span>
           <span class="text-subheadline secondario">{e.dettaglio}</span>
-          {#snippet fine()}<span class="cifre semibold" data-tono={e.tono}>{e.valore}</span>{/snippet}
+          {#snippet fine()}<span class="cifre semibold uscita">{e.valore}</span>{/snippet}
         </Riga>
       {/each}
     </div>
@@ -298,6 +303,7 @@
     </div>
   </div>
 </Sezione>
+{/if}
 
 <style>
   .numero { padding: var(--space-5) var(--space-4) var(--space-4); display: flex; flex-direction: column; gap: 6px; }
@@ -347,8 +353,7 @@
   .data.oggi { background: color-mix(in srgb, var(--accento) 18%, transparent); color: var(--accento); }
   .data-g { font-size: 9px; line-height: 10px; font-weight: var(--weight-semibold); text-transform: uppercase; opacity: 0.8; }
   .data-n { font-size: var(--text-callout); line-height: 18px; font-weight: var(--weight-semibold); }
-  [data-tono="male"] { color: var(--color-red); }
-  [data-tono="avviso"] { color: var(--color-orange); }
+  .uscita { color: var(--color-red); }
   .verifica { display: flex; justify-content: space-between; padding: var(--space-3) var(--space-4); border-top: 0.5px solid var(--separator); color: var(--color-green); }
   .verifica.male { color: var(--color-red); }
 

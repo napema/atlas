@@ -62,7 +62,16 @@
   }
 </script>
 
-<Pagina titolo="Training">
+{#snippet strumenti()}
+  <Segmenti opzioni={[{ id: "settimana", testo: "Settimana" }, { id: "andamento", testo: "Andamento" }]} bind:valore={vista} etichetta="Vista" />
+  {#if vista !== "andamento"}<Striscia bind:scelta={settimana} />{/if}
+{/snippet}
+
+{#snippet riepilogo()}
+  <Sezione titolo="Riepilogo"><TestataSettimana n={settimana} /></Sezione>
+{/snippet}
+
+<Pagina titolo="Training" {strumenti} laterale={vista === "andamento" ? undefined : riepilogo}>
   {#snippet testata()}<TitoloGruppo id="allenamenti" />{/snippet}
   {#snippet azioni()}
     <Pulsante
@@ -71,13 +80,9 @@
     />
   {/snippet}
 
-  <Segmenti opzioni={[{ id: "settimana", testo: "Settimana" }, { id: "andamento", testo: "Andamento" }]} bind:valore={vista} etichetta="Vista" />
-
   {#if vista === "andamento"}
     <Andamento />
   {:else}
-    <Striscia bind:scelta={settimana} />
-    <Sezione><TestataSettimana n={settimana} /></Sezione>
 
     {#each gruppi as gr (gr.g)}
       <Sezione titolo={gr.nome}>

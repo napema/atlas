@@ -12,6 +12,7 @@
   import Pagina from "$lib/ui/Pagina.svelte";
   import Pulsante from "$lib/ui/Pulsante.svelte";
   import Segmenti from "$lib/ui/Segmenti.svelte";
+  import Pillole from "$lib/ui/Pillole.svelte";
   import Icona from "$lib/ui/Icona.svelte";
   import Riepilogo from "./Riepilogo.svelte";
   import Movimenti from "./Movimenti.svelte";
@@ -38,6 +39,10 @@
   let scheda = $state<"home" | "movimenti" | "analisi">("home");
   let mese = $state(meseDi());
   let filtro = $state("tutti");
+  const FILTRI = [
+    { id: "tutti", testo: "Tutti" }, { id: "out", testo: "Uscite" }, { id: "ecc", testo: "Straordinari" },
+    { id: "in", testo: "Entrate" }, { id: "extra", testo: "Sforamenti" }, { id: "altri", testo: "Altri" },
+  ];
 
   migra();
 
@@ -55,17 +60,12 @@
   const f = $derived(fogli.corrente);
 </script>
 
-<Pagina titolo="Finanze">
-  {#snippet azioni()}
-    <Pulsante variante="vetro" misura="media" tondo icona="portafoglio" etichetta="Saldi dei pocket" onclick={() => apri({ tipo: "pocket" })} />
-  {/snippet}
-
+{#snippet strumenti()}
   <Segmenti
     opzioni={[{ id: "home", testo: "Riepilogo" }, { id: "movimenti", testo: "Movimenti" }, { id: "analisi", testo: "Analisi" }]}
     bind:valore={scheda}
     etichetta="Vista"
   />
-
   {#if scheda !== "home"}
     <!-- Il mese si sfoglia solo dove conta: il riepilogo guarda sempre oggi. -->
     <div class="mese">
@@ -74,11 +74,22 @@
       <Pulsante variante="grigio" misura="media" tondo icona="freccia" etichetta="Mese successivo" disabled={mese >= corrente} onclick={() => (mese = spostaMese(mese, 1))} />
     </div>
   {/if}
+  {#if scheda === "movimenti"}
+    <div class="filtri"><Pillole opzioni={FILTRI} scelte={[filtro]} oncambio={(v) => (filtro = v[0])} etichetta="Filtro" /></div>
+  {/if}
+{/snippet}
+
+{#snippet riepilogo()}<Riepilogo parte="lato" />{/snippet}
+
+<Pagina titolo="Finanze" {strumenti} laterale={scheda === "home" ? riepilogo : undefined}>
+  {#snippet azioni()}
+    <Pulsante variante="vetro" misura="media" tondo icona="portafoglio" etichetta="Saldi dei pocket" onclick={() => apri({ tipo: "pocket" })} />
+  {/snippet}
 
   {#if scheda === "home"}
-    <Riepilogo />
+    <Riepilogo parte="resto" />
   {:else if scheda === "movimenti"}
-    <Movimenti {mese} bind:filtro />
+    <Movimenti {mese} {filtro} />
   {:else}
     <Analisi {mese} />
   {/if}
@@ -116,8 +127,11 @@
 {/if}
 
 <style>
-  .mese { display: flex; align-items: center; justify-content: space-between; margin-top: calc(-1 * var(--space-2)); }
+  .mese { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); max-width: 420px; width: 100%; }
   .mese-nome { flex: 1; text-align: center; }
+  .filtri { overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+  .filtri :global(.pillole) { flex-wrap: nowrap; }
+  .filtri :global(button) { flex: none; }
 
   .azioni-rapide {
     position: fixed; z-index: 25; left: 50%; translate: -50% 0;
@@ -135,8 +149,10 @@
     transition: transform var(--duration-fast) var(--ease-spring);
   }
   .rapida:active { transform: scale(0.95); }
-  .uscita { background: var(--accento); }
-  .entrata { background: var(--color-blue); }
+  /* Uscita rossa, entrata verde: in Finanze i due colori dicono la
+     direzione dei soldi, ovunque, e solo quella. */
+  .uscita { background: var(--color-red); }
+  .entrata { background: var(--color-green); }
   .altro { width: 44px; padding: 0; justify-content: center; color: var(--label-primary); background: var(--fill-tertiary); }
   :global(.pagina):has(~ .azioni-rapide) { padding-bottom: calc(var(--spazio-schede) + 64px); }
 </style>
