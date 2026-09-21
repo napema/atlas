@@ -134,7 +134,6 @@
 
 <style>
   .abitudine { position: relative; padding: 10px var(--space-4); }
-  .abitudine + .abitudine::before,
   :global(* + .abitudine)::before {
     content: ""; position: absolute; top: 0; right: 0; left: calc(var(--space-4) + 28px + var(--space-3));
     border-top: 0.5px solid var(--separator);

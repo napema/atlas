@@ -39,27 +39,36 @@
   } = $props();
 
   let sentinella: HTMLElement | undefined = $state();
+  let barraEl: HTMLElement | undefined = $state();
   let compatta = $state(false);
 
   $effect(() => {
     if (!sentinella) return;
-    // Il titolo grande è «uscito» quando passa sotto la barra, non quando
-    // lascia la finestra: il margine negativo sposta il bordo in giù di
-    // quanto è alta la barra.
-    const barra = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--altezza-barra")) || 100;
-    const oss = new IntersectionObserver(
-      ([e]) => { compatta = !e.isIntersecting && e.boundingClientRect.top < barra; },
-      { rootMargin: `-${barra}px 0px 0px 0px`, threshold: 0 },
-    );
-    oss.observe(sentinella);
-    return () => oss.disconnect();
+    const el = sentinella;
+    // Il titolo grande è «uscito» quando il suo fondo passa sotto la barra.
+    // Un controllo sullo scorrimento e non un IntersectionObserver: quello
+    // dava una prima lettura sbagliata durante la dissolvenza d'ingresso, e
+    // la barra restava accesa su una pagina ferma in cima.
+    let richiesto = false;
+    const misura = () => {
+      richiesto = false;
+      // L'altezza vera della barra, notch compreso: la variabile CSS è un
+      // `calc(env(...))` che da JavaScript non si legge come numero.
+      const barra = barraEl?.getBoundingClientRect().bottom ?? 44;
+      compatta = el.getBoundingClientRect().bottom < barra;
+    };
+    const suScorri = () => { if (!richiesto) { richiesto = true; requestAnimationFrame(misura); } };
+    misura();
+    addEventListener("scroll", suScorri, { passive: true });
+    addEventListener("resize", suScorri, { passive: true });
+    return () => { removeEventListener("scroll", suScorri); removeEventListener("resize", suScorri); };
   });
 
   const etichettaIndietro = $derived(typeof indietro === "string" ? indietro : indietro?.etichetta);
   const vaiIndietro = () => (typeof indietro === "object" ? indietro.fai() : tornaIndietro());
 </script>
 
-<header class="barra" class:compatta class:larga>
+<header class="barra" class:compatta class:larga bind:this={barraEl}>
   <div class="barra-riga">
     <div class="lato sinistra">
       {#if indietro}

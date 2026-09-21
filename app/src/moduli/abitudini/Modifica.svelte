@@ -219,7 +219,7 @@
       <Sezione piede="Archiviata sparisce dal giorno ma tiene lo storico: riattivandola riparte da dov'era.">
         <Riga titolo="Archiviata">
           {#snippet fine()}
-            <Interruttore bind:acceso={bozza.archived} etichetta="Archiviata" />
+            <Interruttore acceso={Boolean(bozza?.archived)} oncambio={(v) => { if (bozza) bozza.archived = v; }} etichetta="Archiviata" />
           {/snippet}
         </Riga>
       </Sezione>
