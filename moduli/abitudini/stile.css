@@ -36,7 +36,12 @@
    26px, il bersaglio da 44: il pollice ha bisogno del secondo, l'occhio
    del primo. */
 
-.ab-li { display: flex; align-items: center; gap: var(--s-2); }
+/* `.ab-li` contiene DUE blocchi impilati: la riga dell'abitudine e, sotto,
+   i gruppi delle parti. In `flex` orizzontale finivano affiancati e le
+   parti scivolavano accanto al nome. */
+.ab-li { display: block; }
+/* La riga dell'abitudine: spunta + emoji + nome. */
+.ab-riga-fuori { display: flex; align-items: center; gap: var(--s-2); }
 .ab-spunta {
   width: var(--tocco); height: var(--tocco); flex: none;
   display: grid; place-items: center;
@@ -75,20 +80,40 @@
 .ab-salta.attiva { background: var(--riempi); color: var(--inchiostro-2); }
 .ab-li.saltata .ab-nome { color: var(--inchiostro-4); }
 .ab-li.saltata .ab-emoji { opacity: 0.45; }
-.ab-riga-fuori { opacity: 0.55; }
 .ab-freccia { flex: none; display: flex; color: var(--inchiostro-4); }
 
 /* ------------------------------------------------------------- le parti */
 
-.ab-gruppi { display: flex; flex-direction: column; gap: var(--s-4); }
-.ab-gruppo { padding-left: var(--s-5); border-left: 1.5px solid var(--riga-fine); }
+/* I gruppi rientrano sotto la riga dell'abitudine, allineati al nome e non
+   alla spunta: sono il dettaglio di quella riga, non voci di pari grado. */
+.ab-gruppi { display: flex; flex-direction: column; gap: var(--s-4); margin: var(--s-2) 0 var(--s-3) 72px; }
+.ab-gruppo { padding-left: var(--s-3); box-shadow: inset 1.5px 0 0 var(--riga-fine); }
 .ab-gruppo-testa { display: flex; align-items: baseline; gap: var(--s-2); margin-bottom: var(--s-2); }
 .ab-gruppo-nome { font-size: var(--t-caption1); font-weight: var(--p-semibold); letter-spacing: 0.06em; text-transform: uppercase; color: var(--inchiostro-2); }
 .ab-gruppo-ora { display: inline-flex; align-items: center; gap: 3px; font-size: var(--t-caption1); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
 .ab-gruppo-conta { margin-left: auto; font-size: var(--t-caption1); color: var(--inchiostro-3); font-variant-numeric: tabular-nums; }
 .ab-parti { list-style: none; display: flex; flex-direction: column; }
-.ab-parte { display: flex; align-items: center; gap: var(--s-2); min-height: 40px; }
-.ab-parte-spunta { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border: 0; background: none; cursor: pointer; }
+/* `.ab-parte` e' un <button>: senza reset prende il fondo grigio di
+   serie del browser, ed erano quelle le pastiglie chiare sovrapposte. */
+.ab-parte {
+  display: flex; align-items: center; gap: var(--s-2);
+  width: 100%; min-height: 40px;
+  padding: 0; border: 0; background: none;
+  color: inherit; font: inherit; text-align: left;
+  cursor: pointer;
+  transition: opacity var(--d-micro) var(--curva);
+}
+.ab-parte:active { opacity: 0.4; }
+.ab-parte-spunta {
+  width: 22px; height: 22px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--inchiostro-4);
+  transition: background var(--d-fast) var(--molla), box-shadow var(--d-fast) var(--curva), color var(--d-fast) var(--curva);
+}
+.ab-parte.fatta .ab-parte-spunta { background: var(--accento); box-shadow: inset 0 0 0 1.5px var(--accento); color: #fff; }
+.ab-parte-spunta svg { display: block; }
 .ab-parte-numero { flex: none; width: 1.2em; font-size: var(--t-footnote); color: var(--inchiostro-4); font-variant-numeric: tabular-nums; }
 .ab-parte-nome { flex: 1; min-width: 0; font-size: var(--t-subheadline); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ab-parte.fatta .ab-parte-nome { color: var(--inchiostro-3); text-decoration: line-through; }
