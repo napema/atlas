@@ -27,3 +27,18 @@ export const CFG: Readonly<Recapito> = {
   // ogni dispositivo: una subscription è legata alla chiave con cui è nata.
   vapidPublic: "BA-MCfD2AgZsi0o2XbR07FMTZE0WGJ_aw5CRaHc2Vrbp77wR57yHn9nVGRb0E_U_gWbmOil08oBUGCcZNPn0WaQ",
 };
+
+/**
+ * La radice del sito, dove stanno i file della app di prima che la nuova
+ * riusa (i video degli esercizi, `moduli/mobilita/clip/`).
+ *
+ * La app nuova vive in `/atlas/v2/` — e in locale in `/.anteprima/v2/` —
+ * quindi la radice è la cartella sopra. Calcolata e non scritta: quando la
+ * app nuova prenderà il posto della vecchia in `/atlas/`, la regola sotto
+ * cade sul ramo di ripiego e la radice diventa la cartella della pagina.
+ */
+export const RADICE_SITO = (() => {
+  const p = location.pathname;
+  const i = p.search(/\/(?:\.anteprima\/)?v2\//);
+  return i >= 0 ? p.slice(0, i + 1) : p.replace(/[^/]*$/, "");
+})();

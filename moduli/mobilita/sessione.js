@@ -526,7 +526,15 @@ function aggiornaAvanzamento(container) {
 
 // ===================== fine =====================
 
-function completaSessione(container, passiLavoro, tipo) {
+/**
+ * La sessione finita, scritta nell'archivio e annunciata.
+ *
+ * SOLO DATI: niente DOM. Sta fuori da `completaSessione` perché la usa anche
+ * il player della app nuova — una regola sola per lo streak e per lo storico,
+ * invece di due che col tempo divergono. Restituisce minuti e streak, che
+ * sono le due cose che la schermata di fine mostra.
+ */
+function registraCompletamento(passiLavoro, tipo) {
   const durata = passiLavoro.reduce((t, p) => t + p.durataSec, 0);
   const oggi = oggiISO();
   const volume = {};
@@ -567,6 +575,11 @@ function completaSessione(container, passiLavoro, tipo) {
   document.dispatchEvent(new CustomEvent("sessione-completata", {
     detail: { data: oggi, tipo, durataMin: Math.round(durata / 60) },
   }));
+  return { minuti: Math.round(durata / 60), streak: getState().streak.giorniConsecutivi };
+}
+
+function completaSessione(container, passiLavoro, tipo) {
+  const { minuti } = registraCompletamento(passiLavoro, tipo);
   engineAttivo = null;
   videoMontato = null;
   nascondiControlli();
@@ -578,7 +591,7 @@ function completaSessione(container, passiLavoro, tipo) {
         <div class="sess-fine">
           <div style="color:var(--verde)">${icona("spunta", 44)}</div>
           <h2 class="titolo-2">Fatta</h2>
-          <p class="corpo">${Math.round(durata / 60)} minuti · ${streak} ${streak === 1 ? "giorno" : "giorni"} di fila.</p>
+          <p class="corpo">${minuti} minuti · ${streak} ${streak === 1 ? "giorno" : "giorni"} di fila.</p>
           <p class="nota">Due buchi a settimana sono dentro il piano.</p>
         </div>
       </div>
@@ -607,20 +620,7 @@ function togglePausa() {
 // in cui eri viene salvato e la volta dopo l'app propone di riprendere.
 function fermaSessione() {
   if (engineAttivo && engineAttivo.steps.length > 0) {
-    const i = engineAttivo.indiceCorrente;
-    const finita = i >= engineAttivo.steps.length - 1;
-    if (!finita && i > 0) {
-      const step = engineAttivo.steps[i];
-      updateState((s) => {
-        s.sessioneInCorso = {
-          tipo: tipoInCorso,
-          indice: i,
-          numero: (step.tipo === "prep" ? step.rif.numero : step.numero) || 1,
-          data: oggiISO(),
-          salvataIl: Date.now(),
-        };
-      });
-    }
+    salvaPunto(engineAttivo, tipoInCorso);
     engineAttivo.ferma();
   }
   engineAttivo = null;
@@ -629,6 +629,23 @@ function fermaSessione() {
   const body = document.getElementById("sessione-body");
   if (body) body.innerHTML = "";
   nascondiControlli();
+}
+
+/** Il punto in cui eri, per riprendere da lì. Solo dati: lo usa anche la app nuova. */
+function salvaPunto(engine, tipo) {
+  const i = engine.indiceCorrente;
+  const finita = i >= engine.steps.length - 1;
+  if (finita || i <= 0) return;
+  const step = engine.steps[i];
+  updateState((s) => {
+    s.sessioneInCorso = {
+      tipo,
+      indice: i,
+      numero: (step.tipo === "prep" ? step.rif.numero : step.numero) || 1,
+      data: oggiISO(),
+      salvataIl: Date.now(),
+    };
+  });
 }
 
 function aggiornaPulsantePausa(inPausa) {
@@ -644,6 +661,7 @@ const nascondiControlli = () => { const b = document.getElementById("btn-pausa-s
 
 export {
   renderSessione, togglePausa, fermaSessione, costruisciSessione, riepilogoModuli,
+  conPreparazione, registraCompletamento, salvaPunto, latoStretto,
   settimanaCorrente, settimanaEffettiva, tipoDelGiorno, streakAncoraValida,
   oggiISO, addGiorni, giorniTra, giornoSettimana,
 };

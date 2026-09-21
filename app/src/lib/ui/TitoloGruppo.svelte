@@ -35,7 +35,6 @@
 <svelte:window onkeydown={suTasto} />
 
 <div class="gruppo">
-  <p class="text-footnote secondario semibold">{gruppo.nome}</p>
   <button
     type="button"
     class="titolo text-large-title"
