@@ -1,0 +1,334 @@
+// notifiche.ts — UNA coppia VAPID, UN workflow, tutti i moduli.
+//
+// Prima c'erano due sistemi di push identici e incompatibili: uno in
+// Mobilità, uno in Abitudini, con due coppie di chiavi e due workflow su
+// GitHub Actions. Qui ce n'è uno solo, e il campo `modulo` del messaggio
+// dice chi ha parlato.
+//
+// COME FUNZIONA, in breve. Il browser si iscrive al servizio push di Apple
+// (o di Google) e riceve un `endpoint` con due chiavi. Quell'iscrizione
+// finisce nel repo dati privato. Un workflow che gira ogni dieci minuti
+// legge i file dei moduli, decide quali promemoria sono scaduti, e li
+// spedisce firmandoli con la chiave VAPID privata — che sta nei secret del
+// repo e non passa mai da qui.
+//
+// PERCHÉ LE VECCHIE ISCRIZIONI NON SI POSSONO RIUSARE: una subscription è
+// legata all'origine E allo scope del service worker. ATLAS sta su
+// /atlas/, le app di partenza su /habit-tracker-webapp/ e
+// /mobility-blueprint/. Sono tre scope diversi, quindi tre iscrizioni
+// diverse: il telefono va iscritto di nuovo da qui, e non c'è modo di
+// evitarlo.
+
+import { apriCasella } from "./storage";
+import { apriCanale, fondiRecord, potaLapidi } from "./sync";
+import { CFG } from "./config";
+
+type Iscrizione = { id: string; endpoint?: string; p256dh?: string; auth?: string; ua?: string; up: number; del?: boolean };
+type Orari = Record<string, Record<string, any>>;
+
+export const PREDEFINITO: { subs: Iscrizione[]; orari: Orari; up: number } = {
+  // Le iscrizioni push. Un record per dispositivo, con id stabile: così
+  // due telefoni non si sovrascrivono e uno si può revocare da solo.
+  subs: [],
+  // Gli orari li legge il workflow da qui: cambiarli sul telefono li cambia
+  // davvero, senza toccare il codice né il workflow.
+  orari: {
+    mobilita: {
+      attiva: false,
+      principale: "21:00",   // "hai fatto la sessione?"
+      recupero: "22:15",     // propone la dose minima
+      attivaRecupero: true,
+    },
+    abitudini: {
+      // Le abitudini hanno il promemoria per abitudine (`remind`): qui c'è
+      // solo l'interruttore generale.
+      attiva: false,
+    },
+    finanze: {
+      attiva: false,
+      riepilogo: "21:30",    // "hai segnato le spese di oggi?"
+      // I pagamenti in arrivo. Tre avvisi e non uno solo, perché servono a
+      // tre cose diverse: a tre giorni fai in tempo a spostare i soldi nel
+      // pocket giusto, a un giorno fai in tempo a rinunciare a qualcosa, la
+      // mattina stessa serve solo a non trovarti il conto più magro senza
+      // sapere perché. Un avviso solo dovrebbe fare tutti e tre i lavori e
+      // non ne farebbe bene nessuno.
+      pagamenti: true,
+      pagamentiOra: "08:30",   // l'ora dell'avviso, per tutti e tre gli anticipi
+      pagamentiGiorni: [3, 1, 0],
+    },
+  },
+  up: 0,
+};
+
+export const casella = apriCasella("notifiche", PREDEFINITO);
+export const stato = () => casella.leggi();
+
+export const supportate = () =>
+  "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+export const permesso = () => (supportate() ? Notification.permission : "unsupported");
+
+/** In PWA installata? Su iOS il push funziona SOLO da schermata Home. */
+export const installata = () =>
+  globalThis.matchMedia?.("(display-mode: standalone)").matches || (navigator as any).standalone === true;
+
+export const suIOS = () =>
+  /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+/** La chiave pubblica VAPID, da base64url ai byte che vuole PushManager. */
+function chiaveApplicativa(base64: string) {
+  const pad = "=".repeat((4 - (base64.length % 4)) % 4);
+  const b64 = (base64 + pad).replace(/-/g, "+").replace(/_/g, "/");
+  const grezzo = atob(b64);
+  return Uint8Array.from(grezzo, (c) => c.charCodeAt(0));
+}
+
+/**
+ * Chiede il permesso e iscrive questo dispositivo.
+ *
+ * Va chiamata da un gesto dell'utente: su Safari il permesso richiesto
+ * fuori da un tocco viene negato in silenzio, senza mostrare nulla — e poi
+ * non si può più richiedere.
+ *
+ * @returns {Promise<{ok: boolean, motivo?: string}>}
+ */
+export async function iscrivi(): Promise<{ ok: boolean; motivo?: string }> {
+  if (!supportate()) return { ok: false, motivo: "Questo browser non supporta le notifiche push." };
+  if (!CFG.vapidPublic) return { ok: false, motivo: "Manca la chiave VAPID." };
+  if (suIOS() && !installata()) {
+    return { ok: false, motivo: "Su iPhone le notifiche funzionano solo se ATLAS è installata dalla schermata Home." };
+  }
+
+  const esito = await Notification.requestPermission();
+  if (esito !== "granted") {
+    return { ok: false, motivo: esito === "denied"
+      ? "Permesso negato. Va riattivato dalle impostazioni del browser."
+      : "Permesso non concesso." };
+  }
+
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,   // obbligatorio: niente push silenziosi
+      applicationServerKey: chiaveApplicativa(CFG.vapidPublic) as BufferSource,
+    });
+  }
+
+  const j = sub.toJSON();
+  const impronta = impronaDi(j.endpoint!);
+
+  casella.aggiorna((s) => {
+    // L'id deriva dall'endpoint: riaprire l'app non crea un doppione, e
+    // reiscriversi dopo una revoca sostituisce il record invece di
+    // affiancarlo. Senza, il repo si riempie di iscrizioni morte.
+    const i = s.subs.findIndex((x) => x.id === impronta);
+    const rec: Iscrizione = {
+      id: impronta,
+      endpoint: j.endpoint,
+      p256dh: j.keys?.p256dh,
+      auth: j.keys?.auth,
+      ua: navigator.userAgent.slice(0, 80),
+      up: Date.now(),
+    };
+    if (i >= 0) s.subs[i] = rec; else s.subs.push(rec);
+  });
+
+  return { ok: true };
+}
+
+/** Disiscrive questo dispositivo e mette la lapide. */
+export async function disiscrivi() {
+  if (!supportate()) return;
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (!sub) return;
+  const impronta = impronaDi(sub.endpoint);
+  await sub.unsubscribe();
+  casella.aggiorna((s) => {
+    const i = s.subs.findIndex((x) => x.id === impronta);
+    if (i >= 0) s.subs[i] = { id: impronta, del: true, up: Date.now() };
+  });
+}
+
+/** Questo dispositivo è iscritto? */
+export async function iscritto() {
+  if (!supportate() || permesso() !== "granted") return false;
+  const reg = await navigator.serviceWorker.ready;
+  return Boolean(await reg.pushManager.getSubscription());
+}
+
+/* =========================================================================
+   IL RIALLINEAMENTO — il guasto del 19 settembre.
+
+   Le notifiche partivano tutti i giorni, Apple le accettava tutte — «2/2»
+   nei log, ogni mattina e ogni sera — e sul telefono non ne arrivava una.
+
+   La causa stava qui, nella differenza fra due domande. L'app chiedeva
+   «questo browser ha un'iscrizione?», e se sì scriveva «questo dispositivo
+   è iscritto». Ma non chiedeva mai «è QUELLA che ha il server?». E l'unico
+   momento in cui scriveva l'iscrizione sul server era il tocco su «Attiva»,
+   che però una volta iscritti non compariva più.
+
+   iOS RIGENERA le iscrizioni push: dopo un aggiornamento del sistema, dopo
+   una reinstallazione dalla schermata Home. Quando succede il telefono ha
+   un endpoint nuovo, l'app continua a dire «iscritto», e nessuno lo scrive
+   mai sul server. Il mittente spara all'endpoint vecchio; Apple a volte non
+   risponde 410 ma accetta e butta via. Nei dati c'erano infatti DUE
+   iscrizioni dello stesso iPhone, del 22 agosto e del 12 settembre, e
+   nessuna delle due riceveva.
+
+   Questa funzione gira a ogni avvio e rimette in pari le cose: se
+   l'iscrizione che il telefono ha adesso non è fra quelle che il server
+   conosce — o c'è con chiavi diverse — la scrive. Non chiede permessi, non
+   apre finestre: se il permesso non c'è non fa niente, e se c'è ripara.
+   Da qui in avanti una rigenerazione di iOS si aggiusta alla prossima
+   apertura dell'app, senza che nessuno se ne accorga.
+   ========================================================================= */
+export async function riallinea() {
+  if (!supportate() || permesso() !== "granted") return { stato: "senza-permesso" };
+  let sub: PushSubscription | null;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    sub = await reg.pushManager.getSubscription();
+  } catch { return { stato: "errore" }; }
+  if (!sub) return { stato: "non-iscritto" };
+
+  const j = sub.toJSON();
+  const id = impronaDi(j.endpoint!);
+  const noto = stato().subs.find((x) => x.id === id && !x.del);
+
+  // Già noto con le stesse chiavi: niente da scrivere. Il controllo sulle
+  // chiavi non è pignoleria — un endpoint uguale con chiavi nuove è un
+  // messaggio che Apple non sa più decifrare, cioè uno che non arriva.
+  if (noto && noto.p256dh === j.keys?.p256dh && noto.auth === j.keys?.auth) {
+    return { stato: "ok", id };
+  }
+
+  casella.aggiorna((s) => {
+    const i = s.subs.findIndex((x) => x.id === id);
+    const rec: Iscrizione = {
+      id, endpoint: j.endpoint, p256dh: j.keys?.p256dh, auth: j.keys?.auth,
+      ua: navigator.userAgent.slice(0, 80),
+      up: Date.now(),
+    };
+    if (i >= 0) s.subs[i] = rec; else s.subs.push(rec);
+  });
+  return { stato: "riparato", id };
+}
+
+/** L'id dell'iscrizione di questo dispositivo, o null. Serve alla diagnosi. */
+export async function idQuestoDispositivo() {
+  if (!supportate() || permesso() !== "granted") return null;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    return sub ? impronaDi(sub.toJSON().endpoint!) : null;
+  } catch { return null; }
+}
+
+/**
+ * Tiene SOLO l'iscrizione di questo dispositivo e mette la lapide alle altre.
+ *
+ * Non è automatico, e di proposito: dal telefono non si può sapere se
+ * un'altra iscrizione è un telefono morto o un secondo dispositivo vivo.
+ * Lo sai tu, e il pulsante lo chiede a te.
+ */
+export async function tieniSoloQuesto() {
+  const mio = await idQuestoDispositivo();
+  if (!mio) return 0;
+  let tolte = 0;
+  casella.aggiorna((s) => {
+    s.subs = s.subs.map((x) => {
+      if (x.id === mio || x.del) return x;
+      tolte++;
+      return { id: x.id, del: true, up: Date.now() };
+    });
+  });
+  return tolte;
+}
+
+/**
+ * Un id stabile derivato dall'endpoint.
+ *
+ * Non si usa l'endpoint intero come id perché è lungo centinaia di
+ * caratteri e finirebbe in ogni riga di diagnostica: l'endpoint è di fatto
+ * una credenziale, chi ce l'ha può mandare notifiche a quel telefono.
+ */
+function impronaDi(endpoint: string) {
+  let h = 5381;
+  for (let i = 0; i < endpoint.length; i++) h = ((h << 5) + h + endpoint.charCodeAt(i)) >>> 0;
+  return `d_${h.toString(36)}`;
+}
+
+/**
+ * Cambia gli orari di un modulo. Il workflow li rilegge al giro dopo.
+ *
+ * `s.up = Date.now()` NON è una formalità, ed è costato dieci giorni di
+ * notifiche.
+ *
+ * Gli orari si fondono con `if (remoto.up > s.up)`, che è la regola giusta.
+ * Ma qui `up` non veniva alzato mai: accendere una levetta cambiava
+ * `orari` e lasciava `up` dov'era — zero, su un dispositivo che non l'aveva
+ * mai avuto. Il risultato è che la scelta dell'utente NON poteva vincere un
+ * confronto, e il valore di fabbrica — tutte le levette spente — la
+ * sostituiva al primo giro. Nella cronologia di atlas-dati `notifiche.json`
+ * rimbalza fra acceso e spento dal 25 agosto; il 2 settembre alle 20:52 si
+ * è fermato su spento, e da lì non è più arrivata una notifica.
+ */
+export function scriviOrari(modulo: string, patch: Record<string, any>) {
+  casella.aggiorna((s) => {
+    s.orari[modulo] = { ...s.orari[modulo], ...patch };
+    s.up = Date.now();
+  });
+}
+
+/** Una notifica locale, per provare che la catena funzioni fin qui. */
+export async function provaLocale() {
+  if (permesso() !== "granted") return false;
+  const reg = await navigator.serviceWorker.ready;
+  await reg.showNotification("ATLAS", {
+    body: "Le notifiche funzionano.",
+    icon: "./icons/icon-192.png",
+    badge: "./icons/icon-192.png",
+    tag: "prova",
+  });
+  return true;
+}
+
+// ---------------------------------------------------------------- sync ---
+
+export function avviaSync() {
+  const canale = apriCanale({
+    id: "notifiche",
+    file: "notifiche.json",
+    impacchetta: () => {
+      const s = stato();
+      return { subs: s.subs, orari: s.orari, up: s.up || 0 };
+    },
+    applica: (remoto: any) => {
+      casella.aggiorna((s) => {
+        s.subs = potaLapidi(fondiRecord(s.subs, remoto.subs));
+        // Gli orari sono uno solo per tutti i dispositivi: vince il più recente.
+        if ((remoto.up || 0) > (s.up || 0)) {
+          for (const k of Object.keys(s.orari)) {
+            if (remoto.orari?.[k]) s.orari[k] = { ...s.orari[k], ...remoto.orari[k] };
+          }
+          // E SI PRENDE ANCHE IL TIMESTAMP. Senza, il dispositivo adotta i
+          // valori buoni ma resta convinto di avere `up: 0`, quindi al giro
+          // dopo li rispedisce marcati come «mai scritti da nessuno» — e
+          // alla successiva reinstallazione li perde di nuovo. È la metà
+          // mancante del confronto: adottare un valore vuol dire adottare
+          // anche il momento in cui è stato scelto.
+          s.up = remoto.up;
+        }
+      }, { origine: "sync", tocca: false });
+    },
+  });
+
+  casella.osserva((_, origine) => { if (origine !== "sync") canale.segnalaModifica(); });
+  canale.avvia();
+  return canale;
+}

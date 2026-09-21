@@ -17,6 +17,7 @@
 
 import type { Component } from "svelte";
 import { avviaSync as sincronizzaContesto } from "./contesto";
+import { avviaSync as sincronizzaNotifiche } from "./notifiche";
 
 /** La scheda che un modulo dà alla home. Vedi CLAUDE.md, «oggi()». */
 export interface SchedaOggi {
@@ -47,6 +48,9 @@ export interface VoceModulo {
   verso?: "su" | "giu";
   vista: () => Promise<{ default: Component<any> }>;
   contratto?: () => Promise<Contratto>;
+  /** La sua pagina in Impostazioni. La disegna il modulo, non Impostazioni:
+      così Impostazioni non importa nessun modulo (CLAUDE.md, regola 12). */
+  impostazioni?: () => Promise<{ default: Component<any> }>;
 }
 
 export const MODULI: VoceModulo[] = [
@@ -58,26 +62,31 @@ export const MODULI: VoceModulo[] = [
     id: "finanze", nome: "Finanze", icona: "finanze", accento: "var(--color-orange)", verso: "giu",
     vista: () => import("../../moduli/finanze/Vista.svelte"),
     contratto: () => import("$condivisi/finanze/contratto.js"),
+    impostazioni: () => import("../../moduli/finanze/Impostazioni.svelte"),
   },
   {
     id: "pasti", nome: "Pasti", icona: "pasti", accento: "var(--color-pink)", verso: "giu",
     vista: () => import("../../moduli/pasti/Vista.svelte"),
     contratto: () => import("$condivisi/pasti/contratto.js"),
+    impostazioni: () => import("../../moduli/pasti/Impostazioni.svelte"),
   },
   {
     id: "mobilita", nome: "Mobilità", icona: "corpo", accento: "var(--color-mint)", gruppo: "corpo",
     vista: () => import("../../moduli/mobilita/Vista.svelte"),
     contratto: () => import("$condivisi/mobilita/contratto.js"),
+    impostazioni: () => import("../../moduli/mobilita/Impostazioni.svelte"),
   },
   {
     id: "allenamenti", nome: "Training", icona: "bersaglio", accento: "var(--color-red)", gruppo: "corpo",
     vista: () => import("../../moduli/allenamenti/Vista.svelte"),
     contratto: () => import("$condivisi/allenamenti/contratto.js"),
+    impostazioni: () => import("../../moduli/allenamenti/Impostazioni.svelte"),
   },
   {
     id: "abitudini", nome: "Abitudini", icona: "abitudini", accento: "var(--color-indigo)",
     vista: () => import("../../moduli/abitudini/Vista.svelte"),
     contratto: () => import("$condivisi/abitudini/contratto.js"),
+    impostazioni: () => import("../../moduli/abitudini/Impostazioni.svelte"),
   },
   {
     id: "impostazioni", nome: "Impostazioni", icona: "impostazioni", accento: "var(--color-blue)",
@@ -160,6 +169,10 @@ export async function prendiContratto(id: string): Promise<Contratto | null> {
 export async function avviaTuttiISync() {
   try { sincronizzaContesto(); }
   catch (e) { console.error("[registro] sync della lavagna non avviato", e); }
+  // Le iscrizioni push e gli orari: stanno nel nucleo, non in un modulo,
+  // perché sono una cosa sola per tutti (CLAUDE.md, §5).
+  try { sincronizzaNotifiche(); }
+  catch (e) { console.error("[registro] sync delle notifiche non avviato", e); }
 
   const esiti = await Promise.allSettled(MODULI_DATI.map((m) => prendiContratto(m.id)));
   esiti.forEach((e, i) => {

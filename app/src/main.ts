@@ -10,6 +10,7 @@ import App from "./App.svelte";
 import { avviaTuttiISync } from "./lib/core/registro";
 import { vaiA } from "./lib/core/router.svelte";
 import { caricaContratti } from "./lib/core/contratti.svelte";
+import { riallinea } from "./lib/core/notifiche";
 
 /**
  * Il pizzico su Safari. `user-scalable=no` lo ignora per scelta, e
@@ -79,6 +80,14 @@ async function registraServiceWorker() {
   }
   reg.update().catch(() => {});
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) reg.update().catch(() => {});
+    if (!document.hidden) {
+      reg.update().catch(() => {});
+      riallinea().catch(() => {});
+    }
   });
+
+  // L'ISCRIZIONE PUSH SI RIMETTE IN PARI A OGNI AVVIO: iOS la rigenera dopo
+  // un aggiornamento, e senza questa riga nessuno scriveva l'endpoint nuovo
+  // sul server (il guasto del 19 settembre, vedi notifiche.ts).
+  riallinea().catch(() => {});
 }
