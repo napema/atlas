@@ -38,23 +38,20 @@
 {#if !giorni.length}
   <Vuoto icona="portafoglio" titolo="Nessun movimento" testo="Con Uscita o Entrata qui in basso ne registri uno." />
 {:else}
-  <div class="colonne">
-    {#each giorni as g (g.data)}
+  {#each giorni as g (g.data)}
       <Sezione titolo={maiuscola(dataUmana(g.data))}>
         {#snippet coda()}
           {#if g.netto !== 0}<span class="cifre text-subheadline" class:entrata={g.netto > 0} class:uscita={g.netto < 0}>{euro(g.netto, { segno: true })}</span>{/if}
         {/snippet}
         {#each g.movs as m (m.id)}<RigaMovimento {m} />{/each}
       </Sezione>
-    {/each}
-  </div>
+  {/each}
 {/if}
 
 <style>
   .filtri { overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--content-inset)); padding: 0 var(--content-inset); }
   .filtri :global(.pillole) { flex-wrap: nowrap; }
   .filtri :global(button) { flex: none; }
-  .colonne { display: flex; flex-direction: column; gap: var(--space-6); }
   .entrata { color: var(--color-green); }
   .uscita { color: var(--label-secondary); }
 </style>

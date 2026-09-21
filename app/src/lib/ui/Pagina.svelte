@@ -33,7 +33,7 @@
     azioni?: Snippet;
     /** Qualcosa al posto del titolo grande (il selettore di un gruppo). */
     testata?: Snippet;
-    /** Più larga sullo schermo del PC: la home a due colonne. */
+    /** La pagina fa da sé le sue colonne (la home): niente colonne automatiche. */
     larga?: boolean;
     children: Snippet;
   } = $props();
@@ -98,7 +98,13 @@
 </main>
 
 <style>
+  /* LARGHEZZA. Sul telefono una colonna sola; sul PC la pagina prende quasi
+     tutta la finestra — non tutta, con un margine d'aria ai lati — e le
+     sezioni si dispongono in colonne, come un cruscotto. Una striscia da
+     672px in mezzo a un monitor da 1900 era una app da telefono aperta sul
+     PC, non una app per il PC. */
   :global(:root) {
+    --larghezza-pagina: var(--readable-width);
     --altezza-barra: calc(env(safe-area-inset-top, 0px) + var(--navbar-height));
     /* quanto spazio lasciare in fondo per la barra delle schede che galleggia */
     --spazio-schede: calc(max(env(safe-area-inset-bottom, 0px), 12px) + 96px);
@@ -126,7 +132,7 @@
 
   .barra-riga {
     height: var(--navbar-height);
-    max-width: var(--readable-width); margin: 0 auto;
+    max-width: var(--larghezza-pagina); margin: 0 auto;
     padding: 0 var(--content-inset);
     display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--space-2);
   }
@@ -149,13 +155,41 @@
   .indietro:active { opacity: 0.5; }
 
   .pagina {
-    max-width: var(--readable-width); margin: 0 auto;
+    max-width: var(--larghezza-pagina); margin: 0 auto;
     padding: calc(var(--altezza-barra) + 2px) var(--content-inset) var(--spazio-schede);
     min-height: 100dvh;
   }
-  .larga { --readable-width: 1040px; }
   .sopra { margin: 0 0 2px; min-height: var(--lh-footnote); }
   .titolo-grande { margin-bottom: var(--space-4); }
   .titolo-grande h1 { overflow-wrap: anywhere; }
   .contenuto { display: flex; flex-direction: column; gap: var(--space-6); }
+
+  @media (min-width: 1000px) {
+    :global(:root) { --larghezza-pagina: min(calc(100vw - 96px), 1640px); }
+    .pagina { padding-left: var(--space-8); padding-right: var(--space-8); }
+    .barra-riga { padding-left: var(--space-8); padding-right: var(--space-8); }
+
+    /* Le colonne: si riempiono dall'alto in basso e poi si passa alla
+       successiva, e una sezione non si spezza mai fra due colonne. I
+       controlli che valgono per tutta la pagina — i segmenti, le strisce di
+       giorni e di settimane, il mese — attraversano tutte le colonne. */
+    .pagina:not(.larga) .contenuto {
+      display: block;
+      column-width: 440px;
+      column-gap: var(--space-6);
+    }
+    .pagina:not(.larga) .contenuto > :global(*) {
+      break-inside: avoid;
+      margin-bottom: var(--space-6);
+    }
+    .pagina:not(.larga) .contenuto > :global(.segmenti),
+    .pagina:not(.larga) .contenuto > :global(.nastro),
+    .pagina:not(.larga) .contenuto > :global(.settimana),
+    .pagina:not(.larga) .contenuto > :global(.mese),
+    .pagina:not(.larga) .contenuto > :global(.filtri),
+    .pagina:not(.larga) .contenuto > :global(.intera) {
+      column-span: all;
+    }
+    .pagina:not(.larga) .contenuto > :global(.segmenti) { max-width: 520px; }
+  }
 </style>

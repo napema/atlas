@@ -60,7 +60,6 @@
 {#if d.vuoto}
   <Vuoto icona="grafico" titolo="Niente da analizzare" testo="Registra le uscite e qui trovi grafici, statistiche e il dettaglio voce per voce." />
 {:else}
-  <div class="griglia">
     <Sezione titolo="Andamento del mese" piede={d.passo === null ? `Mese chiuso a ${euro(d.st.usciteNette)}.` : d.passo > 0 ? `La retta tratteggiata è il ritmo ideale. Sei ${euro(d.passo, { tondo: true })} sopra.` : `La retta tratteggiata è il ritmo ideale. Sei ${euro(-d.passo, { tondo: true })} sotto.`}>
       {#snippet coda()}<span class="text-footnote secondario cifre">budget {euro(d.bt, { tondo: true })}</span>{/snippet}
       <div class="grafico"><GraficoCumulato cum={d.cum} budget={d.bt} giornoOggi={d.corrente ? d.giorno : null} giorniMese={d.giorni} /></div>
@@ -129,11 +128,9 @@
     {#if d.st.orfani > 0}
       <p class="orfani text-subheadline">Rimborsi non agganciati: <b class="cifre">{euro(d.st.orfani)}</b>. Riducono il totale ma non sai da quale spesa vengono: aprili e collegali.</p>
     {/if}
-  </div>
 {/if}
 
 <style>
-  .griglia { display: flex; flex-direction: column; gap: var(--space-6); }
   .grafico { padding: var(--space-4); }
   .due { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); padding: var(--space-4); }
   .due div, .stat div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius-xl); background: var(--fill-quaternary); }

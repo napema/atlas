@@ -251,6 +251,12 @@
       grid-template-areas: "adesso finanze" "costanza finanze" "costanza moduli";
     }
   }
+  @media (min-width: 1300px) {
+    .griglia {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-areas: "adesso finanze moduli" "costanza finanze moduli";
+    }
+  }
   .area-adesso { grid-area: adesso; }
   .area-finanze { grid-area: finanze; }
   .area-costanza { grid-area: costanza; }
