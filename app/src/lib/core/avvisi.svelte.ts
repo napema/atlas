@@ -44,3 +44,20 @@ export function chiudiAvviso() {
   clearTimeout(timer);
   corrente = null;
 }
+
+/* ------------------------------------------------------------ celebra --
+   La conferma grande al centro: una spunta che si disegna e una parola.
+   Per le chiusure vere — il check della giornata, una scadenza pagata, la
+   settimana ricaricata — non per ogni salvataggio: se festeggia tutto non
+   festeggia niente. */
+
+let festa = $state<{ id: number; testo: string } | null>(null);
+let timerFesta: ReturnType<typeof setTimeout> | undefined;
+
+export const celebrazione = { get corrente() { return festa; } };
+
+export function celebra(testo = "") {
+  clearTimeout(timerFesta);
+  festa = { id: prossimo++, testo };
+  timerFesta = setTimeout(() => (festa = null), 1400);
+}

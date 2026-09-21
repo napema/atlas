@@ -8,7 +8,7 @@
 // `riga`…). Qui non ci sono: li hanno sostituiti i componenti Svelte in
 // `lib/ui/`. Resta solo ciò che non disegna niente.
 
-export { avviso } from "./avvisi.svelte";
+export { avviso, celebra } from "./avvisi.svelte";
 
 const NUM = new Intl.NumberFormat("it-IT");
 const NUM2 = new Intl.NumberFormat("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
