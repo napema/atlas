@@ -31,7 +31,7 @@
 
   type Fase = "vuota" | "ripresa" | "collo" | "corso" | "fine";
   let fase = $state<Fase>("vuota");
-  let passiLavoro: any[] = [];
+  let passiLavoro = $state.raw<any[]>([]);
   let totale = $state(0);
   let step = $state<any>(null);
   let residui = $state(0);
@@ -93,10 +93,11 @@
   }
 
   function fine() {
-    esito = registraCompletamento(passiLavoro, tipo);
+    const r = registraCompletamento(passiLavoro, tipo);
+    esito = r;
     // L'annuncio che fa spuntare da sé l'abitudine «Mobilità»: nella app
     // nuova non c'è `modulo.js` a ritrasmetterlo dal document al bus.
-    annuncia("mobilita:sessione-completata", { data: oggiISO(), tipo, durataMin: esito.minuti });
+    annuncia("mobilita:sessione-completata", { data: oggiISO(), tipo, durataMin: r.minuti });
     avviso("Sessione registrata.");
     engine = null;
     fase = "fine";
