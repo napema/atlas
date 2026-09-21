@@ -237,13 +237,17 @@
 
   .verdetto { margin-top: calc(-1 * var(--space-3)); color: var(--label-secondary); font-weight: var(--weight-regular); }
 
+  /* `minmax(0, 1fr)` e non `1fr`: una colonna `1fr` non scende sotto la
+     larghezza minima del suo contenuto, e il nome lungo di una cena la
+     allargava oltre lo schermo del telefono. */
   .griglia {
     display: grid; gap: var(--space-6);
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "adesso" "finanze" "costanza" "moduli";
   }
   @media (min-width: 900px) {
     .griglia {
-      grid-template-columns: 1fr 1fr; align-items: start;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start;
       grid-template-areas: "adesso finanze" "costanza finanze" "costanza moduli";
     }
   }
