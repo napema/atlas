@@ -190,6 +190,9 @@
     .pagina:not(.larga) .contenuto > :global(.intera) {
       column-span: all;
     }
+    /* Attraversano le colonne ma non si stirano: sette giorni sparsi su un
+       metro e mezzo di schermo non si leggono più come una settimana. */
     .pagina:not(.larga) .contenuto > :global(.segmenti) { max-width: 520px; }
+    .pagina:not(.larga) .contenuto > :global(.settimana) { max-width: 560px; }
   }
 </style>
