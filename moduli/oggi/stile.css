@@ -11,7 +11,7 @@
 
 /* ------------------------------------------------------- l'intestazione */
 
-.og-testa { position: relative; padding: var(--s-2) 0 var(--s-5); }
+.og-testa { position: relative; padding: 0 0 var(--s-5); }
 
 /* L'ingranaggio in alto a destra, allineato alla riga della data. */
 .og-ingranaggio {

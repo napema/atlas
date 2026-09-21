@@ -126,16 +126,19 @@ ul, ol { margin: 0; padding: 0; }
   width: 100%;
   max-width: var(--leggibile);
   margin: 0 auto;
-  /* 24px SOTTO LA SAFE AREA, e non meno. Su iOS 26/27 il sistema disegna
-     sotto la barra di stato una sfumatura sfocata — lo «scroll edge
-     effect» — che scende qualche punto OLTRE l'inset. Con 8px la riga della
-     data finiva dentro e si leggeva offuscata, «come da un'ombra».
-     È la seconda volta: era già stato portato a 28px e la riscrittura iOS 27
-     l'ha riabbassato. Su iOS nativo, fra la barra di stato e il titolo
-     grande c'è la riga compatta della navigazione (44pt): la nostra riga di
-     contesto ne fa le veci, quindi deve stare fuori dall'effetto. */
+  /* 44px SOTTO LA SAFE AREA: è la riga di navigazione compatta di iOS.
+     Su iOS 26/27 il sistema disegna sotto la barra di stato una fascia
+     sfocata — lo «scroll edge effect» — che copre anche quei 44pt. Nelle
+     app native la riga c'è ed è vuota, oppure ha pulsanti che il sistema
+     disegna SOPRA l'effetto; in una web app l'effetto sta sopra il
+     contenuto, quindi qualunque cosa finisca lì dentro esce sfocata.
+
+     Misurato su un iPhone vero, due volte: con 8px e poi con 24px la riga
+     «data · sincronizzato» e l'ingranaggio erano offuscati, mentre il
+     titolo appena sotto era nitido. Il bordo della fascia cade fra i 35 e
+     i 40pt sotto l'inset: 44 è la misura di sistema e ci sta fuori. */
   padding:
-    calc(env(safe-area-inset-top) + var(--s-6))
+    calc(env(safe-area-inset-top) + 44px)
     calc(env(safe-area-inset-right) + var(--gronda))
     calc(env(safe-area-inset-bottom) + 120px)
     calc(env(safe-area-inset-left) + var(--gronda));
@@ -149,7 +152,7 @@ ul, ol { margin: 0; padding: 0; }
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--s-3);
-  padding: var(--s-4) 0 var(--s-2);
+  padding: 0 0 var(--s-2);
   margin-bottom: var(--s-2);
 }
 .testa-testo { min-width: 0; }
