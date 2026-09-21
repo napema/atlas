@@ -126,8 +126,16 @@ ul, ol { margin: 0; padding: 0; }
   width: 100%;
   max-width: var(--leggibile);
   margin: 0 auto;
+  /* 24px SOTTO LA SAFE AREA, e non meno. Su iOS 26/27 il sistema disegna
+     sotto la barra di stato una sfumatura sfocata — lo «scroll edge
+     effect» — che scende qualche punto OLTRE l'inset. Con 8px la riga della
+     data finiva dentro e si leggeva offuscata, «come da un'ombra».
+     È la seconda volta: era già stato portato a 28px e la riscrittura iOS 27
+     l'ha riabbassato. Su iOS nativo, fra la barra di stato e il titolo
+     grande c'è la riga compatta della navigazione (44pt): la nostra riga di
+     contesto ne fa le veci, quindi deve stare fuori dall'effetto. */
   padding:
-    calc(env(safe-area-inset-top) + var(--s-2))
+    calc(env(safe-area-inset-top) + var(--s-6))
     calc(env(safe-area-inset-right) + var(--gronda))
     calc(env(safe-area-inset-bottom) + 120px)
     calc(env(safe-area-inset-left) + var(--gronda));
