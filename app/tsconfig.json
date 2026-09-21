@@ -27,7 +27,7 @@
     "types": ["svelte", "vite/client"],
     // Lo stesso alias di vite.config.ts: senza, il controllo dei tipi non
     // trova nessun `$lib/…` anche se la build li trova tutti.
-    "paths": { "$lib": ["./src/lib"], "$lib/*": ["./src/lib/*"], "$condivisi/*": ["../moduli/*"] }
+    "paths": { "$lib": ["./src/lib"], "$lib/*": ["./src/lib/*"] }
   },
   "include": ["src/**/*.ts", "src/**/*.svelte", "src/**/*.js"]
 }

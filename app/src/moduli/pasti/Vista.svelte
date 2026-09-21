@@ -30,7 +30,7 @@
 
   let { resto = [] }: { resto?: string[] } = $props();
 
-  let vista = $state<"oggi" | "settimana">(resto[0] === "settimana" ? "settimana" : "oggi");
+  let vista = $state<"oggi" | "settimana">("oggi");
 
   // I fogli. Uno alla volta: passare da uno all'altro vuol dire chiudere il
   // primo e aprire il secondo quando il primo è sceso.
@@ -39,7 +39,11 @@
   let tipoAggiunta = $state<"aggiunta" | "cambio">("aggiunta");
   const dopo = (fn: () => void) => setTimeout(fn, 320);
 
-  $effect(() => { if (resto[0] === "importa") queueMicrotask(() => (fImport = true)); });
+  // Le rotte da fuori: `#/pasti/settimana`, `#/pasti/importa`.
+  $effect(() => {
+    if (resto[0] === "settimana") vista = "settimana";
+    if (resto[0] === "importa") queueMicrotask(() => (fImport = true));
+  });
 
   const iso = $derived.by(() => { dati.versione; return giornoCorrente(); });
   const b = $derived.by(() => { dati.versione; return bersagli(); });
