@@ -146,7 +146,15 @@
     chiudi();
   }
 
-  const nomeGiorno = $derived(iso ? `${maiuscola(GIORNI[(daISO(iso).getDay() + 6) % 7])} ${dataUmana(iso).replace(/^\w+\s/, "")}` : "");
+  /* «Mercoledì oggi» no. Quando la data ha un nome proprio quello basta, e
+     il giorno della settimana lo dice già lui. */
+  const nomeGiorno = $derived.by(() => {
+    if (!iso) return "";
+    const umana = dataUmana(iso);
+    if (["oggi", "ieri", "domani"].includes(umana)) return maiuscola(umana);
+    const settimana = maiuscola(GIORNI[(daISO(iso).getDay() + 6) % 7]);
+    return `${settimana} ${daISO(iso).getDate()}`;
+  });
   const riassuntoFascia = (f: string) =>
     (bozza[f] || []).map((id) => pasto(id)?.nome).filter(Boolean).join(" + ");
   const contoFascia = (f: string) =>
