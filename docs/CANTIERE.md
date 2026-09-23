@@ -1333,3 +1333,45 @@ sale. Servirebbe che Allenamenti scrivesse sulla lavagna se oggi è stato
 fatto un allenamento e di che tipo (`scriviFatto("allenamenti", …)`).
 Pasti lo leggerebbe con `leggiFatto`, mai con un import diretto. Finché non
 c'è, il fabbisogno usa il fattore di attività fisso del profilo.
+
+---
+
+## 23 settembre 2026 — il giro del design (chat ATLAS)
+
+Fatto tutto dalla chat ATLAS, quindi **fuori perimetro** su `moduli/pasti/`
+e `moduli/allenamenti/`: se quelle chat ripartono, questo è già qui.
+
+**Sul PC la pagina riempie la finestra.** `Pagina.svelte` ha tre zone —
+`strumenti` (riga intera), `laterale` (colonna fissa da 380, appiccicata) e
+il resto in una griglia `auto-fit` da 420 minimo. `auto-fit` e non
+`auto-fill`: con una lastra sola la seconda colonna restava aperta e vuota.
+
+**Le azioni della schermata stanno sulla linea del titolo**, non
+nell'angolo della barra. Tornano nella barra quando il titolo grande è
+scorso via.
+
+**I fogli non risalgono più dopo essersi chiusi.** `display` e `overlay` in
+`allow-discrete` tenevano il `<dialog>` visibile mezzo secondo dopo
+`close()`, con la classe `chiudendo` già caduta: si vedeva la maniglia
+spuntare da sotto. La discesa la guida il timeout in `chiudi()`.
+
+**Le emoji di Apple anche su Windows.** `assets/fonts/AppleColorEmoji.woff`
+(44 MB) era nel repo da agosto e non l'aveva mai caricata nessuno. Ora c'è
+una `@font-face` **«ATLAS Emoji»** — il nome diverso è voluto: sta dopo
+`Apple Color Emoji` nella pila, quindi iPhone e Mac non scaricano niente.
+`unicode-range` stretto alle emoji vere: una freccia non tira giù 44 MB.
+Sta in **tutte** le pile di `tokens.css`, non solo in `--font-emoji`.
+
+**L'icona della app** è rifatta: tubo di vetro con bagliore, generata da
+`.claude/genera-icona.js` (canvas nel browser → il server di sviluppo
+scrive il PNG, vedi `do_POST` in `.claude/serve-dev.py`, solo in locale).
+
+**`moduli/allenamenti/muscoli.js` è nuovo** — chat Allenamenti, è roba
+vostra da qui in poi. Legge le righe del piano come sono scritte («Hack
+squat 4×8», «Curl+Pushdown») e ne ricava nome, serie e muscoli, con una
+mappa per parole chiave. `app/src/moduli/allenamenti/Corpo.svelte` disegna
+le due figure con i gruppi accesi.
+
+**Pasti**: la giornata è fatta di schede (emoji della fascia, calorie,
+i tre macro con le barre sul bersaglio del giorno) e il bilancio ha tre
+tessere al posto di tre frasi.

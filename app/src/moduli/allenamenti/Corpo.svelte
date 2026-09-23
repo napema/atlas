@@ -128,7 +128,10 @@
 </svg>
 
 <style>
-  .corpo { display: block; width: 100%; height: auto; max-width: 100%; overflow: visible; }
+  /* L'altezza la decide chi lo usa, la larghezza viene dietro. Con
+     `width: 100%` la figura si gonfiava fino alla lastra — 600px di alto —
+     e usciva dai bordi: si vedevano due paia di gambe senza testa. */
+  .corpo { display: block; margin-inline: auto; max-width: 100%; overflow: visible; }
 
   .pelle { fill: var(--fill-secondary); }
 
