@@ -10,22 +10,22 @@
   import Segmenti from "$lib/ui/Segmenti.svelte";
   import Sezione from "$lib/ui/Sezione.svelte";
   import Riga from "$lib/ui/Riga.svelte";
-  import Icona from "$lib/ui/Icona.svelte";
   import Traccia from "$lib/ui/Traccia.svelte";
   import Testata from "./Testata.svelte";
+  import Pasto from "./Pasto.svelte";
   import FoglioFascia from "./FoglioFascia.svelte";
   import FoglioScegli from "./FoglioScegli.svelte";
   import FoglioAggiungi from "./FoglioAggiungi.svelte";
   import FoglioImport from "./FoglioImport.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { giornoCorrente } from "$lib/core/contesto";
-  import { avviso, dataBreve, GIORNI, maiuscola, numero } from "$lib/core/ui";
+  import { avviso, dataBreve, GIORNI, maiuscola, numero, tocco } from "$lib/core/ui";
   import {
     SCOSTAMENTI, pianoSettimana, pasto, regimeDi, lunediDi, eliminaScostamento, registraScostamento,
   } from "$condivisi/pasti/dati.js";
   import { bersagli, giornata, settimana as settimanaCalcolo } from "$condivisi/pasti/calcolo.js";
   import { assicuraPiano, rigenera } from "$condivisi/pasti/piano.js";
-  import { MACRO, ICONE_FASCIA, FASCE_T, kcal } from "./comune";
+  import { MACRO, EMOJI_FASCIA, FASCE_T, kcal } from "./comune";
 
   let { resto = [] }: { resto?: string[] } = $props();
 
@@ -62,9 +62,17 @@
       ora: fascia.ora,
       cosa: saltato ? "Saltato" : sost ? sost.nome : f.nome || (f.regime === "salto" ? "Non la fai" : "Da scegliere"),
       senza: saltato || (!f.nome && !sost),
-      conti: saltato || (f.regime === "salto" && !sost) ? null : { kcal: macro.kcal || 0, p: macro.p || 0 },
+      conti: saltato || (f.regime === "salto" && !sost)
+        ? null
+        : { kcal: macro.kcal || 0, p: macro.p || 0, c: macro.c || 0, g: macro.g || 0 },
     };
-  }));
+  }).map((r: any) => ({
+    // Quanto pesa questo pasto sul bersaglio del GIORNO. E' la sola scala
+    // che dice qualcosa: 40 g di proteine sono tanti o pochi a seconda di
+    // quanti ne servono, e il pasto da solo non lo sa.
+    ...r,
+    quote: r.conti ? { p: b.p ? r.conti.p / b.p : 0, c: b.c ? r.conti.c / b.c : 0, g: b.g ? r.conti.g / b.g : 0 } : null,
+  })));
 
   const sett = $derived.by(() => {
     dati.versione;
@@ -126,24 +134,11 @@
   {#if vista === "oggi"}
     <Sezione titolo="La giornata">
       {#each righe as r (r.id)}
-        <Riga onclick={() => { fasciaScelta = r.id; fFascia = true; }}>
-          {#snippet inizio()}
-            <span class="tessera" class:spenta={r.senza}><Icona nome={ICONE_FASCIA[r.id] || "piatto"} misura={17} tratto={1.9} /></span>
-          {/snippet}
-          <span class="capo">
-            <span class="text-footnote secondario semibold">{r.fascia}</span>
-            <span class="text-footnote terziario cifre">{r.ora}</span>
-          </span>
-          <span class="cosa" class:secondario={r.senza}>{r.cosa}</span>
-          {#snippet fine()}
-            {#if r.conti}
-              <span class="conti cifre">
-                <span>{kcal(r.conti.kcal)}</span>
-                <span class="text-caption1 secondario">{Math.round(r.conti.p)} g prot.</span>
-              </span>
-            {/if}
-          {/snippet}
-        </Riga>
+        <Pasto
+          id={r.id} fascia={r.fascia} ora={r.ora} cosa={r.cosa} senza={r.senza}
+          conti={r.conti} quote={r.quote}
+          onclick={() => { tocco(6); fasciaScelta = r.id; fFascia = true; }}
+        />
       {/each}
     </Sezione>
 
@@ -154,8 +149,10 @@
             titolo={s.nome}
             sottotitolo={[s.ora, (SCOSTAMENTI as Record<string, string>)[s.tipo]].filter(Boolean).join(" · ")}
             valore="{kcal(s.kcal)} kcal"
-            onclick={() => togli(s)}
-          />
+            onclick={() => { tocco(6); togli(s); }}
+          >
+            {#snippet inizio()}<span class="emo-extra">{EMOJI_FASCIA[s.fascia] ?? "\u{1F37D}"}</span>{/snippet}
+          </Riga>
         {/each}
       </Sezione>
     {/if}
@@ -187,14 +184,10 @@
 <FoglioImport bind:aperto={fImport} />
 
 <style>
-  .tessera {
-    display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px;
-    background: var(--accento); color: #fff;
+  .emo-extra {
+    display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px;
+    background: var(--fill-tertiary); font-family: var(--font-emoji); font-size: 17px; line-height: 1;
   }
-  .tessera.spenta { background: var(--fill-tertiary); color: var(--label-secondary); }
-  .capo { display: flex; gap: var(--space-2); align-items: baseline; }
-  .cosa { overflow-wrap: anywhere; }
-  .conti { display: flex; flex-direction: column; align-items: flex-end; font-weight: var(--weight-semibold); }
   .medie { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
   .voce { display: flex; flex-direction: column; gap: 6px; }
   .riga-m { display: flex; justify-content: space-between; }

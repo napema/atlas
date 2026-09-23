@@ -1,5 +1,5 @@
 <!--
-  La testata della giornata: l'anello delle calorie e le tre barre.
+  La testata della giornata: l'anello delle calorie e i tre macro.
 
   L'ANELLO NON DÀ UN GIUDIZIO. Per un giro era colorato di stato — verde,
   ambra, rosso sopra il bersaglio — ma l'obiettivo di questo modulo è la
@@ -9,6 +9,12 @@
 
   L'anello non passa mai il giro: uno che si riavvolge farebbe sembrare che
   sei di nuovo all'inizio.
+
+  I macro sono TESSERE e non tre righe di testo con una barretta. Erano
+  leggibili e basta: «Proteine 172 / 138 g» è una frase, e una frase la devi
+  leggere. Una tessera con l'emoji, la cifra grossa e la barra sotto si
+  guarda — e sono tre, quindi si confrontano a colpo d'occhio, che è
+  esattamente la domanda («sono indietro su qualcosa?»).
 -->
 <script lang="ts">
   import Anello from "$lib/ui/Anello.svelte";
@@ -22,7 +28,7 @@
 
 <div class="testata">
   <div class="alto">
-    <Anello valore={b.kcal ? t.kcal / b.kcal : 0} misura={124} spessore={11}>
+    <Anello valore={b.kcal ? t.kcal / b.kcal : 0} misura={132} spessore={12}>
       <span class="kcal cifre">{kcal(t.kcal)}</span>
       <span class="text-caption1 secondario">su {kcal(b.kcal)}</span>
     </Anello>
@@ -32,17 +38,22 @@
       <span class="text-footnote secondario">kcal</span>
     </div>
   </div>
+
   <div class="macro">
     {#each MACRO as m (m.k)}
-      <div class="voce">
-        <div class="riga text-subheadline">
-          <span>{m.nome}</span>
-          <span class="cifre secondario">{Math.round(t[m.k])} / {b[m.k]} g</span>
-        </div>
-        <Traccia valore={b[m.k] ? t[m.k] / b[m.k] : 0} colore={m.colore} altezza={6} etichetta={m.nome} />
+      {@const fatto = Math.round(t[m.k])}
+      {@const bersaglio = b[m.k]}
+      <div class="tessera" style:--tinta={m.colore}>
+        <span class="faccia">
+          <span class="emo">{m.emoji}</span>
+          <span class="text-caption1 secondario">{m.breve}</span>
+        </span>
+        <span class="valore cifre">{fatto}<i>/{bersaglio} g</i></span>
+        <Traccia valore={bersaglio ? fatto / bersaglio : 0} colore={m.colore} altezza={5} etichetta={m.nome} />
       </div>
     {/each}
   </div>
+
   {#if incerte}
     <p class="text-footnote secondario">{plurale(incerte, "fascia ancora da decidere", "fasce ancora da decidere")}: il totale è parziale.</p>
   {/if}
@@ -51,10 +62,18 @@
 <style>
   .testata { padding: var(--space-5) var(--space-4) var(--space-4); display: flex; flex-direction: column; gap: var(--space-5); }
   .alto { display: flex; align-items: center; justify-content: space-around; gap: var(--space-4); }
-  .kcal { font-family: var(--font-display); font-size: 28px; line-height: 32px; font-weight: var(--weight-bold); }
+  .kcal { font-family: var(--font-display); font-size: 30px; line-height: 34px; font-weight: var(--weight-bold); }
   .manca { display: flex; flex-direction: column; align-items: center; }
   .cifra { font-family: var(--font-display); font-size: 40px; line-height: 44px; font-weight: var(--weight-bold); color: var(--accento); }
-  .macro { display: flex; flex-direction: column; gap: var(--space-3); }
-  .voce { display: flex; flex-direction: column; gap: 6px; }
-  .riga { display: flex; justify-content: space-between; }
+
+  .macro { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+  .tessera {
+    display: flex; flex-direction: column; gap: 5px;
+    padding: var(--space-3); border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--tinta) 10%, transparent);
+  }
+  .faccia { display: flex; align-items: center; gap: 5px; min-width: 0; }
+  .emo { font-family: var(--font-emoji); font-size: 15px; line-height: 1; flex: none; }
+  .valore { font-size: 19px; font-weight: var(--weight-bold); white-space: nowrap; }
+  .valore i { font-style: normal; font-size: var(--text-caption1); font-weight: var(--weight-regular); color: var(--label-tertiary); }
 </style>

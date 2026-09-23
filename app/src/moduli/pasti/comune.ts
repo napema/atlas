@@ -11,10 +11,22 @@ import { FASCE } from "$condivisi/pasti/dati.js";
 /* I tre macro hanno un colore fisso in tutto il modulo. Non verde e non
    rosso: in ATLAS quei due vogliono dire «fatto» e «male». */
 export const MACRO = [
-  { k: "p", nome: "Proteine", colore: "var(--color-blue)" },
-  { k: "c", nome: "Carboidrati", colore: "var(--color-yellow)" },
-  { k: "g", nome: "Grassi", colore: "var(--color-indigo)" },
+  { k: "p", nome: "Proteine", breve: "Prot.", emoji: "\u{1F969}", colore: "var(--color-blue)" },
+  { k: "c", nome: "Carboidrati", breve: "Carb.", emoji: "\u{1F35E}", colore: "var(--color-yellow)" },
+  { k: "g", nome: "Grassi", breve: "Grassi", emoji: "\u{1F951}", colore: "var(--color-indigo)" },
 ] as const;
+
+/* Un'emoji per fascia, non un'icona di linea. Un piatto disegnato a tratto
+   è un simbolo; un'emoji è un'immagine — si riconosce prima di leggere, e
+   dà alla giornata il ritmo che una colonna di glifi grigi non ha. Sono
+   quelle di Apple ovunque: il font sta in `assets/fonts/`. */
+export const EMOJI_FASCIA: Record<string, string> = {
+  colazione: "\u{1F373}",
+  spuntino1: "\u{1F34E}",
+  pranzo: "\u{1F957}",
+  spuntino2: "\u{1F95C}",
+  cena: "\u{1F35D}",
+};
 
 export const ICONE_FASCIA: Record<string, string> = {
   colazione: "sole",
