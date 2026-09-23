@@ -14,12 +14,13 @@
   let {
     primari = [],
     secondari = [],
-    altezza = 220,
+    misura = 360,
     evidenzia = null,
   }: {
     primari?: string[];
     secondari?: string[];
-    altezza?: number;
+    /** Quanto può diventare larga: oltre, non cresce più. */
+    misura?: number;
     /** Un gruppo da far pulsare: quello dell'esercizio che stai guardando. */
     evidenzia?: string | null;
   } = $props();
@@ -28,7 +29,7 @@
     evidenzia === g ? "punta" : primari.includes(g) ? "primario" : secondari.includes(g) ? "secondario" : "spento";
 </script>
 
-<svg class="corpo" viewBox="0 0 440 460" height={altezza} role="img"
+<svg class="corpo" viewBox="0 0 440 460" style:max-width="{misura}px" role="img"
      aria-label="Corpo umano: {primari.length ? primari.join(', ') : 'nessun gruppo'} in evidenza">
   {#snippet sagoma(dx: number)}
     <g class="pelle" transform="translate({dx} 0)">
@@ -128,10 +129,10 @@
 </svg>
 
 <style>
-  /* L'altezza la decide chi lo usa, la larghezza viene dietro. Con
-     `width: 100%` la figura si gonfiava fino alla lastra — 600px di alto —
-     e usciva dai bordi: si vedevano due paia di gambe senza testa. */
-  .corpo { display: block; margin-inline: auto; max-width: 100%; overflow: visible; }
+  /* Larga quanto la lastra le concede, ma non oltre `misura`: senza tetto
+     si gonfiava a seicento pixel di alto e il foglio la tagliava — si
+     vedevano due paia di gambe senza testa. */
+  .corpo { display: block; margin-inline: auto; width: 100%; height: auto; overflow: visible; }
 
   .pelle { fill: var(--fill-secondary); }
 

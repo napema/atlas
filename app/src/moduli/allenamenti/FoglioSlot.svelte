@@ -172,7 +172,7 @@
         ? "Pieno: il lavoro grosso. A metà: quello che partecipa. Tocca un esercizio qui sotto per vedere solo il suo."
         : `Solo ${seduta.esercizi[scelto].nome}. Tocca di nuovo per tornare a tutta la seduta.`}>
         <div class="mappa">
-          <Corpo primari={acceso.primari} secondari={acceso.secondari} altezza={240} />
+          <Corpo primari={acceso.primari} secondari={acceso.secondari} />
         </div>
       </Sezione>
 
