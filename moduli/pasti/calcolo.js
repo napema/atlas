@@ -16,7 +16,7 @@
 import {
   FASCE, ID_FASCE, ATTIVITA, OBIETTIVI, slug,
   profilo, pesoAttuale, pianoSettimana, pasto, pastiPerFascia, scostamentiDi,
-  regimeDi, lunediDi, giorniSettimana,
+  regimeDi, lunediDi, giorniSettimana, vociPiano,
 } from "./dati.js";
 import { oggiISO, daISO } from "../../core/ui.js";
 
@@ -150,12 +150,21 @@ export function previstoFascia(iso, fascia) {
     };
   }
 
+  /* UNA FASCIA TIENE PIÙ VOCI: la cena non è «Piadina con pollo e
+     insalata», è piadina, pollo e insalata. Il totale è la somma, e il nome
+     è l'elenco — che è anche il modo in cui uno la racconta a voce.
+
+     `pastoId` resta, con la prima voce dentro: lo leggono ancora la vista
+     vecchia e il generatore, e toglierlo da qui vorrebbe dire cambiare tre
+     file per un campo che non dà fastidio a nessuno. */
   const piano = pianoSettimana(lunediDi(iso));
-  const id = piano?.giorni?.[iso]?.[fascia] || null;
-  const scelto = id ? pasto(id) : null;
+  const voci = vociPiano(piano, iso, fascia).map((id) => pasto(id)).filter(Boolean);
+  const macro = voci.reduce((t, v) => somma(t, macroDi(v)), ZERO());
   return {
-    regime, certo: Boolean(scelto),
-    macro: macroDi(scelto), nome: scelto?.nome || null, pastoId: id,
+    regime, certo: voci.length > 0,
+    macro, voci,
+    nome: voci.length ? voci.map((v) => v.nome).join(" + ") : null,
+    pastoId: voci[0]?.id || null,
   };
 }
 

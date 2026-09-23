@@ -239,6 +239,59 @@ export const pastiVivi = () => vivi(stato().pasti);
 export const pasto = (id) => pastiVivi().find((p) => p.id === id) || null;
 
 /** I pasti che hanno senso in una certa fascia, esclusi quelli spenti. */
+/* =========================================================================
+   I COMPONENTI — un pasto è fatto di cose, non è una cosa
+
+   All'inizio il database teneva combinazioni: «Piadina con pollo e
+   insalata», «Pasta scaldata e pollo». Erano comode il primo giorno e
+   sbagliate il secondo: la sera che c'è la piadina ma non l'insalata non
+   esiste nel database, e per averla bisogna creare un altro record che
+   ripete due terzi del primo. Con quindici combinazioni il conto è già
+   ingestibile, e ogni riga nuova è un'altra approssimazione da mantenere.
+
+   Quindi il database tiene COMPONENTI — piadina, pollo, insalata, riso,
+   sugo — e un pasto è l'insieme che scegli. Le combinazioni non spariscono:
+   diventano quello che sono sempre state, cioè una scelta di tre tocchi.
+   ========================================================================= */
+
+/** I gruppi, nell'ordine in cui si costruisce un piatto. */
+export const GRUPPI_COMPONENTI = [
+  { id: "proteina",    nome: "Proteine",    emoji: "\u{1F356}" },
+  { id: "carboidrato", nome: "Carboidrati", emoji: "\u{1F35E}" },
+  { id: "verdura",     nome: "Verdure",     emoji: "\u{1F957}" },
+  { id: "condimento",  nome: "Condimenti",  emoji: "\u{1F9C0}" },
+  { id: "frutta",      nome: "Frutta",      emoji: "\u{1F34E}" },
+  { id: "dolce",       nome: "Dolci",       emoji: "\u{1F36B}" },
+  { id: "bevanda",     nome: "Bevande",     emoji: "\u{2615}" },
+];
+
+export const nomeGruppo = (id) => GRUPPI_COMPONENTI.find((g) => g.id === id)?.nome || "Altro";
+
+/** Tutti i componenti vivi e accesi. */
+export const componenti = () => pastiVivi().filter((p) => p.tipo === "componente" && p.attivo !== false);
+
+/** I componenti buoni per una fascia, i più adatti per primi. */
+export const componentiPerFascia = (fascia) => {
+  const tutti = componenti();
+  return {
+    dentro: tutti.filter((p) => (p.fasce || []).includes(fascia)),
+    fuori: tutti.filter((p) => !(p.fasce || []).includes(fascia)),
+  };
+};
+
+/**
+ * Che cosa c'è nel piano per quella fascia, SEMPRE come elenco.
+ *
+ * Il piano ha tenuto per un po' un id solo per fascia. I record vecchi
+ * esistono ancora — sul repo e sull'altro dispositivo — e non si riscrivono
+ * per una comodità di chi legge: si normalizza qui, in un posto solo.
+ */
+export function vociPiano(piano, iso, fascia) {
+  const v = piano?.giorni?.[iso]?.[fascia];
+  if (!v) return [];
+  return (Array.isArray(v) ? v : [v]).filter(Boolean);
+}
+
 export const pastiPerFascia = (fascia) =>
   pastiVivi().filter((p) => p.attivo !== false && (p.fasce || []).includes(fascia));
 
@@ -324,6 +377,14 @@ export function salvaPasti(voci) {
         g: Math.round(Number(v.g) || 0),
         prepMin: Number(v.prepMin) || 0,
         tag: v.tag || [],
+        /* COMPONENTE o PIATTO. Un componente è una cosa sola — la piadina,
+           il pollo, l'insalata — e i pasti si costruiscono mettendone
+           insieme tre o quattro. Un piatto è una combinazione già fatta.
+           Il default è `piatto` perché i vecchi record non hanno il campo e
+           combinazioni erano. */
+        tipo: v.tipo === "componente" ? "componente" : "piatto",
+        gruppo: v.gruppo || "",
+        porzione: v.porzione || "",
         fonte: v.fonte || "chat",
         attivo: v.attivo !== false,
         del: false,
@@ -416,10 +477,45 @@ export function salvaPiano(lunedi, giorni, { manuale = false } = {}) {
 
 /** Cambia un singolo pasto del piano. È sempre una scelta dell'utente. */
 export function scegliPasto(lunedi, data, fascia, pastoId) {
+  return scegliVoci(lunedi, data, fascia, pastoId ? [pastoId] : []);
+}
+
+/** Mette (o toglie) l'elenco delle voci di una fascia. */
+export function scegliVoci(lunedi, data, fascia, ids) {
   const p = pianoSettimana(lunedi);
   const giorni = { ...(p?.giorni || {}) };
-  giorni[data] = { ...(giorni[data] || {}), [fascia]: pastoId };
+  const elenco = (ids || []).filter(Boolean);
+  giorni[data] = { ...(giorni[data] || {}), [fascia]: elenco.length ? elenco : null };
   salvaPiano(lunedi, giorni, { manuale: true });
+}
+
+/**
+ * Segna una settimana come pianificata a mano fino in fondo.
+ *
+ * Il promemoria della domenica si accende finché la settimana dopo non è
+ * confermata. Il marcatore sta sul record del piano e non in un blocco a
+ * parte: così si sincronizza da sé, e il telefono non richiede una cosa
+ * già fatta sul PC un'ora prima.
+ */
+export function confermaPiano(lunedi) {
+  const id = idPiano(lunedi);
+  casella.aggiorna((s) => {
+    const p = (s.piani || []).find((x) => x.id === id);
+    if (!p) return;
+    p.confermato = true;
+    p.bloccato = true;
+    p.up = Date.now();
+  });
+}
+
+/** Spegne dei pasti senza cancellarli: restano nello storico e si riaccendono. */
+export function spegniPasti(ids) {
+  casella.aggiorna((s) => {
+    for (const id of ids) {
+      const p = (s.pasti || []).find((x) => x.id === id);
+      if (p && p.attivo !== false) { p.attivo = false; p.up = Date.now(); }
+    }
+  });
 }
 
 /* =========================================================================
@@ -532,9 +628,121 @@ const SEMI_COLAZIONI = [
  * anche i nuovi, e uno che non ce l'ha rimetterebbe pure quelli che l'utente
  * aveva cancellato. Una chiave per infornata risolve entrambe le cose.
  */
+/* -------------------------------------------------------------------------
+   IL CATALOGO DEI COMPONENTI.
+
+   Le porzioni sono quelle che mangia davvero, ricavate dalle combinazioni
+   che aveva dichiarato: sommando pollo + riso + insalata si ritrova il
+   piatto di prima a meno di qualche decina di calorie. Non è pesatura, e
+   non deve esserlo — è una stima onesta, come tutto il resto del modulo.
+
+   `fasce` dice dove il componente ha senso, non dove è permesso: il
+   selettore mostra prima quelli della fascia e poi tutti gli altri, perché
+   il pollo a colazione è strano ma non è vietato.
+   ------------------------------------------------------------------------- */
+const C = (nome, porzione, gruppo, kcal, p, c, g, fasce, tag) =>
+  ({ nome, porzione, gruppo, kcal, p, c, g, fasce, tag: tag || [], tipo: "componente", prepMin: 0 });
+
+const PRINCIPALI = ["pranzo", "cena"];
+const SPUNTINI = ["spuntino1", "spuntino2"];
+
+const SEMI_COMPONENTI = [
+  // ------------------------------------------------------------ proteine
+  C("Pollo ai ferri", "180 g", "proteina", 300, 56, 0, 7, [...PRINCIPALI, ...SPUNTINI], ["pollo"]),
+  C("Macinato di manzo", "150 g", "proteina", 330, 39, 0, 19, PRINCIPALI, ["manzo"]),
+  C("Bistecca di manzo", "200 g", "proteina", 380, 60, 0, 15, PRINCIPALI, ["manzo"]),
+  C("Hamburger di manzo", "150 g", "proteina", 300, 36, 0, 17, PRINCIPALI, ["manzo"]),
+  C("Lonza di maiale", "180 g", "proteina", 290, 55, 0, 8, PRINCIPALI, ["maiale"]),
+  C("Maiale sfilacciato", "150 g", "proteina", 330, 42, 2, 17, PRINCIPALI, ["maiale"]),
+  C("Merluzzo al forno", "200 g", "proteina", 210, 45, 0, 3, PRINCIPALI, ["pesce"]),
+  C("Bastoncini di merluzzo", "5 pezzi", "proteina", 300, 18, 25, 14, PRINCIPALI, ["pesce"]),
+  C("Uova strapazzate", "3 uova", "proteina", 250, 20, 2, 18, ["colazione", ...PRINCIPALI, ...SPUNTINI], ["uova"]),
+  C("Uovo", "1", "proteina", 78, 6, 1, 5, ["colazione", ...PRINCIPALI], ["uova"]),
+  C("Frittata al parmigiano", "3 uova", "proteina", 330, 27, 2, 24, ["colazione", ...PRINCIPALI], ["uova"]),
+  C("Bacon", "40 g", "proteina", 220, 14, 0, 18, ["colazione", ...PRINCIPALI], ["maiale"]),
+  C("Mozzarella", "125 g", "proteina", 300, 22, 2, 22, [...PRINCIPALI, ...SPUNTINI], ["mozzarella"]),
+  C("Parmigiano", "20 g", "proteina", 80, 7, 0, 5, PRINCIPALI, ["formaggio"]),
+  C("Stracchino", "60 g", "proteina", 180, 10, 1, 15, [...PRINCIPALI, ...SPUNTINI], ["formaggio"]),
+  C("Prosciutto cotto", "80 g", "proteina", 120, 16, 1, 6, [...PRINCIPALI, ...SPUNTINI], ["maiale"]),
+  C("Prosciutto crudo", "60 g", "proteina", 160, 17, 0, 10, [...PRINCIPALI, ...SPUNTINI], ["maiale"]),
+  C("Yogurt greco 0%", "150 g", "proteina", 90, 15, 6, 0, ["colazione", ...SPUNTINI], ["yogurt"]),
+  C("Barretta proteica", "1", "proteina", 200, 20, 20, 6, SPUNTINI, ["barretta"]),
+
+  // --------------------------------------------------------- carboidrati
+  C("Riso basmati", "100 g crudo", "carboidrato", 350, 7, 78, 1, PRINCIPALI, ["riso"]),
+  C("Pasta", "100 g cruda", "carboidrato", 355, 12, 72, 2, PRINCIPALI, ["pasta"]),
+  C("Pane", "100 g", "carboidrato", 270, 9, 50, 3, ["colazione", ...PRINCIPALI, ...SPUNTINI], ["pane"]),
+  C("Piadina", "1", "carboidrato", 300, 7, 42, 11, ["colazione", ...PRINCIPALI, ...SPUNTINI], ["piadina"]),
+  C("Patate in friggitrice", "250 g", "carboidrato", 290, 6, 52, 7, PRINCIPALI, ["patate"]),
+  C("Focaccia", "100 g", "carboidrato", 290, 7, 40, 11, SPUNTINI, ["focaccia"]),
+  C("Cornetto alla crema", "1", "carboidrato", 300, 6, 40, 13, ["colazione", ...SPUNTINI], ["cornetto"]),
+  C("Cornetto vuoto", "1", "carboidrato", 300, 6, 38, 14, ["colazione", ...SPUNTINI], ["cornetto"]),
+
+  // -------------------------------------------------------------- verdure
+  C("Insalata condita", "una ciotola", "verdura", 90, 2, 5, 7, PRINCIPALI, ["insalata"]),
+  C("Spinaci saltati", "200 g", "verdura", 110, 6, 5, 7, PRINCIPALI, ["spinaci"]),
+  C("Verdure grigliate", "200 g", "verdura", 120, 3, 10, 7, PRINCIPALI, ["verdure"]),
+
+  // ---------------------------------------------------------- condimenti
+  C("Sugo di pomodoro", "150 g", "condimento", 90, 2, 9, 5, PRINCIPALI, ["sugo"]),
+  C("Olio EVO", "1 cucchiaio", "condimento", 90, 0, 0, 10, PRINCIPALI, ["olio"]),
+  C("Burro", "10 g", "condimento", 75, 0, 0, 8, ["colazione", ...PRINCIPALI], ["burro"]),
+
+  // -------------------------------------------------------------- frutta
+  C("Banana", "1", "frutta", 105, 1, 27, 0, ["colazione", ...SPUNTINI], ["frutta"]),
+  C("Mela", "1", "frutta", 78, 0, 21, 0, ["colazione", ...SPUNTINI], ["frutta"]),
+
+  // --------------------------------------------------------------- dolci
+  C("Cioccolato fondente", "30 g", "dolce", 170, 2, 13, 12, SPUNTINI, ["cioccolato"]),
+  C("Mandorle", "30 g", "dolce", 175, 6, 4, 15, SPUNTINI, ["frutta secca"]),
+  C("Gelato", "cono medio", "dolce", 250, 4, 32, 12, SPUNTINI, ["gelato"]),
+
+  // ------------------------------------------------------------- bevande
+  C("Succo ACE", "200 ml", "bevanda", 90, 0, 22, 0, ["colazione", ...SPUNTINI], ["succo"]),
+  C("Cappuccino", "1", "bevanda", 110, 6, 9, 5, ["colazione", ...SPUNTINI], ["caffe"]),
+  C("Caffè", "1", "bevanda", 2, 0, 0, 0, ["colazione", ...SPUNTINI], ["caffe"]),
+  C("Birra media", "0,4 l", "bevanda", 180, 2, 15, 0, ["cena"], ["birra"]),
+];
+
+/* Le combinazioni della prima infornata si SPENGONO quando arrivano i
+   componenti: restano nello storico e si riaccendono da Impostazioni, ma
+   fuori dal selettore — averle accanto ai pezzi di cui sono fatte è il modo
+   più veloce per contare due volte la stessa cena. */
+const COMPOSTI_DA_SPEGNERE = [
+  "Pollo e riso basmati con insalata",
+  "Riso basmati con macinato di manzo e spinaci",
+  "Pasta in bianco con parmigiano, pollo e insalata",
+  "Pasta al sugo e bistecca di manzo",
+  "Pasta al sugo con macinato di manzo",
+  "Piadina con pollo e insalata (x2)",
+  "Piadina con macinato e insalata (x2)",
+  "Piadina con mozzarella fusa e maiale sfilacciato (x2)",
+  "Frittata al parmigiano, patate in friggitrice e pane",
+  "Bistecca di manzo, patate in friggitrice, insalata e pane",
+  "Lonza di maiale, patate in friggitrice, insalata e pane",
+  "Pollo ai ferri, patate, spinaci e pane",
+  "Merluzzo al forno, patate, insalata e pane",
+  "Bastoncini di merluzzo e patate in friggitrice con insalata",
+  "Hamburger di manzo con pane e insalata",
+  "Uova strapazzate, pane e spinaci",
+  "Mozzarella, pane e insalata",
+  "Uova, bacon, pane e succo ACE",
+  "Cornetto alla crema in friggitrice e caffè",
+  "Uova strapazzate, pane e banana",
+  "Frittata con patate in friggitrice, pane e succo ACE",
+  "Piadina con uova strapazzate e mozzarella, banana",
+  "Cornetto alla crema, 4 uova strapazzate e banana",
+  "Panino con pollo",
+  "Panino con mozzarella",
+  "Riso basmati e pollo (porzione piccola)",
+  "Piadina con pollo",
+  "3 uova strapazzate, pane e mela",
+];
+
 export const SEMINE = [
   { chiave: SEME_ASSESSMENT, pasti: SEMI_ASSESSMENT },
   { chiave: "colazioni-spuntini-2026-09", pasti: SEMI_COLAZIONI },
+  { chiave: "componenti-2026-09-23", pasti: SEMI_COMPONENTI, spegni: COMPOSTI_DA_SPEGNERE },
 ];
 
 /**
@@ -559,7 +767,10 @@ export function semina() {
   if (!daFare.length) return [];
 
   const messi = [];
-  for (const s of daFare) messi.push(...salvaPasti(s.pasti.map((x) => ({ ...x, fonte: "assessment" }))));
+  for (const s of daFare) {
+    messi.push(...salvaPasti(s.pasti.map((x) => ({ ...x, fonte: "assessment" }))));
+    if (s.spegni?.length) spegniPasti(s.spegni.map(idPasto));
+  }
 
   // Il peso di partenza viaggia con la prima infornata: senza un peso il
   // fabbisogno non si calcola, e una schermata di bersagli a zero al primo

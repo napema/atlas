@@ -50,3 +50,12 @@ export function fasciaDallOra(ora = oraAdesso()): string {
 
 export type Fascia = { id: string; nome: string; ora: string };
 export const FASCE_T = FASCE as Fascia[];
+
+/* Quello che vale per questa apertura della app e basta.
+
+   La pianificazione della domenica si propone da sé UNA volta per sessione:
+   se la chiudi, non ti ricompare davanti mentre stai segnando la merenda.
+   Non sta nella casella di proposito — non è un dato, è un fatto di questa
+   finestra, e sincronizzarlo vorrebbe dire che il PC decide cosa vede il
+   telefono. */
+export const sessione = { pianificazioneProposta: false };

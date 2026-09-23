@@ -12,6 +12,7 @@
   import Pulsante from "$lib/ui/Pulsante.svelte";
   import FoglioImport from "./FoglioImport.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
+  import { vaiA } from "$lib/core/router.svelte";
   import { avviso, oggiISO, plurale, GIORNI, GIORNI_INIZIALI, numero } from "$lib/core/ui";
   import {
     REGIMI, ATTIVITA, OBIETTIVI, ID_FASCE, profilo, scriviProfilo, pesoAttuale, serieePesi, registraPeso,
@@ -61,6 +62,21 @@
   <RigaNumero etichetta="Peso" valore={peso} decimali unita="kg" onsalva={(n) => { if (n > 0) { registraPeso(n); avviso("Pesata segnata."); } }} />
   <RigaNumero etichetta="Altezza" valore={d.p.altezzaCm || ""} unita="cm" onsalva={(n) => scriviProfilo({ altezzaCm: n })} />
   <RigaNumero etichetta="Età" valore={eta(d.p) || ""} unita="anni" onsalva={(n) => scriviProfilo({ etaDichiarata: n, etaDichiarataIl: oggiISO(), nascita: "" })} />
+</Sezione>
+
+<Sezione titolo="La settimana" piede="Di domenica dalle tre in poi ATLAS te la chiede da solo, per la settimana che arriva. Da qui parte subito, e solo sui giorni che restano.">
+  <Riga
+    titolo="Pianifica i giorni che restano"
+    sottotitolo="Un giorno per schermata, tocchi quello che c'è nel piatto"
+    freccia
+    onclick={() => vaiA("pasti/pianifica")}
+  />
+  <Riga
+    titolo="Pianifica la settimana prossima"
+    sottotitolo="Da lunedì, tutti e sette"
+    freccia
+    onclick={() => vaiA("pasti/pianifica/prossima")}
+  />
 </Sezione>
 
 <Sezione titolo="Obiettivo">

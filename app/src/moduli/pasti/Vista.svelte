@@ -9,23 +9,26 @@
   import Pulsante from "$lib/ui/Pulsante.svelte";
   import Segmenti from "$lib/ui/Segmenti.svelte";
   import Sezione from "$lib/ui/Sezione.svelte";
+  import Icona from "$lib/ui/Icona.svelte";
   import Riga from "$lib/ui/Riga.svelte";
   import Traccia from "$lib/ui/Traccia.svelte";
   import Testata from "./Testata.svelte";
   import Pasto from "./Pasto.svelte";
+  import Pianifica from "./Pianifica.svelte";
   import FoglioFascia from "./FoglioFascia.svelte";
   import FoglioScegli from "./FoglioScegli.svelte";
   import FoglioAggiungi from "./FoglioAggiungi.svelte";
   import FoglioImport from "./FoglioImport.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { giornoCorrente } from "$lib/core/contesto";
-  import { avviso, dataBreve, GIORNI, maiuscola, numero, tocco } from "$lib/core/ui";
+  import { vaiA } from "$lib/core/router.svelte";
+  import { avviso, dataBreve, dataUmana, GIORNI, maiuscola, numero, piuGiorni, tocco } from "$lib/core/ui";
   import {
     SCOSTAMENTI, pianoSettimana, pasto, regimeDi, lunediDi, eliminaScostamento, registraScostamento,
   } from "$condivisi/pasti/dati.js";
   import { bersagli, giornata, settimana as settimanaCalcolo } from "$condivisi/pasti/calcolo.js";
   import { assicuraPiano, rigenera } from "$condivisi/pasti/piano.js";
-  import { MACRO, EMOJI_FASCIA, FASCE_T, kcal } from "./comune";
+  import { MACRO, EMOJI_FASCIA, FASCE_T, kcal, sessione } from "./comune";
 
   let { resto = [] }: { resto?: string[] } = $props();
 
@@ -38,7 +41,8 @@
   let tipoAggiunta = $state<"aggiunta" | "cambio">("aggiunta");
   const dopo = (fn: () => void) => setTimeout(fn, 320);
 
-  // Le rotte da fuori: `#/pasti/settimana`, `#/pasti/importa`.
+  // Le rotte da fuori: `#/pasti/settimana`, `#/pasti/importa`,
+  // `#/pasti/pianifica` (i giorni che restano) e `#/pasti/pianifica/prossima`.
   $effect(() => {
     if (resto[0] === "settimana") vista = "settimana";
     if (resto[0] === "importa") queueMicrotask(() => (fImport = true));
@@ -48,6 +52,43 @@
   const b = $derived.by(() => { dati.versione; return bersagli(); });
   const g = $derived.by(() => { dati.versione; return giornata(iso); });
   const extra = $derived(g.scostamenti.filter((s: any) => s.tipo === "aggiunta"));
+
+  const pianificando = $derived(resto[0] === "pianifica");
+
+  /* QUALI GIORNI. Di domenica pomeriggio si pianifica la settimana che
+     arriva, tutta. Chiamata a mano di mercoledì si pianificano i giorni che
+     restano: rifare il lunedì che hai già mangiato non serve a nessuno. */
+  const giorniDaPianificare = $derived.by(() => {
+    if (resto[1] === "prossima") {
+      const lun = piuGiorni(lunediDi(iso), 7);
+      return Array.from({ length: 7 }, (_, i) => piuGiorni(lun, i));
+    }
+    const fine = piuGiorni(lunediDi(iso), 6);
+    const elenco: string[] = [];
+    for (let d = iso; d <= fine; d = piuGiorni(d, 1)) elenco.push(d);
+    return elenco.length ? elenco : [iso];
+  });
+
+  /* LA DOMENICA POMERIGGIO. Dalle tre in poi: la mattina è ancora il giorno
+     prima, e chiederlo a pranzo vuol dire chiederlo mentre mangia. Si
+     accende finché la settimana dopo non è confermata — non finché non
+     esiste, perché il generatore una settimana la fa comunque, e sarebbe un
+     promemoria che sparisce senza che tu abbia deciso niente. */
+  const daPianificare = $derived.by(() => {
+    dati.versione;
+    const ora = new Date();
+    if (ora.getDay() !== 0 || ora.getHours() < 15) return null;
+    const lun = piuGiorni(lunediDi(iso), 7);
+    return pianoSettimana(lun)?.confermato ? null : lun;
+  });
+
+  // Una volta per apertura, e poi mai più: il promemoria resta nella pagina.
+  $effect(() => {
+    if (!daPianificare || pianificando || sessione.pianificazioneProposta) return;
+    sessione.pianificazioneProposta = true;
+    queueMicrotask(() => vaiA("pasti/pianifica/prossima"));
+  });
+
 
   const righe = $derived(g.fasce.map((f: any) => {
     const sost = g.scostamenti.find((s: any) => s.fascia === f.fascia && (s.tipo === "cambio" || s.tipo === "salto"));
@@ -126,12 +167,28 @@
   {/if}
 {/snippet}
 
+{#if pianificando}
+  <Pianifica giorni={giorniDaPianificare} onfine={() => vaiA("pasti")} />
+{:else}
 <Pagina titolo="Pasti" {strumenti} laterale={riepilogo}>
   {#snippet azioni()}
     <Pulsante variante="vetro" misura="media" tondo icona="importa" etichetta="Importa pasti" onclick={() => (fImport = true)} />
   {/snippet}
 
   {#if vista === "oggi"}
+    {#if daPianificare}
+      <button type="button" class="domenica intera" onclick={() => vaiA("pasti/pianifica/prossima")}>
+        <span class="emo-dom">{"\u{1F4C5}"}</span>
+        <span class="testo-dom">
+          <span class="text-headline">Pianifica la settimana</span>
+          <span class="text-subheadline secondario">
+            Da {dataUmana(daPianificare)}. Un giorno per schermata, cinque minuti.
+          </span>
+        </span>
+        <span class="frec-dom"><Icona nome="freccia" misura={17} tratto={2.4} /></span>
+      </button>
+    {/if}
+
     <Sezione titolo="La giornata">
       {#each righe as r (r.id)}
         <Pasto
@@ -171,6 +228,7 @@
     </Sezione>
   {/if}
 </Pagina>
+{/if}
 
 <FoglioFascia
   bind:aperto={fFascia}
@@ -184,6 +242,17 @@
 <FoglioImport bind:aperto={fImport} />
 
 <style>
+  .domenica {
+    display: flex; align-items: center; gap: var(--space-3); width: 100%; text-align: left;
+    padding: var(--space-4); border-radius: var(--radius-xl);
+    background: color-mix(in srgb, var(--accento) 14%, transparent);
+    transition: transform var(--duration-fast) var(--ease-spring);
+  }
+  .domenica:active { transform: scale(0.99); }
+  .emo-dom { flex: none; font-family: var(--font-emoji); font-size: 30px; line-height: 1; }
+  .testo-dom { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .frec-dom { flex: none; color: var(--accento); }
+
   .emo-extra {
     display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px;
     background: var(--fill-tertiary); font-family: var(--font-emoji); font-size: 17px; line-height: 1;

@@ -3,8 +3,12 @@
   ricerca nutrizionale non lo farà mai, e allora tanto vale non averlo.
 
   In cima le TENDENZE — quello che hai già segnato più volte a quest'ora,
-  che è di gran lunga il caso più probabile — poi i tuoi pasti, poi i
-  comuni. In fondo, per quello che non è in nessuna lista, il campo libero.
+  che è di gran lunga il caso più probabile. Sotto, i COMPONENTI: lo stesso
+  selettore della pianificazione, perché «ho mangiato un panino col pollo»
+  è pane più pollo, e tenere due vocabolari diversi — combinazioni qui,
+  pezzi là — vorrebbe dire che la stessa cena conta due valori a seconda di
+  dove la segni. In fondo, per quello che non è in nessuna lista, il campo
+  libero.
 -->
 <script lang="ts">
   import Foglio from "$lib/ui/Foglio.svelte";
@@ -13,10 +17,11 @@
   import Campo from "$lib/ui/Campo.svelte";
   import Pillole from "$lib/ui/Pillole.svelte";
   import Pulsante from "$lib/ui/Pulsante.svelte";
+  import SceltaComponenti from "./SceltaComponenti.svelte";
   import { avviso, plurale } from "$lib/core/ui";
   import { dati } from "$lib/core/reattivo.svelte";
-  import { pastiVivi, registraScostamento, eliminaScostamento } from "$condivisi/pasti/dati.js";
-  import { tendenze } from "$condivisi/pasti/calcolo.js";
+  import { pastiVivi, pasto, registraScostamento, eliminaScostamento } from "$condivisi/pasti/dati.js";
+  import { tendenze, bersagli } from "$condivisi/pasti/calcolo.js";
   import { propostePerFascia, scostamentoDaTesto } from "$condivisi/pasti/importa.js";
   import { FASCE_T, fasciaDallOra, oraAdesso, kcal } from "./comune";
 
@@ -30,6 +35,7 @@
   let scelta = $state<string>(fasciaDallOra());
   let libero = $state({ nome: "", kcal: "", p: "", c: "", g: "" });
   let errore = $state("");
+  let pezzi = $state<string[]>([]);
 
   // All'apertura: la fascia che arriva da fuori o quella dell'ora, e un
   // campo libero pulito.
@@ -38,7 +44,27 @@
     scelta = fascia || fasciaDallOra();
     libero = { nome: "", kcal: "", p: "", c: "", g: "" };
     errore = "";
+    pezzi = [];
   });
+
+  const b = $derived.by(() => { dati.versione; return bersagli(); });
+
+  /* I pezzi scelti diventano UN scostamento, non quattro. Quattro righe da
+     «Pane», «Pollo», «Insalata» nel registro sarebbero la stessa cena
+     raccontata tre volte, e in «In più, oggi» diventerebbero tre cose da
+     togliere una per una per annullare un gesto solo. */
+  function segnaPezzi() {
+    const voci = pezzi.map((id) => pasto(id)).filter(Boolean) as any[];
+    if (!voci.length) return;
+    segna({
+      nome: voci.map((v) => v.nome).join(" + "),
+      kcal: voci.reduce((t, v) => t + v.kcal, 0),
+      p: voci.reduce((t, v) => t + v.p, 0),
+      c: voci.reduce((t, v) => t + v.c, 0),
+      g: voci.reduce((t, v) => t + v.g, 0),
+      pastoId: voci.length === 1 ? voci[0].id : null,
+    });
+  }
 
   const proposte = $derived.by(() => {
     dati.versione;
@@ -84,7 +110,7 @@
   {/if}
 
   {#if proposte.length}
-    <Sezione>
+    <Sezione titolo="Lo fai spesso">
       {#each proposte as v (v.nome)}
         <Riga
           titolo={v.nome}
@@ -94,6 +120,15 @@
         />
       {/each}
     </Sezione>
+  {/if}
+
+  <Sezione titolo="Mettilo insieme">
+    <div class="componi">
+      <SceltaComponenti bind:scelti={pezzi} fascia={scelta} bersaglio={b} />
+    </div>
+  </Sezione>
+  {#if pezzi.length}
+    <Pulsante variante="pieno" larga onclick={segnaPezzi}>Segna quello che hai messo</Pulsante>
   {/if}
 
   <Sezione titolo="Non è in lista" piede={errore || "Scrivi pure tutto in una riga: «panino 300 kcal 18p»."}>
@@ -109,6 +144,7 @@
 </Foglio>
 
 <style>
+  .componi { padding: var(--space-4); }
   .macro { position: relative; }
   .macro::before { content: ""; position: absolute; top: 0; left: var(--space-4); right: 0; border-top: 0.5px solid var(--separator); }
 </style>

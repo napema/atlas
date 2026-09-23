@@ -26,7 +26,7 @@
 
 import {
   FASCE, ID_FASCE,
-  profilo, pastiPerFascia, pasto, pianoSettimana, salvaPiano,
+  profilo, pastiPerFascia, componentiPerFascia, pasto, pianoSettimana, salvaPiano,
   lunediDi, giorniSettimana, regimeDi, idPiano,
 } from "./dati.js";
 import { bersagli, macroDi } from "./calcolo.js";
@@ -103,29 +103,78 @@ export function generaSettimana(lunedi = lunediDi(), { b = bersagli() } = {}) {
 
     const scelte = {};
     const tagOggi = new Set();
-    daRiempire.forEach((fascia, i) => {
-      const quota = restaProt / (daRiempire.length - i);
-      const candidati = pastiPerFascia(fascia).filter((c) => !(p.veti || []).includes(c.id));
-      if (!candidati.length) { scelte[fascia] = null; return; }
 
-      let migliore = null, punteggioMigliore = -Infinity;
+    /* Il migliore di un mucchio di candidati, con i tre vincoli sopra.
+       `mira` è quante proteine servirebbero da questa voce: a zero il
+       punteggio delle proteine non partecipa, che è giusto per il
+       contorno — nessuno sceglie l'insalata per le proteine. */
+    const migliore = (candidati, mira) => {
+      let vinto = null, punteggio = -Infinity;
       for (const c of candidati) {
         const distanza = ultimoUso.has(c.id) ? indice - ultimoUso.get(c.id) : 99;
         let punti = 0;
         if (distanza < MIN_GIORNI) punti -= 100 * (MIN_GIORNI - distanza);
         if (tagIeri.has(tagPrincipale(c))) punti -= 25;
         if (tagOggi.has(tagPrincipale(c))) punti -= 40;   // nemmeno due volte in un giorno
-        punti -= Math.abs(quota - c.p) / 8;
+        if (mira > 0) punti -= Math.abs(mira - c.p) / 8;
         punti += rnd() * 6;                                // rompe i pareggi, sempre allo stesso modo
-        if (punti > punteggioMigliore) { punteggioMigliore = punti; migliore = c; }
+        if (punti > punteggio) { punteggio = punti; vinto = c; }
+      }
+      return vinto;
+    };
+
+    const prendi = (candidati, mira) => {
+      const c = migliore(candidati, mira);
+      if (!c) return null;
+      ultimoUso.set(c.id, indice);
+      tagOggi.add(tagPrincipale(c));
+      restaProt -= c.p;
+      return c;
+    };
+
+    daRiempire.forEach((fascia, i) => {
+      const quota = restaProt / (daRiempire.length - i);
+      const vietato = (c) => !(p.veti || []).includes(c.id);
+      const { dentro } = componentiPerFascia(fascia);
+      const buoni = dentro.filter(vietato);
+
+      /* SENZA COMPONENTI si torna ai piatti interi. Serve al giro in cui il
+         catalogo non è ancora arrivato dal sync: un generatore che restituisce
+         una settimana vuota si legge come un guasto. */
+      if (!buoni.length) {
+        const c = prendi(pastiPerFascia(fascia).filter(vietato), quota);
+        scelte[fascia] = c ? [c.id] : null;
+        return;
       }
 
-      scelte[fascia] = migliore?.id || null;
-      if (migliore) {
-        ultimoUso.set(migliore.id, indice);
-        tagOggi.add(tagPrincipale(migliore));
-        restaProt -= migliore.p;
+      const diGruppo = (g) => buoni.filter((c) => c.gruppo === g);
+      const principale = fascia === "pranzo" || fascia === "cena";
+      const voci = [];
+
+      /* LA FORMA DI UN PASTO. Un pranzo è una proteina, un carboidrato e una
+         verdura: non è una regola nutrizionale, è come mangia lui, ed è la
+         differenza fra un piano che si può cucinare e tre righe a caso.
+         Colazione e spuntini sono più liberi — lì bastano due cose. */
+      const proteina = prendi(diGruppo("proteina"), quota);
+      if (proteina) voci.push(proteina);
+
+      const carbo = prendi(diGruppo("carboidrato"), 0);
+      if (carbo) voci.push(carbo);
+
+      if (principale) {
+        const verdura = prendi(diGruppo("verdura"), 0);
+        if (verdura) voci.push(verdura);
+        // La pasta in bianco esiste, ma di rado: il sugo viene col primo.
+        if ((carbo?.tag || []).includes("pasta")) {
+          const sugo = diGruppo("condimento").find((c) => (c.tag || []).includes("sugo"));
+          if (sugo) voci.push(sugo);
+        }
+      } else {
+        const dolce = prendi([...diGruppo("frutta"), ...diGruppo("bevanda")], 0);
+        if (dolce) voci.push(dolce);
       }
+
+      scelte[fascia] = voci.length ? voci.map((c) => c.id) : null;
     });
 
     giorni[iso] = scelte;
@@ -160,7 +209,8 @@ export function assicuraPiano(lunedi = lunediDi(), { forza = false } = {}) {
   if (esistente?.bloccato && !forza) return { creato: false, motivo: "modificato a mano" };
 
   const giorni = generaSettimana(lunedi);
-  const quanti = Object.values(giorni).reduce((t, g) => t + Object.values(g).filter(Boolean).length, 0);
+  const quanti = Object.values(giorni)
+    .reduce((t, g) => t + Object.values(g).filter((v) => (Array.isArray(v) ? v.length : v)).length, 0);
   if (!quanti) return { creato: false, motivo: "nessun pasto disponibile" };
 
   salvaPiano(lunedi, giorni);
