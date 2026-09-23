@@ -31,7 +31,7 @@
     sopra?: Snippet | string;
     /** Il bottone indietro, con l'etichetta della schermata di prima. */
     indietro?: string | { etichetta: string; fai: () => void };
-    /** I bottoni tondi a destra nella barra. */
+    /** I bottoni tondi sulla linea del titolo. */
     azioni?: Snippet;
     /** Qualcosa al posto del titolo grande (il selettore di un gruppo). */
     testata?: Snippet;
@@ -101,10 +101,10 @@
       <div class="titolo-testo">
         {#if testata}{@render testata()}{:else}<h1 class="text-large-title">{titolo}</h1>{/if}
       </div>
-      <!-- Sul PC le azioni della schermata stanno QUI, sulla linea del
-           titolo. Nell'angolo della barra, a settecento pixel dal titolo a
-           cui appartengono, non si capiva di chi fossero. Sul telefono
-           restano nella barra: lì il titolo ce l'hanno a fianco. -->
+      <!-- Le azioni della schermata stanno QUI, sulla linea del titolo, sul
+           telefono come sul PC. Nell'angolo della barra erano un bottone
+           solo in alto a destra, a cento punti dal titolo di cui sono
+           l'azione. -->
       {#if azioni}<div class="azioni-titolo">{@render azioni()}</div>{/if}
     </div>
   </div>
@@ -137,16 +137,25 @@
     background: transparent;
     transition: background-color var(--duration-fast) var(--ease-default);
   }
+  /* IL VETRO SI ACCENDE SOLO QUANDO SERVE, e la sfocatura con lui.
+     Prima `backdrop-filter` stava qui sempre, spento con `opacity: 0`: su
+     iPhone invisibile non vuol dire inattivo — la sfocatura continuava ad
+     applicarsi ai primi cento punti dello schermo. L'icona dentro la barra
+     e la riga della data si vedevano sgranate, e sopra non c'era niente a
+     cui dare la colpa. (Ed è anche una sfocatura a tutta larghezza
+     ricalcolata a ogni fotogramma di scorrimento, per niente.) */
   .barra::before {
     content: ""; position: absolute; inset: 0; z-index: -1;
     background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(6px) saturate(1.8);
-    backdrop-filter: blur(6px) saturate(1.8);
     border-bottom: 0.5px solid var(--separator);
     opacity: 0;
     transition: opacity var(--duration-fast) var(--ease-default);
   }
-  .barra.compatta::before { opacity: 1; }
+  .barra.compatta::before {
+    opacity: 1;
+    -webkit-backdrop-filter: blur(6px) saturate(1.8);
+    backdrop-filter: blur(6px) saturate(1.8);
+  }
 
   .barra-riga {
     height: var(--navbar-height);
@@ -182,7 +191,21 @@
   .titolo-grande h1 { overflow-wrap: anywhere; }
   .titolo-riga { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-width: 0; }
   .titolo-testo { min-width: 0; flex: 1; }
-  .azioni-titolo { display: none; flex: none; align-items: center; gap: var(--space-2); }
+  /* LE AZIONI STANNO COL TITOLO, ovunque. Nella barra erano un bottone
+     solo, in alto a destra, a un centinaio di punti dal titolo di cui sono
+     l'azione: non si capiva a cosa appartenessero. Tornano nella barra
+     quando il titolo grande è scorso via, che è l'unico momento in cui lì
+     hanno di nuovo un titolo accanto. */
+  .azioni-titolo { display: flex; flex: none; align-items: center; gap: var(--space-2); }
+  /* Niente vetro qui: sotto c'è il fondo della pagina, non c'è niente da
+     sfocare — e su iPhone `backdrop-filter` ricampiona il contenuto del
+     bottone, cioè sgrana l'icona che sta dentro. */
+  .azioni-titolo :global(.vetro) {
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    background: var(--fill-tertiary);
+    box-shadow: none;
+  }
+  .barra:not(.compatta) .azioni-barra { visibility: hidden; }
   /* Sul telefono: una colonna, nell'ordine strumenti → riepilogo → resto. */
   .contenuto, .strumenti, .laterale, .principale { display: flex; flex-direction: column; gap: var(--space-6); }
   .principale > :global(*), .laterale > :global(*), .strumenti > :global(*) { min-width: 0; }
@@ -202,12 +225,6 @@
   @media (min-width: 1000px) {
     :global(:root) { --larghezza-pagina: min(calc(100vw - 96px), 1640px); }
     .pagina { padding-left: var(--space-8); padding-right: var(--space-8); }
-    .azioni-titolo { display: flex; }
-    /* `visibility` e non `display`: la barra è una griglia a tre celle e
-       togliere quella di destra sposterebbe il titolo fuori centro. Quando
-       il titolo grande è scorso via le azioni tornano nella barra, che è
-       l'unico posto rimasto dove hanno un titolo accanto. */
-    .barra:not(.compatta) .azioni-barra { visibility: hidden; }
     .barra-riga { padding-left: var(--space-8); padding-right: var(--space-8); }
 
     .pagina:not(.larga) .contenuto {
