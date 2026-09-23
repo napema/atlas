@@ -36,6 +36,19 @@
      peggio di nessuno — i canali bussano ogni venti secondi, prendono 401, e
      la schermata si riempie di errori che non dicono cosa fare. */
   let bozza = $state(leggiToken());
+  let mostra = $state(false);
+
+  async function copiaToken() {
+    try {
+      await navigator.clipboard.writeText(leggiToken());
+      avviso("Token negli appunti. Incollalo da qualche parte prima di disinstallare.");
+    } catch {
+      // Senza appunti (o senza permesso) resta la strada di sempre: si
+      // mostra e si copia a mano. Meglio che un bottone che non dice niente.
+      mostra = true;
+      avviso("Non riesco a copiare da qui: l'ho mostrato, copialo a mano.", { tipo: "errore" });
+    }
+  }
   let esito = $state<{ ok: boolean; testo: string } | null>(null);
   let verifico = $state(false);
   const canali = $derived.by(() => { dati.versione; statoSync.stato; return canaliAperti(); });
@@ -142,9 +155,24 @@
 
   <Sezione titolo="Token di accesso" piede="Su github.com/settings/personal-access-tokens: token fine-grained, solo il repo {r.owner}/{r.repo}, permesso «Contents: Read and write». Resta solo su questo dispositivo: non viene mai sincronizzato né incluso nel backup.">
     <label class="token">
-      <input type="password" bind:value={bozza} placeholder="github_pat_…" autocomplete="off" aria-label="Token di accesso" />
+      <input type={mostra ? "text" : "password"} bind:value={bozza} placeholder="github_pat_…" autocomplete="off" aria-label="Token di accesso" />
+      <button type="button" class="occhio text-subheadline" onclick={() => (mostra = !mostra)}>{mostra ? "Nascondi" : "Mostra"}</button>
     </label>
   </Sezione>
+  {#if tokenPresente()}
+    <!-- COPIARLO PRIMA DI PERDERLO.
+         Il token sta solo qui, ed è giusto così — ma vuol dire che
+         disinstallare la app dalla schermata Home lo porta via con sé, e su
+         iOS disinstallare è l'unico modo per far cambiare l'icona. Senza
+         questo bottone l'unica strada era rifare il token su GitHub ogni
+         volta. Non lo mostra a nessuno che non l'abbia già: è il tuo
+         telefono e il token è già dentro questo campo. -->
+    <Pulsante variante="grigio" larga icona="importa" onclick={copiaToken}>Copia il token negli appunti</Pulsante>
+    <p class="text-footnote secondario spiega">
+      Serve prima di togliere ATLAS dalla schermata Home: i dati sono al sicuro nel repo, il token no — vive
+      solo su questo dispositivo. Copialo, reinstalla, rincollalo qui.
+    </p>
+  {/if}
   {#if esito}<p class="text-subheadline" class:ok={esito.ok} class:male={!esito.ok}>{esito.testo}</p>{/if}
   <Pulsante variante="pieno" larga disabled={verifico || !bozza} onclick={verificaESalva}>{verifico ? "Verifico…" : "Verifica e salva"}</Pulsante>
   {#if tokenPresente()}
@@ -239,8 +267,10 @@
 
 <style>
   .blocco { padding: var(--space-4); }
-  .token { display: block; padding: 0 var(--space-4); }
-  .token input { width: 100%; height: var(--list-row-height); font-size: 17px; background: none; outline: none; font-family: var(--font-mono); }
+  .token { display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-4); }
+  .token input { flex: 1; min-width: 0; height: var(--list-row-height); font-size: 17px; background: none; outline: none; font-family: var(--font-mono); }
+  .occhio { flex: none; color: var(--accento); font-weight: var(--weight-medium); }
+  .spiega { padding: 0 var(--space-4); margin-top: calc(-1 * var(--space-3)); }
   .ora { font-size: 17px; background: var(--fill-tertiary); border-radius: var(--radius-sm); padding: 4px 8px; color: var(--accento); }
   .ok { color: var(--color-green); }
   .male { color: var(--color-red); }
