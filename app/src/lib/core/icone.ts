@@ -158,8 +158,17 @@ const TRATTI: Record<string, string> = {
     '<path d="m9 6 6 6-6 6"/>',
   close:
     '<path d="M6 6l12 12M18 6 6 18"/>',
+  /* UNA PERSONA IN PIEDI, non un ragno.
+     Prima le braccia scendevano fino a y=20 e le gambe non c'erano: a 21px
+     si leggevano quattro zampe attaccate a una pallina. Qui le proporzioni
+     sono quelle di una figura umana — spalle, bacino, braccia corte, gambe
+     lunghe — ed è l'unica icona della barra con una silhouette. */
   corpo:
-    '<circle cx="12" cy="5.2" r="2.2"/><path d="M8 11.2c1-1 2.4-1.5 4-1.5s3 .5 4 1.5M8 11.2 6 20M16 11.2l2 8.8M9.6 14h4.8"/>',
+    '<circle cx="12" cy="4.3" r="2.3"/>' +
+    '<path d="M7.9 10.6c1.1-1.2 2.5-1.8 4.1-1.8s3 .6 4.1 1.8"/>' +
+    '<path d="M7.9 10.6 6.5 15.9M16.1 10.6l1.4 5.3"/>' +
+    '<path d="M9.7 14.1h4.6"/>' +
+    '<path d="M10.4 14.1 9.5 21M13.6 14.1l.9 6.9"/>',
   down:
     '<path d="M12 5v14M5 12l7 7 7-7"/>',
   finanze:

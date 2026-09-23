@@ -154,10 +154,15 @@
 /* ------------------------------------------------------ tipografia e misure */
 
 :root {
-  --font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-display: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
-  --font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  /* «Apple Color Emoji» prima (c'è già su iPhone e Mac, e non costa niente),
+     «ATLAS Emoji» subito dopo: è lo stesso font, servito da noi, e lo
+     scaricano solo Windows e Android. Sta in TUTTE le pile, non solo in
+     `--font-emoji`: un'emoji dentro il nome di un pasto non è meno emoji di
+     una dentro una tessera. */
+  --font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, "Apple Color Emoji", "ATLAS Emoji", sans-serif;
+  --font-display: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, "Apple Color Emoji", "ATLAS Emoji", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace, "Apple Color Emoji", "ATLAS Emoji";
+  --font-emoji: "Apple Color Emoji", "ATLAS Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 
   /* Gli undici stili, con corpo · interlinea · crenatura misurati. */
   --text-large-title: 34px; --lh-large-title: 41px; --ls-large-title: 0.4px;
