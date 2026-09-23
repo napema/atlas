@@ -46,6 +46,12 @@ self.addEventListener("activate", (e) => {
       const vecchio = k.startsWith("guscio-atlas-");
       if (mio || vecchio) await caches.delete(k);
     }
+    // Le icone finite fra i pesanti da una versione precedente: lì non le
+    // toglie nessuno, e resterebbero a coprire quelle nuove per sempre.
+    const pesanti = await caches.open(PESANTI);
+    for (const r of await pesanti.keys()) {
+      if (new URL(r.url).pathname.includes("/icons/")) await pesanti.delete(r);
+    }
     await self.clients.claim();
   })());
 });
@@ -76,9 +82,16 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Font e icone della app di prima (l'emoji Apple, 45 MB): stessi nomi,
-  // stesso contenuto, dalla cache dei pesanti.
-  if (/\.(woff2?|png|jpe?g|svg|ico)$/.test(url.pathname) && !url.pathname.includes("/assets/")) {
+  // Font e immagini serviti fuori da `/assets/`: stessi nomi, stesso
+  // contenuto, dalla cache dei pesanti.
+  //
+  // LE ICONE DELLA APP NO. Hanno un nome fisso, e in una cache che non si
+  // svuota mai un nome fisso vuol dire che quel file non si può più
+  // cambiare: l'icona rifatta era pubblicata e in linea, e il telefono
+  // continuava a servire quella di settembre dal proprio disco. Vanno nel
+  // guscio, che ogni rilascio azzera.
+  if (/\.(woff2?|png|jpe?g|svg|ico)$/.test(url.pathname)
+      && !url.pathname.includes("/assets/") && !url.pathname.includes("/icons/")) {
     e.respondWith(prima(PESANTI, req));
     return;
   }
