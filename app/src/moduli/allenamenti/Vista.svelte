@@ -67,7 +67,7 @@
           return {
             ...s, quando: etichetta(s.giorno),
             serie: righe.length ? serieTotali(righe) : 0,
-            top: gr.slice(0, 3).map((x) => ({ id: x.id, nome: NOMI_GRUPPI[x.id] ?? x.id })),
+            top: gr.slice(0, 3).map((x: any) => ({ id: x.id, nome: NOMI_GRUPPI[x.id] ?? x.id })),
             altri: Math.max(0, gr.length - 3),
           };
         });

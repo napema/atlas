@@ -77,8 +77,8 @@
       // che un giorno di gambe allena i bicipiti quanto i quadricipiti.
       const massimo = g[0]?.serie || 1;
       return {
-        primari: g.filter((x) => x.serie >= massimo * 0.34).map((x) => x.id),
-        secondari: g.filter((x) => x.serie < massimo * 0.34).map((x) => x.id),
+        primari: g.filter((x: any) => x.serie >= massimo * 0.34).map((x: any) => x.id),
+        secondari: g.filter((x: any) => x.serie < massimo * 0.34).map((x: any) => x.id),
       };
     }
     const e = seduta.esercizi[scelto];

@@ -40,9 +40,9 @@
     dati.versione;
     const { dentro, fuori } = componentiPerFascia(fascia) as { dentro: any[]; fuori: any[] };
     const elenco = tutto ? [...dentro, ...fuori] : dentro;
-    return GRUPPI_COMPONENTI
-      .map((g) => ({ ...g, voci: elenco.filter((c) => c.gruppo === g.id) }))
-      .filter((g) => g.voci.length);
+    return (GRUPPI_COMPONENTI as any[])
+      .map((g: any) => ({ ...g, voci: elenco.filter((c: any) => c.gruppo === g.id) }))
+      .filter((g: any) => g.voci.length);
   });
 
   // Le voci scelte, nell'ordine in cui le hai toccate: è l'ordine in cui
