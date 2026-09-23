@@ -188,7 +188,15 @@
      dove capitava, un titolo a 205px e quello accanto a 238, un bottone da
      solo in cima alla terza colonna. Qui niente cade: ha un posto. */
   @media (min-width: 1000px) {
-    :global(:root) { --larghezza-pagina: min(calc(100vw - 96px), 1640px); }
+    /* LA PAGINA È LARGA QUANTO IL SUO CONTENUTO. Una schermata con una
+       sezione sola non deve prendere 1640px e lasciarne seicento vuoti a
+       destra: è la stessa bruttura delle colonne automatiche, solo più
+       grande. Quindi la larghezza la decide quello che c'è dentro —
+       `:has()` conta le lastre e sceglie fra tre misure. */
+    :global(:root) { --larghezza-pagina: min(calc(100vw - 96px), 820px); }
+    :global(:root:has(.contenuto.con-laterale)) { --larghezza-pagina: min(calc(100vw - 96px), 1100px); }
+    :global(:root:has(.principale > :nth-child(2))),
+    :global(:root:has(.pagina.larga)) { --larghezza-pagina: min(calc(100vw - 96px), 1640px); }
     .pagina { padding-left: var(--space-8); padding-right: var(--space-8); }
     .barra-riga { padding-left: var(--space-8); padding-right: var(--space-8); }
 
