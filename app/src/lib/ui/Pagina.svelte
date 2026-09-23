@@ -86,7 +86,7 @@
       {/if}
     </div>
     <div class="titolo-piccolo text-headline" aria-hidden={!compatta}>{titolo}</div>
-    <div class="lato destra">{@render azioni?.()}</div>
+    <div class="lato destra azioni-barra">{@render azioni?.()}</div>
   </div>
 </header>
 
@@ -97,7 +97,16 @@
     </p>
   {/if}
   <div class="titolo-grande" bind:this={sentinella}>
-    {#if testata}{@render testata()}{:else}<h1 class="text-large-title">{titolo}</h1>{/if}
+    <div class="titolo-riga">
+      <div class="titolo-testo">
+        {#if testata}{@render testata()}{:else}<h1 class="text-large-title">{titolo}</h1>{/if}
+      </div>
+      <!-- Sul PC le azioni della schermata stanno QUI, sulla linea del
+           titolo. Nell'angolo della barra, a settecento pixel dal titolo a
+           cui appartengono, non si capiva di chi fossero. Sul telefono
+           restano nella barra: lì il titolo ce l'hanno a fianco. -->
+      {#if azioni}<div class="azioni-titolo">{@render azioni()}</div>{/if}
+    </div>
   </div>
   <div class="contenuto" class:con-laterale={Boolean(laterale)}>
     {#if strumenti}<div class="strumenti">{@render strumenti()}</div>{/if}
@@ -171,6 +180,9 @@
   .sopra { margin: 0 0 2px; min-height: var(--lh-footnote); }
   .titolo-grande { margin-bottom: var(--space-4); }
   .titolo-grande h1 { overflow-wrap: anywhere; }
+  .titolo-riga { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-width: 0; }
+  .titolo-testo { min-width: 0; flex: 1; }
+  .azioni-titolo { display: none; flex: none; align-items: center; gap: var(--space-2); }
   /* Sul telefono: una colonna, nell'ordine strumenti → riepilogo → resto. */
   .contenuto, .strumenti, .laterale, .principale { display: flex; flex-direction: column; gap: var(--space-6); }
   .principale > :global(*), .laterale > :global(*), .strumenti > :global(*) { min-width: 0; }
@@ -188,16 +200,14 @@
      dove capitava, un titolo a 205px e quello accanto a 238, un bottone da
      solo in cima alla terza colonna. Qui niente cade: ha un posto. */
   @media (min-width: 1000px) {
-    /* LA PAGINA È LARGA QUANTO IL SUO CONTENUTO. Una schermata con una
-       sezione sola non deve prendere 1640px e lasciarne seicento vuoti a
-       destra: è la stessa bruttura delle colonne automatiche, solo più
-       grande. Quindi la larghezza la decide quello che c'è dentro —
-       `:has()` conta le lastre e sceglie fra tre misure. */
-    :global(:root) { --larghezza-pagina: min(calc(100vw - 96px), 820px); }
-    :global(:root:has(.contenuto.con-laterale)) { --larghezza-pagina: min(calc(100vw - 96px), 1100px); }
-    :global(:root:has(.principale > :nth-child(2))),
-    :global(:root:has(.pagina.larga)) { --larghezza-pagina: min(calc(100vw - 96px), 1640px); }
+    :global(:root) { --larghezza-pagina: min(calc(100vw - 96px), 1640px); }
     .pagina { padding-left: var(--space-8); padding-right: var(--space-8); }
+    .azioni-titolo { display: flex; }
+    /* `visibility` e non `display`: la barra è una griglia a tre celle e
+       togliere quella di destra sposterebbe il titolo fuori centro. Quando
+       il titolo grande è scorso via le azioni tornano nella barra, che è
+       l'unico posto rimasto dove hanno un titolo accanto. */
+    .barra:not(.compatta) .azioni-barra { visibility: hidden; }
     .barra-riga { padding-left: var(--space-8); padding-right: var(--space-8); }
 
     .pagina:not(.larga) .contenuto {
@@ -212,9 +222,13 @@
     .strumenti > :global(.settimana) { width: 520px; }
     .strumenti > :global(.nastro) { flex: 1 1 100%; margin: 0; padding: 4px 0; }
     .laterale { position: sticky; top: calc(var(--altezza-barra) + var(--space-4)); }
+    /* `auto-fit` e non `auto-fill`: le colonne che restano vuote collassano
+       e le lastre che ci sono si prendono tutto. Con `auto-fill` una
+       schermata da una lastra sola (Pasti, Abitudini) teneva aperta una
+       seconda colonna vuota e lasciava mezzo monitor nero. */
     .pagina:not(.larga) .principale {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
       gap: var(--space-6);
       align-items: start;
     }

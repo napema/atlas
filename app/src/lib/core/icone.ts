@@ -24,10 +24,13 @@ const TRATTI: Record<string, string> = {
     '<path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1' +
     'M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M18.6 5.4l-1.5 1.5M6.9 17.1l-1.5 1.5"/>',
   luna:      '<path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1z"/>',
+  /* UN PORTAFOGLIO CENTRATO. Prima aveva la patta in alto a sinistra, una
+     diagonale che partiva da fuori squadra: dentro un bottone tondo il
+     glifo sembrava storto e spinto in un angolo. Questo sta in un
+     rettangolo centrato sui 24, con la tasca sul bordo destro. */
   portafoglio:
-    '<path d="M3.6 8.6A2.6 2.6 0 0 1 6.2 6h11.2A2.6 2.6 0 0 1 20 8.6v8.8a2.6 2.6 0 0 1-2.6 2.6H6.2A2.6 2.6 0 0 1 3.6 17.4z"/>' +
-    '<path d="M3.6 9.3V6.5a2 2 0 0 1 1.7-2l9.9-1.9"/>' +
-    '<path d="M20 12.1h-3.3a1.95 1.95 0 0 0 0 3.9H20"/>',
+    '<path d="M3.4 8.4A3 3 0 0 1 6.4 5.4h11.2a3 3 0 0 1 3 3v7.2a3 3 0 0 1-3 3H6.4a3 3 0 0 1-3-3z"/>' +
+    '<path d="M20.6 10.6h-3.4a1.9 1.9 0 0 0 0 3.8h3.4"/>',
   spunta:    '<path d="M4.4 12.5l4.5 4.5L19.6 6.4"/>',
   // Tre cursori, non un ingranaggio. La ruota dentata era un poligono a
   // mano libera: a 21px i denti si impastavano e sembrava un glifo rotto.
@@ -65,8 +68,8 @@ const TRATTI: Record<string, string> = {
      freccia orizzontale che entra in un contenitore lo dice senza
      didascalia, e non somiglia a nient'altro nella barra. */
   importa:
-    '<path d="M9 3.6H5.4A1.8 1.8 0 0 0 3.6 5.4v13.2a1.8 1.8 0 0 0 1.8 1.8H9"/>' +
-    '<path d="M20.4 12H8.4"/><path d="M12.6 7.8 8.4 12l4.2 4.2"/>',
+    '<path d="M14.6 4.2h3.2a2.4 2.4 0 0 1 2.4 2.4v10.8a2.4 2.4 0 0 1-2.4 2.4h-3.2"/>' +
+    '<path d="M3.6 12h10.4"/><path d="M10.2 8.2 14 12l-3.8 3.8"/>',
 
   // ------------------------------------------------------------- controlli
   piu:       '<path d="M12 5.2v13.6M5.2 12h13.6"/>',

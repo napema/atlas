@@ -166,7 +166,13 @@
     box-shadow: var(--shadow-sheet);
     overflow: hidden;
     transform: translateY(var(--spinta, 0px));
-    transition: transform 0.42s cubic-bezier(0.32, 0.72, 0, 1), display 0.42s allow-discrete, overlay 0.42s allow-discrete;
+    /* Solo `transform`. Con `display`/`overlay` in `allow-discrete` il
+       dialogo restava visibile mezzo secondo DOPO `close()`, e in quel
+       mezzo secondo la classe `chiudendo` era già caduta: il foglio
+       risaliva da sotto — si vedeva spuntare la maniglia, un trattino — e
+       spariva di colpo. La discesa la guidiamo noi, con il timeout in
+       `chiudi()`: quelle due transizioni non servono, e mentivano. */
+    transition: transform 0.42s cubic-bezier(0.32, 0.72, 0, 1);
   }
   .foglio:not([open]) { display: none; }
   .foglio[open] { display: flex; }
@@ -176,7 +182,7 @@
 
   .foglio::backdrop {
     background: var(--dim);
-    transition: opacity 0.3s ease, display 0.3s allow-discrete, overlay 0.3s allow-discrete;
+    transition: opacity 0.3s ease;
   }
   @starting-style { .foglio[open]::backdrop { opacity: 0; } }
   .foglio.chiudendo::backdrop { opacity: 0; }
