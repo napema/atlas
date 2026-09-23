@@ -22,6 +22,15 @@
   import { ascolta, EVENTI } from "$lib/core/bus";
   import { oggiISO, piuGiorni, tocco, GIORNI_INIZIALI, daISO } from "$lib/core/ui";
   import { settimanaCorrente, slotDi, fatto, giornoSlot, alternaSlot } from "$condivisi/allenamenti/dati.js";
+  import { gruppiSeduta, serieTotali } from "$condivisi/allenamenti/muscoli.js";
+  import { km } from "$condivisi/allenamenti/calcolo.js";
+
+  const NOMI_GRUPPI: Record<string, string> = {
+    petto: "Petto", spalle: "Spalle", bicipiti: "Bicipiti", avambracci: "Avambracci",
+    addome: "Addome", obliqui: "Obliqui", quadricipiti: "Quadricipiti", adduttori: "Adduttori",
+    tibiali: "Tibiali", trapezio: "Trapezio", dorsali: "Dorsali", deltoidiPost: "Deltoidi post.",
+    tricipiti: "Tricipiti", lombari: "Lombari", glutei: "Glutei", femorali: "Femorali", polpacci: "Polpacci",
+  };
 
   let { resto = [] }: { resto?: string[] } = $props();
 
@@ -50,7 +59,18 @@
     };
     return (["corsa", "palestra"] as const)
       .map((g) => {
-        const miei = slot.filter((s) => s.genere === g).map((s) => ({ ...s, quando: etichetta(s.giorno) }));
+          const miei = slot.filter((s) => s.genere === g).map((s) => {
+          // La riga di una seduta dice anche QUANTO lavoro è e DOVE arriva:
+          // «Hack squat 4×8 · Leg curl 3×12 · …» era l'elenco della spesa.
+          const righe = [s.lift, ...(s.accessori || [])].filter(Boolean) as string[];
+          const gr = righe.length ? gruppiSeduta(righe) : [];
+          return {
+            ...s, quando: etichetta(s.giorno),
+            serie: righe.length ? serieTotali(righe) : 0,
+            top: gr.slice(0, 3).map((x) => ({ id: x.id, nome: NOMI_GRUPPI[x.id] ?? x.id })),
+            altri: Math.max(0, gr.length - 3),
+          };
+        });
         return { g, nome: g === "corsa" ? "Corsa" : "Palestra", slot: miei, fatti: miei.filter((s) => s.fatto).length };
       })
       .filter((x) => x.slot.length);
@@ -98,11 +118,21 @@
                 {#if s.quando}<span class="quando text-caption1">{s.quando}</span>{/if}
               </span>
               <span class="text-subheadline secondario testo">{s.lift ? s.lift : s.testo}</span>
-              {#if s.lift && s.accessori?.length}
-                <span class="text-footnote terziario">{s.accessori.join(" · ")}</span>
+              {#if s.top?.length}
+                <span class="muscoli text-caption1 terziario">
+                  {#each s.top as g, i (g.id)}<span class="punto" class:forte={i === 0}></span>{g.nome}{/each}
+                  {#if s.altri}<span class="piu">+{s.altri}</span>{/if}
+                </span>
               {/if}
             </button>
-            <span class="freccia"><Icona nome="freccia" misura={16} tratto={2.4} /></span>
+            <span class="misura">
+              {#if s.serie}
+                <span class="grande cifre">{s.serie}</span><span class="text-caption2 terziario">serie</span>
+              {:else if s.km}
+                <span class="grande cifre">{km(s.km)}</span>
+              {/if}
+              <span class="freccia"><Icona nome="freccia" misura={16} tratto={2.4} /></span>
+            </span>
           </div>
         {/each}
       </Sezione>
@@ -114,14 +144,22 @@
 <FoglioImport bind:aperto={fImport} {quale} />
 
 <style>
-  .slot { position: relative; display: flex; align-items: center; gap: var(--space-3); padding: 12px var(--space-4); }
+  .slot { position: relative; display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); min-height: 76px; }
   :global(* + .slot)::before {
     content: ""; position: absolute; top: 0; right: 0; left: calc(var(--space-4) + 28px + var(--space-3));
     border-top: 0.5px solid var(--separator);
   }
-  .corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; }
+  .corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; text-align: left; }
   .corpo:active { opacity: 0.6; }
-  .freccia { flex: none; color: var(--label-tertiary); }
+  .misura { flex: none; display: flex; align-items: center; gap: 4px; color: var(--label-secondary); }
+  .misura .grande { font-size: 20px; font-weight: var(--weight-semibold); color: var(--label-primary); }
+  .fatto .misura .grande { color: var(--label-secondary); }
+  .freccia { flex: none; color: var(--label-tertiary); margin-left: 2px; }
+  .muscoli { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 5px; }
+  .punto { width: 6px; height: 6px; border-radius: 50%; margin-left: 4px; background: color-mix(in srgb, var(--accento) 40%, transparent); }
+  .punto:first-child { margin-left: 0; }
+  .punto.forte { background: var(--accento); }
+  .piu { margin-left: 2px; }
   .alto { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .nome { font-weight: var(--weight-semibold); }
   .fatto .nome, .fatto .testo { color: var(--label-secondary); }
