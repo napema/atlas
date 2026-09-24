@@ -207,14 +207,36 @@ export async function riallinea() {
     return { stato: "ok", id };
   }
 
+  const ua = navigator.userAgent.slice(0, 80);
   casella.aggiorna((s) => {
     const i = s.subs.findIndex((x) => x.id === id);
     const rec: Iscrizione = {
       id, endpoint: j.endpoint, p256dh: j.keys?.p256dh, auth: j.keys?.auth,
-      ua: navigator.userAgent.slice(0, 80),
-      up: Date.now(),
+      ua, up: Date.now(),
     };
     if (i >= 0) s.subs[i] = rec; else s.subs.push(rec);
+
+    /* E LA VECCHIA SE NE VA. Qui sta la seconda metà del guasto.
+       Riallineare scriveva l'iscrizione nuova e lasciava viva quella di
+       prima, e quella di prima non è un altro telefono: è QUESTO telefono
+       nella vita precedente, dopo un aggiornamento di iOS o una
+       reinstallazione dalla schermata Home. Apple continua ad accettare
+       quell'endpoint e butta via il messaggio senza rispondere 410, quindi
+       il mittente scrive «1/1 consegnata» e sullo schermo non arriva
+       niente — che è esattamente quello che si vedeva oggi, e il 19
+       settembre, e il 12.
+
+       Il segno è lo user agent: stesso modello, stessa versione di iOS,
+       endpoint diverso. Due iPhone identici davvero darebbero un falso
+       positivo, ma allora uno dei due è comunque quello vecchio, e per un
+       secondo dispositivo vivo basta riaprire ATLAS lì una volta: si
+       riscrive da sé al primo avvio. Meglio una lapide di troppo che una
+       notifica che non arriva e non lo dice. */
+    for (const x of s.subs) {
+      if (x.id !== id && !x.del && x.ua === ua) {
+        Object.assign(x, { id: x.id, endpoint: undefined, p256dh: undefined, auth: undefined, del: true, up: Date.now() });
+      }
+    }
   });
   return { stato: "riparato", id };
 }
