@@ -110,7 +110,7 @@
 {#if parte === "lato"}
 <!-- 1. IL NUMERO ---------------------------------------------------------->
 <Sezione titolo="Da spendere">
-  <div class="numero" data-tono={tonoOggi}>
+  <div class="numero" data-tono={tono}>
     {#if !d.configurato}
       <!-- Zero perché non è configurato non è zero perché hai finito i soldi. -->
       <span class="text-footnote secondario semibold">Questa settimana</span>
