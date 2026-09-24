@@ -32,10 +32,15 @@
   function paga() {
     if (!imp) { avviso("Serve un importo.", { tipo: "errore" }); return; }
     const oggi = oggiISO();
+    /* `pian` È IL LEGAME CON LA SCADENZA, e non è decorazione: senza, una
+       rata pagata il giorno giusto pesava sulla settimana come una pizza
+       decisa stasera. La scheda «Da spendere» conta solo le decisioni del
+       giorno, e questo campo è il solo modo che ha di distinguerle. */
     salvaMovimento({
       id: nuovoId("m"), data: oggi, tipo: "out", imp,
       nota: voce.nome, cat: voce.cat || "fisse", sub: null,
       pocket: voce.pocket || "principale", ecc: false,
+      pian: voce.id,
     });
     if (voce.origine === "previsto") segnaPrevistoPagato(voce.id, oggi);
     else segnaScadenzaPagata(voce.id, voce.quando);

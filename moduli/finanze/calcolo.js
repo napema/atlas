@@ -20,7 +20,7 @@ import {
   movimentiVivi, stato, profiloDi, CATEGORIE_CASSA,
   classeDi, SOGLIE_PREDEFINITE, pendenti, checkFatto, serieCheck, previsti, ricorrentiVivi,
 } from "./dati.js";
-import { isoDi, daISO, oggiISO, MESI_BREVI } from "../../core/ui.js";
+import { isoDi, daISO, oggiISO, piuGiorni, MESI_BREVI } from "../../core/ui.js";
 
 export const meseDi = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 export const meseDiISO = (iso) => iso.slice(0, 7);
@@ -747,6 +747,137 @@ export function orizzonte(iso = oggiISO()) {
   };
 }
 
+/* ------------------------------------------------ fino alla ricarica -- */
+/*
+   QUANTO POSSO SPENDERE OGGI. È la domanda per cui la scheda esiste, e per
+   un po' la scheda ha risposto con tre numeri che si contraddicevano.
+
+   Il guasto era sempre lo stesso, contato in tre modi: la quota giornaliera
+   confrontava le uscite di OGGI, parcheggio compreso, con un ventesimo del
+   budget. Il parcheggio era un pagamento PREVISTO, dichiarato settimane
+   prima e pagato il giorno giusto; farlo pesare sulla giornata diceva
+   «−72 € oltre la quota» e «13,1 giorni spesi in uno» a chi non aveva
+   sbagliato niente. Una decisione del giorno e una rata non sono la stessa
+   cosa, e sommarle rende il numero inservibile.
+
+   E l'orizzonte era il fine ciclo. I 95 € sul Principale non devono durare
+   ventinove giorni: devono durare fino a lunedì, perché lunedì arrivano
+   altri 129 € dalla Cassa. Dividendo per ventinove usciva «3,27 € al
+   giorno» a chi ne aveva quasi ventiquattro. La Cassa esisteva nel conto dei
+   pocket e non esisteva in quello dei giorni.
+
+   Qui l'orizzonte è LA PROSSIMA RICARICA, e la ricarica è un importo
+   calcolato: quello che c'è in Cassa spalmato sulle settimane che restano
+   nel ciclo. Con un importo fisso l'ultima settimana si ritrova con gli
+   avanzi — quattro giorni con quaranta euro — e non è un caso limite, è
+   tutti i mesi.
+*/
+
+/** Le tasche di parcheggio: la Cassa da cui esce la ricarica del lunedì. */
+export const pocketParcheggio = () =>
+  (stato().pockets || [])
+    .filter((p) => p.tipo === "parcheggio" && !p.external)
+    .map((p) => p.id);
+
+/** I giorni fra due date ISO, estremi compresi. */
+const giorniFra = (da, a) => Math.round((daISO(a) - daISO(da)) / 86400000) + 1;
+
+/**
+ * Una spesa È una decisione del giorno?
+ *
+ * No, quando è una rata, una bolletta, un parcheggio dichiarato in «In
+ * arrivo»: quei soldi erano già impegnati, e contarli come spesa della
+ * settimana fa sembrare uno sforamento ciò che è il piano che funziona.
+ *
+ * Tre segni, e servono tutti e tre. `pian` ce l'hanno i movimenti nati dal
+ * pulsante «Paga» di una scadenza: è il legame vero, ma esiste solo da
+ * quando c'è. La classe `automatico` copre le categorie che escono comunque
+ * (fisse, casa, accantonamenti) e quindi anche i movimenti di prima. `ecc`
+ * è la marcatura a mano, che c'era già.
+ */
+export const eDecisioneDelGiorno = (m) =>
+  m.tipo === "out" && !m.ecc && !m.pian && classeDi(m.cat, m.sub) !== "automatico";
+
+/**
+ * La settimana che conta: da oggi alla prossima ricarica.
+ *
+ * `spendibile` è denaro vero — la somma dei saldi delle tasche spendibili —
+ * non una stima di budget. `giorni` arriva al giorno PRIMA della ricarica,
+ * non a fine ciclo.
+ */
+export function finoAllaRicarica(iso = oggiISO()) {
+  const ciclo = cicloDi(iso);
+  const d = daISO(iso);
+  const dow = (d.getDay() + 6) % 7;                 // 0 = lunedì
+
+  /* Il lunedì che viene. Se oggi È lunedì la ricarica di oggi è già
+     arrivata (o è saltata, e allora il problema è un altro): l'orizzonte
+     resta il lunedì dopo, non oggi. */
+  const prossimoLunedi = piuGiorni(iso, 7 - dow);
+
+  const spendibili = pocketSpendibili();
+  const spendibile = spendibili.reduce((t, id) => t + saldoPocket(id), 0);
+  const cassa = pocketParcheggio().reduce((t, id) => t + saldoPocket(id), 0);
+
+  /* LA RICARICA NON È UN IMPORTO FISSO. È la Cassa divisa per i giorni che
+     restano nel ciclo dopo lunedì, per sette. Quando i giorni rimasti sono
+     sette o meno siamo all'ultima settimana e prende tutto quello che c'è:
+     è l'unico modo perché l'ultima settimana non sia sempre quella povera. */
+  const giorniDopo = ciclo.a >= prossimoLunedi ? giorniFra(prossimoLunedi, ciclo.a) : 0;
+  const ricarica = giorniDopo <= 0 || cassa <= 0 ? 0
+    : giorniDopo <= 7 ? cassa
+    : Math.round((cassa / giorniDopo) * 7);
+
+  // Senza ricarica prima della fine del ciclo, l'orizzonte è lo stipendio.
+  const conRicarica = giorniDopo > 0;
+  const a = conRicarica ? piuGiorni(prossimoLunedi, -1) : (ciclo.a > iso ? ciclo.a : iso);
+  const giorni = Math.max(1, giorniFra(iso, a));
+  const alGiorno = Math.floor(Math.max(0, spendibile) / giorni);
+
+  /* QUANTO HAI SPESO QUESTA SETTIMANA, e solo per scelta. Da lunedì (o
+     dall'ancora, se una tasca è stata riancorata dopo: prima di quella data
+     il saldo non porta più quei movimenti, e sommarli conterebbe due volte). */
+  const lunedi = piuGiorni(iso, -dow);
+  const ancore = spendibili
+    .map((id) => (stato().pockets || []).find((x) => x.id === id)?.ancoraDa)
+    .filter(Boolean);
+  const ancora = ancore.length ? ancore.sort().at(-1) : (stato().config?.pocketDa || null);
+  const daQuando = ancora && ancora > lunedi ? ancora : lunedi;
+
+  const speso = movimentiVivi()
+    .filter((m) => m.data >= daQuando && m.data <= iso
+      && daSpendibile(m, spendibili) && eDecisioneDelGiorno(m))
+    .reduce((t, m) => t + importoEffettivo(m), 0);
+
+  // Il piano: la cassa settimanale divisa sette. È il metro, non un vincolo.
+  const quotaPiano = Math.round((Number(stato().config?.cassaSettimanale) || 0) / 7);
+
+  // Il quadro del mese, sotto e in piccolo: tutto quello che resta da vivere
+  // (spendibile + Cassa) sui giorni che mancano allo stipendio.
+  const giorniCiclo = Math.max(1, giorniFra(iso, ciclo.a > iso ? ciclo.a : iso));
+  const vita = spendibile + cassa;
+
+  return {
+    da: iso, a, giorni,
+    spendibile, alGiorno, quotaPiano,
+    speso,
+    // Quello che avevi questa settimana: quel che resta più quel che è
+    // uscito. Le due parti tornano sempre, ed è la proprietà che serve alla
+    // barra per non mentire.
+    avuto: spendibile + speso,
+    frazione: spendibile + speso > 0 ? Math.min(1, speso / (spendibile + speso)) : 0,
+    ricarica: { quando: conRicarica ? prossimoLunedi : null, importo: ricarica, cassa },
+    ciclo: {
+      da: ciclo.da, a: ciclo.a, indice: ciclo.indice,
+      giorni: giorniCiclo, vita,
+      alGiorno: Math.floor(Math.max(0, vita) / giorniCiclo),
+    },
+    livello: spendibile <= 0 ? "finita"
+      : quotaPiano > 0 && alGiorno < quotaPiano ? "sotto"
+      : "linea",
+  };
+}
+
 /* --------------------------------------------------------- la settimana -- */
 /*
    IL NUMERO. È il saldo del pocket Principale, non un calcolo di budget:
@@ -1124,9 +1255,22 @@ export function comeSpendi(ciclo) {
   const totale = per.automatico + per.necessario + per.discrezionale;
   return {
     ...per, totale,
-    // Nella card «necessario» somma automatico e necessario: dal punto di
-    // vista di una decisione sono la stessa cosa, soldi che escono comunque.
+    /* TRE SEGMENTI, NON DUE. «Necessario» sommava dentro di sé gli
+       automatici, e con una rata da 250 € il risultato era «necessario
+       98 %»: una cifra vera che non dice niente, perché la rata non è una
+       spesa che fai — è una spesa che ti fanno. Separandola restano due
+       numeri su cui si può ragionare (quanto devi, quanto scegli) e uno
+       che si guarda una volta al mese.
+
+       `necessarioTotale` resta per chi lo legge ancora. */
     necessarioTotale: per.automatico + per.necessario,
+    pct: totale > 0
+      ? {
+          automatico: per.automatico / totale,
+          necessario: per.necessario / totale,
+          discrezionale: per.discrezionale / totale,
+        }
+      : { automatico: 0, necessario: 0, discrezionale: 0 },
     pctDiscrezionale: totale > 0 ? per.discrezionale / totale : 0,
   };
 }

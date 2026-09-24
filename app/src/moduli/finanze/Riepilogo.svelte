@@ -16,13 +16,13 @@
   import Icona from "$lib/ui/Icona.svelte";
   import Importo from "$lib/ui/Importo.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
-  import { euro, plurale, dataBreve, oggiISO, avviso } from "$lib/core/ui";
+  import { euro, plurale, dataBreve, oggiISO, avviso, daISO, maiuscola, GIORNI } from "$lib/core/ui";
   import {
     stato, profiloDi, emojiCat, CATEGORIE_CASSA, SOGLIE_PREDEFINITE, TIPI_POCKET, categoriaPerId,
     pendenti, togliDaSospeso, salvaMovimento,
   } from "$condivisi/finanze/dati.js";
   import {
-    cicloDi, settimana, giornata, orizzonte, pocketConSaldi, inArrivo, comeSpendi, sforamenti, alert,
+    cicloDi, finoAllaRicarica, pocketConSaldi, inArrivo, comeSpendi, sforamenti, alert,
     esitoCheck, comeEvento, categorieDelCiclo, categorieDelMese, nomeCiclo, nomeMese,
   } from "$condivisi/finanze/calcolo.js";
   import { nuovoId } from "$lib/core/ui";
@@ -46,9 +46,7 @@
     const soglie = { ...SOGLIE_PREDEFINITE, ...(stato().soglie || {}) };
     return {
       oggi, ciclo, configurato,
-      s: settimana(oggi),
-      g: giornata(),
-      o: orizzonte(),
+      r: finoAllaRicarica(oggi),
       arrivo: inArrivo(30, oggi),
       av: alert(oggi),
       check: esitoCheck(oggi),
@@ -81,10 +79,20 @@
     };
   });
 
-  // Sotto quota la domanda è «quanto resta», sopra è «di quanto sei oltre»:
-  // due cose diverse, due cifre diverse.
-  const tonoOggi = $derived(d.g.livello === "grave" || d.g.livello === "male" ? "male" : d.g.livello === "avviso" ? "avviso" : "");
-  const tonoRitmo = $derived(d.o.livello === "grave" || d.o.livello === "finito" ? "male" : d.o.livello === "stretto" ? "avviso" : "");
+  /* Due stati e basta: in linea, oppure sotto la quota che il piano
+     prevedeva. Niente rosso lampeggiante e niente numeri negativi grandi —
+     il tono è quello di un cruscotto, non di un rimprovero. */
+  const tono = $derived(d.r.livello === "finita" ? "male" : d.r.livello === "sotto" ? "avviso" : "");
+
+  /** «gio 24». Il giorno della settimana serve: «24 – 27» non si legge. */
+  const gg = (iso: string) => {
+    const x = daISO(iso);
+    return `${GIORNI[(x.getDay() + 6) % 7].slice(0, 3)} ${x.getDate()}`;
+  };
+  const ggLungo = (iso: string) => {
+    const x = daISO(iso);
+    return `${maiuscola(GIORNI[(x.getDay() + 6) % 7])} ${x.getDate()}`;
+  };
 
   const NOTA_POCKET: Record<string, string> = {
     principale: "spendibile · carta", contanti: "spendibile · in tasca",
@@ -110,46 +118,61 @@
       <p class="text-subheadline secondario">I pocket non hanno ancora un saldo, quindi il conto della settimana non può partire.</p>
       <Pulsante variante="pieno" larga onclick={() => apri({ tipo: "pocket" })}>Imposta i saldi</Pulsante>
       <p class="text-footnote secondario">Si copiano da Revolut e da ING una volta sola. Da lì in poi li muovono i movimenti.</p>
-    {:else if d.s.finita}
-      <span class="text-footnote semibold male">Questa settimana</span>
+    {:else if d.r.livello === "finita"}
+      <div class="testa">
+        <span class="text-footnote semibold male">Questa settimana</span>
+        <span class="text-footnote secondario">{gg(d.r.da)} – {gg(d.r.a)}</span>
+      </div>
       <Importo centesimi={0} misura={52} tono="male" />
-      <p class="text-subheadline secondario">La settimana è finita · {plurale(d.s.giorniRimasti, "giorno", "giorni")} a lunedì</p>
+      <p class="text-subheadline secondario">
+        Settimana finita · {plurale(d.r.giorni, "giorno", "giorni")}{d.r.ricarica.quando ? " alla ricarica" : " allo stipendio"}
+      </p>
       <div class="due-bottoni">
         <Pulsante variante="grigio" onclick={() => avviso("Va bene così. Lunedì si riparte.")}>Non ricaricare</Pulsante>
         <Pulsante variante="pieno" onclick={() => apri({ tipo: "ricarica" })}>Devo ricaricare</Pulsante>
       </div>
     {:else}
       <div class="testa">
-        <span class="text-footnote secondario semibold">Oggi</span>
-        <span class="text-footnote secondario">{plurale(d.o.giorni, "giorno", "giorni")} al {dataBreve(d.o.fine)}</span>
+        <span class="text-footnote secondario semibold">Questa settimana</span>
+        <span class="text-footnote secondario">{gg(d.r.da)} – {gg(d.r.a)}</span>
       </div>
-      {#if d.g.quota <= 0}
-        <span class="cifra-vuota">—</span>
-      {:else}
-        <Importo centesimi={d.g.sforo > 0 ? -d.g.sforo : d.g.resta} misura={52} tono={tonoOggi === "male" ? "male" : ""} />
-      {/if}
+      <Importo centesimi={d.r.spendibile} misura={52} tono={tono as any} />
       <p class="text-subheadline secondario">
-        {d.g.quota <= 0 ? "niente da spendere oggi"
-          : d.g.sforo > 0 ? `oltre la quota di oggi · ${d.g.giorni.toFixed(1).replace(".", ",")} giorni spesi in uno`
-          : `ancora oggi · ${euro(d.g.speso)} di ${euro(d.g.quota)}`}
+        <b class="cifre">{euro(d.r.alGiorno)}</b> al giorno · {plurale(d.r.giorni, "giorno", "giorni")}
       </p>
-      {#if d.g.quota > 0}
-        <div class="consumo"><i style:width="{Math.round(Math.min(1, d.g.frazione) * 100)}%"></i></div>
-      {/if}
-      <div class="piede" data-tono={tonoRitmo}>
-        <div><b class="cifre">{euro(d.o.disponibile)}</b><span class="text-footnote secondario">in tasca e sulla carta</span></div>
-        <div><b class="cifre ritmo">{euro(d.o.alGiorno)}</b><span class="text-footnote secondario">al giorno</span></div>
-      </div>
-      {#if d.o.piano > 0 && d.o.rapporto < 0.6}
-        <p class="text-footnote male">
-          {d.o.disponibile <= 0
-            ? `Le tasche sono a zero e allo stipendio mancano ${plurale(d.o.giorni, "giorno", "giorni")}.`
-            : `Il piano ne prevedeva ${euro(d.o.piano)} al giorno.`}
+
+      <div class="consumo"><i style:width="{Math.round(d.r.frazione * 100)}%"></i></div>
+      <p class="text-footnote secondario">speso {euro(d.r.speso, { tondo: true })} questa settimana</p>
+
+      {#if d.r.livello === "sotto"}
+        <!-- Fattuale, non un rimprovero: due numeri accanto, decide lui. -->
+        <p class="text-footnote avviso">
+          Il piano prevede {euro(d.r.quotaPiano)} al giorno. Ne hai {euro(d.r.alGiorno)} fino a {gg(d.r.a)}.
         </p>
+      {/if}
+
+      {#if d.r.ricarica.quando}
+        <div class="ricarica">
+          <span class="text-subheadline semibold">{ggLungo(d.r.ricarica.quando)}</span>
+          <span class="text-subheadline secondario">
+            <b class="cifre piu">+{euro(d.r.ricarica.importo, { tondo: true })}</b> dalla Cassa
+          </span>
+        </div>
       {/if}
     {/if}
   </div>
 </Sezione>
+
+<!-- 1ter. IL CICLO, sotto e in piccolo. Serve a sapere se il mese nel
+     complesso regge, e non deve competere col numero della settimana: è
+     una riga di testo, non una scheda. -->
+{#if d.configurato}
+  <p class="ciclo text-footnote secondario">
+    Ciclo {dataBreve(d.r.ciclo.da)} – {dataBreve(d.r.ciclo.a)} · vita:
+    <b class="cifre">{euro(d.r.ciclo.vita, { tondo: true })}</b> per {plurale(d.r.ciclo.giorni, "giorno", "giorni")} ·
+    <b class="cifre">{euro(d.r.ciclo.alGiorno)}</b>/giorno
+  </p>
+{/if}
 
 <!-- 1bis. IL CHECK — il gesto quotidiano. Costa trenta secondi o si salta. -->
 {#if d.check.fatto}
@@ -279,11 +302,16 @@
 <!-- 6. COME SPENDI -->
 {#if d.come.totale}
   {@const pct = Math.round(d.come.pctDiscrezionale * 100)}
-  <Sezione titolo="Come spendi" piede="Questo ciclo.">
+  <Sezione titolo="Come spendi" piede="Questo ciclo. Gli automatici — rate, bollette, accantonamenti — stanno a parte: non sono spese che fai, sono spese che ti fanno.">
     <div class="come">
-      <div class="come-barra"><i class="nec" style:width="{100 - pct}%"></i><i class="disc" style:width="{pct}%"></i></div>
+      <div class="come-barra">
+        <i class="auto" style:width="{Math.round(d.come.pct.automatico * 100)}%"></i>
+        <i class="nec" style:width="{Math.round(d.come.pct.necessario * 100)}%"></i>
+        <i class="disc" style:width="{Math.round(d.come.pct.discrezionale * 100)}%"></i>
+      </div>
       <div class="come-legenda text-footnote">
-        <span><i class="nec"></i>Necessario {euro(d.come.necessarioTotale, { tondo: true })}</span>
+        <span><i class="auto"></i>Automatico {euro(d.come.automatico, { tondo: true })}</span>
+        <span><i class="nec"></i>Necessario {euro(d.come.necessario, { tondo: true })}</span>
         <span><i class="disc"></i>Discrezionale {euro(d.come.discrezionale, { tondo: true })} ({pct}%)</span>
       </div>
     </div>
@@ -307,17 +335,22 @@
 
 <style>
   .numero { padding: var(--space-5) var(--space-4) var(--space-4); display: flex; flex-direction: column; gap: 6px; }
-  .testa { display: flex; justify-content: space-between; }
+  .testa { display: flex; justify-content: space-between; gap: var(--space-2); }
+  .ciclo { padding: 0 var(--space-4); margin: calc(-1 * var(--space-3)) 0 0; }
   .cifra-vuota { font-family: var(--font-display); font-size: 52px; line-height: 58px; font-weight: var(--weight-bold); color: var(--label-tertiary); }
   .consumo { height: 6px; border-radius: 3px; overflow: hidden; background: var(--fill-tertiary); margin: var(--space-2) 0; }
   .consumo i { display: block; height: 100%; border-radius: inherit; background: var(--accento); transition: width var(--duration-slow) var(--ease-default); }
   [data-tono="avviso"] .consumo i { background: var(--color-orange); }
   [data-tono="male"] .consumo i { background: var(--color-red); }
-  .piede { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); padding-top: var(--space-3); border-top: 0.5px solid var(--separator); }
-  .piede div { display: flex; flex-direction: column; }
-  .piede b { font-size: var(--text-title3); font-weight: var(--weight-semibold); }
-  .piede[data-tono="avviso"] .ritmo { color: var(--color-orange); }
-  .piede[data-tono="male"] .ritmo { color: var(--color-red); }
+  /* La ricarica che arriva: non è un avviso, è un fatto del calendario, e
+     sta in fondo alla scheda perché è quello che spiega perché i giorni
+     sono quattro e non ventinove. */
+  .ricarica {
+    display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3);
+    margin-top: var(--space-2); padding-top: var(--space-3); border-top: 0.5px solid var(--separator);
+  }
+  .ricarica .piu { color: var(--color-green); font-weight: var(--weight-semibold); }
+  .avviso { color: var(--color-orange); }
   .due-bottoni { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); margin-top: var(--space-2); }
   .male { color: var(--color-red); }
   .ok { color: var(--color-green); }
@@ -368,6 +401,7 @@
   .come { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
   .come-barra { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; }
   .come-barra i { display: block; height: 100%; }
+  .auto { background: var(--color-gray); }
   .nec { background: var(--color-blue); }
   .disc { background: var(--color-purple); }
   .come-legenda { display: flex; flex-direction: column; gap: 4px; color: var(--label-secondary); }
