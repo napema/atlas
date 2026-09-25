@@ -403,6 +403,46 @@ export const oraPredefinita = (genere) =>
 /** L'ora di uno slot: la sua, o quella predefinita del suo genere. */
 export const oraDi = (slot) => oraSlot(slot.id) || oraPredefinita(slot.genere);
 
+export const DURATE_PREDEFINITE = { corsa: 60, palestra: 75, altro: 60 };
+
+export const durataDi = (slot) =>
+  Number(recordSlot(slot.id)?.durata)
+  || Number((stato().config?.durate || {})[slot.genere])
+  || DURATE_PREDEFINITE[slot.genere] || 60;
+
+/**
+ * L'AGENDA: gli allenamenti che hanno un giorno, pronti da mettere in
+ * calendario.
+ *
+ * La scrive l'app e non il workflow, e non è un dettaglio di comodità: i
+ * nomi degli allenamenti stanno nel piano, che è codice di questo repo. Un
+ * job che volesse ricavarseli dovrebbe ricopiarsi le tredici settimane, e
+ * da quel momento ci sarebbero due piani da tenere allineati — cioè uno
+ * sbagliato. Qui esce già risolta: nome, giorno, ora, durata.
+ *
+ * Solo la settimana corrente e la successiva: più in là il piano cambia
+ * ancora, e riempire il calendario di tre mesi di eventi che poi si
+ * spostano è il modo migliore per farlo ignorare.
+ */
+export function agenda(da = settimanaCorrente()) {
+  if (!da) return [];
+  const fuori = [];
+  for (const n of [da, da + 1]) {
+    for (const s of slotDi(n)) {
+      const giorno = giornoSlot(s.id);
+      if (!giorno) continue;                       // senza giorno non è un appuntamento
+      fuori.push({
+        id: s.id, sett: n, nome: s.nome, genere: s.genere,
+        giorno, ora: oraDi(s), durata: durataDi(s),
+        testo: (s.lift ? [s.lift, ...(s.accessori || [])].join(" · ") : s.testo) || "",
+        km: s.km || 0,
+        fatta: fatto(s.id),
+      });
+    }
+  }
+  return fuori;
+}
+
 /** Assegna (o toglie) l'ora di uno slot. */
 export function scegliOra(id, ora) {
   casella.aggiorna((s) => {

@@ -8,7 +8,7 @@
 import { plurale } from "../../core/ui.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
-import { casella, stato, settimanaDi, pianoDi } from "./dati.js";
+import { agenda, casella, stato, settimanaDi, pianoDi } from "./dati.js";
 import {
   progressoSettimana, restaSettimana, giorniRimasti, passoSettimana, kmFatti, km,
 } from "./calcolo.js";
@@ -41,7 +41,16 @@ export function avviaSync() {
     file: "allenamenti.json",
     impacchetta: () => {
       const s = stato();
-      return { v: 1, slot: s.slot, corse: s.corse, settimane: s.settimane || [], config: s.config, configUp: s.configUp || 0 };
+      /* `agenda` è DERIVATA: esce di qui e non rientra mai. La scriviamo
+         perché il job del calendario non può ricavarsi i nomi degli
+         allenamenti — stanno nel piano, che è codice dell'altro repo — e
+         ricopiarglieli vorrebbe dire tenere allineati due piani. In
+         `applica` non si legge: quello che conta resta `slot`. */
+      return {
+        v: 1, slot: s.slot, corse: s.corse, settimane: s.settimane || [],
+        config: s.config, configUp: s.configUp || 0,
+        agenda: agenda(),
+      };
     },
     applica: (remoto) => {
       casella.aggiorna((s) => {
