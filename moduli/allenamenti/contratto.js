@@ -5,7 +5,7 @@
 // è quello di `modulo.js`, spostato e non riscritto; `quandoCambia()` è il
 // solo pezzo nuovo, e serve solo alla vista vecchia.
 
-import { plurale } from "../../core/ui.js";
+import { avviso, plurale } from "../../core/ui.js";
 import { apriCanale, fondiRecord, potaLapidi, svegliaWorkflow } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { agenda, casella, stato, settimanaDi, pianoDi } from "./dati.js";
@@ -77,10 +77,11 @@ export function avviaSync() {
       svegliaWorkflow("calendario.yml").then((e) => {
         if (!e.ok && e.motivo === "permesso" && !avvisatoDelPermesso) {
           avvisatoDelPermesso = true;
-          console.warn(
-            "[allenamenti] il calendario si aggiornerà al prossimo giro programmato: " +
-            "al token manca il permesso «Actions». Si aggiunge dalle impostazioni del token su GitHub.",
-          );
+          /* SI DICE, non si logga. Una riga in console su un iPhone non la
+             legge nessuno, e il guasto sarebbe silenzioso esattamente come
+             quello delle notifiche: funziona, ma con ore di ritardo, e non
+             si capisce perché. */
+          avviso("Calendario: si aggiorna più tardi. Al token manca il permesso «Actions».", { tono: "male", durata: 5200 });
         }
       });
     },
