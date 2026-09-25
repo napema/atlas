@@ -20,10 +20,8 @@
   $effect(() => { if (aperto) { scelta = quale; testo = ""; } });
 
   const PROMPT_FITNESS =
-    "Dammi il lavoro in CSV con queste colonne, senza altro testo intorno:
-" +
-    "settimana,nome,genere,testo,km
-" +
+    "Dammi il lavoro in CSV con queste colonne, senza altro testo intorno:\n" +
+    "settimana,nome,genere,testo,km\n" +
     "`settimana` è un numero da 1 a 13. `nome` è come chiamo l'allenamento " +
     "(Fartlek, Full body, Giro in bici: quello che è). `genere` è corsa, " +
     "palestra o altro. `testo` è l'allenamento in una riga; per la palestra " +

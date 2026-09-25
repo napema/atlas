@@ -316,5 +316,5 @@ export function allenamentiDaCSV(testo) {
 export const ESEMPIO_ALLENAMENTI =
   "settimana,nome,genere,testo,km\n" +
   "3,Fartlek,corsa,10' Z2 + 8×(1' forte / 1' piano) + 10' Z2,7.5\n" +
-  "3,Full body,palestra,Stacco 5×3 @ 65 kg · Panca 4×6 · Trazioni 4×8 · Plank 3×45\",\n" +
+  "3,Full body,palestra,Stacco 5×3 @ 65 kg · Panca 4×6 · Trazioni 4×8 · Plank 3×45,\n" +
   "3,Giro in bici,altro,45' facile,";
