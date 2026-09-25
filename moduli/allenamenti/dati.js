@@ -385,6 +385,43 @@ export function scegliGiorno(id, giorno) {
   });
 }
 
+export const oraSlot = (id) => recordSlot(id)?.ora || "";
+
+/* GLI ORARI PREDEFINITI, e non sono un dettaglio di comodità: la palestra
+   la mattina è chiusa. Un piano che mette una seduta di pesi alle sette è
+   un piano che non si può eseguire, e accorgersene davanti alla saracinesca
+   è tardi. La corsa invece la mattina presto si fa, ed è quasi sempre
+   quello il momento.
+
+   Restano PREDEFINITI: ogni allenamento può avere il suo orario, perché un
+   piano rigido si abbandona alla prima giornata storta. */
+export const ORARI_PREDEFINITI = { corsa: "07:00", palestra: "18:00", altro: "18:00" };
+
+export const oraPredefinita = (genere) =>
+  (stato().config?.orari || {})[genere] || ORARI_PREDEFINITI[genere] || "18:00";
+
+/** L'ora di uno slot: la sua, o quella predefinita del suo genere. */
+export const oraDi = (slot) => oraSlot(slot.id) || oraPredefinita(slot.genere);
+
+/** Assegna (o toglie) l'ora di uno slot. */
+export function scegliOra(id, ora) {
+  casella.aggiorna((s) => {
+    const i = trova(s.slot, id);
+    const prima = i >= 0 ? s.slot[i] : { id, fatta: false };
+    const rec = { ...prima, id, ora: ora || "", up: Date.now() };
+    delete rec.del;
+    if (i >= 0) s.slot[i] = rec; else s.slot.push(rec);
+  });
+}
+
+/** Cambia gli orari predefiniti. */
+export function scriviOrari(patch) {
+  casella.aggiorna((s) => {
+    s.config = { ...(s.config || {}), orari: { ...ORARI_PREDEFINITI, ...(s.config?.orari || {}), ...patch } };
+    s.configUp = Date.now();
+  });
+}
+
 /**
  * Applica gli allenamenti importati: uno scostamento per slot.
  *

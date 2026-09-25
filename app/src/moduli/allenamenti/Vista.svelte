@@ -21,7 +21,7 @@
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
   import { oggiISO, piuGiorni, plurale, tocco, GIORNI_INIZIALI, daISO } from "$lib/core/ui";
-  import { settimanaCorrente, slotDi, fatto, giornoSlot, alternaSlot } from "$condivisi/allenamenti/dati.js";
+  import { settimanaCorrente, slotDi, fatto, giornoSlot, alternaSlot, oraDi } from "$condivisi/allenamenti/dati.js";
   import { gruppiSeduta, serieTotali } from "$condivisi/allenamenti/muscoli.js";
   import { km } from "$condivisi/allenamenti/calcolo.js";
 
@@ -75,7 +75,7 @@
           ).map((x: string) => String(x).trim()).filter(Boolean) as string[];
           const gr = righe.length ? gruppiSeduta(righe) : [];
           return {
-            ...s, quando: etichetta(s.giorno),
+            ...s, quando: etichetta(s.giorno), ora: oraDi(s),
             serie: righe.length ? serieTotali(righe) : 0,
             top: gr.slice(0, 3).map((x: any) => ({ id: x.id, nome: NOMI_GRUPPI[x.id] ?? x.id })),
             altri: Math.max(0, gr.length - 3),
@@ -147,7 +147,7 @@
             {#each oggiQui.diOggi as s (s.id)}
               <button type="button" class="cosa" class:fatta={s.fatto} onclick={() => { slotId = s.id; fSlot = true; }}>
                 <span class="nome-oggi">{s.nome}</span>
-                <span class="text-caption1 dett">{s.lift ? s.lift : s.testo}</span>
+                <span class="text-caption1 dett">{s.ora} · {s.lift ? s.lift : s.testo}</span>
               </button>
             {/each}
           </span>
@@ -177,7 +177,7 @@
                 <span class="nome">{s.nome}</span>
                 {#if s.stella}<span class="stella" title="Seduta chiave"><Icona nome="bersaglio" misura={14} tratto={2.2} /></span>{/if}
                 {#if s.cambiato}<span class="etichetta text-caption2">importato</span>{/if}
-                {#if s.quando}<span class="quando text-caption1">{s.quando}</span>{/if}
+                {#if s.quando}<span class="quando text-caption1">{s.quando} · {s.ora}</span>{/if}
               </span>
               <span class="text-subheadline secondario testo">{s.lift ? s.lift : s.testo}</span>
               {#if s.top?.length}

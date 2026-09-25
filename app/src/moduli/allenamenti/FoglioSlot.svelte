@@ -20,11 +20,13 @@
   import Sezione from "$lib/ui/Sezione.svelte";
   import Pulsante from "$lib/ui/Pulsante.svelte";
   import Pillole from "$lib/ui/Pillole.svelte";
+  import Riga from "$lib/ui/Riga.svelte";
   import Corpo from "./Corpo.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { avviso, tocco, piuGiorni, plurale, GIORNI_INIZIALI } from "$lib/core/ui";
   import {
     slotDi, fatto, giornoSlot, alternaSlot, scegliGiorno, inizioSettimana, recordSlot, ripristinaSlot,
+    oraDi, scegliOra, oraPredefinita,
   } from "$condivisi/allenamenti/dati.js";
   import { km } from "$condivisi/allenamenti/calcolo.js";
   import { leggiRiga, gruppiSeduta, serieTotali } from "$condivisi/allenamenti/muscoli.js";
@@ -44,6 +46,7 @@
   const f = $derived.by(() => { dati.versione; return id ? fatto(id) : false; });
   const giorno = $derived.by(() => { dati.versione; return id ? giornoSlot(id) : ""; });
   const coperto = $derived.by(() => { dati.versione; return Boolean(id && recordSlot(id)?.testo); });
+  const ora = $derived.by(() => { dati.versione; return s ? oraDi(s) : ""; });
 
   const giorni = $derived(s ? Array.from({ length: 7 }, (_, i) => ({ id: piuGiorni(inizioSettimana(s.sett), i), testo: GIORNI_INIZIALI[i] })) : []);
   const letto = $derived(s?.genere === "corsa" ? leggiAllenamento(s.testo) : null);
@@ -221,10 +224,24 @@
       {f ? "Riapri lo slot" : "Segna come fatto"}
     </Pulsante>
 
-    <Sezione titolo="Giorno" piede="Facoltativo. Il piano lascia i giorni liberi: se lo scegli, la home e i consigli ne tengono conto.">
+    <Sezione titolo="Quando" piede={s.genere === "palestra"
+      ? "La palestra la mattina è chiusa: l'ora predefinita è del pomeriggio. Qui la cambi solo per questo allenamento."
+      : "Facoltativo. Il piano lascia i giorni liberi: se lo scegli, la home e i consigli ne tengono conto."}>
       <div class="blocco">
         <Pillole opzioni={giorni} scelte={giorno ? [giorno] : []} oncambio={giornoScelto} etichetta="Giorno" />
       </div>
+      <Riga titolo="Ora">
+        {#snippet fine()}
+          <input
+            class="ora cifre" type="time" value={ora}
+            aria-label="Ora dell'allenamento"
+            onchange={(e) => scegliOra(s.id, e.currentTarget.value)}
+          />
+        {/snippet}
+      </Riga>
+      {#if !recordSlot(s.id)?.ora}
+        <Riga><span class="text-footnote secondario">Predefinita per {s.genere === "corsa" ? "la corsa" : s.genere === "palestra" ? "la palestra" : "questo genere"}: {oraPredefinita(s.genere)}. Cambiandola qui vale solo per questo.</span></Riga>
+      {/if}
     </Sezione>
 
     {#if s.genere === "corsa" && letto}
@@ -320,6 +337,8 @@
 
   .lavoro-testo { padding: var(--space-4); }
   .blocco { padding: var(--space-4); }
+  /* 17px: sotto, iOS zooma al focus e non torna indietro. */
+  .ora { font-size: 17px; background: none; color: var(--label-primary); text-align: right; }
   .passi { padding: var(--space-4) var(--space-4) var(--space-4) 36px; list-style: decimal; display: flex; flex-direction: column; gap: 4px; }
   .spiega { padding: 0 var(--space-4); margin-top: calc(-1 * var(--space-3)); }
 </style>
