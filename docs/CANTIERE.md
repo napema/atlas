@@ -1375,3 +1375,39 @@ le due figure con i gruppi accesi.
 **Pasti**: la giornata è fatta di schede (emoji della fascia, calorie,
 i tre macro con le barre sul bersaglio del giorno) e il bilancio ha tre
 tessere al posto di tre frasi.
+
+---
+
+## 25 settembre 2026 — notifiche, Training, calendario (chat ATLAS)
+
+**Le notifiche non arrivavano per due guasti indipendenti.**
+
+1. *L'iscrizione zombie.* iOS rigenera l'endpoint push dopo un aggiornamento
+   o una reinstallazione dalla schermata Home. `riallinea()` scriveva quella
+   nuova e lasciava viva la vecchia; Apple continua ad accettare l'endpoint
+   morto e butta via il messaggio senza rispondere 410, quindi il mittente
+   scriveva «1/1 consegnata» a vuoto. Ora la vecchia dello stesso dispositivo
+   prende la lapide, riconosciuta dallo user agent.
+2. *L'ora «24».* In `notifiche.js` (repo dati) `hour12: false` non fissa il
+   ciclo: per «en-CA» su Node resta h24 e a mezzanotte l'ora è «24». Alle
+   00:25 il mittente credeva fossero le 24:25 e mandava i promemoria della
+   sera — dentro la finestra dei 180 minuti — segnandoli come fatti. Alle
+   21:30 vere li saltava. Corretto con `hourCycle: "h23"`.
+
+**Training non è più a caselle fisse.** Una settimana importata SOSTITUISCE
+quella del blocco: tre righe fanno tre allenamenti. Il CSV ha `nome` e
+`genere` al posto di `slot` (le sei parole restano come scorciatoia), i
+generi mostrati sono quelli presenti, e una palestra importata si legge come
+esercizi veri — serie, ripetizioni e mappa dei muscoli dal testo separato da
+«·». In cima alla settimana c'è «Oggi» in una riga.
+
+**Ogni allenamento ha un'ora**, con predefiniti per genere (corsa 07:00,
+palestra 18:00 — la palestra la mattina è chiusa) scavalcabili sul singolo.
+
+**Google Calendar, nei due sensi**, da `calendario.js` nel repo dati.
+L'app pubblica `agenda` nel pacchetto del sync (derivata: esce e non
+rientra) perché i nomi stanno nel piano, che è codice. Il job crea e
+aggiorna gli eventi e riporta indietro solo il QUANDO se sposti a mano.
+Serve la configurazione Google: segreti `GCAL_CLIENT_ID`,
+`GCAL_CLIENT_SECRET`, `GCAL_REFRESH_TOKEN`, `GCAL_CALENDAR_ID`. Senza, il
+passo non fa niente.
