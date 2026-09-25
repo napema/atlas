@@ -69,6 +69,35 @@ export async function verificaAccesso(): Promise<{ ok: boolean; motivo: string }
 }
 
 // btoa da solo esplode sugli accenti: serve il giro via UTF-8.
+/**
+ * Sveglia un workflow del repo dei dati.
+ *
+ * Sta QUI e non nel modulo per la regola numero uno: a `api.github.com` ci
+ * parla il motore di sync e nessun altro. Un modulo che si apre una sua
+ * strada verso GitHub è un secondo posto dove sbagliare intestazioni,
+ * branch e token.
+ *
+ * Il permesso è a parte: il token del dispositivo nasce con `Contents`, e
+ * per svegliare un workflow serve anche `Actions`. Senza, GitHub risponde
+ * 403 o 404 — 404 perché nasconde persino l'esistenza di ciò che non puoi
+ * vedere — e qui non è un guasto: vuol dire soltanto che l'aggiornamento
+ * arriverà al prossimo giro programmato invece che fra venti secondi.
+ */
+export async function svegliaWorkflow(file: string): Promise<{ ok: boolean; motivo?: string }> {
+  if (!configurato()) return { ok: false, motivo: "non configurato" };
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${CFG.owner}/${CFG.repo}/actions/workflows/${file}/dispatches`,
+      { method: "POST", headers: intestazioni(), body: JSON.stringify({ ref: CFG.branch }) },
+    );
+    if (res.status === 204) return { ok: true };
+    if (res.status === 403 || res.status === 404) return { ok: false, motivo: "permesso" };
+    return { ok: false, motivo: `HTTP ${res.status}` };
+  } catch (e: any) {
+    return { ok: false, motivo: e?.message || "rete" };
+  }
+}
+
 export const b64enc = (s: string) => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
 export const b64dec = (s: string) => new TextDecoder().decode(
   Uint8Array.from(atob(s.replace(/\s/g, "")), (c) => c.charCodeAt(0)),
@@ -153,6 +182,8 @@ function inCoda<T>(fn: () => Promise<T>): Promise<T> {
 // ===================== il canale =====================
 
 export interface OpzioniCanale {
+  /** Chiamata dopo che il pacchetto è FINITO sul repo, non prima. */
+  dopoScrittura?: (pacco: any) => void;
   id: string;
   file: string;
   impacchetta: () => unknown;
@@ -180,7 +211,7 @@ export interface Canale {
 
 const canali = new Map<string, Canale>();
 
-export function apriCanale({ id, file, impacchetta, applica, ridisegna = () => {} }: OpzioniCanale): Canale {
+export function apriCanale({ id, file, impacchetta, applica, dopoScrittura, ridisegna = () => {} }: OpzioniCanale): Canale {
   const gia = canali.get(id);
   if (gia) return gia;
 
@@ -281,7 +312,13 @@ export function apriCanale({ id, file, impacchetta, applica, ridisegna = () => {
       canale.letturaFatta = true;
 
       const mio = impacchetta();
-      if (impronta(mio) !== impronta(remoto)) await carica(mio);
+      if (impronta(mio) !== impronta(remoto)) {
+        await carica(mio);
+        // Chi ha bisogno di sapere che i dati sono ARRIVATI sul repo:
+        // prima di questo momento svegliare un workflow non servirebbe a
+        // niente, leggerebbe la versione di prima.
+        try { dopoScrittura?.(mio); } catch (e) { console.error(e); }
+      }
 
       canale.ultimo = new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
       segnala("ok");

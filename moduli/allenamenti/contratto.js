@@ -6,7 +6,7 @@
 // solo pezzo nuovo, e serve solo alla vista vecchia.
 
 import { plurale } from "../../core/ui.js";
-import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
+import { apriCanale, fondiRecord, potaLapidi, svegliaWorkflow } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { agenda, casella, stato, settimanaDi, pianoDi } from "./dati.js";
 import {
@@ -14,6 +14,12 @@ import {
 } from "./calcolo.js";
 
 let ridisegnaVista = () => {};
+
+/* L'ultima agenda per cui abbiamo svegliato il calendario, e se abbiamo già
+   detto una volta che manca il permesso. Vivono qui e non nella casella: non
+   sono dati, sono fatti di questa sessione. */
+let ultimaAgenda = null;
+let avvisatoDelPermesso = false;
 
 /** La vista vecchia registra qui il proprio `disegna()`. */
 export function quandoCambia(fn) { ridisegnaVista = fn || (() => {}); }
@@ -52,6 +58,33 @@ export function avviaSync() {
         agenda: agenda(),
       };
     },
+    /* IL CALENDARIO, SUBITO.
+
+       Il workflow del calendario gira da sé quattro volte al giorno più la
+       sveglia esterna nelle fasce dei promemoria: pianificare un allenamento
+       alle tre del pomeriggio vorrebbe dire vederlo comparire alle otto di
+       sera. Qui lo svegliamo appena l'agenda è FINITA sul repo — non prima,
+       o leggerebbe la versione vecchia.
+
+       Solo se l'agenda è cambiata davvero. Una spunta, un chilometro
+       importato, un giorno tolto a una settimana che il calendario non
+       guarda: sono scritture che non spostano nessun evento, e ogni sveglia
+       inutile è un minuto di Actions su un piano che ne ha duemila. */
+    dopoScrittura: (pacco) => {
+      const ora = JSON.stringify(pacco?.agenda || []);
+      if (ora === ultimaAgenda) return;
+      ultimaAgenda = ora;
+      svegliaWorkflow("calendario.yml").then((e) => {
+        if (!e.ok && e.motivo === "permesso" && !avvisatoDelPermesso) {
+          avvisatoDelPermesso = true;
+          console.warn(
+            "[allenamenti] il calendario si aggiornerà al prossimo giro programmato: " +
+            "al token manca il permesso «Actions». Si aggiunge dalle impostazioni del token su GitHub.",
+          );
+        }
+      });
+    },
+
     applica: (remoto) => {
       casella.aggiorna((s) => {
         s.slot = potaLapidi(fondiRecord(s.slot, remoto.slot));

@@ -75,6 +75,35 @@ export async function verificaAccesso() {
 }
 
 // btoa da solo esplode sugli accenti: serve il giro via UTF-8.
+/**
+ * Sveglia un workflow del repo dei dati.
+ *
+ * Sta QUI e non nel modulo per la regola numero uno: a `api.github.com` ci
+ * parla il motore di sync e nessun altro. Un modulo che si apre una sua
+ * strada verso GitHub è un secondo posto dove sbagliare intestazioni,
+ * branch e token.
+ *
+ * Il permesso è a parte: il token del dispositivo nasce con `Contents`, e
+ * per svegliare un workflow serve anche `Actions`. Senza, GitHub risponde
+ * 403 o 404 — 404 perché nasconde persino l'esistenza di ciò che non puoi
+ * vedere — e qui non è un guasto: vuol dire soltanto che l'aggiornamento
+ * arriverà al prossimo giro programmato invece che fra venti secondi.
+ */
+export async function svegliaWorkflow(file) {
+  if (!configurato()) return { ok: false, motivo: "non configurato" };
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${CFG.owner}/${CFG.repo}/actions/workflows/${file}/dispatches`,
+      { method: "POST", headers: intestazioni(), body: JSON.stringify({ ref: CFG.branch }) },
+    );
+    if (res.status === 204) return { ok: true };
+    if (res.status === 403 || res.status === 404) return { ok: false, motivo: "permesso" };
+    return { ok: false, motivo: `HTTP ${res.status}` };
+  } catch (e) {
+    return { ok: false, motivo: e?.message || "rete" };
+  }
+}
+
 export const b64enc = (s) => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
 export const b64dec = (s) => new TextDecoder().decode(
   Uint8Array.from(atob(s.replace(/\s/g, "")), (c) => c.charCodeAt(0))
