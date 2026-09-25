@@ -183,6 +183,11 @@ export const PREDEFINITO = {
   // Le corse importate. `id` deriva da data+metri, quindi reimportare lo
   // stesso file non duplica niente.
   corse: [],
+  /* LE SETTIMANE IMPORTATE. Una per record, `id` = "w03".
+     Quando c'è, SOSTITUISCE il blocco per quella settimana: se importi tre
+     allenamenti quella settimana ne ha tre, non tre più i sei del piano.
+     Vedi `slotDi()`. */
+  settimane: [],
   config: { inizio: INIZIO },
   configUp: 0,
 };
@@ -219,12 +224,50 @@ export const idSlot = (n, chiave) => `s${String(n).padStart(2, "0")}-${chiave}`;
 
 const carico = (kg) => String(kg).replace(".", ",");
 
+/** La settimana importata per `n`, se c'è. */
+export const settimanaImportata = (n) =>
+  (stato().settimane || []).find((w) => w.id === idSettimana(n) && !w.del) || null;
+
+export const idSettimana = (n) => `w${String(n).padStart(2, "0")}`;
+
+/** Nome → chiave stabile, per gli id degli slot. */
+export function chiaveNome(nome) {
+  return String(nome || "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+    .slice(0, 28) || "voce";
+}
+
 /**
- * I sei slot di una settimana — tre di corsa e tre di palestra, nell'ordine
- * in cui il piano li elenca. La settimana del test ne ha quattro: una
- * palestra sola, e solo upper.
+ * Gli slot di una settimana.
+ *
+ * DUE SORGENTI, e l'ordine conta. Se quella settimana è stata importata,
+ * sono gli allenamenti importati e basta: tre righe fanno tre allenamenti.
+ * Prima non era così — il piano aveva sei slot fissi (facile, qualità,
+ * lunga, lower, upper, total) e l'import poteva solo COPRIRLI, quindi
+ * importarne tre lasciava gli altri tre del blocco sotto, e la settimana
+ * diceva sei allenamenti a chi ne aveva programmati tre. Le sei parole
+ * erano anche una gabbia: un fartlek, un giro in bici, un full body non
+ * avevano una casella dove entrare.
+ *
+ * Senza import resta il blocco delle tredici settimane, che è il piano
+ * scritto a mano e va benissimo finché lo segui.
  */
 export function slotDi(n) {
+  const w = settimanaImportata(n);
+  if (w) {
+    return (w.voci || []).map((v, i) => conScostamento({
+      id: idSlot(n, v.chiave || chiaveNome(v.nome) || `v${i}`),
+      sett: n,
+      genere: v.genere || "altro",
+      chiave: v.chiave || chiaveNome(v.nome),
+      nome: v.nome,
+      testo: v.testo || "",
+      km: v.km || 0,
+      stella: Boolean(v.stella),
+      importato: true,
+    }));
+  }
   const p = pianoDi(n);
   if (!p) return [];
   const fuori = [];
@@ -268,6 +311,45 @@ function conScostamento(slot) {
 }
 
 /* ------------------------------------------------------------ scritture -- */
+
+/**
+ * Mette (o rimpiazza) la settimana importata.
+ *
+ * SOSTITUISCE, non affianca: è tutto il punto. Reimportare la stessa
+ * settimana con due righe invece di cinque lascia due allenamenti, perché
+ * è quello che hai detto. Le spunte sopravvivono se il nome sopravvive —
+ * l'id dello slot viene dal nome — e questo è voluto: un allenamento
+ * rinominato è un altro allenamento.
+ *
+ * Con `voci` vuoto si mette la lapide e la settimana torna al blocco.
+ */
+export function salvaSettimana(n, voci) {
+  const id = idSettimana(n);
+  const pulite = (voci || [])
+    .filter((v) => v && String(v.nome || "").trim())
+    .map((v) => ({
+      nome: String(v.nome).trim(),
+      chiave: chiaveNome(v.chiave || v.nome),
+      genere: ["corsa", "palestra", "altro"].includes(v.genere) ? v.genere : "altro",
+      testo: String(v.testo || "").trim(),
+      ...(v.km ? { km: Number(v.km) } : {}),
+      ...(v.stella ? { stella: true } : {}),
+    }));
+
+  casella.aggiorna((s) => {
+    if (!Array.isArray(s.settimane)) s.settimane = [];
+    const i = s.settimane.findIndex((w) => w.id === id);
+    const rec = pulite.length
+      ? { id, sett: n, voci: pulite, del: false, up: Date.now() }
+      : { id, del: true, up: Date.now() };
+    if (i >= 0) s.settimane[i] = rec; else s.settimane.push(rec);
+  });
+  return pulite.length;
+}
+
+/** Toglie la settimana importata: si torna al blocco. */
+export const togliSettimana = (n) => salvaSettimana(n, []);
+
 
 const trova = (elenco, id) => elenco.findIndex((r) => r.id === id);
 

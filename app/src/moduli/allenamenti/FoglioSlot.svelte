@@ -54,11 +54,19 @@
      è l'unico che cambia carico di settimana in settimana. */
   const seduta = $derived.by(() => {
     if (!s || s.genere !== "palestra") return null;
-    const righe = [s.lift, ...(s.accessori || [])].filter(Boolean) as string[];
+    /* DUE FORME DELLA STESSA COSA. Il blocco scritto a mano tiene il lift
+       principale a parte dagli accessori; un allenamento importato è una
+       riga sola con gli esercizi separati da «·», perché è così che lo
+       scrive una chat e sarebbe assurdo chiedere due colonne per questo.
+       Da qui in giù non c'è differenza: sono esercizi. */
+    const righe = (s.lift
+      ? [s.lift, ...(s.accessori || [])]
+      : String(s.testo || "").split(/\s*[·;]\s*/)
+    ).map((x: string) => String(x).trim()).filter(Boolean) as string[];
     if (!righe.length) return null;
     return {
       righe,
-      esercizi: righe.map((r, i) => ({ ...leggiRiga(r)!, principale: i === 0 })),
+      esercizi: righe.map((r, i) => ({ ...leggiRiga(r)!, principale: i === 0 && Boolean(s.lift) })),
       gruppi: gruppiSeduta(righe),
       serie: serieTotali(righe),
     };

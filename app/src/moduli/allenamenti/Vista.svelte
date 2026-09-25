@@ -20,7 +20,7 @@
   import Andamento from "./Andamento.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
-  import { oggiISO, piuGiorni, tocco, GIORNI_INIZIALI, daISO } from "$lib/core/ui";
+  import { oggiISO, piuGiorni, plurale, tocco, GIORNI_INIZIALI, daISO } from "$lib/core/ui";
   import { settimanaCorrente, slotDi, fatto, giornoSlot, alternaSlot } from "$condivisi/allenamenti/dati.js";
   import { gruppiSeduta, serieTotali } from "$condivisi/allenamenti/muscoli.js";
   import { km } from "$condivisi/allenamenti/calcolo.js";
@@ -76,6 +76,31 @@
       .filter((x) => x.slot.length);
   });
 
+  /* OGGI. La domanda che si fa davanti allo schermo è «adesso cosa devo
+     fare», e la settimana per rispondere va letta: sei righe, e quella di
+     oggi è una di quelle, riconoscibile da un'etichetta piccola in fondo a
+     destra. Qui sta in cima, in una riga sola.
+
+     Non è un titolone. È una riga: se oggi c'è qualcosa la dice, se non c'è
+     niente dice quanto resta da fare entro domenica — che è l'unica altra
+     cosa utile in quel momento. */
+  const oggiQui = $derived.by(() => {
+    dati.versione;
+    const iso = oggiISO();
+    const tutti = gruppi.flatMap((g: any) => g.slot);
+    const diOggi = tutti.filter((s: any) => s.giorno === iso);
+    const aperti = tutti.filter((s: any) => !s.fatto);
+    return {
+      iso,
+      diOggi,
+      fattiOggi: diOggi.filter((s: any) => s.fatto).length,
+      aperti: aperti.length,
+      // Senza giorno assegnato non si può dire «oggi tocca questo»: si dice
+      // quanti ne restano, che è vero comunque.
+      senzaGiorno: aperti.filter((s: any) => !s.giorno).length,
+    };
+  });
+
   function spunta(s: any) {
     tocco(s.fatto ? 6 : 14);
     alternaSlot(s.id);
@@ -103,6 +128,33 @@
   {#if vista === "andamento"}
     <Andamento />
   {:else}
+    <!-- OGGI, in una riga. -->
+    {#if settimana === settimanaCorrente()}
+      <div class="oggi intera" class:vuoto={!oggiQui.diOggi.length}>
+        <span class="eti text-footnote semibold">Oggi</span>
+        {#if oggiQui.diOggi.length}
+          <span class="cose">
+            {#each oggiQui.diOggi as s (s.id)}
+              <button type="button" class="cosa" class:fatta={s.fatto} onclick={() => { slotId = s.id; fSlot = true; }}>
+                <span class="nome-oggi">{s.nome}</span>
+                <span class="text-caption1 dett">{s.lift ? s.lift : s.testo}</span>
+              </button>
+            {/each}
+          </span>
+          <span class="text-footnote secondario stato">{oggiQui.fattiOggi}/{oggiQui.diOggi.length} fatto</span>
+        {:else}
+          <span class="text-subheadline secondario cose">
+            Niente in programma per oggi.
+            {#if oggiQui.aperti}
+              Restano {plurale(oggiQui.aperti, "allenamento", "allenamenti")} questa settimana{oggiQui.senzaGiorno ? `, ${oggiQui.senzaGiorno} senza giorno` : ""}.
+            {:else}
+              La settimana è chiusa.
+            {/if}
+          </span>
+        {/if}
+      </div>
+    {/if}
+
 
     {#each gruppi as gr (gr.g)}
       <Sezione titolo={gr.nome}>
@@ -144,6 +196,22 @@
 <FoglioImport bind:aperto={fImport} {quale} />
 
 <style>
+  .oggi {
+    display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
+    padding: var(--space-3) var(--space-4); border-radius: var(--radius-xl);
+    background: color-mix(in srgb, var(--accento) 13%, transparent);
+  }
+  .oggi.vuoto { background: var(--bg-grouped-secondary); }
+  .oggi .eti { color: var(--accento); flex: none; letter-spacing: 0.3px; }
+  .oggi.vuoto .eti { color: var(--label-secondary); }
+  .cose { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
+  .cosa { display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-width: 0; }
+  .cosa:active { opacity: 0.6; }
+  .nome-oggi { font-weight: var(--weight-semibold); }
+  .cosa.fatta .nome-oggi { color: var(--label-secondary); text-decoration: line-through; }
+  .dett { color: var(--label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46ch; }
+  .stato { flex: none; }
+
   .slot { position: relative; display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); min-height: 76px; }
   :global(* + .slot)::before {
     content: ""; position: absolute; top: 0; right: 0; left: calc(var(--space-4) + 28px + var(--space-3));

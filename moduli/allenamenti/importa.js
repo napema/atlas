@@ -216,32 +216,105 @@ const CHIAVI = {
  * piano resta codice e resta intatto, così una riga sbagliata in un CSV si
  * annulla togliendo la riga, non ripristinando tredici settimane.
  */
+/* I sei nomi del blocco. Non sono più una gabbia — sono solo scorciatoie:
+   scrivere «lower» risparmia di scrivere «Lower» e «palestra». Qualunque
+   altra parola va bene lo stesso ed entra con il nome che le hai dato. */
+const SCORCIATOIE = {
+  facile:  { nome: "Facile",   genere: "corsa" },
+  qualita: { nome: "Qualità",  genere: "corsa" },
+  lunga:   { nome: "Lunga",    genere: "corsa" },
+  lower:   { nome: "Lower",    genere: "palestra" },
+  upper:   { nome: "Upper",    genere: "palestra" },
+  total:   { nome: "Total",    genere: "palestra" },
+};
+
+/* Come si capisce se è corsa o palestra quando non lo dici. Non è
+   indovinare per il gusto di farlo: il genere decide che cosa mostra il
+   foglio — i passi per l'orologio o la mappa dei muscoli — e chiederlo in
+   una colonna obbligatoria vorrebbe dire rifiutare il CSV di chi non l'ha
+   messa. Sbagliare costa una riga da correggere, non un import perso. */
+const PAROLE_CORSA = /\b(corsa|corri|run|running|fartlek|ripetut|allung|lento|lunga|tempo run|z2|z3|z4|km|jog|bici|bike|nuoto|swim|cardio|camminat)\b/i;
+const PAROLE_PALESTRA = /\b(palestra|gym|serie|reps?|ripetizioni|squat|panca|stacc|deadlift|bench|curl|press|trazion|rematore|lat|dip|affond|leg|calf|polpacc|×|x\d)\b/i;
+
+function indovinaGenere(nome, testo, km) {
+  const tutto = `${nome} ${testo}`;
+  if (km) return "corsa";
+  if (PAROLE_PALESTRA.test(tutto)) return "palestra";
+  if (PAROLE_CORSA.test(tutto)) return "corsa";
+  return "altro";
+}
+
+/**
+ * Gli allenamenti di una o più settimane, dal CSV.
+ *
+ * LE COLONNE. `settimana` e `testo` servono; il resto è facoltativo.
+ *
+ *   settimana  1–13
+ *   nome       come lo chiami tu: «Fartlek», «Full body», «Giro in bici».
+ *              In mancanza si usa `slot`, e in mancanza di quello il testo
+ *              accorciato — meglio un nome brutto che una riga persa.
+ *   slot       le sei parole di prima, ancora accettate come scorciatoia
+ *   genere     corsa | palestra | altro. Se manca lo si indovina.
+ *   testo      l'allenamento in una riga
+ *   km         solo per la corsa
+ *
+ * Torna le voci GIÀ RAGGRUPPATE per settimana, perché è così che vanno
+ * salvate: una settimana importata sostituisce quella che c'era, e per
+ * sostituirla bisogna averla tutta insieme.
+ */
 export function allenamentiDaCSV(testo) {
   const righe = leggiCSV(testo);
-  if (!righe.length) return { voci: [], scartate: 0, motivo: "Il file è vuoto." };
+  if (!righe.length) return { settimane: [], voci: [], scartate: 0, motivo: "Il file è vuoto." };
 
   const testa = righe[0];
-  const pareIntestazione = colonna(testa, "settimana", "sett", "week") >= 0;
-  const cSett = pareIntestazione ? colonna(testa, "settimana", "sett", "week") : 0;
+  const cSett = colonna(testa, "settimana", "sett", "week");
+  const pareIntestazione = cSett >= 0;
+  const cNome = pareIntestazione ? colonna(testa, "nome", "name", "titolo", "title") : -1;
   const cSlot = pareIntestazione ? colonna(testa, "slot", "tipo", "type") : 1;
+  const cGen = pareIntestazione ? colonna(testa, "genere", "categoria", "kind") : -1;
   const cTesto = pareIntestazione ? colonna(testa, "testo", "allenamento", "workout", "descrizione") : 2;
   const cKm = pareIntestazione ? colonna(testa, "km", "distanza", "distance") : 3;
 
-  const voci = [];
+  const per = new Map();
   let scartate = 0;
   for (const r of righe.slice(pareIntestazione ? 1 : 0)) {
-    const n = numero(r[cSett]);
-    const chiave = CHIAVI[normale(r[cSlot])];
+    const n = numero(pareIntestazione ? r[cSett] : r[0]);
     const t = String(r[cTesto] ?? "").trim();
-    if (!n || n < 1 || n > 13 || !chiave || !t) { scartate++; continue; }
-    const k = cKm >= 0 ? numero(r[cKm]) : null;
-    voci.push({ sett: Math.round(n), chiave, testo: t, ...(k ? { km: k } : {}) });
+    if (!n || n < 1 || n > 13 || !t) { scartate++; continue; }
+
+    const parolaSlot = normale(cSlot >= 0 ? r[cSlot] : "");
+    const corta = SCORCIATOIE[parolaSlot];
+    const nome = String((cNome >= 0 ? r[cNome] : "") || "").trim()
+      || corta?.nome
+      || (cSlot >= 0 ? String(r[cSlot] ?? "").trim() : "")
+      || t.slice(0, 24);
+
+    const km = cKm >= 0 ? numero(r[cKm]) : null;
+    const dichiarato = normale(cGen >= 0 ? r[cGen] : "");
+    const genere = ["corsa", "palestra", "altro"].includes(dichiarato)
+      ? dichiarato
+      : corta?.genere || indovinaGenere(nome, t, km);
+
+    const sett = Math.round(n);
+    if (!per.has(sett)) per.set(sett, []);
+    per.get(sett).push({ nome, genere, testo: t, ...(km ? { km } : {}) });
   }
-  return { voci, scartate, motivo: voci.length ? "" : "Nessuna riga aveva settimana, slot e testo." };
+
+  const settimane = [...per.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([sett, voci]) => ({ sett, voci }));
+
+  return {
+    settimane,
+    voci: settimane.flatMap((w) => w.voci),
+    scartate,
+    motivo: settimane.length ? "" : "Nessuna riga aveva settimana e testo.",
+  };
 }
 
 /** Il formato, in una riga, da mostrare a chi deve produrlo. */
 export const ESEMPIO_ALLENAMENTI =
-  "settimana,slot,testo,km\n" +
-  "3,qualita,10' Z2 + 2×8' Z3 (5:40/km) rec 3' + 10' Z2,6.7\n" +
-  "3,lower,Stacco 5×3 @ 65 kg · Hack squat 4×8 · Leg curl 3×12,";
+  "settimana,nome,genere,testo,km\n" +
+  "3,Fartlek,corsa,10' Z2 + 8×(1' forte / 1' piano) + 10' Z2,7.5\n" +
+  "3,Full body,palestra,Stacco 5×3 @ 65 kg · Panca 4×6 · Trazioni 4×8 · Plank 3×45\",\n" +
+  "3,Giro in bici,altro,45' facile,";

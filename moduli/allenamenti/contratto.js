@@ -41,12 +41,13 @@ export function avviaSync() {
     file: "allenamenti.json",
     impacchetta: () => {
       const s = stato();
-      return { v: 1, slot: s.slot, corse: s.corse, config: s.config, configUp: s.configUp || 0 };
+      return { v: 1, slot: s.slot, corse: s.corse, settimane: s.settimane || [], config: s.config, configUp: s.configUp || 0 };
     },
     applica: (remoto) => {
       casella.aggiorna((s) => {
         s.slot = potaLapidi(fondiRecord(s.slot, remoto.slot));
         s.corse = potaLapidi(fondiRecord(s.corse, remoto.corse));
+        s.settimane = potaLapidi(fondiRecord(s.settimane || [], remoto.settimane));
         // `config` non ha id: si confronta con un timestamp solo. Un remoto a
         // zero non deve poter vincere su un locale che è stato toccato.
         if ((remoto.configUp || 0) > (s.configUp || 0)) {

@@ -8,8 +8,8 @@
   import Segmenti from "$lib/ui/Segmenti.svelte";
   import Pulsante from "$lib/ui/Pulsante.svelte";
   import Icona from "$lib/ui/Icona.svelte";
-  import { avviso } from "$lib/core/ui";
-  import { salvaCorse, salvaAllenamenti } from "$condivisi/allenamenti/dati.js";
+  import { plurale, avviso } from "$lib/core/ui";
+  import { salvaCorse, salvaSettimana } from "$condivisi/allenamenti/dati.js";
   import { corseDaCSV, allenamentiDaCSV, ESEMPIO_ALLENAMENTI } from "$condivisi/allenamenti/importa.js";
   import { leggiFile } from "./comune";
 
@@ -20,11 +20,16 @@
   $effect(() => { if (aperto) { scelta = quale; testo = ""; } });
 
   const PROMPT_FITNESS =
-    "Dammi il lavoro in CSV con queste colonne esatte, senza altro testo intorno:\n" +
-    "settimana,slot,testo,km\n" +
-    "`settimana` è un numero da 1 a 13. `slot` è una di queste sei parole: " +
-    "facile, qualita, lunga, lower, upper, total. `testo` è l'allenamento in una riga. " +
-    "`km` solo per la corsa, con il punto decimale (lascia vuoto per la palestra).";
+    "Dammi il lavoro in CSV con queste colonne, senza altro testo intorno:
+" +
+    "settimana,nome,genere,testo,km
+" +
+    "`settimana` è un numero da 1 a 13. `nome` è come chiamo l'allenamento " +
+    "(Fartlek, Full body, Giro in bici: quello che è). `genere` è corsa, " +
+    "palestra o altro. `testo` è l'allenamento in una riga; per la palestra " +
+    "separa gli esercizi con · e scrivi le serie come 4×8. `km` solo per la " +
+    "corsa, col punto decimale. Una riga per allenamento: se la settimana ne " +
+    "ha tre, scrivi tre righe.";
 
   async function file(e: Event) {
     try {
@@ -46,11 +51,15 @@
       aperto = false;
       avviso(`${nuove} nuove, ${aggiornate} già c'erano${scartate ? `, ${scartate} scartate` : ""}.`);
     } else {
-      const { voci, scartate, motivo } = allenamentiDaCSV(testo);
-      if (!voci.length) { avviso(motivo || "Non ho trovato allenamenti.", { tipo: "errore" }); return; }
-      const scritti = salvaAllenamenti(voci);
+      const { settimane, scartate, motivo } = allenamentiDaCSV(testo);
+      if (!settimane.length) { avviso(motivo || "Non ho trovato allenamenti.", { tipo: "errore" }); return; }
+      /* SOSTITUISCE la settimana, non ci si appoggia sopra: se importi tre
+         allenamenti quella settimana ne ha tre. Prima gli altri tre del
+         blocco restavano sotto e la settimana ne diceva sei. */
+      let scritti = 0;
+      for (const w of settimane) scritti += salvaSettimana(w.sett, w.voci);
       aperto = false;
-      avviso(`${scritti} slot aggiornati${scartate ? `, ${scartate} righe scartate` : ""}.`);
+      avviso(`${scritti} allenamenti in ${plurale(settimane.length, "settimana", "settimane")}${scartate ? `, ${scartate} righe scartate` : ""}.`);
     }
   }
 </script>
@@ -61,7 +70,7 @@
   {#if scelta === "corse"}
     <p class="text-subheadline secondario">Su Garmin Connect: Attività → Tutte le attività → l'icona di esportazione in alto a destra. Poi incolla qui il contenuto, o scegli il file.</p>
   {:else}
-    <p class="text-subheadline secondario">Una riga per slot. Le parole di «slot» sono sei: facile, qualita, lunga, lower, upper, total. Gli allenamenti importati COPRONO il piano: da ogni slot puoi rimettere quello originale.</p>
+    <p class="text-subheadline secondario">Una riga per allenamento. Il <b>nome</b> lo scegli tu: non ci sono tipi fissi. Quello che importi <b>sostituisce</b> la settimana — tre righe fanno tre allenamenti, sette ne fanno sette.</p>
     <pre class="esempio">{ESEMPIO_ALLENAMENTI}</pre>
     <Pulsante variante="grigio" larga onclick={copiaFormato}>Copia il formato per la chat</Pulsante>
   {/if}
