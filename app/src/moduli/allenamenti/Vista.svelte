@@ -57,12 +57,22 @@
       const d = daISO(iso);
       return `${GIORNI_INIZIALI[(d.getDay() + 6) % 7]} ${d.getDate()}`;
     };
-    return (["corsa", "palestra"] as const)
+    /* I generi PRESENTI, non quelli previsti. Erano due, scritti a mano, e
+       un allenamento che non fosse corsa o palestra spariva dalla schermata
+       pur essendo nei dati: importavi tre righe e ne vedevi due. */
+    const NOMI_GENERE: Record<string, string> = { corsa: "Corsa", palestra: "Palestra", altro: "Altro" };
+    const generi = ["corsa", "palestra", "altro"].filter((g) => slot.some((s) => s.genere === g));
+    for (const s of slot) if (!generi.includes(s.genere)) generi.push(s.genere);
+
+    return generi
       .map((g) => {
           const miei = slot.filter((s) => s.genere === g).map((s) => {
           // La riga di una seduta dice anche QUANTO lavoro è e DOVE arriva:
           // «Hack squat 4×8 · Leg curl 3×12 · …» era l'elenco della spesa.
-          const righe = [s.lift, ...(s.accessori || [])].filter(Boolean) as string[];
+          const righe = (s.lift
+            ? [s.lift, ...(s.accessori || [])]
+            : s.genere === "palestra" ? String(s.testo || "").split(/\s*[·;]\s*/) : []
+          ).map((x: string) => String(x).trim()).filter(Boolean) as string[];
           const gr = righe.length ? gruppiSeduta(righe) : [];
           return {
             ...s, quando: etichetta(s.giorno),
@@ -71,7 +81,7 @@
             altri: Math.max(0, gr.length - 3),
           };
         });
-        return { g, nome: g === "corsa" ? "Corsa" : "Palestra", slot: miei, fatti: miei.filter((s) => s.fatto).length };
+        return { g, nome: NOMI_GENERE[g] ?? g, slot: miei, fatti: miei.filter((s) => s.fatto).length };
       })
       .filter((x) => x.slot.length);
   });
