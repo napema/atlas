@@ -180,7 +180,20 @@ export async function creaRoutine({ titolo, note, righe }) {
     }
   }
 
-  if (!esercizi.length) throw new Error("Nessuno di questi esercizi esiste nel catalogo di Hevy.");
+  /* DUE ZERO DIVERSI, e confonderli manda a cercare il guasto dalla parte
+     sbagliata. Zero righe in ingresso vuol dire che chi ha chiamato non ha
+     passato niente; zero riconosciute vuol dire che il vocabolario non
+     copre quei nomi. Il messaggio di prima diceva la seconda cosa anche
+     quando era vera la prima, e ha fatto cercare per mezz'ora un problema
+     di traduzione che non c'era. */
+  if (!righe?.length) throw new Error("Questo allenamento non ha esercizi da mandare.");
+  if (!esercizi.length) {
+    throw new Error(
+      catalogo.length
+        ? `Nessuno di questi nomi esiste su Hevy: ${mancanti.slice(0, 4).join(", ")}.`
+        : "Il catalogo di Hevy è vuoto: controlla la chiave API in Impostazioni.",
+    );
+  }
 
   const creata = await chiama("/routines", {
     method: "POST",

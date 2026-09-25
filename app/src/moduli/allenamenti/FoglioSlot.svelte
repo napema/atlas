@@ -146,7 +146,12 @@
       const { mancanti } = await hevy.creaRoutine({
         titolo: `${s.nome} · Settimana ${s.sett}`,
         note: "Da ATLAS — blocco 5 km sub-20",
-        righe: [s.lift, ...(s.accessori || [])].filter(Boolean),
+        /* LE STESSE RIGHE CHE VEDI SOPRA. Qui c'era `[lift, ...accessori]`,
+           che un allenamento importato non ha: gli esercizi stanno nel testo
+           separati da «·». A Hevy arrivava una lista vuota e l'errore diceva
+           «nessuno di questi esercizi esiste nel catalogo» — vero, perché non
+           ce n'era nessuno. Una sola fonte, quella che il foglio disegna. */
+        righe: seduta?.righe ?? [],
       });
       aperto = false;
       avviso(mancanti.length
