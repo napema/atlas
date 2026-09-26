@@ -60,6 +60,17 @@
      arriva, tutta. Chiamata a mano di mercoledì si pianificano i giorni che
      restano: rifare il lunedì che hai già mangiato non serve a nessuno. */
   const giorniDaPianificare = $derived.by(() => {
+    /* UN INTERVALLO ESPLICITO, quando arriva dall'import: «da venerdì a
+       venerdì prossimo» non è né questa settimana né la prossima, e
+       costringerlo in una delle due vorrebbe dire far verificare giorni che
+       non hai importato e saltarne di importati. Sta nella rotta e non in
+       una variabile perché così sopravvive a un ricaricamento a metà. */
+    const ISO = /^\d{4}-\d{2}-\d{2}$/;
+    if (ISO.test(resto[1] || "") && ISO.test(resto[2] || "")) {
+      const elenco: string[] = [];
+      for (let d = resto[1]; d <= resto[2] && elenco.length < 31; d = piuGiorni(d, 1)) elenco.push(d);
+      return elenco.length ? elenco : [resto[1]];
+    }
     if (resto[1] === "prossima") {
       const lun = piuGiorni(lunediDi(iso), 7);
       return Array.from({ length: 7 }, (_, i) => piuGiorni(lun, i));
@@ -263,7 +274,10 @@
 />
 <FoglioScegli bind:aperto={fScegli} iso={giornoFogli} fascia={fasciaScelta} />
 <FoglioAggiungi bind:aperto={fAggiungi} iso={giornoFogli} fascia={fasciaScelta} tipo={tipoAggiunta} />
-<FoglioImport bind:aperto={fImport} />
+<FoglioImport
+  bind:aperto={fImport}
+  onverifica={(date) => { if (date.length) vaiA(`pasti/pianifica/${date[0]}/${date[date.length - 1]}`); }}
+/>
 
 <style>
   .domenica {
