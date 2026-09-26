@@ -293,18 +293,52 @@ export function griglia() {
   });
 }
 
-/** Quale voce ti ha fatto ripartire più spesso. */
+/**
+ * Quale voce ti ha fatto ripartire più spesso.
+ *
+ * È la sola domanda della revisione a cui serve una risposta e non un
+ * numero: «sei ripartito quattro volte» non dice cosa fare domani, «tre
+ * volte su quattro era il journal» sì.
+ */
 export function colpevoli() {
   const conto = new Map();
   for (const c of chiusure()) {
     if (c.esito !== "no") continue;
     for (const id of c.mancate || []) conto.set(id, (conto.get(id) || 0) + 1);
   }
-  const nomi = new Map(abitudiniVive({ conArchiviate: true }).map((h) => [h.id, h.name]));
+  // Anche le archiviate: una voce tolta dalle otto resta la ragione per cui
+  // sei ripartito allora, e sparirebbe dal conto proprio quando è la storia
+  // che spiega il numero.
+  const viste = new Map(abitudiniVive({ conArchiviate: true }).map((h) => [h.id, h]));
   return [...conto.entries()]
-    .map(([id, volte]) => ({ id, nome: nomi.get(id) || "—", volte }))
-    .sort((a, b) => b.volte - a.volte);
+    .map(([id, volte]) => ({ id, volte, nome: viste.get(id)?.name || "—", emoji: viste.get(id)?.emoji || "" }))
+    .sort((a, b) => b.volte - a.volte || a.nome.localeCompare(b.nome));
 }
 
 /** Quante volte sei ripartito, in tutto. */
 export const ripartenze = () => chiusure().filter((c) => c.esito === "no").length;
+
+/**
+ * I numeri della revisione.
+ *
+ * `record` è il giorno più alto mai raggiunto, ed è l'unica misura che
+ * sopravvive a un reset: il contatore torna a 1 e questo resta lì a dire
+ * fin dove sei arrivato. Senza, dopo la terza ripartenza la schermata
+ * racconterebbe soltanto che sei al giorno 2.
+ */
+export function statistiche() {
+  const c = chiusure();
+  const bene = c.filter((x) => x.esito === "ok").length;
+  const corrente = giornoCorrente();
+  return {
+    chiusi: c.length,
+    bene,
+    persi: c.length - bene,
+    // Il record guarda anche il giorno in corso: se stai vivendo il tuo
+    // giorno migliore, vederlo scritto come «record: 11» mentre la testata
+    // dice 12 sarebbe solo un numero sbagliato.
+    record: c.reduce((m, x) => Math.max(m, x.giorno), corrente),
+    corrente,
+    restanti: Math.max(0, TOTALE - corrente + 1),
+  };
+}

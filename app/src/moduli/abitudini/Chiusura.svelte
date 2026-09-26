@@ -97,7 +97,10 @@
     </p>
 
     <div class="azioni">
-      <Pulsante variante={e.completo ? "pieno" : "grigio"} misura="grande" larga distruttivo={!e.completo} onclick={conferma}>
+      <!-- Il giorno perso si chiude con un pulsante rosso a velo, non
+           grigio: `grigio` ignora il colore distruttivo, e quel bottone è
+           l'unico della app che manda via due settimane di lavoro. -->
+      <Pulsante variante={e.completo ? "pieno" : "tinto"} misura="grande" larga distruttivo={!e.completo} onclick={conferma}>
         {e.completo ? "Chiudi il giorno" : "Chiudi e riparti da 1"}
       </Pulsante>
       <Pulsante variante="testo" misura="media" larga onclick={() => (aperto = false)}>Non ancora</Pulsante>

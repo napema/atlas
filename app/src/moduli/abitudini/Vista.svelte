@@ -22,6 +22,7 @@
   import SerateFuori from "./SerateFuori.svelte";
   import Blocchi from "./Blocchi.svelte";
   import Chiusura from "./Chiusura.svelte";
+  import Revisione from "./Revisione.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
   import { oggiISO, piuGiorni, dataUmana, plurale, tocco } from "$lib/core/ui";
@@ -31,7 +32,7 @@
 
   let { resto = [] }: { resto?: string[] } = $props();
 
-  let vista = $state<"oggi" | "serie">("oggi");
+  let vista = $state<"oggi" | "serie" | "sfida">("oggi");
   let giorno = $state(oggiISO());
 
   let chiusuraAperta = $state(false);
@@ -45,9 +46,21 @@
 
   // Le rotte che arrivano da fuori: `#/abitudini/nuova` è la scorciatoia
   // della home e delle notifiche, `#/abitudini/serie` apre le serie.
+  /* In sfida «le serie» non esistono: c'è un contatore solo in tutta la app
+     (ee1805f), e la domanda «quanto sto tenendo» ha una risposta sola, la
+     griglia dei cinquanta giorni. La rotta resta quella — è l'indirizzo di
+     una notifica — e porta dove ha senso adesso. */
   $effect(() => {
     if (resto[0] === "nuova") queueMicrotask(() => apriModifica(null));
-    if (resto[0] === "serie") vista = "serie";
+    if (resto[0] === "serie") vista = p50.attivo() ? "sfida" : "serie";
+  });
+
+  /* Accendere o spegnere la sfida in Impostazioni cambia quali schede
+     esistono: senza questo si resta su una scheda che non è più in barra,
+     e i segmenti mostrano due opzioni con nessuna scelta. */
+  $effect(() => {
+    if (!sfida && vista === "sfida") vista = "oggi";
+    if (sfida && vista === "serie") vista = "sfida";
   });
 
   // A mezzanotte il giorno scelto torna oggi: guardare «ieri» senza averlo
@@ -132,10 +145,17 @@
 </script>
 
 {#snippet strumenti()}
-  {#if !sfida}
-    <Segmenti opzioni={[{ id: "oggi", testo: "Giorno" }, { id: "serie", testo: "Serie" }]} bind:valore={vista} etichetta="Vista" />
-  {/if}
-  {#if (sfida || vista === "oggi") && tutte.length}
+  <Segmenti
+    opzioni={sfida
+      ? [{ id: "oggi", testo: "Giorno" }, { id: "sfida", testo: "Sfida" }]
+      : [{ id: "oggi", testo: "Giorno" }, { id: "serie", testo: "Serie" }]}
+    bind:valore={vista}
+    etichetta="Vista"
+  />
+  <!-- Sulla revisione la striscia non ci va: la griglia dei cinquanta dice
+       la stessa cosa e più in là, e due strisce nella stessa schermata si
+       leggono come due misure diverse. -->
+  {#if vista === "oggi" && (sfida || tutte.length)}
     <Settimana giorni={sfida ? settimana50 : settimana} {oggi} scelto={giorno} onscegli={(g) => { tocco(6); giorno = g; }} />
   {/if}
 {/snippet}
@@ -146,7 +166,9 @@
          tutto-o-niente un 87% significa che hai fallito, detto in un modo
          che permette di sentirsi a posto. -->
     <Testata50 giorno={sfida.giorno} fatte={sfida.fatte} previste={sfida.previste} chiuso={sfida.chiuso} />
-    <SerateFuori {giorno} />
+    <!-- Le serate sono un'azione del giorno: sulla revisione, che è una
+         schermata che si legge e basta, sarebbero l'unica cosa da toccare. -->
+    {#if vista === "oggi"}<SerateFuori {giorno} />{/if}
   {:else if vista === "serie"}
     <Serie parte="eroe" onapri={apriDettaglio} />
   {:else}
@@ -180,7 +202,9 @@
     <Pulsante variante="vetro" misura="media" tondo icona="piu" etichetta="Nuova abitudine" onclick={() => apriModifica(null)} />
   {/snippet}
 
-  {#if sfida}
+  {#if sfida && vista === "sfida"}
+    <Revisione />
+  {:else if sfida}
     <Blocchi
       otto={sfida.otto}
       supporto={sfida.supporto}
