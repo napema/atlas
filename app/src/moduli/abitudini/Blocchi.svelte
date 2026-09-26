@@ -37,6 +37,10 @@
   const pieno = $derived(previste > 0 && fatte === previste);
 </script>
 
+<!-- `intera` tiene i due blocchi in una colonna sola: sul PC la griglia li
+     avrebbe messi uno accanto all'altro, e il supporto sarebbe diventato una
+     colonna pari alle otto. La gerarchia si legge solo se uno sta sotto. -->
+<div class="blocchi intera">
 <section class="blocco-a" class:pieno>
   <header class="capo">
     <span class="titolo text-footnote semibold">Project 50</span>
@@ -59,13 +63,19 @@
     </div>
   </section>
 {/if}
+</div>
 
 <style>
+  .blocchi { display: flex; flex-direction: column; }
+
   .blocco-a {
     border-radius: 16px;
     background: var(--bg-grouped-secondary);
     box-shadow: inset 0 0 0 1.5px var(--separator);
-    overflow: hidden;
+    /* NIENTE `overflow: hidden` QUI. Rende il blocco un contenitore di
+       scorrimento, e una testata `sticky` dentro un contenitore che non
+       scorre non si stacca mai: restava incollata sopra la prima riga già a
+       pagina ferma. Gli angoli se li arrotonda la testata da sé. */
     transition: box-shadow var(--duration-slow) var(--ease-default);
   }
   .blocco-a.pieno { box-shadow: inset 0 0 0 1.5px var(--color-green); }
@@ -78,6 +88,7 @@
     display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3);
     padding: var(--space-3) var(--space-4);
     background: var(--bg-grouped-secondary);
+    border-radius: 16px 16px 0 0;
     box-shadow: 0 0.5px 0 var(--separator);
   }
   .titolo { letter-spacing: 0.8px; text-transform: uppercase; color: var(--label-secondary); }
