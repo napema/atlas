@@ -13,9 +13,16 @@
 <script lang="ts">
   import { tocco, daISO, maiuscola, oggiISO, GIORNI } from "$lib/core/ui";
   import { dati } from "$lib/core/reattivo.svelte";
-  import { serateDi, scriviSerate, config } from "$condivisi/abitudini/p50.js";
+  import { serateDi, scriviSerate, config, serateBloccate } from "$condivisi/abitudini/p50.js";
 
   let { giorno = oggiISO() }: { giorno?: string } = $props();
+
+  /* Le serate si bloccano quando la DOMENICA di quella settimana è chiusa,
+     non quando lo è il giorno che stai guardando: la quota è settimanale e
+     si giudica una volta sola, la domenica. Fino a lì si corregge — segnarne
+     una di troppo è l'errore probabile — dopo no, perché il verdetto della
+     penalità è già dentro un record. */
+  const bloccate = $derived.by(() => { dati.versione; return serateBloccate(giorno); });
 
   const quota = $derived.by(() => { dati.versione; return config().quotaSerate ?? 2; });
   const usate = $derived.by(() => { dati.versione; return serateDi(giorno); });
@@ -26,12 +33,13 @@
      era accesa: è il gesto delle stelline, e qui serve perché l'errore più
      probabile è segnarne una di troppo. */
   function tocca(n: number) {
+    if (bloccate) return;
     tocco(usate >= n ? 6 : 12);
     scriviSerate(usate >= n ? n - 1 : n, giorno);
   }
 </script>
 
-<section class="serate" class:piena={usate >= quota}>
+<section class="serate" class:piena={usate >= quota} class:bloccate>
   <div class="capo">
     <span class="eti text-footnote semibold">Serate fuori</span>
     <span class="conto cifre">{usate}/{quota}</span>
@@ -45,6 +53,7 @@
         class:presa={usate > i}
         aria-pressed={usate > i}
         aria-label="Serata fuori {i + 1} di {quota}"
+        disabled={bloccate}
         onclick={() => tocca(i + 1)}
       ></button>
     {/each}
@@ -78,5 +87,7 @@
   }
   .casella:active { transform: scale(0.94); }
   .casella.presa { background: var(--color-orange); box-shadow: none; }
+  .bloccate .casella { opacity: 0.6; }
+  .bloccate .casella:active { transform: none; }
   .giorno { margin-left: auto; }
 </style>

@@ -19,6 +19,7 @@ import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js"
 import { ascolta } from "../../core/bus.js";
 import { casella, stato, abitudiniVive, eFatta, alterna, alternaParte, semina } from "./dati.js";
 import { progressoGiorno, mancantiOggi, serie, promemoriaAdesso, restaOggi } from "./calcolo.js";
+import * as p50 from "./p50.js";
 
 let ridisegnaVista = () => {};
 
@@ -185,8 +186,61 @@ export function spunta(habitId) {
   ridisegnaVista();
 }
 
+/**
+ * La scheda per la home quando Project 50 è acceso.
+ *
+ * Non è la stessa con un numero diverso: è un'altra domanda. La scheda
+ * normale conta TUTTE le abitudini attese, e in sfida sarebbero undici —
+ * otto non negoziabili più il supporto — mescolate in una frazione sola.
+ * «9/11» sulla home è esattamente il guasto che la schermata ha già
+ * risolto: due su undici mancanti possono essere la skincare, che non
+ * costa niente, o il journal, che costa il contatore.
+ *
+ * Il valore resta la frazione delle OTTO, perché è la cosa che si guarda
+ * cento volte al giorno; il numero del giorno sta nel dettaglio, dove lo si
+ * legge una volta.
+ */
+function oggiSfida() {
+  const g = giornoCorrente();
+  const b = p50.bilancio(g);
+  const rec = p50.chiusuraDi(g);
+  const numero = p50.giornoCorrente(g);
+  const daChiudere = !rec && p50.siPuoChiudere();
+
+  const dettaglio = rec
+    ? (rec.esito === "ok" ? `Giorno ${rec.giorno} chiuso` : `Giorno ${rec.giorno} perso · si riparte da ${rec.prossimo}`)
+    : b.completo
+      ? (daChiudere ? `Giorno ${numero} · da chiudere` : `Giorno ${numero} · tutte fatte`)
+      : b.nomiMancate.length === 1 ? `Giorno ${numero} · manca ${b.nomiMancate[0]}`
+      : `Giorno ${numero} · mancano ${b.nomiMancate.length} voci`;
+
+  return {
+    titolo: "Project 50",
+    valore: `${b.fatte} / ${b.previste}`,
+    dettaglio,
+    // «Fatto» vuol dire chiuso bene, non «otto su otto»: finché non hai
+    // chiuso, il giorno non è agli atti e il contatore non si è mosso.
+    fatto: Boolean(rec && rec.esito === "ok"),
+    mancaTesto: b.completo ? (daChiudere ? "chiudere il giorno" : null)
+      : b.nomiMancate.length === 1 ? b.nomiMancate[0].toLowerCase()
+      : `${b.nomiMancate.length} voci non negoziabili`,
+    serie: Math.max(0, numero - 1),
+    resta: restaOggi(g),
+    avanzamento: b.previste ? b.fatte / b.previste : 0,
+    promemoria: promemoriaAdesso(g),
+    /* Urgente dalle 21 finché il giorno è aperto — anche con otto su otto,
+       perché a quel punto la cosa che manca È la chiusura — e dalle 20 se
+       manca una voce. Un giorno pieno e non chiuso è un giorno perso
+       esattamente come uno vuoto, e la home è l'unico posto che lo può
+       dire a chi non ha aperto il modulo. */
+    urgente: rec ? false : daChiudere || (!b.completo && new Date().getHours() >= 20),
+    azione: { rotta: "#/abitudini" },
+  };
+}
+
 /** La scheda per la home. Sincrona, senza effetti collaterali. */
 export function oggi() {
+  if (p50.attivo()) return oggiSfida();
   const p = progressoGiorno(giornoCorrente());
   if (!p.attese) return null;
   const mancano = mancantiOggi();

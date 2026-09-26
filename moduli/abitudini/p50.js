@@ -137,8 +137,21 @@ export const serateDi = (data = oggiISO()) => {
   return vive(stato().serate).find((r) => r.lunedi === lun)?.usate || 0;
 };
 
+/** La domenica della settimana di `data`: il giorno in cui la quota si giudica. */
+export const domenicaDi = (data = oggiISO()) => piuGiorni(lunediDi(data), 6);
+
+/**
+ * Le serate di quella settimana sono ancora modificabili?
+ *
+ * Smettono di esserlo quando la domenica è chiusa: da quel momento la
+ * quota è già stata giudicata e il suo verdetto è dentro un record. Poterle
+ * ritoccare dopo cambierebbe la premessa di una penalità già applicata.
+ */
+export const serateBloccate = (data = oggiISO()) => giornoChiuso(domenicaDi(data));
+
 /** Segna (o toglie) una serata fuori di questa settimana. */
 export function scriviSerate(usate, data = oggiISO()) {
+  if (serateBloccate(data)) return serateDi(data);
   const lun = lunediDi(data);
   const n = Math.max(0, Math.min(config().quotaSerate ?? 2, Math.round(usate)));
   casella.aggiorna((s) => {
@@ -158,17 +171,42 @@ export const DALLE_ORE = 21;
 export const siPuoChiudere = (ora = new Date().getHours()) => ora >= DALLE_ORE;
 
 /**
- * Chiude il giorno. Da qui in poi quel giorno non si tocca più.
+ * Perché NON si può chiudere quel giorno: `"si"` quando si può.
  *
- * Il calcolo del giorno successivo sta QUI e viene scritto nel record,
- * invece di essere ricavato ogni volta da chi legge. Il motivo è che la
- * regola può cambiare — la penalità delle serate è arrivata dopo — e una
- * regola che cambia non deve riscrivere il passato: i giorni già chiusi
- * tengono il numero che avevano quando sono stati chiusi.
+ *   "chiuso"    c'è già una chiusura, e una chiusura non si rifà
+ *   "non-oggi"  è un altro giorno
+ *   "presto"    è oggi ma non sono ancora le 21
+ *
+ * SI CHIUDE SOLO IL GIORNO IN CUI SEI, e questa è la regola che tiene in
+ * piedi tutte le altre. Le spunte di un giorno passato restano
+ * modificabili — è il resto del modulo, e va bene così per un'abitudine —
+ * quindi poter chiudere ieri vorrebbe dire completarlo stamattina e
+ * chiuderlo con otto su otto. Il contatore diventerebbe la misura di
+ * quanto ti ricordi di tornare indietro, che è l'esatto contrario di
+ * quello che deve misurare.
+ *
+ * Il prezzo è che un giorno non chiuso è perso: non fa ripartire il
+ * contatore, ma nemmeno lo fa salire. Non è una svista, è l'altra faccia
+ * della stessa regola — saltare la chiusura non salva, è un giorno che non
+ * è mai esistito.
  */
-export function chiudi(data = oggiISO()) {
-  if (giornoChiuso(data)) return chiusuraDi(data);
+export function chiudibile(data = oggiISO(), adesso = new Date()) {
+  if (giornoChiuso(data)) return "chiuso";
+  if (data !== isoDi(adesso)) return "non-oggi";
+  if (adesso.getHours() < DALLE_ORE) return "presto";
+  return "si";
+}
 
+/**
+ * Che cosa produrrebbe la chiusura di quel giorno. PURA: non scrive niente.
+ *
+ * Esiste perché il foglio deve dire la conseguenza PRIMA di chiedere
+ * conferma — «il contatore riparte da 1» è la sola cosa che conta in quel
+ * momento — e la regola che la calcola deve restare una sola. Scritta due
+ * volte, quella del foglio e quella del record divergono al primo ritocco,
+ * e il foglio prometterebbe un numero diverso da quello che poi ti trovi.
+ */
+export function esito(data = oggiISO()) {
   const b = bilancio(data);
   const giorno = giornoCorrente(data);
   const domenica = daISO(data).getDay() === 0;
@@ -185,12 +223,44 @@ export function chiudi(data = oggiISO()) {
   else if (penalita) prossimo = Math.max(1, giorno + 1 - 7);
   else prossimo = Math.min(TOTALE, giorno + 1);
 
-  const rec = {
-    id: data, data, giorno,
+  return {
+    data, giorno, prossimo,
     esito: b.completo ? "ok" : "no",
+    completo: b.completo,
     mancate: b.mancate,
+    nomiMancate: b.nomiMancate,
+    previste: b.previste,
+    fatte: b.fatte,
+    domenica,
     serate: { usate, quota, penalita },
-    prossimo,
+  };
+}
+
+/**
+ * Chiude il giorno. Da qui in poi quel giorno non si tocca più.
+ *
+ * Il calcolo del giorno successivo viene SCRITTO NEL RECORD invece di
+ * essere ricavato ogni volta da chi legge. Il motivo è che la regola può
+ * cambiare — la penalità delle serate è arrivata dopo — e una regola che
+ * cambia non deve riscrivere il passato: i giorni già chiusi tengono il
+ * numero che avevano quando sono stati chiusi.
+ *
+ * Torna `null` se non si poteva chiudere: il controllo sta qui e non solo
+ * nella schermata, perché è la regola della sfida e non un dettaglio di
+ * interfaccia.
+ */
+export function chiudi(data = oggiISO(), adesso = new Date()) {
+  if (giornoChiuso(data)) return chiusuraDi(data);
+  if (chiudibile(data, adesso) !== "si") return null;
+
+  const e = esito(data);
+  const rec = {
+    id: data, data,
+    giorno: e.giorno,
+    esito: e.esito,
+    mancate: e.mancate,
+    serate: e.serate,
+    prossimo: e.prossimo,
     del: false, up: Date.now(),
   };
   casella.aggiorna((s) => {

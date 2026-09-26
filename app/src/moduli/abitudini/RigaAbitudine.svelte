@@ -22,8 +22,14 @@
     giorno,
     spenta = false,
     compatta = false,
+    bloccata = false,
     onapri,
-  }: { h: any; giorno: string; spenta?: boolean; compatta?: boolean; onapri: (id: string) => void } = $props();
+  }: {
+    h: any; giorno: string; spenta?: boolean; compatta?: boolean;
+    /** Giorno chiuso: si legge e non si tocca. Vedi `chiudi()` in p50.js. */
+    bloccata?: boolean;
+    onapri: (id: string) => void;
+  } = $props();
 
   const stato = $derived.by(() => {
     dati.versione;
@@ -48,28 +54,33 @@
     // Con le parti la spunta del genitore non si tocca a mano: è vera quando
     // sono vere tutte le parti. Spuntare «integratori» in blocco alle undici
     // di sera è esattamente quello che le parti servono a impedire.
-    if (stato.parti.length) return;
+    if (stato.parti.length || bloccata) return;
     tocco(stato.fatta ? 6 : 12);
     alterna(h.id, giorno);
   }
 
   function salta() {
+    if (bloccata) return;
     tocco(6);
     alternaSaltata(h.id, giorno);
   }
 
   function parte(id: string, era: boolean) {
+    if (bloccata) return;
     tocco(era ? 6 : 12);
     alternaParte(h.id, id, giorno);
   }
 </script>
 
-<div class="abitudine" class:spenta class:compatta class:saltata={stato.saltata} style:--tinta={tinta(h.tint)}>
+<div class="abitudine" class:spenta class:compatta class:saltata={stato.saltata} class:bloccata style:--tinta={tinta(h.tint)}>
   <div class="testa">
+    <!-- A giorno chiuso la spunta diventa `finta`: resta il disegno e
+         sparisce il bottone. Un bottone che non fa niente si tocca lo
+         stesso, due o tre volte, prima di credere che sia davvero finita. -->
     <Spunta
       fatta={stato.fatta}
       parziale={stato.frazione}
-      finta={stato.parti.length > 0}
+      finta={stato.parti.length > 0 || bloccata}
       etichetta={stato.fatta ? `Togli ${h.name}` : `Segna ${h.name}`}
       onclick={spunta}
     />
@@ -82,7 +93,7 @@
         </span>
       </span>
     </button>
-    {#if !stato.parti.length && !stato.fatta}
+    {#if !stato.parti.length && !stato.fatta && !bloccata}
       <!-- «Oggi no»: il terzo stato. Per le abitudini in negativo, quelle che
            si tengono NON facendo qualcosa: spuntarla sarebbe una bugia, e
            lasciarla aperta fino a mezzanotte un promemoria inutile. -->
@@ -111,7 +122,7 @@
           <ul class="parti">
             {#each g.parti as p, i (p.id)}
               <li>
-                <button type="button" class="parte" class:fatta={p.fatta} aria-pressed={p.fatta} onclick={() => parte(p.id, p.fatta)}>
+                <button type="button" class="parte" class:fatta={p.fatta} aria-pressed={p.fatta} disabled={bloccata} onclick={() => parte(p.id, p.fatta)}>
                   <Spunta finta fatta={p.fatta} misura={22} />
                   <!-- Il numero solo se l'ordine è una regola (la skincare), non
                        una preferenza (gli integratori). -->
@@ -134,6 +145,9 @@
     border-top: 0.5px solid var(--separator);
   }
   .spenta { opacity: 0.55; }
+  /* Chiuso: non spento. Resta leggibile — è il risultato del giorno, la
+     cosa che si va a rivedere — ma niente di qui dentro si tocca più. */
+  .bloccata .corpo:active { opacity: 1; }
   .saltata .nome { color: var(--label-secondary); }
 
   /* LE DUE ALTEZZE SONO LA GERARCHIA. Le otto voci della sfida stanno a 56

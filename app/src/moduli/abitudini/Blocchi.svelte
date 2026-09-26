@@ -24,6 +24,7 @@
     giorno,
     fatte,
     previste,
+    bloccato = false,
     onapri,
   }: {
     otto: any[];
@@ -31,6 +32,8 @@
     giorno: string;
     fatte: number;
     previste: number;
+    /** Giorno chiuso: le righe si leggono e non si toccano. */
+    bloccato?: boolean;
     onapri: (id: string) => void;
   } = $props();
 
@@ -41,14 +44,14 @@
      avrebbe messi uno accanto all'altro, e il supporto sarebbe diventato una
      colonna pari alle otto. La gerarchia si legge solo se uno sta sotto. -->
 <div class="blocchi intera">
-<section class="blocco-a" class:pieno>
+<section class="blocco-a" class:pieno class:chiuso={bloccato}>
   <header class="capo">
     <span class="titolo text-footnote semibold">Project 50</span>
     <span class="conto cifre">{fatte}/{previste}</span>
   </header>
   <div class="righe">
     {#each otto as h (h.id)}
-      <RigaAbitudine {h} {giorno} {onapri} />
+      <RigaAbitudine {h} {giorno} bloccata={bloccato} {onapri} />
     {/each}
   </div>
 </section>
@@ -58,7 +61,7 @@
     <span class="eti text-caption1 semibold">Supporto</span>
     <div class="righe">
       {#each supporto as h (h.id)}
-        <RigaAbitudine {h} {giorno} compatta {onapri} />
+        <RigaAbitudine {h} {giorno} compatta bloccata={bloccato} {onapri} />
       {/each}
     </div>
   </section>
@@ -79,6 +82,9 @@
     transition: box-shadow var(--duration-slow) var(--ease-default);
   }
   .blocco-a.pieno { box-shadow: inset 0 0 0 1.5px var(--color-green); }
+  /* Un giorno chiuso e perso non prende il rosso al bordo: il rosso è la
+     casella nella striscia e il verdetto nel foglio, detti una volta. Qui
+     resta il neutro, perché la card non è più un compito da finire. */
 
   /* La testata resta in cima mentre scorri: con otto righe e la morning
      routine aperta, il contatore usciva dallo schermo proprio mentre lo

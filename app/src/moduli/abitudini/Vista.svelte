@@ -12,6 +12,7 @@
   import Settimana from "$lib/ui/Settimana.svelte";
   import Sezione from "$lib/ui/Sezione.svelte";
   import Anello from "$lib/ui/Anello.svelte";
+  import Icona from "$lib/ui/Icona.svelte";
   import Vuoto from "$lib/ui/Vuoto.svelte";
   import RigaAbitudine from "./RigaAbitudine.svelte";
   import Dettaglio from "./Dettaglio.svelte";
@@ -20,6 +21,7 @@
   import Testata50 from "./Testata50.svelte";
   import SerateFuori from "./SerateFuori.svelte";
   import Blocchi from "./Blocchi.svelte";
+  import Chiusura from "./Chiusura.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
   import { oggiISO, piuGiorni, dataUmana, plurale, tocco } from "$lib/core/ui";
@@ -32,6 +34,7 @@
   let vista = $state<"oggi" | "serie">("oggi");
   let giorno = $state(oggiISO());
 
+  let chiusuraAperta = $state(false);
   let dettaglioAperto = $state(false);
   let dettaglioId = $state<string | null>(null);
   let modificaAperta = $state(false);
@@ -82,9 +85,15 @@
     dati.versione;
     if (!p50.attivo()) return null;
     const b = p50.bilancio(giorno);
+    const rec = p50.chiusuraDi(giorno);
     return {
       giorno: p50.giornoCorrente(giorno),
-      chiuso: p50.giornoChiuso(giorno),
+      chiuso: Boolean(rec),
+      rec,
+      // Perché non si può chiudere: `"si"`, `"presto"` (non sono le 21),
+      // `"non-oggi"`, `"chiuso"`. `dati.versione` cresce anche una volta al
+      // minuto, quindi alle 21 il pulsante si accende da sé.
+      chiudibile: p50.chiudibile(giorno),
       fatte: b.fatte,
       previste: b.previste,
       otto: p50.ottoVoci().filter((h: any) => p50.vocePrevista(h, giorno)),
@@ -108,6 +117,10 @@
         titolo: dataUmana(g),
         stato: g > oggi ? ("futuro" as const)
           : c ? (c.esito === "ok" ? ("pieno" as const) : ("fallito" as const))
+          // Un giorno passato e mai chiuso non è «in corso»: è perso, e la
+          // striscia deve dirlo — altrimenti la sera si scambia per un
+          // giorno che si può ancora recuperare.
+          : g < oggi ? ("vuoto" as const)
           : ("aperto" as const),
       };
     });
@@ -174,15 +187,43 @@
       {giorno}
       fatte={sfida.fatte}
       previste={sfida.previste}
+      bloccato={sfida.chiuso}
       onapri={apriDettaglio}
     />
     {#if sfida.spente.length}
       <Sezione titolo="Non previste oggi">
         {#each sfida.spente as h (h.id)}
-          <RigaAbitudine {h} {giorno} spenta compatta onapri={apriDettaglio} />
+          <RigaAbitudine {h} {giorno} spenta compatta bloccata={sfida.chiuso} onapri={apriDettaglio} />
         {/each}
       </Sezione>
     {/if}
+
+    <!-- LA CHIUSURA sta in fondo, larga, dopo le righe: è l'ultima cosa
+         della giornata e si tocca dopo aver guardato le otto, non prima.
+         In cima sarebbe la prima cosa sotto il pollice a schermata aperta. -->
+    <div class="chiusura">
+      {#if sfida.chiuso}
+        <p class="esito text-subheadline" class:male={sfida.rec?.esito !== "ok"}>
+          <Icona nome={sfida.rec?.esito === "ok" ? "spunta" : "chiudi"} misura={15} tratto={2.4} />
+          {sfida.rec?.esito === "ok"
+            ? `Giorno ${sfida.rec?.giorno} chiuso.`
+            : `Giorno ${sfida.rec?.giorno} perso: si riparte da ${sfida.rec?.prossimo}.`}
+        </p>
+        <p class="text-footnote secondario">Un giorno chiuso non si tocca più.</p>
+      {:else if sfida.chiudibile === "si"}
+        <Pulsante variante="pieno" misura="grande" larga onclick={() => (chiusuraAperta = true)}>
+          Chiudi il giorno
+        </Pulsante>
+      {:else if sfida.chiudibile === "presto"}
+        <!-- Il pulsante spento non c'è: un bottone grigio che non si può
+             toccare lo si prova lo stesso, e non spiega perché. La riga sì. -->
+        <p class="text-footnote secondario">Il giorno si chiude dalle {p50.DALLE_ORE}.</p>
+      {:else}
+        <p class="text-footnote secondario">
+          Questo giorno non è stato chiuso, e non si chiude più: si chiude solo il giorno in cui sei.
+        </p>
+      {/if}
+    </div>
   {:else if vista === "serie"}
     <Serie parte="resto" onapri={apriDettaglio} />
   {:else if !tutte.length}
@@ -208,10 +249,16 @@
   {/if}
 </Pagina>
 
+<Chiusura bind:aperto={chiusuraAperta} {giorno} />
 <Dettaglio bind:aperto={dettaglioAperto} id={dettaglioId} onmodifica={(id) => setTimeout(() => apriModifica(id), 300)} />
 <Modifica bind:aperto={modificaAperta} id={modificaId} />
 
 <style>
+  .chiusura { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-5) var(--space-4) var(--space-3); }
+  .chiusura > :global(.pulsante) { width: 100%; }
+  .esito { display: flex; align-items: center; gap: var(--space-2); color: var(--color-green); }
+  .esito.male { color: var(--color-red); }
+
   .eroe { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-5); }
   .numeri { flex: 1; display: flex; flex-direction: column; gap: 2px; }
   .etichetta { font-weight: var(--weight-semibold); color: var(--accento); }
