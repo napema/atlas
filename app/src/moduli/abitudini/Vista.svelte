@@ -17,10 +17,14 @@
   import Dettaglio from "./Dettaglio.svelte";
   import Modifica from "./Modifica.svelte";
   import Serie from "./Serie.svelte";
+  import Testata50 from "./Testata50.svelte";
+  import SerateFuori from "./SerateFuori.svelte";
+  import Blocchi from "./Blocchi.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
   import { oggiISO, piuGiorni, dataUmana, plurale, tocco } from "$lib/core/ui";
   import { abitudiniVive } from "$condivisi/abitudini/dati.js";
+  import * as p50 from "$condivisi/abitudini/p50.js";
   import { progressoGiorno, eAttesa, giorniSettimana } from "$condivisi/abitudini/calcolo.js";
 
   let { resto = [] }: { resto?: string[] } = $props();
@@ -71,20 +75,66 @@
     });
   });
 
+  /* PROJECT 50. Quando è acceso la schermata è un'altra cosa: non una lista
+     di abitudini ma otto voci non negoziabili più il supporto. Il resto del
+     modulo resta lì e funziona come prima per chi non fa la sfida. */
+  const sfida = $derived.by(() => {
+    dati.versione;
+    if (!p50.attivo()) return null;
+    const b = p50.bilancio(giorno);
+    return {
+      giorno: p50.giornoCorrente(giorno),
+      chiuso: p50.giornoChiuso(giorno),
+      fatte: b.fatte,
+      previste: b.previste,
+      otto: p50.ottoVoci().filter((h: any) => p50.vocePrevista(h, giorno)),
+      // Il workout la domenica non è previsto: non sparisce, si spegne. Una
+      // voce che sparisce fa contare sette caselle e chiedersi dov'è l'ottava.
+      spente: p50.ottoVoci().filter((h: any) => !p50.vocePrevista(h, giorno)),
+      supporto: p50.delBlocco("supporto"),
+    };
+  });
+
+  /* La striscia, con la semantica della sfida: un giorno o è chiuso bene, o
+     è chiuso male, o non è ancora chiuso. Nessun riempimento parziale —
+     mostrare «5 su 8» come mezza casella verde direbbe che sei a metà
+     strada, e in una sfida tutto-o-niente non esiste la metà strada. */
+  const settimana50 = $derived.by(() => {
+    dati.versione;
+    return (giorniSettimana(giorno) as string[]).map((g) => {
+      const c = p50.chiusuraDi(g);
+      return {
+        iso: g,
+        titolo: dataUmana(g),
+        stato: g > oggi ? ("futuro" as const)
+          : c ? (c.esito === "ok" ? ("pieno" as const) : ("fallito" as const))
+          : ("aperto" as const),
+      };
+    });
+  });
+
   const titoloGiorno = $derived(
     giorno === oggi ? "Oggi" : giorno === piuGiorni(oggi, -1) ? "Ieri" : dataUmana(giorno),
   );
 </script>
 
 {#snippet strumenti()}
-  <Segmenti opzioni={[{ id: "oggi", testo: "Giorno" }, { id: "serie", testo: "Serie" }]} bind:valore={vista} etichetta="Vista" />
-  {#if vista === "oggi" && tutte.length}
-    <Settimana giorni={settimana} {oggi} scelto={giorno} onscegli={(g) => { tocco(6); giorno = g; }} />
+  {#if !sfida}
+    <Segmenti opzioni={[{ id: "oggi", testo: "Giorno" }, { id: "serie", testo: "Serie" }]} bind:valore={vista} etichetta="Vista" />
+  {/if}
+  {#if (sfida || vista === "oggi") && tutte.length}
+    <Settimana giorni={sfida ? settimana50 : settimana} {oggi} scelto={giorno} onscegli={(g) => { tocco(6); giorno = g; }} />
   {/if}
 {/snippet}
 
 {#snippet riepilogo()}
-  {#if vista === "serie"}
+  {#if sfida}
+    <!-- Niente card «Riepilogo» e niente percentuale: in una sfida
+         tutto-o-niente un 87% significa che hai fallito, detto in un modo
+         che permette di sentirsi a posto. -->
+    <Testata50 giorno={sfida.giorno} fatte={sfida.fatte} previste={sfida.previste} chiuso={sfida.chiuso} />
+    <SerateFuori {giorno} />
+  {:else if vista === "serie"}
     <Serie parte="eroe" onapri={apriDettaglio} />
   {:else}
     <!-- «Quante ne restano» è la domanda, e la risposta è una cifra sola. -->
@@ -112,12 +162,28 @@
   {/if}
 {/snippet}
 
-<Pagina titolo="Abitudini" {strumenti} laterale={tutte.length ? riepilogo : undefined}>
+<Pagina titolo="Abitudini" {strumenti} laterale={sfida || tutte.length ? riepilogo : undefined}>
   {#snippet azioni()}
     <Pulsante variante="vetro" misura="media" tondo icona="piu" etichetta="Nuova abitudine" onclick={() => apriModifica(null)} />
   {/snippet}
 
-  {#if vista === "serie"}
+  {#if sfida}
+    <Blocchi
+      otto={sfida.otto}
+      supporto={sfida.supporto}
+      {giorno}
+      fatte={sfida.fatte}
+      previste={sfida.previste}
+      onapri={apriDettaglio}
+    />
+    {#if sfida.spente.length}
+      <Sezione titolo="Non previste oggi">
+        {#each sfida.spente as h (h.id)}
+          <RigaAbitudine {h} {giorno} spenta compatta onapri={apriDettaglio} />
+        {/each}
+      </Sezione>
+    {/if}
+  {:else if vista === "serie"}
     <Serie parte="resto" onapri={apriDettaglio} />
   {:else if !tutte.length}
     <Vuoto icona="abitudini" titolo="Nessuna abitudine" testo="Aggiungi la prima: una cosa piccola, da fare ogni giorno.">

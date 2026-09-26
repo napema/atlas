@@ -11,7 +11,10 @@
 <script lang="ts">
   import { daISO, GIORNI_INIZIALI } from "$lib/core/ui";
 
-  export type StatoCasella = "pieno" | "parziale" | "vuoto" | "riposo" | "futuro";
+  /* `aperto` e `fallito` servono alle sfide tutto-o-niente: un giorno o è
+     chiuso bene, o è chiuso male, o non è ancora chiuso. Nessun
+     riempimento parziale, perché un mezzo successo lì non esiste. */
+  export type StatoCasella = "pieno" | "parziale" | "vuoto" | "riposo" | "futuro" | "aperto" | "fallito";
 
   let {
     giorni,
@@ -74,6 +77,11 @@
   [data-stato="parziale"] .cerchio { background: color-mix(in srgb, var(--color-green) 22%, transparent); box-shadow: inset 0 0 0 2px var(--color-green); }
   [data-stato="riposo"] .cerchio { background: none; color: var(--label-tertiary); box-shadow: inset 0 0 0 1px var(--separator); }
   [data-stato="futuro"] .cerchio { background: none; color: var(--label-tertiary); }
+  [data-stato="fallito"] .cerchio { background: var(--color-red); color: #fff; }
+  [data-stato="aperto"] .cerchio { background: none; color: var(--label-primary); box-shadow: inset 0 0 0 1px var(--separator); }
+  /* Oggi, finché è aperto, porta l'anello del modulo: è l'unico giorno su
+     cui puoi ancora fare qualcosa. */
+  .oggi[data-stato="aperto"] .cerchio { box-shadow: inset 0 0 0 2px var(--accento); }
   .oggi .cerchio { font-weight: var(--weight-bold); }
   /* Il giorno scelto si riconosce da un anello nel colore del modulo, fuori
      dal cerchio: dentro c'è già lo stato, e i due non devono confondersi. */

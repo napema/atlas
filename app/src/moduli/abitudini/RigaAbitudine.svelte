@@ -15,14 +15,15 @@
   import {
     eSaltata, alterna, alternaSaltata, partiDi, parteFatta, alternaParte, gruppiParti,
   } from "$condivisi/abitudini/dati.js";
-  import { fattaIl, serie, etichettaPiano } from "$condivisi/abitudini/calcolo.js";
+  import { fattaIl, etichettaPiano } from "$condivisi/abitudini/calcolo.js";
 
   let {
     h,
     giorno,
     spenta = false,
+    compatta = false,
     onapri,
-  }: { h: any; giorno: string; spenta?: boolean; onapri: (id: string) => void } = $props();
+  }: { h: any; giorno: string; spenta?: boolean; compatta?: boolean; onapri: (id: string) => void } = $props();
 
   const stato = $derived.by(() => {
     dati.versione;
@@ -39,7 +40,6 @@
       gruppi,
       fatta: fattaIl(h, giorno),
       saltata: eSaltata(h.id, giorno),
-      serie: serie(h),
       frazione: parti.length ? quante / parti.length : 0,
     };
   });
@@ -64,7 +64,7 @@
   }
 </script>
 
-<div class="abitudine" class:spenta class:saltata={stato.saltata} style:--tinta={tinta(h.tint)}>
+<div class="abitudine" class:spenta class:compatta class:saltata={stato.saltata} style:--tinta={tinta(h.tint)}>
   <div class="testa">
     <Spunta
       fatta={stato.fatta}
@@ -82,11 +82,6 @@
         </span>
       </span>
     </button>
-    {#if stato.serie > 0}
-      <span class="serie cifre" title="{stato.serie} di fila">
-        <Icona nome="fiamma" misura={14} tratto={2} />{stato.serie}
-      </span>
-    {/if}
     {#if !stato.parti.length && !stato.fatta}
       <!-- «Oggi no»: il terzo stato. Per le abitudini in negativo, quelle che
            si tengono NON facendo qualcosa: spuntarla sarebbe una bugia, e
@@ -141,7 +136,15 @@
   .spenta { opacity: 0.55; }
   .saltata .nome { color: var(--label-secondary); }
 
-  .testa { display: flex; align-items: center; gap: var(--space-3); min-height: 44px; }
+  /* LE DUE ALTEZZE SONO LA GERARCHIA. Le otto voci della sfida stanno a 56
+     con il nome a 17 medium; il supporto a 44 con 15 regular e un filo di
+     opacità in meno. Non è decorazione: è l'unica cosa che dice, prima di
+     leggere, che le due liste non pesano uguale. */
+  .testa { display: flex; align-items: center; gap: var(--space-3); min-height: 56px; }
+  .nome { font-size: 17px; font-weight: var(--weight-medium); }
+  .compatta .testa { min-height: 44px; }
+  .compatta .nome { font-size: 15px; font-weight: var(--weight-regular); }
+  .compatta { opacity: 0.78; }
   .corpo { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-3); text-align: left; }
   .corpo:active { opacity: 0.6; }
   .simbolo {
@@ -153,10 +156,6 @@
   .nome { overflow-wrap: anywhere; transition: color var(--duration-fast); }
   .nome.fatta { color: var(--label-secondary); }
 
-  .serie {
-    flex: none; display: inline-flex; align-items: center; gap: 3px;
-    color: var(--color-orange); font-size: var(--text-subheadline); font-weight: var(--weight-semibold);
-  }
   .salta {
     flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
     color: var(--label-tertiary); background: var(--fill-quaternary);
