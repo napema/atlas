@@ -32,6 +32,16 @@ export const PREDEFINITO = {
   // Le routine che ATLAS sa comporre da sé e che ha già composto su questo
   // archivio. Si fonde per UNIONE: vedi `semina()` in fondo al file.
   semi: [],
+  /* PROJECT 50. Le chiusure sono record con la data come id: un giorno
+     chiuso è immutabile, e l'immutabilità è la sola cosa che rende il
+     contatore una misura invece di un promemoria. Il numero del giorno NON
+     si tiene qui: si ricava dalle chiusure (vedi `p50.js`), perché un
+     contatore incrementale è un numero che si può solo perdere in una
+     fusione. */
+  chiusure: [],
+  serate: [],
+  p50: { attivo: false, inizio: "", quotaSerate: 2 },
+  p50Up: 0,
   meta: { theme: "auto", weekStart: 1 },
   metaUp: 0,
 };
@@ -327,7 +337,67 @@ const ROUTINE_SKINCARE = {
   ],
 };
 
+/* -------------------------------------------------------------------------
+   LE UNDICI VOCI DI PROJECT 50.
+
+   Otto non negoziabili e tre di supporto, con id fissi: se l'abitudine c'è
+   già — viva, archiviata o con la lapide sopra — non si ricrea. Cancellarne
+   una deve restare una decisione.
+
+   `blocco` è il campo che divide i due mondi, e vale «supporto» quando
+   manca: le abitudini che esistevano prima della sfida non finiscono fra le
+   otto per un valore di fabbrica. Sarebbe il guasto tipico di questo
+   archivio — un default che si comporta come una scelta — e qui costerebbe
+   un reset del contatore per una voce che non avevi mai deciso di mettere.
+
+   L'ordine: le 1-5 sono cronologiche, le 6-8 stanno in fondo perché si
+   smarcano solo la sera. `order` a passi di 10 come tutte le altre.
+   ------------------------------------------------------------------------- */
+
+const P50_VOCI = [
+  { id: "h_p50_morning", name: "Morning routine", emoji: "\u{1F305}", tint: "orange", order: 10,
+    // La riga è completa solo quando lo sono tutte e tre: vedi `voceFatta`
+    // in p50.js. Una morning routine a due terzi è esattamente il mezzo
+    // successo che questa sfida esiste per non concedere.
+    sequenza: true,
+    orari: { mattina: "07:00" },
+    parti: [
+      { id: "pt_p50_letto", nome: "Letto fatto", fascia: "mattina" },
+      { id: "pt_p50_push",  nome: "100 push-up", fascia: "mattina" },
+      { id: "pt_p50_medit", nome: "Meditazione 10'", fascia: "mattina" },
+    ] },
+  // Lunedì-sabato: la domenica non è prevista, quindi non manca.
+  { id: "h_p50_workout", name: "Workout", emoji: "\u{1F3CB}\u{FE0F}", tint: "red", order: 20,
+    sched: { type: "daily", days: [1, 2, 3, 4, 5, 6] } },
+  { id: "h_p50_walk",    name: "Walk 10' dopo pasti", emoji: "\u{1F6B6}", tint: "mint", order: 30 },
+  { id: "h_p50_read",    name: "Read 10 pagine", emoji: "\u{1F4D6}", tint: "blue", order: 40 },
+  { id: "h_p50_journal", name: "Journal", emoji: "\u{1F4DD}", tint: "yellow", order: 50 },
+  { id: "h_p50_nophone", name: "No phone in bed", emoji: "\u{1F4F5}", tint: "indigo", order: 60 },
+  { id: "h_p50_nopmo",   name: "No PMO", emoji: "\u{1F6AB}", tint: "purple", order: 70 },
+  { id: "h_p50_nonose",  name: "No nose-touch", emoji: "\u{1F44C}", tint: "pink", order: 80 },
+].map((v) => ({
+  blocco: "p50",
+  sched: { type: "daily", days: [0, 1, 2, 3, 4, 5, 6] },
+  ...v,
+}));
+
+const P50_SUPPORTO = [
+  { id: "h_supplements", name: "Supplements", emoji: "\u{1F48A}", tint: "green", order: 200 },
+  { id: "h_mobilita",    name: "Mobilità", emoji: "\u{1F9D8}", tint: "mint", order: 210 },
+].map((v) => ({
+  blocco: "supporto",
+  sched: { type: "daily", days: [0, 1, 2, 3, 4, 5, 6] },
+  ...v,
+}));
+
+/* Le infornate, ognuna con la sua chiave. Una chiave per infornata e non
+   una sola: aggiungendo voci a un elenco già seminato, chi ha la chiave
+   salterebbe anche le nuove e chi non ce l'ha rimetterebbe pure quelle che
+   avevi cancellato. */
 const ROUTINE = { skincare: ROUTINE_SKINCARE };
+const INFORNATE = [
+  { chiave: "project50-2026-09", voci: [...P50_VOCI, ...P50_SUPPORTO] },
+];
 
 /**
  * Compone le routine che mancano. Si può chiamare quante volte si vuole.
@@ -350,7 +420,8 @@ export function semina() {
   // sempre, senza che niente cambiasse mai.
   const gia = Array.isArray(stato().semi) ? stato().semi : [];
   const daFare = Object.keys(ROUTINE).filter((n) => !gia.includes(n));
-  if (!daFare.length) return [];
+  const infornate = INFORNATE.filter((i) => !gia.includes(i.chiave));
+  if (!daFare.length && !infornate.length) return [];
 
   const nuove = [];
   casella.aggiorna((s) => {
@@ -376,6 +447,38 @@ export function semina() {
       });
       nuove.push(nome);
     }
+
+    /* Le infornate a elenco. Stessa regola dell'id fisso: se c'è — viva,
+       archiviata o con la lapide — non si tocca. `blocco` invece si scrive
+       anche su quelle che esistono già, perché è la classificazione della
+       sfida e non un dato dell'abitudine: senza, una voce seminata prima
+       resterebbe fuori dalle otto senza che si capisca perché. */
+    for (const inf of infornate) {
+      s.semi.push(inf.chiave);
+      for (const modello of inf.voci) {
+        const esistente = s.habits.find((h) => h && h.id === modello.id);
+        if (esistente) {
+          if (esistente.blocco !== modello.blocco && !esistente.del) {
+            esistente.blocco = modello.blocco;
+            esistente.up = Date.now();
+          }
+          continue;
+        }
+        const ora = Date.now();
+        s.habits.push({
+          ...modello,
+          ...(modello.parti ? { parti: modello.parti.map((p) => ({ ...p })) } : {}),
+          archived: false,
+          created: ora,
+          up: ora,
+        });
+        nuove.push(modello.name);
+      }
+    }
+
+    // La skincare seminata prima della sfida è di supporto, non una delle otto.
+    const sk = s.habits.find((h) => h && h.id === "h_skincare" && !h.del);
+    if (sk && !sk.blocco) { sk.blocco = "supporto"; sk.up = Date.now(); }
   });
   if (nuove.length) indice = null;
   return nuove;

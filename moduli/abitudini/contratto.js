@@ -81,12 +81,28 @@ export function avviaSync() {
         // Le routine già composte. Viaggia perché il suo scopo è proprio
         // non ricomporle sul secondo dispositivo.
         semi: s.semi || [],
+        // Project 50: le chiusure sono record con la data come id, quindi
+        // due dispositivi che chiudono lo stesso giorno convergono.
+        chiusure: s.chiusure || [],
+        serate: s.serate || [],
+        p50: s.p50 || {},
+        p50Up: s.p50Up || 0,
       };
     },
     applica: (remoto) => {
       casella.aggiorna((s) => {
         s.habits = potaLapidi(fondiRecord(s.habits, remoto.habits));
         s.logs = potaLapidi(fondiRecord(s.logs, remoto.logs));
+        /* Le chiusure NON si potano: sono la storia della sfida, e la
+           griglia dei cinquanta giorni le legge tutte. Le lapidi qui non
+           nascono (un giorno chiuso non si cancella), quindi non c'è niente
+           da potare comunque. */
+        s.chiusure = fondiRecord(s.chiusure || [], remoto.chiusure);
+        s.serate = fondiRecord(s.serate || [], remoto.serate);
+        if ((remoto.p50Up || 0) > (s.p50Up || 0)) {
+          s.p50 = { ...(s.p50 || {}), ...(remoto.p50 || {}) };
+          s.p50Up = remoto.p50Up;
+        }
         // `meta` non ha id: si confronta con un solo timestamp.
         // Il caso `metaUp: 0` è reale — nell'app di partenza non è mai stato
         // scritto — quindi un remoto a zero non deve poter vincere su un
