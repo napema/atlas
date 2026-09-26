@@ -141,7 +141,20 @@ festeggia troppo la prima volta imbarazza la decima.
 Un modulo che ha bisogno di qualcosa dal guscio scrive qui invece di
 metterci le mani. La chat ATLAS legge, fa, e sposta la riga in "fatte".
 
-_(nessuna)_
+- **Abitudini → core (26 set): un promemoria serale per la chiusura di
+  Project 50.** La sfida si gioca sulla chiusura del giorno, che si può
+  fare solo dalle 21 e solo quel giorno: se te ne dimentichi, quel giorno
+  non conta — né in bene né in male — e il contatore resta fermo. È
+  l'unico promemoria della app che, se manca, fa perdere un dato che non
+  si può più recuperare.
+  Serve un orario in `notifiche.json` (`orari.abitudini.chiusura`, con
+  l'interruttore in Impostazioni → Notifiche) e il pezzo corrispondente in
+  `notifiche.js` dentro `atlas-dati`: se `p50.attivo` e non c'è una
+  chiusura con la data di oggi, manda «Chiudi il giorno n» con rotta
+  `#/abitudini`. Il mittente legge già `abitudini.json`, dove ora ci sono
+  anche `chiusure` e `p50`.
+  Nel frattempo, dalle 21 la scheda della home diventa urgente e dice «da
+  chiudere»: copre chi apre ATLAS, non chi se ne dimentica.
 
 ### Fatte
 
@@ -1411,3 +1424,64 @@ aggiorna gli eventi e riporta indietro solo il QUANDO se sposti a mano.
 Serve la configurazione Google: segreti `GCAL_CLIENT_ID`,
 `GCAL_CLIENT_SECRET`, `GCAL_REFRESH_TOKEN`, `GCAL_CALENDAR_ID`. Senza, il
 passo non fa niente.
+
+---
+
+## 26 settembre 2026 — Project 50, dal modello alla revisione (chat Abitudini)
+
+Quattro commit, e le ultime due parti sono di stasera. La sfida
+tutto-o-niente non è un ritocco alle abitudini: è **un'altra regola** —
+otto voci non negoziabili, e se ne manca una il contatore riparta da uno —
+e sta tutta in `moduli/abitudini/p50.js`, fuori dalle funzioni di prima. Il
+resto del modulo funziona come sempre per chi la sfida non la fa: si
+accende in Impostazioni → Abitudini, e da spenta non si vede.
+
+**Il giorno chiuso è immutabile, ed è la cosa che regge tutto.** Una
+chiusura è un record con la data come id: due dispositivi che chiudono lo
+stesso giorno convergono, e il numero del giorno si ricava dalle chiusure
+invece di stare in un contatore che si incrementa — che sarebbe un numero
+che si può solo *perdere* in una fusione. Ogni chiusura si porta dentro il
+numero del giorno dopo: le regole cambiano, e una regola che cambia non
+deve riscrivere il passato.
+
+**Si chiude solo il giorno in cui sei, e solo dalle 21.** Le spunte di un
+giorno passato restano modificabili — è giusto per un'abitudine — quindi
+poter chiudere ieri vorrebbe dire completarlo stamattina, e il contatore
+misurerebbe quanto ti ricordi di tornare indietro. Il prezzo, dichiarato:
+**un giorno non chiuso è perso**, non fa ripartire e nemmeno salire. Nella
+striscia della settimana un giorno passato e mai chiuso non è più «in
+corso». Da qui la richiesta a core qui sopra.
+
+**Il foglio di chiusura dice la conseguenza, non «sei sicuro?».** Prima di
+confermare: il verdetto, i nomi per esteso delle voci mancate, e il salto
+del contatore come lo si pensa (12 → 13, oppure 12 → 1). Lo calcola
+`esito()`, la stessa funzione che poi scrive il record — copiarla nel
+foglio avrebbe fatto due regole che divergono al primo ritocco.
+
+**La home parla la lingua della sfida.** Contava tutte e undici le
+abitudini in una frazione sola, ed è il guasto che la schermata aveva già
+risolto: due mancanti su undici possono essere la skincare, che non costa
+niente, o il journal, che costa il contatore. Ora la scheda è delle otto,
+«fatto» vuol dire *chiuso bene* e non otto su otto, e dalle 21 col giorno
+aperto è urgente.
+
+**La revisione** (scheda «Sfida», che in sfida prende il posto di «Serie»)
+è la griglia dei cinquanta come la lavagna fisica, più tre numeri e i
+colpevoli. Il **record** è l'unico che sopravvive a un reset: senza, dopo
+la terza ripartenza la schermata direbbe soltanto che sei al giorno 2. I
+colpevoli sono l'unica cosa lì che dice cosa fare domani.
+
+### Cosa resta aperto
+
+- **Il promemoria delle 21** — la richiesta a core qui sopra. È l'unico
+  pezzo di Project 50 che non si può fare da dentro il modulo.
+- **La checklist «Adesso» della home non sa della sfida.** Impila le voci
+  per fascia oraria, quindi le otto non negoziabili e le parti della
+  skincare pesano uguale. Non l'ho toccata perché è la home, ma in sfida
+  le otto dovrebbero venire prima: è il posto dove si vede che manca il
+  journal *prima* delle 21.
+- **Provato in Chromium a 390×844** (schermata del giorno, revisione,
+  foglio di chiusura, home) e con un giro a mano sulle regole: chiusura
+  prima delle 21, richiusura, penalità della domenica, blocco delle serate
+  a domenica chiusa, morning routine a due terzi che non vale. Sul telefono
+  installato, no: quello resta da fare.
