@@ -15,6 +15,7 @@
   import Testata from "./Testata.svelte";
   import Pasto from "./Pasto.svelte";
   import Pianifica from "./Pianifica.svelte";
+  import Calendario from "./Calendario.svelte";
   import FoglioFascia from "./FoglioFascia.svelte";
   import FoglioScegli from "./FoglioScegli.svelte";
   import FoglioAggiungi from "./FoglioAggiungi.svelte";
@@ -115,11 +116,23 @@
     quote: r.conti ? { p: b.p ? r.conti.p / b.p : 0, c: b.c ? r.conti.c / b.c : 0, g: b.g ? r.conti.g / b.g : 0 } : null,
   })));
 
+  /* DI QUANTE SETTIMANE SEI AVANTI. Zero è questa. Serve a «vederli anche
+     in anticipo»: la settimana che la chat ti ha appena generato è quella
+     che comincia lunedì, e senza questo si poteva guardare solo quella in
+     corso — cioè quella che non devi più decidere. */
+  let avanti = $state(0);
+
   const sett = $derived.by(() => {
     dati.versione;
-    const lunedi = lunediDi(iso);
+    const lunedi = piuGiorni(lunediDi(iso), avanti * 7);
     return { lunedi, s: settimanaCalcolo(lunedi), piano: pianoSettimana(lunedi) };
   });
+
+  /* Il giorno su cui stai lavorando. Su «Oggi» è oggi; nel calendario è la
+     cella che hai toccato — senza, cambiare il giovedì avrebbe cambiato il
+     pasto di oggi, in silenzio. */
+  let giornoAperto = $state<string | null>(null);
+  const giornoFogli = $derived(giornoAperto || iso);
 
   function togli(s: any) {
     eliminaScostamento(s.id);
@@ -134,6 +147,22 @@
 
 {#snippet strumenti()}
   <Segmenti opzioni={[{ id: "oggi", testo: "Oggi" }, { id: "settimana", testo: "Settimana" }]} bind:valore={vista} etichetta="Vista" />
+  {#if vista === "settimana"}
+    <div class="naviga">
+      <button type="button" aria-label="Settimana precedente" onclick={() => { tocco(6); avanti -= 1; }}>
+        <Icona nome="indietro" misura={17} tratto={2.4} />
+      </button>
+      <span class="finestra text-subheadline">
+        {avanti === 0 ? "Questa settimana" : avanti === 1 ? "La prossima" : avanti === -1 ? "La scorsa" : `${dataBreve(sett.lunedi)} – ${dataBreve(piuGiorni(sett.lunedi, 6))}`}
+      </span>
+      <button type="button" aria-label="Settimana successiva" onclick={() => { tocco(6); avanti += 1; }}>
+        <Icona nome="freccia" misura={17} tratto={2.4} />
+      </button>
+      {#if avanti !== 0}
+        <button type="button" class="oggi-di-nuovo text-subheadline" onclick={() => (avanti = 0)}>Oggi</button>
+      {/if}
+    </div>
+  {/if}
 {/snippet}
 
 {#snippet riepilogo()}
@@ -194,7 +223,7 @@
         <Pasto
           id={r.id} fascia={r.fascia} ora={r.ora} cosa={r.cosa} senza={r.senza}
           conti={r.conti} quote={r.quote}
-          onclick={() => { tocco(6); fasciaScelta = r.id; fFascia = true; }}
+          onclick={() => { tocco(6); giornoAperto = null; fasciaScelta = r.id; fFascia = true; }}
         />
       {/each}
     </Sezione>
@@ -214,31 +243,25 @@
       </Sezione>
     {/if}
   {:else}
-    <Sezione titolo="I sette giorni">
-      {#each sett.s.giorni as giorno, i (giorno.iso)}
-        {@const pianoG = sett.piano?.giorni?.[giorno.iso] || {}}
-        {@const principali = ["pranzo", "cena"].map((f) => (regimeDi(giorno.iso, f) === "fuori" ? "fuori" : pasto(pianoG[f])?.nome)).filter(Boolean)}
-        <Riga
-          titolo="{maiuscola(GIORNI[i])} {dataBreve(giorno.iso)}"
-          sottotitolo={principali.join(" · ") || "da pianificare"}
-          valore="{kcal(giorno.totale.kcal)} kcal"
-          accento={giorno.iso === iso}
-        />
-      {/each}
-    </Sezione>
+    <div class="intera">
+      <Calendario
+        giorni={sett.s.giorni.map((g: any) => g.iso)}
+        onapri={(giorno, fascia) => { tocco(6); giornoAperto = giorno; fasciaScelta = fascia; fFascia = true; }}
+      />
+    </div>
   {/if}
 </Pagina>
 {/if}
 
 <FoglioFascia
   bind:aperto={fFascia}
-  {iso}
+  iso={giornoFogli}
   fascia={fasciaScelta}
   onscegli={() => dopo(() => (fScegli = true))}
   onaltro={() => dopo(() => { tipoAggiunta = "cambio"; fAggiungi = true; })}
 />
-<FoglioScegli bind:aperto={fScegli} {iso} fascia={fasciaScelta} />
-<FoglioAggiungi bind:aperto={fAggiungi} {iso} fascia={fasciaScelta} tipo={tipoAggiunta} />
+<FoglioScegli bind:aperto={fScegli} iso={giornoFogli} fascia={fasciaScelta} />
+<FoglioAggiungi bind:aperto={fAggiungi} iso={giornoFogli} fascia={fasciaScelta} tipo={tipoAggiunta} />
 <FoglioImport bind:aperto={fImport} />
 
 <style>
@@ -252,6 +275,12 @@
   .emo-dom { flex: none; font-family: var(--font-emoji); font-size: 30px; line-height: 1; }
   .testo-dom { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .frec-dom { flex: none; color: var(--accento); }
+
+  .naviga { display: flex; align-items: center; gap: var(--space-2); }
+  .naviga button { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--fill-tertiary); color: var(--label-primary); }
+  .naviga button:active { opacity: 0.6; }
+  .finestra { min-width: 132px; text-align: center; font-weight: var(--weight-medium); }
+  .oggi-di-nuovo { width: auto !important; padding: 0 var(--space-3); border-radius: var(--radius-full) !important; color: var(--accento) !important; font-weight: var(--weight-medium); }
 
   .emo-extra {
     display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px;
