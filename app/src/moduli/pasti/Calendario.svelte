@@ -79,7 +79,7 @@
     <div class="testa-giorno" class:oggi={g.oggi} class:passato={g.passato}>
       <span class="text-footnote semibold nome-g">{g.nome}</span>
       <span class="numero cifre">{g.numero}</span>
-      <span class="text-caption2 secondario cifre">{kcal(g.totale.kcal)}</span>
+      <span class="text-caption1 secondario cifre">{kcal(g.totale.kcal)}</span>
       <span class="asta"><i style:width="{Math.round(Math.min(1, g.quota) * 100)}%" class:oltre={g.quota > 1}></i></span>
     </div>
   {/each}
@@ -88,7 +88,7 @@
     <div class="testa-fascia">
       <span class="emo">{EMOJI_FASCIA[f.id] ?? "\u{1F37D}"}</span>
       <span class="text-footnote semibold">{f.nome}</span>
-      <span class="text-caption2 terziario cifre">{f.ora}</span>
+      <span class="text-caption1 terziario cifre">{f.ora}</span>
     </div>
     {#each settimana as g (g.iso)}
       {@const c = g.celle[riga]}
@@ -102,13 +102,13 @@
         onclick={() => tocca(g.iso, c.fascia)}
       >
         {#if c.regime === "salto"}
-          <span class="text-caption1 terziario">—</span>
+          <span class="text-footnote terziario">—</span>
         {:else if c.regime === "fuori"}
-          <span class="text-caption1 fuori">Fuori</span>
-          {#if c.kcal}<span class="text-caption2 terziario cifre">{kcal(c.kcal)}</span>{/if}
+          <span class="text-footnote fuori">Fuori</span>
+          {#if c.kcal}<span class="text-caption1 terziario cifre">{kcal(c.kcal)}</span>{/if}
         {:else if c.voci.length}
-          <span class="cosa text-caption1">{c.nome}</span>
-          <span class="text-caption2 terziario cifre">{kcal(c.kcal)}</span>
+          <span class="cosa text-footnote">{c.nome}</span>
+          <span class="text-caption1 terziario cifre">{kcal(c.kcal)}</span>
         {:else}
           <span class="piu"><Icona nome="piu" misura={14} tratto={2.2} /></span>
         {/if}
@@ -180,27 +180,40 @@
   @media (min-width: 1000px) {
     .colonna { display: none; }
 
+    /* LA GRIGLIA SI PRENDE LA FINESTRA. Dentro la larghezza normale della
+       pagina — 1640 meno la colonna del riepilogo — restavano 155 punti a
+       colonna, e in 155 punti un nome come «Merluzzo al forno + Pasta +
+       Insalata condita» sta solo a undici pixel di corpo. Che è sotto la
+       soglia sotto cui una tabella non si legge: per il testo denso il
+       minimo è 13.
+
+       Quindi qui la pagina si allarga davvero, e il riepilogo della
+       settimana scende sotto invece di stare a fianco. Non è una
+       preferenza: è che 155 punti non bastavano e nessuna scelta
+       tipografica li avrebbe fatti bastare. */
+    :global(:root:has(.griglia)) { --larghezza-pagina: min(calc(100vw - 64px), 1900px); }
+
     /* LE FASCE SONO LE RIGHE, I GIORNI LE COLONNE. Il contrario — un giorno
        per riga — sembra più naturale e non lo è: la domanda che ci si fa
        davanti a una settimana è «quante volte ho messo il pollo a cena»,
        e quella si legge scorrendo una riga, non sette colonne. */
     .griglia {
       display: grid;
-      grid-template-columns: 116px repeat(var(--giorni), minmax(0, 1fr));
-      gap: 3px;
+      grid-template-columns: 132px repeat(var(--giorni), minmax(0, 1fr));
+      gap: 4px;
       align-items: stretch;
     }
 
     .testa-giorno {
-      display: flex; flex-direction: column; align-items: center; gap: 1px;
-      padding: var(--space-2) 4px 0;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      padding: var(--space-3) 6px 0;
       border-radius: var(--radius-md) var(--radius-md) 0 0;
     }
     .testa-giorno.passato { opacity: 0.55; }
     .testa-giorno.oggi { background: color-mix(in srgb, var(--accento) 14%, transparent); }
     .nome-g { color: var(--label-secondary); }
     .testa-giorno.oggi .nome-g { color: var(--accento); }
-    .numero { font-size: 21px; font-weight: var(--weight-semibold); line-height: 22px; }
+    .numero { font-size: 24px; font-weight: var(--weight-semibold); line-height: 22px; }
     .testa-giorno .asta { width: 100%; margin-top: 4px; border-radius: var(--radius-full); overflow: hidden; }
 
     .testa-fascia {
@@ -212,8 +225,8 @@
     .testa-fascia .cifre { margin-left: auto; }
 
     .cella {
-      display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 2px;
-      min-height: 66px; padding: 7px 8px; text-align: left;
+      display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 3px;
+      min-height: 86px; padding: 9px 10px; text-align: left;
       border-radius: var(--radius-md);
       background: var(--bg-grouped-secondary);
       transition: background-color var(--duration-fast) var(--ease-default);
@@ -228,6 +241,6 @@
     .cella.vuota { background: none; box-shadow: inset 0 0 0 1.5px var(--separator); align-items: center; justify-content: center; }
     .piu { color: var(--label-tertiary); display: grid; place-items: center; }
     .cella.vuota:hover .piu { color: var(--accento); }
-    .cella .cosa { -webkit-line-clamp: 3; line-clamp: 3; }
+    .cella .cosa { -webkit-line-clamp: 4; line-clamp: 4; }
   }
 </style>

@@ -199,7 +199,7 @@
 {#if pianificando}
   <Pianifica giorni={giorniDaPianificare} onfine={() => vaiA("pasti")} />
 {:else}
-<Pagina titolo="Pasti" {strumenti} laterale={riepilogo}>
+<Pagina titolo="Pasti" {strumenti} laterale={vista === "oggi" ? riepilogo : undefined}>
   {#snippet azioni()}
     <Pulsante variante="vetro" misura="media" tondo icona="importa" etichetta="Importa pasti" onclick={() => (fImport = true)} />
   {/snippet}
@@ -249,6 +249,7 @@
         onapri={(giorno, fascia) => { tocco(6); giornoAperto = giorno; fasciaScelta = fascia; fFascia = true; }}
       />
     </div>
+    {@render riepilogo()}
   {/if}
 </Pagina>
 {/if}
