@@ -56,6 +56,14 @@
   const mostrate = $derived(q.prio.slice(0, MAX_RIGHE));
   const nascoste = $derived(q.prio.length - mostrate.length + q.dopo);
   const f = $derived(q.finanze);
+  /* PROJECT 50 ha una card sua, distinta da Abitudini: la riga del modulo
+     dice quante ne hai spuntate oggi, questa dice a che GIORNO sei. Sono
+     due unità di misura diverse, e in una frazione sola non si leggevano
+     più né l'una né l'altra.
+
+     La home non conosce Abitudini (regola 12): prende `sfida` da qualunque
+     scheda la porti, e se non la porta nessuno la card non esiste. */
+  const sfida = $derived(q.sfida);
 
   const dataLunga = $derived(maiuscola(ora.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })));
 
@@ -142,6 +150,52 @@
           {/if}
         {/if}
       </Sezione>
+
+      <!-- PROJECT 50. Sotto «Adesso» e non sopra: prima quello che si tocca
+           per fare, poi dove sei arrivato. La misura è il GIORNO, e la barra
+           è dei cinquanta giorni — non delle spunte di oggi, che sono la
+           riga piccola sotto. -->
+      {#if sfida}
+        <div class="area-sfida" style:--accento={voceDi("abitudini")?.accento}>
+          <Sezione titolo="Project 50">
+            {#snippet coda()}<a href="#/abitudini">Apri</a>{/snippet}
+            <div class="sfida" class:urgente={sfida.urgente} class:chiusa={sfida.chiuso}>
+              <div class="capo">
+                <span class="text-footnote secondario">Giorno</span>
+                <span class="cifra cifre">{sfida.giorno}</span>
+                <span class="su text-title3 cifre secondario">/ {sfida.totale}</span>
+              </div>
+
+              <div class="asta" role="img" aria-label="{sfida.giorno - 1} giorni su {sfida.totale}">
+                <i style:width="{Math.round(Math.max(0, Math.min(1, (sfida.giorno - 1) / sfida.totale)) * 100)}%"></i>
+              </div>
+
+              <p class="riga text-subheadline">
+                {#if sfida.chiuso}
+                  <Icona nome={sfida.esito === "ok" ? "spunta" : "chiudi"} misura={15} tratto={2.4} />
+                  {sfida.esito === "ok" ? "Giorno chiuso." : `Giorno perso: da domani riparti dal ${sfida.prossimo}.`}
+                {:else}
+                  <b class="cifre" class:tutte={sfida.completo}>{sfida.fatte}/{sfida.previste}</b>
+                  <span class="secondario">
+                    {sfida.completo ? "tutte fatte"
+                      : sfida.nomiMancate.length === 1 ? `manca ${sfida.nomiMancate[0].toLowerCase()}`
+                      : `mancano ${sfida.nomiMancate.slice(0, 2).map((n: string) => n.toLowerCase()).join(", ")}${sfida.nomiMancate.length > 2 ? "…" : ""}`}
+                  </span>
+                {/if}
+              </p>
+
+              <!-- Il bottone compare solo quando si può davvero chiudere:
+                   prima delle 21 una riga che lo dice, e nessun bersaglio
+                   che si tocca per scoprire che non è ancora il momento. -->
+              {#if sfida.daChiudere}
+                <Pulsante variante="pieno" misura="media" larga href={sfida.rotta}>Chiudi il giorno</Pulsante>
+              {:else if !sfida.chiuso}
+                <span class="text-footnote secondario">Si chiude dalle {sfida.dalleOre}.</span>
+              {/if}
+            </div>
+          </Sezione>
+        </div>
+      {/if}
     </div>
 
     <!-- FINANZE: le tre domande che si fanno davanti a una cena fuori. -->
@@ -257,7 +311,24 @@
       grid-template-areas: "adesso finanze moduli" "costanza finanze moduli";
     }
   }
-  .area-adesso { grid-area: adesso; }
+  /* La colonna di «Adesso» tiene due lastre: la checklist e Project 50.
+     Una grid-area in più avrebbe lasciato una riga vuota — e il suo spazio —
+     in tutte le giornate in cui la sfida è spenta. */
+  .area-adesso { grid-area: adesso; display: flex; flex-direction: column; gap: var(--space-6); }
+
+  .sfida { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); }
+  .sfida .capo { display: flex; align-items: baseline; gap: var(--space-2); }
+  .sfida .cifra { font-family: var(--font-display); font-size: 44px; line-height: 1; font-weight: var(--weight-bold); }
+  .sfida .capo .text-footnote { color: var(--accento); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.6px; align-self: center; }
+  .asta { height: 4px; border-radius: var(--radius-full); background: var(--fill-tertiary); overflow: hidden; }
+  .asta i { display: block; height: 100%; background: var(--accento); border-radius: inherit; transition: width var(--duration-slow) var(--ease-default); }
+  .sfida .riga { display: flex; align-items: center; gap: 6px; }
+  .sfida .riga b { font-weight: var(--weight-semibold); }
+  .sfida .riga .tutte { color: var(--color-green); }
+  .chiusa .riga { color: var(--color-green); }
+  /* Da chiudere: il bordo della lastra si accende. Il numero resta nero —
+     è il conto dei giorni, non un allarme. */
+  .urgente { box-shadow: inset 0 0 0 1.5px var(--color-orange); border-radius: 14px; }
   .area-finanze { grid-area: finanze; }
   .area-costanza { grid-area: costanza; }
   .area-moduli { grid-area: moduli; }

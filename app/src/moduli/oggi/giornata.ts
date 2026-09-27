@@ -48,6 +48,10 @@ export function quadro(schede: Scheda[], ora = new Date().getHours()) {
     inRitardo: prio.filter((v) => v.quando === "tardi"),
     allarme: (conDati.map((s) => s.dati!.allarme).find(Boolean) as string | undefined) ?? null,
     finanze: conDati.find((s) => s.voce.id === "finanze")?.dati ?? null,
+    /* La sfida la porta la scheda di chi ce l'ha, non la chiede la home a
+       un modulo per nome: così una seconda sfida, un domani, si accende
+       senza toccare questo file. */
+    sfida: (conDati.map((s) => s.dati!.sfida).find(Boolean) as any) ?? null,
   };
 }
 

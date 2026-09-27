@@ -27,7 +27,27 @@ export interface SchedaOggi {
   urgente?: boolean;
   fatto?: boolean;
   azione?: { rotta?: string; etichetta?: string };
+  /** Una sfida a giorni (Project 50): la home ne fa una card a parte,
+      perché si misura in giorni e non nelle spunte del modulo. */
+  sfida?: SchedaSfida | null;
   [k: string]: any;
+}
+
+/** Quello che la home deve sapere di una sfida senza conoscerne il modulo. */
+export interface SchedaSfida {
+  giorno: number;
+  totale: number;
+  fatte: number;
+  previste: number;
+  completo: boolean;
+  nomiMancate: string[];
+  chiuso: boolean;
+  esito: "ok" | "no" | null;
+  prossimo: number | null;
+  daChiudere: boolean;
+  dalleOre: number;
+  urgente: boolean;
+  rotta: string;
 }
 
 export interface Contratto {
