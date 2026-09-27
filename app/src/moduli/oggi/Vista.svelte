@@ -41,7 +41,7 @@
   import { statoSync } from "$lib/core/statoSync.svelte";
   import { tinta } from "$lib/core/tinte";
   import { tocco, dataUmana, maiuscola } from "$lib/core/ui";
-  import { quadro, verdetto, saluto, costanza, fraseSerie, type Scheda, type VoceResta } from "./giornata";
+  import { quadro, saluto, costanza, fraseSerie, type Scheda, type VoceResta } from "./giornata";
 
   let { resto = [] }: { resto?: string[] } = $props();
 
@@ -76,10 +76,20 @@
   const c = $derived.by(() => { dati.versione; return costanza(); });
   const ora = $derived.by(() => { dati.versione; return new Date(); });
 
-  /* «ADESSO» SI ADATTA. Se tocca qualcosa adesso, è quello. Se adesso non
-     tocca niente, la carta non dice «non ti tocca niente» mentre sedici
-     cose aspettano: le mostra, e si chiama «Più tardi». */
-  const elenco = $derived(q.prio.length ? q.prio : q.resta);
+  /* «ADESSO» MOSTRA ADESSO, E NIENT'ALTRO.
+
+     Prima, quando la fascia corrente era vuota, ripiegava sull'INTERO resto
+     della giornata: alle otto di mattina l'elenco arrivava alla cena. Un
+     elenco di tutto quello che dovrai fare non è una lista di cose da fare,
+     è il bilancio di quanto sei indietro — e alle otto di mattina sei
+     indietro per definizione.
+
+     Adesso: se c'è qualcosa ora, è quello. Se non c'è niente ora, si vedono
+     le DUE che vengono dopo e basta, col loro momento. Il numero di quelle
+     che restano sta in una riga sola, che dice «ce n'è dell'altro» senza
+     chiedere di essere letta. */
+  const PROSSIME = 2;
+  const elenco = $derived(q.prio.length ? q.prio : q.resta.slice(0, PROSSIME));
   const titoloAdesso = $derived(q.prio.length || !q.resta.length ? "Adesso" : "Più tardi");
   const mostrate = $derived(elenco.slice(0, maxRighe));
   const nascoste = $derived(q.resta.length - mostrate.length);
@@ -93,11 +103,6 @@
      scheda la porti, e se non la porta nessuno la card non esiste. */
   const sfida = $derived(q.sfida);
 
-  /* Le tessere: i moduli che non hanno già una carta. Finanze e Project 50
-     la loro ce l'hanno, e ripeterli in una riga sotto era la stessa cifra
-     detta due volte a trenta centimetri di distanza. */
-  const tessere = $derived(schede.filter((x) =>
-    !(x.voce.id === "finanze" && f) && !(x.voce.id === "abitudini" && sfida)));
   const nomeSfida = $derived(voceDi("abitudini")?.nome ?? "Project 50");
 
   const dataLunga = $derived(maiuscola(ora.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })));
@@ -277,31 +282,6 @@
   {/if}
 {/snippet}
 
-{#snippet cartaModuli()}
-  {#if tessere.length}
-    <!-- ANCHE OGGI: i moduli che non hanno una carta loro. Si controlla e
-         basta, quindi pesano meno di tutto il resto: tessere piccole, due
-         per riga. Nome e valore in colonna: in riga, a centosettanta punti,
-         si leggeva «Fina… 0,00 €». -->
-    <Sezione titolo="Anche oggi">
-      <div class="tessere">
-        {#each tessere as x (x.voce.id)}
-          <a class="tessera-mod" href={x.dati?.azione?.rotta || `#/${x.voce.id}`} style:--colore={x.voce.accento}>
-            <span class="tessera"><Icona nome={x.voce.icona} misura={18} tratto={2} /></span>
-            <span class="testi-mod">
-              <span class="nome-mod">{x.voce.nome}</span>
-              <span class="stato-mod cifre" class:ok={x.dati?.fatto === true}>
-                {#if x.dati?.fatto === true}<Icona nome="spunta" misura={13} tratto={2.6} />{/if}
-                <span class="stato-testo">{x.dati ? String(x.dati.valore ?? "—") : "—"}</span>
-              </span>
-            </span>
-          </a>
-        {/each}
-      </div>
-    </Sezione>
-  {/if}
-{/snippet}
-
 <Pagina titolo="{saluto(ora.getHours())}, {NOME}" larga>
   {#snippet sopra()}
     <span>{dataLunga}</span>
@@ -313,18 +293,16 @@
     <Pulsante variante="vetro" misura="media" tondo icona="ingranaggio" etichetta="Impostazioni" href="#/impostazioni" />
   {/snippet}
 
-  <p class="verdetto text-title3">{verdetto(q)}</p>
-
   <div class="pile" data-modo={modo}>
     {#if modo === 3}
       <div class="pila">{@render cartaAdesso()}</div>
-      <div class="pila">{@render cartaSfida()}{@render cartaModuli()}</div>
+      <div class="pila">{@render cartaSfida()}</div>
       <div class="pila">{@render cartaFinanze()}</div>
     {:else if modo === 2}
-      <div class="pila">{@render cartaAdesso()}{@render cartaModuli()}</div>
-      <div class="pila">{@render cartaSfida()}{@render cartaFinanze()}</div>
+      <div class="pila">{@render cartaAdesso()}{@render cartaSfida()}</div>
+      <div class="pila">{@render cartaFinanze()}</div>
     {:else}
-      <div class="pila">{@render cartaAdesso()}{@render cartaSfida()}{@render cartaFinanze()}{@render cartaModuli()}</div>
+      <div class="pila">{@render cartaAdesso()}{@render cartaSfida()}{@render cartaFinanze()}</div>
     {/if}
   </div>
 </Pagina>
@@ -337,7 +315,6 @@
   .pallino[data-stato="err"] { background: var(--color-red); }
   @keyframes pulsa { 50% { opacity: 0.35; } }
 
-  .verdetto { margin-top: calc(-1 * var(--space-3)); color: var(--label-secondary); font-weight: var(--weight-regular); }
 
   /* LE PILE. Ogni colonna è una pila che non sa niente delle altre: niente
      righe condivise, quindi niente buchi FRA le carte — le colonne possono
@@ -367,85 +344,57 @@
   /* Due colonne sul telefono, quante ne stanno sul PC. `minmax(0, 1fr)` e
      non `auto`: il nome lungo di un modulo allargava la sua colonna e
      mandava le altre fuori squadra. */
-  .tessere {
     display: grid; gap: 2px; padding: var(--space-2);
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
-  }
-  .tessera-mod {
     display: flex; align-items: center; gap: var(--space-3);
     min-height: 60px; padding: var(--space-2) var(--space-3);
     border-radius: 12px; color: var(--label-primary);
-  }
-  .tessera-mod:active { background: var(--fill-quaternary); }
-  .testi-mod { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
-  .nome-mod { font-size: 15px; font-weight: var(--weight-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tessera-mod .stato-mod { font-size: var(--text-footnote); }
-  .tessera-mod .stato-testo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
   .conta {
     display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 8px;
     border-radius: var(--radius-full); background: var(--fill-tertiary);
     color: var(--label-primary); font-size: var(--text-subheadline); font-weight: var(--weight-semibold);
-  }
-
   .calmo { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); }
   .segno {
     flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
     color: var(--color-orange); background: color-mix(in srgb, var(--color-orange) 16%, transparent);
-  }
   .segno.ok { color: var(--color-green); background: color-mix(in srgb, var(--color-green) 16%, transparent); }
-
   .voce { display: block; }
   .voce-nome { display: inline-flex; align-items: center; gap: 6px; }
   .apri {
     display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
     background: var(--tinta); color: #fff; padding-left: 2px;
-  }
   .ritardo { color: var(--color-red); font-weight: var(--weight-medium); }
-
   .soldi { padding: var(--space-4) var(--space-4) var(--space-3); display: flex; flex-direction: column; gap: var(--space-4); }
   .eroe { display: flex; flex-direction: column; gap: 2px; }
   .eroe .cifra {
     font-family: var(--font-display); font-size: 40px; line-height: 44px; letter-spacing: -0.5px;
     font-weight: var(--weight-bold);
-  }
   .due { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
   .due div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius-xl); background: var(--fill-quaternary); }
   .num { font-size: var(--text-title3); line-height: var(--lh-title3); font-weight: var(--weight-semibold); }
-
   .data {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     width: 38px; height: 38px; border-radius: var(--radius-md);
     background: var(--fill-quaternary);
-  }
   .data.oggi { background: color-mix(in srgb, var(--accento) 18%, transparent); color: var(--accento); }
   .data-g { font-size: 9px; line-height: 10px; font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.3px; opacity: 0.8; }
   .data-n { font-size: var(--text-callout); line-height: 18px; font-weight: var(--weight-semibold); }
   .importo { font-weight: var(--weight-medium); }
   /* Un'uscita è rossa, sempre: il colore dice la direzione dei soldi. */
   .importo { color: var(--color-red); }
-
   .allarme {
     display: flex; align-items: flex-start; gap: var(--space-2);
     padding: var(--space-3) var(--space-4) var(--space-4);
     border-top: 0.5px solid var(--separator);
     color: var(--label-secondary);
-  }
   .punto { flex: none; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--color-orange); }
-
   .costanza { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
   .serie { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
   .serie .cifra { font-family: var(--font-display); font-size: 40px; line-height: 44px; font-weight: var(--weight-bold); color: var(--color-orange); }
   .serie .cifra.magra { color: var(--label-primary); }
   .rapporto { margin-left: auto; }
   .rapporto b { color: var(--label-primary); font-weight: var(--weight-semibold); }
-
   .tessera {
     display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px;
     background: var(--colore); color: #fff;
-  }
-  .stato-mod { display: inline-flex; align-items: center; gap: 4px; min-width: 0; color: var(--label-secondary); }
-  .stato-mod :global(.icona) { flex: none; }
-  .stato-testo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .stato-mod.ok { color: var(--color-green); }
 </style>
