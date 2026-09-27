@@ -388,7 +388,7 @@
         </span>
         <span class="q-basso">
           <span class="q-nome text-footnote semibold">{x.voce.nome}</span>
-          <span class="q-valore cifre" class:lungo={v.length > 11}>{v}{#if altri > 0}<span class="q-altri"> +{altri}</span>{/if}</span>
+          <span class="q-valore cifre" class:lungo={v.length > 11}>{v}{#if altri > 0}<span class="q-altri">&nbsp;+{altri}</span>{/if}</span>
         </span>
       </a>
     {/each}
