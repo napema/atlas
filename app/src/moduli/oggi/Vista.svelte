@@ -399,12 +399,4 @@
   .rapporto { margin-left: auto; }
   .rapporto b { color: var(--label-primary); font-weight: var(--weight-semibold); }
 
-  .tessera {
-    display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px;
-    background: var(--colore); color: #fff;
-  }
-  .stato-mod { display: inline-flex; align-items: center; gap: 4px; min-width: 0; color: var(--label-secondary); }
-  .stato-mod :global(.icona) { flex: none; }
-  .stato-testo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .stato-mod.ok { color: var(--color-green); }
 </style>
