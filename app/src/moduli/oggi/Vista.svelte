@@ -394,7 +394,10 @@
      le carte grandi sparirebbero sotto. */
   /* La fascia: ogni quadrato prende la stessa fetta, e sotto i 520 punti
      vanno a capo invece di diventare francobolli. */
-  .striscia { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+  /* `flex-direction: row` esplicito: `.striscia` è anche `.tessera`, e da
+     lì ereditava `column` — i tre quadrati si impilavano a tutta larghezza
+     invece di affiancarsi. */
+  .striscia { display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--space-4); }
   .quadrata {
     flex: 1 1 150px; min-width: 0;
     display: flex; flex-direction: column;
