@@ -29,14 +29,14 @@
   import Chiusura from "./Chiusura.svelte";
   import Revisione from "./Revisione.svelte";
   import Eroe50 from "./Eroe50.svelte";
-  import Giornata from "./Giornata.svelte";
+  import Lista from "./Lista.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
   import { voceDi } from "$lib/core/registro";
   import { oggiISO, dataUmana, tocco } from "$lib/core/ui";
   import { abitudiniVive } from "$condivisi/abitudini/dati.js";
   import * as p50 from "$condivisi/abitudini/p50.js";
-  import { progressoGiorno, eAttesa, giorniSettimana, giornataPerMomenti } from "$condivisi/abitudini/calcolo.js";
+  import { progressoGiorno, eAttesa, giorniSettimana } from "$condivisi/abitudini/calcolo.js";
 
   let { resto = [] }: { resto?: string[] } = $props();
 
@@ -72,7 +72,7 @@
 
   /* LA GIORNATA. Le otto sono attese secondo la regola della sfida (il
      workout segue il piano di Training), le altre secondo il loro
-     calendario. Poi una lista sola, per momenti. */
+     calendario. Poi una lista sola. */
   const g = $derived.by(() => {
     dati.versione;
     const sfida = p50.attivo();
@@ -80,10 +80,16 @@
     const delle8 = (h: any) => sfida && h.blocco === "p50";
     const attesa = (h: any) => (delle8(h) ? p50.vocePrevista(h, giorno) : eAttesa(h, giorno));
     const previste = tutte.filter(attesa);
+    /* UNA LISTA SOLA, e l'unica divisione che resta è quella che cambia le
+       conseguenze: le otto prima, il supporto dopo. Dividere per momento
+       della giornata faceva tre lastre e tre contatori — alle sette di
+       mattina non si capiva quale fosse la cosa da fare, si leggeva un
+       indice. */
     return {
       sfida,
       tutte,
-      momenti: giornataPerMomenti(previste, delle8),
+      otto: previste.filter(delle8),
+      supporto: previste.filter((h: any) => !delle8(h)),
       spente: tutte.filter((h) => !attesa(h)),
       chiuso: sfida && p50.giornoChiuso(giorno),
     };
@@ -152,7 +158,7 @@
       <Pulsante variante="pieno" misura="media" onclick={() => apriModifica(null)}>Nuova abitudine</Pulsante>
     </Vuoto>
   {:else}
-    <Giornata momenti={g.momenti} spente={g.spente} {giorno} bloccato={g.chiuso} sfida={g.sfida} onapri={apriDettaglio} />
+    <Lista otto={g.otto} supporto={g.supporto} spente={g.spente} {giorno} bloccato={g.chiuso} sfida={g.sfida} onapri={apriDettaglio} />
   {/if}
 </Pagina>
 

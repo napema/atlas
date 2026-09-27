@@ -19,7 +19,7 @@
   import { tocco } from "$lib/core/ui";
   import { dati } from "$lib/core/reattivo.svelte";
   import {
-    eSaltata, alterna, alternaSaltata, partiDi, parteFatta, alternaParte, gruppiParti,
+    eSaltata, alterna, partiDi, parteFatta, alternaParte, gruppiParti,
   } from "$condivisi/abitudini/dati.js";
   import { fattaIl, etichettaPiano, pianoDi } from "$condivisi/abitudini/calcolo.js";
 
@@ -93,11 +93,6 @@
     alterna(h.id, giorno);
   }
 
-  function salta() {
-    if (bloccata) return;
-    tocco(6);
-    alternaSaltata(h.id, giorno);
-  }
 
   function parte(id: string, era: boolean) {
     if (bloccata) return;
@@ -131,20 +126,6 @@
         {#if sotto}<span class="text-subheadline secondario">{sotto}</span>{/if}
       </span>
     </button>
-    {#if !stato.parti.length && !stato.fatta && !bloccata}
-      <!-- «Oggi no»: il terzo stato. Per le abitudini in negativo, quelle che
-           si tengono NON facendo qualcosa: spuntarla sarebbe una bugia, e
-           lasciarla aperta fino a mezzanotte un promemoria inutile. -->
-      <button
-        type="button"
-        class="salta"
-        class:attiva={stato.saltata}
-        aria-pressed={stato.saltata}
-        aria-label={stato.saltata ? `Riapri ${h.name}` : `Segna ${h.name} come saltata oggi`}
-        title={stato.saltata ? "Riaprila" : "Oggi no"}
-        onclick={salta}
-      ><Icona nome="chiudi" misura={14} tratto={2.4} /></button>
-    {/if}
   </div>
 
   {#if stato.gruppi.length}
@@ -217,13 +198,6 @@
   .nome { overflow-wrap: anywhere; transition: color var(--duration-fast); }
   .nome.fatta { color: var(--label-secondary); }
 
-  .salta {
-    flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
-    color: var(--label-tertiary); background: var(--fill-quaternary);
-    position: relative;
-  }
-  .salta::after { content: ""; position: absolute; inset: -7px; }
-  .salta.attiva { color: #fff; background: var(--label-secondary); }
 
   .gruppi { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-2) 0 var(--space-1) calc(28px + var(--space-3)); }
   .gruppo-testa { display: flex; align-items: center; gap: var(--space-2); margin-bottom: 4px; }
