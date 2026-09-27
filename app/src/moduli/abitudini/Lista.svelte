@@ -62,6 +62,15 @@
       {/if}
     {/snippet}
 
+    <!-- A sfida ACCESA lo dice gia' il titolo della sezione, e ogni riga
+         porta il suo segno. A sfida spenta il titolo e' «Oggi» e le otto
+         starebbero in cima senza niente che le distingua dal resto: la
+         loro posizione da sola non dice che sono quelle che contano. -->
+    {#if !sfida && otto.length}
+      <div class="confine primo">
+        <span class="text-caption1 semibold">Le {otto.length} di Project 50</span>
+      </div>
+    {/if}
     {#each otto as h (h.id)}
       <RigaAbitudine {h} {giorno} sfida={sfida} bloccata={bloccato} {onapri} />
     {/each}
@@ -71,7 +80,10 @@
            finisce quello che conta e comincia quello che aiuta. -->
       <div class="confine">
         <span class="text-caption1 semibold">Supporto</span>
-        <span class="text-caption1 secondario">nessuna conseguenza</span>
+        <!-- «nessuna conseguenza» solo a sfida accesa: e' vero in rapporto
+             al contatore, e senza sfida il contatore non c'e' -- la frase
+             direbbe qualcosa a cui non corrisponde niente. -->
+        {#if sfida}<span class="text-caption1 secondario">nessuna conseguenza</span>{/if}
       </div>
       {#each supporto as h (h.id)}
         <RigaAbitudine {h} {giorno} compatta bloccata={bloccato} {onapri} />
@@ -113,6 +125,10 @@
     margin-top: var(--space-2);
     border-top: 0.5px solid var(--separator);
   }
+  /* Il primo e' un'intestazione, non un confine: sopra non c'e' niente da
+     separare, e la riga sottile in cima alla lastra sembrerebbe un taglio. */
+  .confine.primo { margin-top: 0; padding-top: var(--space-3); border-top: 0; }
+  .confine.primo span { color: var(--accento); letter-spacing: 0.7px; text-transform: uppercase; }
   .confine span:first-child { letter-spacing: 0.7px; text-transform: uppercase; color: var(--label-secondary); }
 
   .spente-capo {

@@ -77,8 +77,20 @@
     dati.versione;
     const sfida = p50.attivo();
     const tutte = abitudiniVive() as any[];
-    const delle8 = (h: any) => sfida && h.blocco === "p50";
-    const attesa = (h: any) => (delle8(h) ? p50.vocePrevista(h, giorno) : eAttesa(h, giorno));
+    /* Il blocco di una voce NON dipende dal fatto che la sfida sia accesa:
+       le otto sono le otto anche il giorno prima di cominciare. Con
+       `sfida &&` qui dentro, a sfida spenta `delle8` era sempre falso e
+       TUTTE le voci finivano nel supporto: la lista si apriva con la riga
+       «Supporto · nessuna conseguenza» in cima e le otto sotto, cioè
+       esattamente il contrario di quello che quella riga dice. Chi guarda
+       la sera prima di cominciare vede le voci che contano marchiate come
+       quelle che non contano.
+
+       A dipendere dalla sfida resta solo QUANDO una voce è attesa: la
+       regola della sfida (il workout segue il piano di Training) vale
+       quando la sfida c'è, altrimenti vale il calendario della voce. */
+    const delle8 = (h: any) => h.blocco === "p50";
+    const attesa = (h: any) => (sfida && delle8(h) ? p50.vocePrevista(h, giorno) : eAttesa(h, giorno));
     const previste = tutte.filter(attesa);
     /* UNA LISTA SOLA, e l'unica divisione che resta è quella che cambia le
        conseguenze: le otto prima, il supporto dopo. Dividere per momento
