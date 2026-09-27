@@ -306,17 +306,23 @@
     <Pulsante variante="vetro" misura="media" tondo icona="ingranaggio" etichetta="Impostazioni" href="#/impostazioni" />
   {/snippet}
 
-  <div class="pile" data-modo={modo}>
-    {#if modo === 3}
-      <div class="pila">{@render cartaAdesso()}</div>
-      <div class="pila">{@render cartaSfida()}</div>
-      <div class="pila">{@render cartaFinanze()}</div>
-    {:else if modo === 2}
-      <div class="pila">{@render cartaAdesso()}{@render cartaSfida()}</div>
-      <div class="pila">{@render cartaFinanze()}</div>
-    {:else}
-      <div class="pila">{@render cartaAdesso()}{@render cartaSfida()}{@render cartaFinanze()}</div>
-    {/if}
+  <!-- IL BENTO. Non colonne di carte impilate: una griglia sola in cui ogni
+       carta occupa un numero di celle proporzionale a quanto pesa, e le
+       tessere si incastrano.
+
+       Le colonne erano il difetto vero. Ogni pila cresceva per conto suo, e
+       bastava che «Adesso» si svuotasse — alle nove di mattina, con tutto
+       già fatto — perché una colonna finisse a metà e le altre no: la
+       schermata sembrava storta senza che niente fosse sbagliato.
+
+       Qui le carte della stessa riga sono alte uguali (`stretch`) e i buchi
+       li riempie `dense`, che ripesca una tessera più piccola e la mette nel
+       vuoto lasciato da una più grande. Una carta che si accorcia non lascia
+       un gradino: lascia un posto, e qualcun altro ci entra. -->
+  <div class="bento">
+    <div class="tessera grande">{@render cartaAdesso()}</div>
+    <div class="tessera alta">{@render cartaSfida()}</div>
+    <div class="tessera media">{@render cartaFinanze()}</div>
   </div>
 </Pagina>
 
@@ -334,10 +340,38 @@
      finire ad altezze diverse solo in fondo. `minmax(0, …)` e non `1fr`:
      una colonna `1fr` non scende sotto la larghezza del suo contenuto, e il
      nome lungo di una cena la allargava oltre lo schermo. */
-  .pile { display: grid; gap: var(--space-6); grid-template-columns: minmax(0, 1fr); align-items: start; }
-  .pile[data-modo="2"] { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); column-gap: var(--space-8); }
-  .pile[data-modo="3"] { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.9fr) minmax(0, 1.1fr); column-gap: var(--space-8); }
-  .pila { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+  /* Sul telefono una colonna: un bento a due tessere su 390 punti sarebbe
+     due francobolli. La gerarchia lì la fa l'ordine, che è già quello. */
+  .bento { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); }
+  .tessera { min-width: 0; display: flex; flex-direction: column; }
+  /* La carta riempie la sua tessera: è questo che rende la riga una riga e
+     non tre carte appoggiate alla stessa linea. */
+  .tessera > :global(*) { flex: 1; min-height: 0; }
+
+  @media (min-width: 700px) {
+    .bento {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      /* `dense` è la regola che tiene insieme il disegno quando il contenuto
+         cambia: senza, una tessera che non entra nella riga lascia il buco
+         dov'è e scende. Con `dense` il buco viene riempito da quella dopo. */
+      grid-auto-flow: dense;
+      align-items: stretch;
+      gap: var(--space-6);
+    }
+    .grande { grid-column: span 4; }
+    .alta   { grid-column: span 2; }
+    .media  { grid-column: span 3; }
+    /* Con tre tessere su sei colonne la seconda riga ne avrebbe tre vuote:
+       «media» si allarga a riempirle. Il puzzle si chiude sempre. */
+    .media:last-child { grid-column: span 6; }
+  }
+
+  @media (min-width: 1100px) {
+    .grande { grid-column: span 3; }
+    .alta   { grid-column: span 3; }
+    .media  { grid-column: span 6; }
+    .media:last-child { grid-column: span 6; }
+  }
 
   .sfida { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
   .sfida .capo { display: flex; align-items: baseline; gap: var(--space-2); }
