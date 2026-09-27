@@ -54,11 +54,10 @@
   }
   .coda { color: var(--accento); }
   .testa-vuota { display: none; height: calc(var(--lh-title3) + var(--space-2)); }
-  .lastra {
-    background: var(--bg-grouped-secondary);
-    border-radius: var(--radius-xxxl);
-    overflow: hidden;
-  }
+  /* Il fondo, l'anello, la luce e l'ombra della lastra stanno in `app.css`,
+     globali: sono la stessa ricetta per ogni carta della app. Qui resta solo
+     quello che riguarda la sezione, cioè tenere dentro le righe. */
+  .lastra { overflow: hidden; }
   .nuda { display: flex; flex-direction: column; gap: var(--space-3); }
   .piede { padding: var(--space-2) var(--space-4) 0; }
 </style>

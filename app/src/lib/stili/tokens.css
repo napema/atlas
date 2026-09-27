@@ -45,11 +45,19 @@
   --label-tertiary:   rgba(235, 235, 245, 0.30);
   --label-quaternary: rgba(235, 235, 245, 0.16);
 
-  /* fondi raggruppati: la pagina è nera, i gruppi salgono */
+  /* fondi raggruppati: la pagina è nera, i gruppi salgono.
+
+     #1c1c1e era il grigio di iOS 18 ed è giusto come VALORE, ma steso piatto
+     su una carta grande contro il nero fa un rettangolo spento — «sa di cosa
+     scrausa», ed è vero. Due correzioni, nessuna delle quali esce dalla
+     gamma di Apple: il grigio sale di un punto sul blu (#1c1c20 invece di
+     #1c1c1e), che è quel filo di freddo che lo separa dal marroncino; e
+     soprattutto la carta smette di essere un colore e diventa un
+     MATERIALE — vedi `--lastra-*` più sotto. */
   --bg-grouped-primary:   #000000;
-  --bg-grouped-secondary: #1c1c1e;
-  --bg-grouped-tertiary:  #2c2c2e;
-  --bg-elevated:          #2c2c2e;   /* fogli e menu, sopra un gruppo */
+  --bg-grouped-secondary: #1c1c20;
+  --bg-grouped-tertiary:  #2c2c31;
+  --bg-elevated:          #2c2c31;   /* fogli e menu, sopra un gruppo */
 
   /* riempimenti: veli grigi che prendono il colore di ciò che hanno sotto */
   --fill-primary:    rgba(120, 120, 128, 0.36);
@@ -70,6 +78,27 @@
   --glass-rim:      rgba(166, 166, 166, 0.45);
   --glass-shadow:   0 8px 48px rgba(0, 0, 0, 0.45);
   --shadow-sheet:   0 -8px 48px rgba(0, 0, 0, 0.5);
+
+  /* LA LASTRA — la ricetta UNICA di ogni carta di ATLAS.
+
+     Il vetro vero (`backdrop-filter`) vive solo dove dietro scorre davvero
+     qualcosa: la barra delle schede, il toast, le testate appiccicate. Su
+     una carta appoggiata al fondo pieno della pagina non c'è niente da
+     sfocare, e su iPhone quel filtro ricampiona il CONTENUTO dell'elemento —
+     sgrana l'icona e il numero dentro la carta. Quindi qui il vetro è
+     DIPINTO, ed è sempre lo stesso: un fondo, una luce che cade dall'alto,
+     un anello chiaro di mezzo pixel, un'ombra che stacca dal nero.
+
+     È questa ricetta a rendere coerente la app: o una superficie è una
+     lastra e le ha tutte e quattro, o non è una lastra. Nessuna carta si
+     inventa un fondo suo. */
+  --lastra-fondo:  var(--bg-grouped-secondary);
+  --lastra-luce:   rgba(255, 255, 255, 0.05);
+  --lastra-rim:    rgba(255, 255, 255, 0.08);
+  --lastra-ombra:  0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.3);
+  /* I riquadri DENTRO una lastra: salgono di un gradino, senza anello
+     (due anelli concentrici a mezzo pixel fanno moiré sul retina). */
+  --lastra-dentro: rgba(255, 255, 255, 0.055);
 
   /* il cursore del controllo a segmenti e la manopola dell'interruttore */
   --thumb:          #636366;
@@ -124,6 +153,14 @@
   --glass-shadow: 0 8px 48px rgba(0, 0, 0, 0.25);
   --shadow-sheet: 0 -8px 48px rgba(0, 0, 0, 0.18);
 
+  /* Nel chiaro la carta è bianca su grigio: la luce che cade dall'alto non
+     si vedrebbe, e il lavoro lo fanno l'anello e l'ombra. */
+  --lastra-fondo:  var(--bg-grouped-secondary);
+  --lastra-luce:   rgba(255, 255, 255, 0);
+  --lastra-rim:    rgba(0, 0, 0, 0.055);
+  --lastra-ombra:  0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
+  --lastra-dentro: rgba(120, 120, 128, 0.09);
+
   --thumb:        #ffffff;
   --thumb-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
   --dim:          rgba(0, 0, 0, 0.2);
@@ -146,6 +183,10 @@
     --separator: rgba(0, 0, 0, 0.12); --separator-opaque: #c6c6c8;
     --glass-bg: rgba(255, 255, 255, 0.70); --glass-rim: rgba(219, 219, 219, 0.90);
     --glass-shadow: 0 8px 48px rgba(0, 0, 0, 0.25); --shadow-sheet: 0 -8px 48px rgba(0, 0, 0, 0.18);
+    --lastra-fondo: var(--bg-grouped-secondary); --lastra-luce: rgba(255, 255, 255, 0);
+    --lastra-rim: rgba(0, 0, 0, 0.055);
+    --lastra-ombra: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
+    --lastra-dentro: rgba(120, 120, 128, 0.09);
     --thumb: #ffffff; --dim: rgba(0, 0, 0, 0.2);
     --foglio-fondo: #f2f2f7; --foglio-lastra: #ffffff;
   }

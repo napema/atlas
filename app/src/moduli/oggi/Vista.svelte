@@ -369,29 +369,39 @@
          sei colonne l'ultimo restava solo su una riga nuova, con cinque
          colonne vuote a fianco. Così invece il puzzle si chiude comunque
          siano — due, tre o sei. -->
-    <div class="tessera striscia">
-    {#each tessere as x (x.voce.id)}
-      <!-- In 179 punti non ci sta un menu. «Bacon + Pasta + Verdure
-           grigliate + Sugo di pomodoro» a 27px diventa «Bacon + P…», e
-           tagliato a tre righe piccole è un muro. Il primo pezzo e quanti
-           altre ne restano: si legge da lontano e resta vero. -->
-      {@const pezzi = String(x.dati?.valore ?? "—").split(/\s*\+\s*/).filter(Boolean)}
-      {@const v = pezzi[0] ?? "—"}
-      {@const altri = pezzi.length - 1}
-      <a class="quadrata" class:fatta={x.dati?.fatto === true}
-         href={x.dati?.azione?.rotta || `#/${x.voce.id}`} style:--colore={x.voce.accento}>
-        <span class="q-alto">
-          <span class="q-icona"><Icona nome={x.voce.icona} misura={19} tratto={2} /></span>
-          {#if x.dati?.fatto === true}
-            <span class="q-fatto" title="Fatto"><Icona nome="spunta" misura={13} tratto={2.8} /></span>
-          {/if}
-        </span>
-        <span class="q-basso">
-          <span class="q-nome text-footnote semibold">{x.voce.nome}</span>
-          <span class="q-valore cifre" class:lungo={v.length > 11}>{v}{#if altri > 0}<span class="q-altri">&nbsp;+{altri}</span>{/if}</span>
-        </span>
-      </a>
-    {/each}
+    <!-- La fascia sta dentro una Sezione, col suo titolo, per la ragione
+         per cui tutto il resto ce l'ha: senza titolo la lastra cominciava
+         33 punti piu' in alto di Finanze che le sta a fianco, e le due
+         colonne della riga partivano a quote diverse. `Pagina` ha gia' il
+         rimedio (`.testa-vuota`) ma vale per le Sezioni, e questa non lo
+         era. Meglio il titolo vero: i quadrati SONO gli altri moduli, e
+         ogni altro blocco della home si presenta. -->
+    <div class="tessera moduli">
+      <Sezione titolo="Moduli" nuda>
+        <div class="striscia">
+      {#each tessere as x (x.voce.id)}
+        <!-- In 179 punti non ci sta un menu. Il primo pezzo e quanti altri
+             ne restano: si legge da lontano e resta vero. -->
+        {@const pezzi = String(x.dati?.valore ?? "—").split(/\s*\+\s*/).filter(Boolean)}
+        {@const v = pezzi[0] ?? "—"}
+        {@const altri = pezzi.length - 1}
+        <a class="quadrata lastra" class:fatta={x.dati?.fatto === true}
+           href={x.dati?.azione?.rotta || `#/${x.voce.id}`}
+           style:--colore={x.voce.accento}>
+          <span class="q-alto">
+            <span class="q-icona"><Icona nome={x.voce.icona} misura={19} tratto={2} /></span>
+            {#if x.dati?.fatto === true}
+              <span class="q-fatto" title="Fatto"><Icona nome="spunta" misura={13} tratto={2.8} /></span>
+            {/if}
+          </span>
+          <span class="q-basso">
+            <span class="q-nome text-footnote semibold">{x.voce.nome}</span>
+            <span class="q-valore cifre" class:lungo={v.length > 11}>{v}{#if altri > 0}<span class="q-altri">&nbsp;+{altri}</span>{/if}</span>
+          </span>
+        </a>
+      {/each}
+      </div>
+    </Sezione>
     </div>
   </div>
 </Pagina>
@@ -414,13 +424,15 @@
      due francobolli. La gerarchia lì la fa l'ordine, che è già quello. */
   .bento { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); }
   .tessera { min-width: 0; display: flex; flex-direction: column; }
-  /* La carta dentro la tessera si tira fino in fondo. Senza, una carta
-     corta accanto a una lunga lasciava il vuoto nella GRIGLIA, e il buco
-     si vedeva come una fetta di pagina mancante invece che come spazio
-     dentro una carta. La fascia dei quadrati no: lì i figli sono i
-     quadrati stessi e devono restare quadrati. */
-  .tessera:not(.striscia) > :global(*) { flex: 1; display: flex; flex-direction: column; }
-  .tessera:not(.striscia) > :global(* > .sezione) { flex: 1; }
+
+  /* LA CARTA SI TIRA FINO IN FONDO ALLA TESSERA. Senza, una carta corta
+     accanto a una lunga lasciava il vuoto nella GRIGLIA, e un buco nella
+     griglia si legge come una fetta di pagina mancante — non come spazio
+     dentro una carta. Tre gradini perché in mezzo ci può stare il div che
+     porta `--accento`, e la lastra sta dentro la sezione. */
+  .tessera > :global(*) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .tessera :global(.sezione) { flex: 1; }
+  .tessera :global(.sezione > .lastra) { flex: 1; }
 
   .invito { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
   .invito .capo { display: flex; align-items: baseline; gap: var(--space-2); }
@@ -453,35 +465,30 @@
     grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
   }
 
-  /* LA TESSERA, vetro di iOS 27.
+  /* LA TESSERA. È una `.lastra` come tutte le altre carte della app: il
+     fondo, l'anello, la luce e l'ombra li prende da lì e non se li inventa.
+     L'unica cosa sua è il VELO — l'alone del colore del modulo che sale dal
+     basso — e passa da `--lastra-velo`, che la ricetta prevede apposta.
 
-     Vetro nell'aspetto e non con `backdrop-filter`: sotto c'è il fondo
-     pieno della pagina, quindi non c'è niente da sfocare — e su iPhone quel
-     filtro ricampiona il CONTENUTO della tessera, cioè sgrana l'icona e il
-     numero. È lo stesso guasto che abbiamo tolto dalla barra in alto.
-     Quindi: fondo stratificato, anello chiaro sul bordo, una luce in alto a
-     sinistra e un alone del colore del modulo che sale dal basso. La
-     saturazione sta tutta nel bollo dell'icona, dove serve.
+     Il velo è al 14 per cento e non al 26 di prima: quattro tessere accese
+     pieno erano quattro cartelloni, e con sei moduli sarebbe un circo. Il
+     colore saturo sta in un posto solo, il bollo dell'icona, che è grande
+     38 punti su 179 — abbastanza da dire di che modulo si tratta, troppo
+     poco da gridare.
 
      NIENTE VERDE QUI DENTRO. Il verde vuol dire «fatto» in tutta ATLAS, ma
      scritto dentro una tessera tinta di rosa diventa una macchia che non si
      può guardare. Il «fatto» lo dice una spunta in alto a destra, che è
      dove si guarda, e il numero resta del colore del testo. */
   .quadrata {
+    --lastra-velo: radial-gradient(130% 100% at 50% 135%,
+      color-mix(in srgb, var(--colore) 14%, transparent), transparent 72%);
     position: relative; overflow: hidden;
     aspect-ratio: 1 / 1; min-height: 0;
     display: flex; flex-direction: column; justify-content: space-between;
     padding: var(--space-4);
-    border-radius: 22px;
+    border-radius: var(--radius-xxl);
     color: inherit;
-    background:
-      radial-gradient(120% 90% at 50% 130%, color-mix(in srgb, var(--colore) 26%, transparent), transparent 70%),
-      linear-gradient(180deg, color-mix(in srgb, #fff 6%, transparent), transparent 55%),
-      var(--bg-grouped-secondary);
-    box-shadow:
-      inset 0 0 0 0.5px var(--glass-rim),
-      inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent),
-      0 6px 20px rgba(0, 0, 0, 0.18);
     transition: transform var(--duration-fast) var(--ease-spring);
   }
   .quadrata:active { transform: scale(0.97); }
@@ -509,9 +516,6 @@
     font-size: 15px; line-height: 1.25; letter-spacing: 0; white-space: normal;
     display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical;
   }
-  /* La carta riempie la sua tessera: è questo che rende la riga una riga e
-     non tre carte appoggiate alla stessa linea. */
-  .tessera > :global(*) { flex: 1; min-height: 0; }
 
   @media (min-width: 700px) {
     .bento {
@@ -526,7 +530,7 @@
     .grande   { grid-column: span 4; }
     .alta     { grid-column: span 2; }
     .media    { grid-column: 1 / -1; }
-    .striscia { grid-column: 1 / -1; }
+    .moduli   { grid-column: 1 / -1; }
   }
 
   /* Al largo il bento si chiude a due righe: sopra la carta grande con la
@@ -538,7 +542,7 @@
     .grande   { grid-column: span 4; }
     .alta     { grid-column: span 2; }
     .media    { grid-column: span 3; }
-    .striscia { grid-column: span 3; align-content: start; }
+    .moduli   { grid-column: span 3; }
   }
 
   .sfida { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
