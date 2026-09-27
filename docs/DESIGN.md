@@ -98,8 +98,15 @@ Quindi il materiale, sulle carte, è **dipinto**, ed è sempre lo stesso:
 ```
 
 Quattro strati: **fondo**, **luce che cade dall'alto**, **anello di mezzo
-pixel**, **ombra che stacca dal nero**. O una superficie è una lastra e li
-ha tutti e quattro, o non è una lastra e non si disegna un fondo suo.
+pixel**, **ombra**. O una superficie è una lastra e li ha tutti e quattro,
+o non è una lastra e non si disegna un fondo suo.
+
+Sul tema scuro, però, la pagina è **nera**: un'ombra nera su nero non
+stacca un bel niente, e a separare la carta dal fondo è l'**anello**, non
+l'ombra. L'ombra guadagna il posto altrove — dentro un foglio, dove il
+fondo è grigio, e sul tema chiaro, dove fa tutto il lavoro. Vale la pena
+saperlo prima di provare ad «aumentare l'ombra» perché una carta non si
+stacca abbastanza: la leva giusta è l'anello.
 
 La classe sta in `app.css`, globale, e ci sono tre sole eccezioni ammesse:
 

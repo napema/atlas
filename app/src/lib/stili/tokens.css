@@ -87,7 +87,12 @@
      sfocare, e su iPhone quel filtro ricampiona il CONTENUTO dell'elemento —
      sgrana l'icona e il numero dentro la carta. Quindi qui il vetro è
      DIPINTO, ed è sempre lo stesso: un fondo, una luce che cade dall'alto,
-     un anello chiaro di mezzo pixel, un'ombra che stacca dal nero.
+     un anello chiaro di mezzo pixel, un'ombra.
+
+     Attenzione all'ombra: qui la pagina è NERA, e un'ombra nera su nero non
+     stacca niente. A separare la carta dal fondo è l'anello. L'ombra serve
+     dentro un foglio, dove il fondo è grigio, e sul tema chiaro, dove fa
+     tutto il lavoro — e sta qui perché la ricetta è una sola.
 
      È questa ricetta a rendere coerente la app: o una superficie è una
      lastra e le ha tutte e quattro, o non è una lastra. Nessuna carta si
