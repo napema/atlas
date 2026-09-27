@@ -1511,3 +1511,52 @@ la build si ferma**: un guscio senza versione non si pubblica per sbaglio.
 Fatto da una chat di modulo, fuori perimetro, con la chat ATLAS ferma per
 limite di utilizzo. Se ATLAS riparte: è tutto qui, `app/vite.config.ts` e
 il commento in testa a `app/public/sw.js`.
+
+---
+
+## 27 settembre 2026 — supporto in parallelo, e Project 50 sulla home *(Abitudini + core)*
+
+**Il supporto non sta più sotto le otto: sta accanto.** Erano una lastra e
+una nota a piè di pagina — righe da 44, testo 15 regular, opacità in meno,
+trentadue punti di distacco. Quella gerarchia diceva «questa cosa conta meno
+di te», e sono due cose in parallelo. Ora sono due lastre pari, due figli
+della griglia della pagina: sul PC si affiancano da sé, sul telefono restano
+impilate (affiancarle lì sarebbe otto righe larghe mezzo schermo).
+
+Quello che le distingue è rimasto dove serve: **il contatore e il verdetto**.
+Solo le otto hanno «3/8» in testa e il bordo che diventa verde. Il guasto di
+partenza — in una lista sola non sai se hai perso il contatore o saltato la
+skincare — lo risolve la separazione in due lastre, non il rimpicciolire una
+delle due. Questo rovescia in parte `2978ad2`, che le aveva messe in colonna:
+la colonna era la risposta giusta alla domanda sbagliata.
+
+**Sul telefono**: le serate fuori in una riga sola invece di due, e la
+chiusura a tutta larghezza sul PC (come cella della griglia finiva in fondo
+alla colonna del supporto).
+
+**`#/abitudini/chiudi`** apre il foglio di chiusura, se il giorno è
+chiudibile. Ci arriva la card della home, e ci arriverà il promemoria delle
+21 quando core lo farà.
+
+### La home ha una card Project 50 *(fuori perimetro, `moduli/oggi/` e `core/`)*
+
+La sfida si misura in GIORNI, la riga del modulo in spunte: fuse in una
+frazione sola non si leggeva più né l'una né l'altra. Ieri notte avevo fatto
+la cosa sbagliata — con la sfida accesa la scheda della home DIVENTAVA la
+sfida — ed è corretto: `oggi()` è di nuovo la scheda delle abitudini e si
+porta dietro `sfida`, `null` quando è spenta.
+
+La home non conosce Abitudini (regola 12): prende `sfida` da qualunque
+scheda la porti — il tipo è `SchedaSfida` in `registro.ts` — e se non la
+porta nessuno la card non esiste. Una seconda sfida, un domani, si accende
+senza toccare `moduli/oggi/`.
+
+La card sta nella colonna di «Adesso», sotto la checklist: prima quello che
+si tocca per fare, poi dove sei arrivato. Niente grid-area nuova, che
+avrebbe lasciato una riga vuota e il suo spazio in tutte le giornate senza
+sfida. Dalle 21 col giorno aperto si accende di arancio e mostra «Chiudi il
+giorno».
+
+Provato in Chromium a 390×844 e 1440×1000, con l'orologio del browser
+spostato alle 21:30 per vedere lo stato che conta. **Sul telefono
+installato, ancora no.**
