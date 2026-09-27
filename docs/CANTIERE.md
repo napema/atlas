@@ -1688,3 +1688,76 @@ chat ferme. La tipografia, i colori, la barra delle schede: erano giusti.
   home: con la sfida spenta su quel dispositivo `sfida` è `null` e la card
   non esiste. Da spenta, adesso, la carta del modulo invita a cominciarla.
 - **Sul telefono installato non è stato provato niente.** Tutto in Chromium.
+
+---
+
+## La home a bento, e le tessere di vetro *(27 set, chat ATLAS)*
+
+La home era «tre lastre grigie grandi e nient'altro», e le tessere piccole
+dei moduli ne erano sparite insieme a Pasti e Mobilità. Rifatte.
+
+**Le tessere sono quadrate, e quadrate davvero.** Stanno in una fascia loro
+(`.striscia`), che è una **griglia** e non un flex: con `flex: 1 1 170px`
+l'ultima tessera di una riga cresceva a riempire lo spazio rimasto, e sul
+telefono la terza diventava un rettangolo largo quanto lo schermo. Con
+`repeat(auto-fit, minmax(min(140px, 100%), 1fr))` le celle restano tutte
+della stessa misura e quella dispari lascia il posto vuoto dov'è. Misurate:
+quattro da 179×179 su 402 punti, `scrollWidth` = `innerWidth`.
+
+La soglia è **140 e non 150**: in mezza riga da 1440 (628 punti) a 150 ci
+stavano tre quadrati e il quarto andava a capo da solo con due celle vuote
+a fianco.
+
+**Il vetro delle tessere è dipinto, non filtrato.** Niente
+`backdrop-filter`: sotto c'è il fondo pieno della pagina, quindi non c'è
+niente da sfocare — e su iPhone quel filtro ricampiona il *contenuto*
+dell'elemento, cioè sgrana l'icona e il numero. Fondo stratificato, anello
+sul bordo, luce in alto, alone del colore del modulo che sale dal basso.
+
+**Nessun verde dentro una tessera colorata.** Il valore di Pasti diventava
+verde a pasto fatto, dentro una tessera tinta di rosa: «una cosa che Apple
+non farebbe mai», e aveva ragione. Il «fatto» adesso è una **spunta neutra
+in alto a destra**; il numero resta del colore del testo. La regola 7 vale
+anche dentro un contenitore che ha già un accento suo.
+
+**In 179 punti non ci sta un menu.** Il valore di Pasti è il nome del
+pasto: «Bacon + Pasta + Verdure grigliate + Sugo di pomodoro» a 27px
+diventava «Bacon + P…». La home lo spezza sui `+` e mostra `Bacon +3`.
+
+**Il bento si chiude a due righe, e non lascia buchi.** Sopra la carta
+grande con la colonna della sfida, sotto Finanze e i quadrati: misurato
+845+411 e 628+628 su 1440. Tre fasce a tutta larghezza non sono un bento,
+sono strisce. E la carta dentro la tessera si tira fino in fondo
+(`.tessera:not(.striscia) > * { flex: 1 }`): senza, una carta corta accanto
+a una lunga lasciava il vuoto nella *griglia*, che si legge come una fetta
+di pagina mancante invece che come spazio dentro una carta.
+
+### La barra compatta era trasparente
+
+Scorrendo, il titolo piccolo finiva **sopra** la cifra della carta sotto e
+si leggevano due testi uno sull'altro: il `::before` aveva solo
+`--glass-bg` (alfa 0,7) e la sfocatura. Al 94 per cento una cifra bianca
+grande si vedeva ancora. Ora è **opaca**, con la sua riga sottile sotto, e
+senza `backdrop-filter`. Il vetro di ATLAS sta nelle carte e nella barra
+delle schede, dove dietro c'è davvero qualcosa; lì dietro c'è solo il testo
+che la barra esiste per coprire.
+
+### Richiesta a Finanze *(già applicata, da rivedere se serve)*
+
+`inArrivo()` guardava 14 giorni avanti a prescindere; ora si ferma a
+`cicloDi(iso).a`, il giorno prima dello stipendio. Con lo stipendio al 21,
+la home dice «fino al 20 ott» — corretto.
+
+### Project 50: la carta a sfida spenta
+
+`schedaSfida()` in `moduli/abitudini/contratto.js` tornava `null` con la
+sfida spenta, e la home ci metteva la costanza: il posto più grande della
+schermata occupato da «0 giorni di fila — 7 giorni senza spuntare niente»,
+il giorno prima di cominciare. Ora torna `{ spenta: true, totale, quante,
+rotta }` e la home disegna **50 giorni · 8 voci non negoziabili · Comincia**,
+con la settimana sotto come contorno. Il quadrato di Abitudini resta finché
+la sfida è spenta (la carta dell'invito non dice il conteggio di oggi).
+
+### Non provato
+
+Sempre e solo Chromium a 402 e a 1440. Sul telefono installato, niente.
