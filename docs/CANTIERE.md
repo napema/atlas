@@ -1485,3 +1485,29 @@ colpevoli sono l'unica cosa lì che dice cosa fare domani.
   prima delle 21, richiusura, penalità della domenica, blocco delle serate
   a domenica chiusa, morning routine a due terzi che non vale. Sul telefono
   installato, no: quello resta da fare.
+
+---
+
+## 27 settembre 2026 — la versione del guscio non era mai stata timbrata *(core, da una chat di modulo)*
+
+Scoperto pubblicando Project 50, e sistemato perché tocca ogni rilascio.
+
+`vite.config.ts` timbrava `__VERSIONE__` in `sw.js` con `String.replace` e
+una stringa, che ne sostituisce **una sola**: la prima del file, cioè quella
+dentro il commento in testa. `const VERSIONE` restava col segnaposto, e il
+guscio si chiamava `atlas2-guscio-__VERSIONE__` a ogni rilascio — quindi
+`activate` non trovava mai una cache vecchia da cancellare.
+
+È il tipo di guasto che non si vede: la app si aggiorna lo stesso, perché
+la navigazione va in rete per prima e i file compilati hanno l'impronta nel
+nome. A restare indietro era solo la pulizia del guscio. La regola 10 di
+CLAUDE.md era rispettata sulla carta — la build timbrava qualcosa — e non
+nei fatti.
+
+Ora si sostituiscono tutte le occorrenze, il commento non nomina più il
+segnaposto in chiaro (torna a essercene una), e **se il segnaposto non c'è
+la build si ferma**: un guscio senza versione non si pubblica per sbaglio.
+
+Fatto da una chat di modulo, fuori perimetro, con la chat ATLAS ferma per
+limite di utilizzo. Se ATLAS riparte: è tutto qui, `app/vite.config.ts` e
+il commento in testa a `app/public/sw.js`.
