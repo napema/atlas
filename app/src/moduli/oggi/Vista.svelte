@@ -341,8 +341,15 @@
     <div class="tessera alta">{@render cartaSfida()}</div>
     <div class="tessera media">{@render cartaFinanze()}</div>
 
+    <!-- I quadrati stanno in una FASCIA loro, larga quanto la griglia, e si
+         dividono lo spazio in parti uguali. Messi come tessere della
+         griglia si incastravano finché erano il numero giusto: con tre e
+         sei colonne l'ultimo restava solo su una riga nuova, con cinque
+         colonne vuote a fianco. Così invece il puzzle si chiude comunque
+         siano — due, tre o sei. -->
+    <div class="tessera striscia">
     {#each tessere as x (x.voce.id)}
-      <a class="tessera quadrata" href={x.dati?.azione?.rotta || `#/${x.voce.id}`} style:--colore={x.voce.accento}>
+      <a class="quadrata" href={x.dati?.azione?.rotta || `#/${x.voce.id}`} style:--colore={x.voce.accento}>
         <span class="q-icona"><Icona nome={x.voce.icona} misura={20} tratto={2} /></span>
         <span class="q-nome text-footnote semibold">{x.voce.nome}</span>
         <span class="q-valore cifre" class:ok={x.dati?.fatto === true}>
@@ -351,6 +358,7 @@
         {#if x.dati?.dettaglio}<span class="q-sotto text-caption1">{x.dati.dettaglio}</span>{/if}
       </a>
     {/each}
+    </div>
   </div>
 </Pagina>
 
@@ -384,7 +392,12 @@
      di oggi — non un elenco di nomi ma uno stato per tessera. Il fondo è
      tinto piano: acceso pieno, sei tessere diventerebbero sei cartelloni e
      le carte grandi sparirebbero sotto. */
+  /* La fascia: ogni quadrato prende la stessa fetta, e sotto i 520 punti
+     vanno a capo invece di diventare francobolli. */
+  .striscia { display: flex; flex-wrap: wrap; gap: var(--space-4); }
   .quadrata {
+    flex: 1 1 150px; min-width: 0;
+    display: flex; flex-direction: column;
     gap: 2px; padding: var(--space-4);
     border-radius: 18px; color: inherit;
     background: color-mix(in srgb, var(--colore) 13%, var(--bg-grouped-secondary));
@@ -420,19 +433,15 @@
     }
     .grande   { grid-column: span 4; }
     .alta     { grid-column: span 2; }
-    .media    { grid-column: span 3; }
-    .quadrata { grid-column: span 2; aspect-ratio: auto; }
-    /* Se i moduli non hanno ancora risposto, Finanze resta l'ultima e si
-       allarga a chiudere la riga invece di lasciare mezzo vuoto. */
-    .media:last-child { grid-column: span 6; }
+    .media    { grid-column: 1 / -1; }
+    .striscia { grid-column: 1 / -1; }
   }
 
   @media (min-width: 1100px) {
     .grande   { grid-column: span 4; }
     .alta     { grid-column: span 2; }
-    .media    { grid-column: span 4; }
-    .quadrata { grid-column: span 1; }
-    .media:last-child { grid-column: span 6; }
+    .media    { grid-column: 1 / -1; }
+    .striscia { grid-column: 1 / -1; }
   }
 
   .sfida { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
