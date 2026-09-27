@@ -1560,3 +1560,66 @@ giorno».
 Provato in Chromium a 390×844 e 1440×1000, con l'orologio del browser
 spostato alle 21:30 per vedere lo stato che conta. **Sul telefono
 installato, ancora no.**
+
+---
+
+## 27 settembre 2026, notte — il workout segue il piano, e il giro di layout *(tre perimetri)*
+
+### Il workout non lo decide più un calendario scritto a mano *(Allenamenti + Abitudini)*
+
+Era `days: [1,2,3,4,5,6]`, cioè «tutti tranne la domenica». Ma il workout non
+è atteso il lunedì perché è lunedì: è atteso quando il piano ha un
+allenamento. Con la domenica fissa a riposo, un giorno di scarico
+infrasettimanale diventava una voce non negoziabile MANCATA — il contatore
+che riparte da 1 per un allenamento che non era in programma.
+
+`moduli/allenamenti/contratto.js` ora pubblica tre fatti nuovi:
+`oggi-previsti`, `oggi-fatti`, `giorni-scelti`. I primi due erano ovvi; il
+terzo distingue «oggi è riposo» da «al piano non hai ancora dato i giorni»,
+e senza di lui un piano senza giorni regalerebbe una voce libera ogni
+giorno — un contatore che sale per un dato che manca.
+
+`vocePrevista()` in `p50.js` li legge e, solo se `giorni-scelti` è > 0, si
+fida del piano; altrimenti ripiega sul calendario dell'abitudine. Il
+riconoscimento della voce è per NOME (`/workout|allenamen|palestra/i`),
+grossolano come quello della sessione di Mobilità e per lo stesso motivo:
+con un id, Abitudini conoscerebbe Training.
+
+L'allenamento fatto spunta l'abitudine, in una direzione sola. Mobilità
+annuncia sul bus, Training scrive numeri sulla lavagna, e il filtro
+`d.modulo === "allenamenti"` sull'ascolto di `FATTO_SCRITTO` è ciò che tiene
+l'ascolto lontano dai propri stessi fatti — spuntare scrive sulla lavagna.
+
+### Il giro di layout, tutto trovato sul PC
+
+- **Impostazioni → Abitudini stampava due volte le stesse dodici voci**: una
+  lista per scegliere il blocco, una per aprirle. Due elenchi identici nella
+  stessa schermata sono una funzione e un sosia. Ora la lista è una; il
+  blocco è un'etichetta e si cambia dentro il foglio di modifica, che è il
+  posto che la regola («non nella schermata di tutti i giorni») descriveva
+  già. Via anche il segmento da 168px che troncava «Suppor…».
+- **La revisione** lasciava il riepilogo col solo contatore e mezzo schermo
+  vuoto: i tre numeri sono saliti lì, e sotto la griglia c'è **Le chiusure**,
+  il registro giorno per giorno. Non è riempitivo — è dove «sei ripartito
+  quattro volte» si controlla. La griglia ha un tetto di larghezza: senza,
+  sul PC le caselle diventavano quadrati da settanta punti.
+- **La home** aveva tre colonne che finivano a tre altezze diverse e una
+  fascia di nero sotto. Ora `.griglia` e `.griglia.con-sfida` hanno ciascuna
+  le proprie `grid-template-areas` (niente area vuota da lasciare quando la
+  sfida è spenta), la gerarchia sta nelle dimensioni — «Adesso» e Finanze
+  colonne alte, Project 50 e Costanza più strette — e **«I moduli» è una
+  striscia a tutta larghezza in fondo**: era la colonna alta e magra che
+  bucava la pagina, ed è la parte in cui non si decide niente. Sul telefono
+  la striscia sta in due colonne, con nome e valore incolonnati dentro la
+  tessera (in riga, a 170px, si leggeva «Fina… 0,00 €»).
+
+### Perimetri
+
+Tre commit su quattro sono fuori da Abitudini: `moduli/allenamenti/`
+(cinque righe in `pubblicaSullaLavagna`), `moduli/oggi/` e `core/registro.ts`
+(la card e il tipo `SchedaSfida`). Fatto con le chat ATLAS e Allenamenti
+ferme per limite di utilizzo, su richiesta esplicita dell'utente. Se quelle
+chat ripartono: è tutto qui sopra.
+
+Provato in Chromium a 1900×1050 in scuro (home, giorno, sfida, impostazioni)
+e a 390×844. **Sul telefono installato ancora no.**
