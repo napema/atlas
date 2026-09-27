@@ -341,60 +341,70 @@
      è il conto dei giorni, non un allarme. */
   .urgente { box-shadow: inset 0 0 0 1.5px var(--color-orange); border-radius: var(--radius-xxxl); }
 
-  /* Due colonne sul telefono, quante ne stanno sul PC. `minmax(0, 1fr)` e
-     non `auto`: il nome lungo di un modulo allargava la sua colonna e
-     mandava le altre fuori squadra. */
-    display: grid; gap: 2px; padding: var(--space-2);
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
-    display: flex; align-items: center; gap: var(--space-3);
-    min-height: 60px; padding: var(--space-2) var(--space-3);
-    border-radius: 12px; color: var(--label-primary);
   .conta {
     display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 8px;
     border-radius: var(--radius-full); background: var(--fill-tertiary);
     color: var(--label-primary); font-size: var(--text-subheadline); font-weight: var(--weight-semibold);
+  }
+
   .calmo { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); }
   .segno {
     flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
     color: var(--color-orange); background: color-mix(in srgb, var(--color-orange) 16%, transparent);
+  }
   .segno.ok { color: var(--color-green); background: color-mix(in srgb, var(--color-green) 16%, transparent); }
+
   .voce { display: block; }
   .voce-nome { display: inline-flex; align-items: center; gap: 6px; }
   .apri {
     display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
     background: var(--tinta); color: #fff; padding-left: 2px;
+  }
   .ritardo { color: var(--color-red); font-weight: var(--weight-medium); }
+
   .soldi { padding: var(--space-4) var(--space-4) var(--space-3); display: flex; flex-direction: column; gap: var(--space-4); }
   .eroe { display: flex; flex-direction: column; gap: 2px; }
   .eroe .cifra {
     font-family: var(--font-display); font-size: 40px; line-height: 44px; letter-spacing: -0.5px;
     font-weight: var(--weight-bold);
+  }
   .due { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
   .due div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius-xl); background: var(--fill-quaternary); }
   .num { font-size: var(--text-title3); line-height: var(--lh-title3); font-weight: var(--weight-semibold); }
+
   .data {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     width: 38px; height: 38px; border-radius: var(--radius-md);
     background: var(--fill-quaternary);
+  }
   .data.oggi { background: color-mix(in srgb, var(--accento) 18%, transparent); color: var(--accento); }
   .data-g { font-size: 9px; line-height: 10px; font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.3px; opacity: 0.8; }
   .data-n { font-size: var(--text-callout); line-height: 18px; font-weight: var(--weight-semibold); }
   .importo { font-weight: var(--weight-medium); }
   /* Un'uscita è rossa, sempre: il colore dice la direzione dei soldi. */
   .importo { color: var(--color-red); }
+
   .allarme {
     display: flex; align-items: flex-start; gap: var(--space-2);
     padding: var(--space-3) var(--space-4) var(--space-4);
     border-top: 0.5px solid var(--separator);
     color: var(--label-secondary);
+  }
   .punto { flex: none; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--color-orange); }
+
   .costanza { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
   .serie { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
   .serie .cifra { font-family: var(--font-display); font-size: 40px; line-height: 44px; font-weight: var(--weight-bold); color: var(--color-orange); }
   .serie .cifra.magra { color: var(--label-primary); }
   .rapporto { margin-left: auto; }
   .rapporto b { color: var(--label-primary); font-weight: var(--weight-semibold); }
+
   .tessera {
     display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px;
     background: var(--colore); color: #fff;
+  }
+  .stato-mod { display: inline-flex; align-items: center; gap: 4px; min-width: 0; color: var(--label-secondary); }
+  .stato-mod :global(.icona) { flex: none; }
+  .stato-testo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stato-mod.ok { color: var(--color-green); }
 </style>
