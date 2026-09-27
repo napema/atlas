@@ -1836,3 +1836,29 @@ Misurato a 1440: riga 1 a 183 e 183, riga 2 a 552 e 552.
 
 Chromium a 402 e a 1440, tema scuro. Il tema chiaro solo come valori
 calcolati, mai guardato. Sul telefono installato, niente.
+
+### Fuori perimetro, ma bloccava il giorno uno *(chat Abitudini, leggere)*
+
+In `app/src/moduli/abitudini/Vista.svelte`:
+
+```js
+const delle8 = (h) => sfida && h.blocco === "p50";   // prima
+const delle8 = (h) => h.blocco === "p50";            // adesso
+```
+
+Con `sfida &&`, a sfida **spenta** `delle8` era sempre falso e tutte le voci
+finivano in `supporto`: la lista si apriva con la riga «Supporto · nessuna
+conseguenza» in cima e le otto sotto. Chi guarda la sera prima di
+cominciare — cioè stasera — vede le voci che contano marchiate come quelle
+che non contano.
+
+Il blocco di una voce è un dato suo e non dipende dallo stato della sfida.
+A dipendere dalla sfida resta solo **quando** una voce è attesa.
+
+Due conseguenze in `Lista.svelte`: a sfida spenta le otto prendono
+un'intestazione loro (il titolo della sezione lì dice «Oggi»), e «nessuna
+conseguenza» compare solo a sfida accesa, perché senza contatore non
+corrisponde a niente.
+
+Toccati solo quei due file del modulo. Se la chat Abitudini stava lavorando
+lì, questo è il pezzo da rileggere.
