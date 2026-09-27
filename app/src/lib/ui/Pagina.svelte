@@ -160,10 +160,14 @@
     opacity: 1;
     /* Il vetro da solo non copriva: scorrendo, il titolo piccolo finiva
        sopra la cifra della carta sotto e si leggevano due testi uno
-       sull'altro. Sotto la sfocatura serve un fondo vero. */
-    background: color-mix(in srgb, var(--bg-grouped-primary) 94%, transparent);
-    -webkit-backdrop-filter: blur(6px) saturate(1.8);
-    backdrop-filter: blur(6px) saturate(1.8);
+       sull'altro. Nemmeno al 94 per cento bastava — una cifra bianca
+       grande si vedeva lo stesso — quindi qui e' opaca, con la sua
+       riga sottile sotto, come la barra di iOS quando il titolo si
+       stringe. Il vetro di ATLAS sta nelle carte e nella barra delle
+       schede, dove dietro c'e' davvero qualcosa; qui dietro c'e' solo il
+       testo che questa barra esiste per coprire, e la sfocatura su iOS
+       costava anche la nitidezza dell'ingranaggio. */
+    background: var(--bg-grouped-primary);
   }
 
   .barra-riga {
