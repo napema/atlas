@@ -118,7 +118,7 @@
      quel modulo dice di oggi. È la differenza fra un collegamento e uno
      stato: la barra ti porta lì, questa ti dice se serve andarci. */
   const tessere = $derived(schede.filter((x) =>
-    x.voce.id !== "finanze" && !(sfida && x.voce.id === "abitudini")));
+    x.voce.id !== "finanze" && !(sfida && !sfida.spenta && x.voce.id === "abitudini")));
 
   const nomeSfida = $derived(voceDi("abitudini")?.nome ?? "Project 50");
 
@@ -201,7 +201,29 @@
 {/snippet}
 
 {#snippet cartaSfida()}
-  {#if sfida}
+  {#if sfida?.spenta}
+    <!-- NON COMINCIATA. La carta più grande sotto «Adesso» non può essere
+         un contatore a zero con sotto «giorni senza spuntare niente»: è
+         vero e non serve a niente. Qui c'è il numero della sfida e il modo
+         di cominciarla, e la costanza resta sotto come contorno. -->
+    <div style:--accento={voceDi("abitudini")?.accento}>
+      <Sezione titolo={nomeSfida}>
+        <div class="invito">
+          <div class="capo">
+            <span class="cifra cifre">{sfida.totale}</span>
+            <span class="su text-title3 secondario">giorni</span>
+          </div>
+          <p class="text-subheadline secondario">
+            {sfida.quante} voci non negoziabili. Una sola saltata e si riparte dal giorno uno.
+          </p>
+          <Pulsante variante="pieno" misura="media" larga href={sfida.rotta}>Comincia</Pulsante>
+        </div>
+        <div class="contorno">
+          <Settimana giorni={giorniCostanza} oggi={c.oggi} />
+        </div>
+      </Sezione>
+    </div>
+  {:else if sfida}
     <!-- PROJECT 50. La misura è il GIORNO: la barra è dei cinquanta giorni,
          i pallini sono le otto di oggi. Da chiudere, il bordo si accende. -->
     <div style:--accento={voceDi("abitudini")?.accento}>
@@ -243,7 +265,7 @@
       </Sezione>
     </div>
   {:else}
-    <!-- COSTANZA, solo senza la sfida: con la sfida accesa il contatore di
+    <!-- COSTANZA, senza nemmeno le voci della sfida: con la sfida accesa il contatore di
          Project 50 È la serie, e due numeri per la stessa domanda fanno
          chiedere in che cosa differiscono. -->
     <Sezione titolo="Costanza">
@@ -349,10 +371,13 @@
          siano — due, tre o sei. -->
     <div class="tessera striscia">
     {#each tessere as x (x.voce.id)}
-      <!-- Un valore lungo — il nome di un pasto — a 27px diventa «Bacon
-           + P…», che non dice niente. Scende di corpo e sta su tre righe:
-           meglio leggerlo piccolo che troncato. -->
-      {@const v = x.dati ? String(x.dati.valore ?? "—") : "—"}
+      <!-- In 179 punti non ci sta un menu. «Bacon + Pasta + Verdure
+           grigliate + Sugo di pomodoro» a 27px diventa «Bacon + P…», e
+           tagliato a tre righe piccole è un muro. Il primo pezzo e quanti
+           altre ne restano: si legge da lontano e resta vero. -->
+      {@const pezzi = String(x.dati?.valore ?? "—").split(/\s*\+\s*/).filter(Boolean)}
+      {@const v = pezzi[0] ?? "—"}
+      {@const altri = pezzi.length - 1}
       <a class="quadrata" class:fatta={x.dati?.fatto === true}
          href={x.dati?.azione?.rotta || `#/${x.voce.id}`} style:--colore={x.voce.accento}>
         <span class="q-alto">
@@ -363,7 +388,7 @@
         </span>
         <span class="q-basso">
           <span class="q-nome text-footnote semibold">{x.voce.nome}</span>
-          <span class="q-valore cifre" class:lungo={v.length > 11}>{v}</span>
+          <span class="q-valore cifre" class:lungo={v.length > 11}>{v}{#if altri > 0}<span class="q-altri"> +{altri}</span>{/if}</span>
         </span>
       </a>
     {/each}
@@ -389,6 +414,11 @@
      due francobolli. La gerarchia lì la fa l'ordine, che è già quello. */
   .bento { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); }
   .tessera { min-width: 0; display: flex; flex-direction: column; }
+
+  .invito { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
+  .invito .capo { display: flex; align-items: baseline; gap: var(--space-2); }
+  .invito .cifra { font-size: 56px; line-height: 1; font-weight: var(--weight-bold); letter-spacing: -0.03em; color: var(--accento); }
+  .contorno { padding: 0 var(--space-4) var(--space-4); }
 
   .saluto {
     font-family: var(--font-display); font-weight: var(--weight-bold);
@@ -463,6 +493,7 @@
     font-weight: var(--weight-bold); letter-spacing: -0.02em;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  .q-altri { color: var(--label-tertiary); font-weight: var(--weight-semibold); }
   .q-valore.lungo {
     font-size: 15px; line-height: 1.25; letter-spacing: 0; white-space: normal;
     display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical;

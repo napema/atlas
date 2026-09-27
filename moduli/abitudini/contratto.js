@@ -235,7 +235,15 @@ export function spunta(habitId) {
  * esiste — non è una card vuota.
  */
 function schedaSfida() {
-  if (!p50.attivo()) return null;
+  /* A sfida spenta la carta non sparisce: diventa l'invito. Tornare `null`
+     lasciava alla home la carta della costanza, che il giorno prima di
+     cominciare dice «0 giorni di fila, 7 giorni senza spuntare niente» —
+     il posto piu' grande della schermata occupato dalla cosa che serve
+     meno. Chi non ha ancora cominciato deve trovare lì il bottone. */
+  if (!p50.attivo()) {
+    const quante = p50.ottoVoci().length;
+    return quante ? { spenta: true, totale: p50.TOTALE, quante, rotta: "#/abitudini" } : null;
+  }
   const g = giornoCorrente();
   const b = p50.bilancio(g);
   const rec = p50.chiusuraDi(g);
@@ -243,6 +251,7 @@ function schedaSfida() {
   const daChiudere = !rec && p50.siPuoChiudere();
 
   return {
+    spenta: false,
     giorno: numero,
     totale: p50.TOTALE,
     fatte: b.fatte,
