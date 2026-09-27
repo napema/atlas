@@ -78,27 +78,6 @@
   </div>
 </Sezione>
 
-<Sezione titolo={NOMI_TIPO[d.tipo]?.nome ?? "Sessione"}>
-  <div class="eroe">
-    <div class="cifra-riga">
-      <span class="cifra cifre">{minuti(d.durata)}</span><span class="text-title3 secondario">min</span>
-    </div>
-    <span class="text-subheadline secondario">{d.passi.length} esercizi{d.fattaOggi ? " · già fatta oggi" : ""}</span>
-    <p class="text-subheadline perche">{NOMI_TIPO[d.tipo]?.perche}</p>
-  </div>
-  {#each d.moduli as m (m.nome)}
-    <Riga titolo={m.nome} sottotitolo={m.muscoli.slice(0, 4).join(" · ")} valore="{minuti(m.durataSec)} min" />
-  {/each}
-</Sezione>
-
-<div class="azioni">
-  <Pulsante variante="pieno" larga icona="play" onclick={() => oninizia(d.tipo)}>{d.fattaOggi ? "Rifai" : "Inizia"}</Pulsante>
-  {#if d.tipo !== "minima"}
-    <Pulsante variante="grigio" larga onclick={minima}>Non ce la faccio — 2 minuti</Pulsante>
-  {/if}
-</div>
-
-{:else}
 <Sezione titolo="Questa settimana" piede="Il puntino segna il giorno di palestra.{d.streakValida ? '' : ' Più di 3 giorni fermi: lo streak riparte, il programma no.'}">
   {#snippet coda()}<span class="text-subheadline secondario cifre">{nFatte} di 7</span>{/snippet}
   <ol class="settimana">
@@ -113,6 +92,34 @@
     {/each}
   </ol>
 </Sezione>
+
+{:else}
+<!-- LA SESSIONE È LA COSA CHE SI FA, e stava nella colonna stretta del
+     riepilogo mentre la settimana e il programma — contesto — si prendevano
+     lo spazio largo. Ora è la prima lastra dell'area principale, con i suoi
+     pulsanti nello stesso blocco: la disposizione a colonne del PC non deve
+     poterli separare dall'elenco di cui sono l'azione. -->
+<div class="sessione">
+  <Sezione titolo={NOMI_TIPO[d.tipo]?.nome ?? "Sessione"}>
+    <div class="eroe">
+      <div class="cifra-riga">
+        <span class="cifra cifre">{minuti(d.durata)}</span><span class="text-title3 secondario">min</span>
+      </div>
+      <span class="text-subheadline secondario">{d.passi.length} esercizi{d.fattaOggi ? " · già fatta oggi" : ""}</span>
+      <p class="text-subheadline perche">{NOMI_TIPO[d.tipo]?.perche}</p>
+    </div>
+    {#each d.moduli as m (m.nome)}
+      <Riga titolo={m.nome} sottotitolo={m.muscoli.slice(0, 4).join(" · ")} valore="{minuti(m.durataSec)} min" />
+    {/each}
+  </Sezione>
+
+  <div class="azioni">
+    <Pulsante variante="pieno" larga icona="play" onclick={() => oninizia(d.tipo)}>{d.fattaOggi ? "Rifai" : "Inizia"}</Pulsante>
+    {#if d.tipo !== "minima"}
+      <Pulsante variante="grigio" larga onclick={minima}>Non ce la faccio — 2 minuti</Pulsante>
+    {/if}
+  </div>
+</div>
 
 <Sezione
   titolo="Il programma nel tempo"
@@ -153,6 +160,7 @@
   .cifra-riga { display: flex; align-items: baseline; gap: var(--space-2); }
   .cifra { font-family: var(--font-display); font-size: 56px; line-height: 60px; font-weight: var(--weight-bold); color: var(--accento); }
   .perche { margin-top: var(--space-2); color: var(--label-secondary); }
+  .sessione { display: flex; flex-direction: column; gap: var(--space-4); }
   .azioni { display: flex; flex-direction: column; gap: var(--space-2); }
 
   .fase { --inizio-l: 44px; }
