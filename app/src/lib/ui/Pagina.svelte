@@ -161,7 +161,7 @@
     /* Il vetro da solo non copriva: scorrendo, il titolo piccolo finiva
        sopra la cifra della carta sotto e si leggevano due testi uno
        sull'altro. Sotto la sfocatura serve un fondo vero. */
-    background: color-mix(in srgb, var(--bg-grouped-primary) 82%, transparent);
+    background: color-mix(in srgb, var(--bg-grouped-primary) 94%, transparent);
     -webkit-backdrop-filter: blur(6px) saturate(1.8);
     backdrop-filter: blur(6px) saturate(1.8);
   }
