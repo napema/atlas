@@ -414,6 +414,13 @@
      due francobolli. La gerarchia lì la fa l'ordine, che è già quello. */
   .bento { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); }
   .tessera { min-width: 0; display: flex; flex-direction: column; }
+  /* La carta dentro la tessera si tira fino in fondo. Senza, una carta
+     corta accanto a una lunga lasciava il vuoto nella GRIGLIA, e il buco
+     si vedeva come una fetta di pagina mancante invece che come spazio
+     dentro una carta. La fascia dei quadrati no: lì i figli sono i
+     quadrati stessi e devono restare quadrati. */
+  .tessera:not(.striscia) > :global(*) { flex: 1; display: flex; flex-direction: column; }
+  .tessera:not(.striscia) > :global(* > .sezione) { flex: 1; }
 
   .invito { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
   .invito .capo { display: flex; align-items: baseline; gap: var(--space-2); }
@@ -439,7 +446,11 @@
      dispari occupa la sua, lasciando il posto vuoto dov'è. */
   .striscia {
     display: grid; gap: var(--space-3);
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    /* 140 e non 150: in una fascia da 628 punti — meta' riga su 1440 — con
+       la soglia a 150 ci stavano tre quadrati e il quarto andava a capo da
+       solo, con due celle vuote a fianco. Il `min(…, 100%)` serve al
+       telefono, dove una colonna piu' stretta del minimo sborderebbe. */
+    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
   }
 
   /* LA TESSERA, vetro di iOS 27.
