@@ -349,6 +349,10 @@
          siano — due, tre o sei. -->
     <div class="tessera striscia">
     {#each tessere as x (x.voce.id)}
+      <!-- Un valore lungo — il nome di un pasto — a 27px diventa «Bacon
+           + P…», che non dice niente. Scende di corpo e sta su tre righe:
+           meglio leggerlo piccolo che troncato. -->
+      {@const v = x.dati ? String(x.dati.valore ?? "—") : "—"}
       <a class="quadrata" class:fatta={x.dati?.fatto === true}
          href={x.dati?.azione?.rotta || `#/${x.voce.id}`} style:--colore={x.voce.accento}>
         <span class="q-alto">
@@ -359,7 +363,7 @@
         </span>
         <span class="q-basso">
           <span class="q-nome text-footnote semibold">{x.voce.nome}</span>
-          <span class="q-valore cifre">{x.dati ? String(x.dati.valore ?? "—") : "—"}</span>
+          <span class="q-valore cifre" class:lungo={v.length > 11}>{v}</span>
         </span>
       </a>
     {/each}
@@ -459,6 +463,10 @@
     font-weight: var(--weight-bold); letter-spacing: -0.02em;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  .q-valore.lungo {
+    font-size: 15px; line-height: 1.25; letter-spacing: 0; white-space: normal;
+    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical;
+  }
   /* La carta riempie la sua tessera: è questo che rende la riga una riga e
      non tre carte appoggiate alla stessa linea. */
   .tessera > :global(*) { flex: 1; min-height: 0; }
@@ -479,11 +487,16 @@
     .striscia { grid-column: 1 / -1; }
   }
 
+  /* Al largo il bento si chiude a due righe: sopra la carta grande con la
+     colonna della sfida a fianco, sotto Finanze e i quadrati che si
+     dividono la riga. Tre fasce a tutta larghezza una sopra l'altra non
+     sono un bento — sono strisce, e su 1920 punti la gerarchia sparisce
+     perché tutto è largo uguale. */
   @media (min-width: 1100px) {
     .grande   { grid-column: span 4; }
     .alta     { grid-column: span 2; }
-    .media    { grid-column: 1 / -1; }
-    .striscia { grid-column: 1 / -1; }
+    .media    { grid-column: span 3; }
+    .striscia { grid-column: span 3; align-content: start; }
   }
 
   .sfida { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
