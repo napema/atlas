@@ -395,8 +395,45 @@ const P50_SUPPORTO = [
    salterebbe anche le nuove e chi non ce l'ha rimetterebbe pure quelle che
    avevi cancellato. */
 const ROUTINE = { skincare: ROUTINE_SKINCARE };
+/* -------------------------------------------------------------------------
+   LA RICONCILIAZIONE.
+
+   Seminando le otto voci ne sono nate alcune che l'archivio aveva già con
+   un altro nome: «No FAP» e «No PMO» sono la stessa cosa, «NO-Nose Touch» e
+   «No nose-touch» pure, e «Meditazione» è finita dentro la morning routine
+   come sotto-elemento.
+
+   Si tiene IL RECORD VECCHIO e si toglie il gemello nuovo, mai il
+   contrario: il vecchio ha lo storico delle spunte, il nuovo è nato ieri.
+   Buttare via i log per far vincere un id più bello è esattamente il genere
+   di pulizia che cancella dati senza dirlo.
+
+   Si riconosce dal NOME normalizzato e non dall'id: gli id dei record
+   vecchi sono casuali, nati su un altro dispositivo in un altro anno, e
+   incollarli qui vorrebbe dire scrivere nel codice condiviso i numeri di
+   serie di un archivio solo.
+   ------------------------------------------------------------------------- */
+
+const normaleNome = (x) => String(x || "")
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+/* nome vecchio → { blocco, gemello: l'id seminato da togliere }
+   `gemello: null` vuol dire che il vecchio non ha un gemello: cambia solo
+   blocco. `assorbito` vuol dire che è diventato parte di un'altra voce e va
+   archiviato — non cancellato, perché lo storico resta leggibile. */
+const RICONCILIA = {
+  nofap:        { blocco: "p50", gemello: "h_p50_nopmo" },
+  nonosetouch:  { blocco: "p50", gemello: "h_p50_nonose" },
+  supplements:  { blocco: "supporto", gemello: "h_supplements" },
+  mobilita:     { blocco: "supporto", gemello: "h_mobilita" },
+  skincare:     { blocco: "supporto", gemello: null },
+  meditazione:  { assorbito: "Morning routine" },
+};
+
 const INFORNATE = [
   { chiave: "project50-2026-09", voci: [...P50_VOCI, ...P50_SUPPORTO] },
+  { chiave: "project50-riconcilia-1", voci: [], riconcilia: true },
 ];
 
 /**
@@ -479,6 +516,29 @@ export function semina() {
     // La skincare seminata prima della sfida è di supporto, non una delle otto.
     const sk = s.habits.find((h) => h && h.id === "h_skincare" && !h.del);
     if (sk && !sk.blocco) { sk.blocco = "supporto"; sk.up = Date.now(); }
+
+    if (infornate.some((i) => i.riconcilia)) {
+      for (const h of s.habits) {
+        if (!h || h.del) continue;
+        const regola = RICONCILIA[normaleNome(h.name)];
+        if (!regola) continue;
+
+        if (regola.assorbito) {
+          if (!h.archived) { h.archived = true; h.up = Date.now(); }
+          continue;
+        }
+        if (h.blocco !== regola.blocco) { h.blocco = regola.blocco; h.up = Date.now(); }
+
+        // Il gemello seminato se ne va: è nato ieri e non ha storico.
+        if (regola.gemello && regola.gemello !== h.id) {
+          const g = s.habits.find((x) => x && x.id === regola.gemello && !x.del);
+          if (g) {
+            const i = s.habits.indexOf(g);
+            s.habits[i] = { id: regola.gemello, del: true, up: Date.now() };
+          }
+        }
+      }
+    }
   });
   if (nuove.length) indice = null;
   return nuove;
