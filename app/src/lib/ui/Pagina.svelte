@@ -22,6 +22,7 @@
     azioni,
     testata,
     larga = false,
+    stretta = false,
     strumenti,
     laterale,
     children,
@@ -37,6 +38,10 @@
     testata?: Snippet;
     /** La pagina fa da sé le sue colonne (la home): niente colonne automatiche. */
     larga?: boolean;
+    /** Una colonna sola, stretta e centrata: le schermate da compilare —
+        le impostazioni — non sono un cruscotto. Su Mac le Impostazioni di
+        Sistema sono una colonna da seicento punti anche a tutto schermo. */
+    stretta?: boolean;
     /** I controlli della pagina (segmenti, strisce di giorni): una riga in
         cima, a tutta larghezza. */
     strumenti?: Snippet;
@@ -75,7 +80,7 @@
   const vaiIndietro = () => (typeof indietro === "object" ? indietro.fai() : tornaIndietro());
 </script>
 
-<header class="barra" class:compatta class:larga bind:this={barraEl}>
+<header class="barra" class:compatta class:larga class:stretta bind:this={barraEl}>
   <div class="barra-riga">
     <div class="lato sinistra">
       {#if indietro}
@@ -90,7 +95,7 @@
   </div>
 </header>
 
-<main class="pagina" class:larga>
+<main class="pagina" class:larga class:stretta>
   {#if sopra}
     <p class="sopra text-footnote secondario">
       {#if typeof sopra === "string"}{sopra}{:else}{@render sopra()}{/if}
@@ -239,22 +244,50 @@
     .strumenti > :global(.settimana) { width: 520px; }
     .strumenti > :global(.nastro) { flex: 1 1 100%; margin: 0; padding: 4px 0; }
     .laterale { position: sticky; top: calc(var(--altezza-barra) + var(--space-4)); }
-    /* `auto-fit` e non `auto-fill`: le colonne che restano vuote collassano
-       e le lastre che ci sono si prendono tutto. Con `auto-fill` una
-       schermata da una lastra sola (Pasti, Abitudini) teneva aperta una
-       seconda colonna vuota e lasciava mezzo monitor nero. */
-    .pagina:not(.larga) .principale {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-      gap: var(--space-6);
-      align-items: start;
+    /* LE LASTRE SI IMPILANO PER COLONNA, NON PER RIGA.
+
+       Era una griglia `auto-fit`: bella finché le lastre erano alte uguali,
+       e non lo sono mai. Una riga di griglia è alta quanto la sua lastra più
+       alta, quindi sotto «Dove sono i soldi» restava un buco alto quanto la
+       differenza con «In arrivo», e così in ogni modulo — il buco FRA le
+       carte, che è la cosa che si nota di più e che si perdona di meno.
+
+       Ora sono colonne che scorrono, come un giornale: ogni lastra si mette
+       sotto la precedente della sua colonna, e fra due lastre c'è sempre e
+       solo il passo della pagina. Le colonne possono finire ad altezze
+       diverse, ma solo in fondo, dove una pagina finisce comunque.
+
+       L'ordine si legge dall'alto in basso e poi a destra: la prima lastra
+       del modulo è la prima in alto a sinistra, che è dove deve stare la
+       più importante.
+
+       Mai una colonna vuota: con due lastre al massimo due colonne, con una
+       una sola — altrimenti tornerebbe il mezzo monitor nero di prima. */
+    .pagina:not(.larga):not(.stretta) .principale {
+      display: block;
+      columns: 400px;
+      column-gap: var(--space-8);
     }
-    .principale > :global(.vuoto), .principale > :global(.intera) { grid-column: 1 / -1; }
+    .pagina:not(.larga):not(.stretta) .principale:not(:has(> :nth-child(3))) { columns: 400px 2; }
+    .pagina:not(.larga):not(.stretta) .principale:not(:has(> :nth-child(2))) { columns: 1; }
+    .pagina:not(.larga):not(.stretta) .principale > :global(*) {
+      break-inside: avoid;
+      margin-bottom: var(--space-6);
+    }
+    .principale > :global(.vuoto), .principale > :global(.intera) { column-span: all; }
+
+    /* STRETTA: una colonna sola, centrata. Niente riepilogo a sinistra e
+       niente colonne: le impostazioni si leggono dall'alto in basso. */
+    .pagina.stretta .contenuto { display: flex; align-items: stretch; width: 100%; max-width: 680px; margin: 0 auto; }
+    .pagina.stretta .titolo-grande, .pagina.stretta .sopra { max-width: 680px; margin-left: auto; margin-right: auto; }
+    /* Anche «‹ Impostazioni» sta sopra la colonna, non nell'angolo dello
+       schermo a cinquecento punti dal titolo di cui è il ritorno. */
+    .barra.stretta .barra-riga { max-width: calc(680px + 2 * var(--space-8)); }
 
     /* Una sezione senza titolo accanto a una col titolo cominciava 33px più
        in alto. Sul PC anche lei tiene lo spazio del titolo, vuoto: le lastre
        partono tutte alla stessa quota. */
-    .principale > :global(.sezione > .testa-vuota),
-    .laterale > :global(.sezione:first-child > .testa-vuota) { display: block; }
+    .pagina:not(.stretta) .principale > :global(.sezione > .testa-vuota),
+    .pagina:not(.stretta) .laterale > :global(.sezione:first-child > .testa-vuota) { display: block; }
   }
 </style>

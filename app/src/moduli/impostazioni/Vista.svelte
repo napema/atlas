@@ -47,19 +47,19 @@
 </script>
 
 {#if generale}
-  <Pagina titolo={generale.nome} indietro={{ etichetta: "Impostazioni", fai: () => vaiA("impostazioni") }}>
+  <Pagina stretta titolo={generale.nome} indietro={{ etichetta: "Impostazioni", fai: () => vaiA("impostazioni") }}>
     <Generali pagina={generale.id as any} />
   </Pagina>
 {:else if modulo}
   <!-- La pagina di un modulo prende il SUO colore: le sue scelte accese si
        leggono nel colore del modulo, non in quello di Impostazioni. -->
   <div class="modulo" style:--accento={modulo.accento}>
-    <Pagina titolo={modulo.nome} indietro={{ etichetta: "Impostazioni", fai: () => vaiA("impostazioni") }}>
+    <Pagina stretta titolo={modulo.nome} indietro={{ etichetta: "Impostazioni", fai: () => vaiA("impostazioni") }}>
       {#if Sua}<Sua />{/if}
     </Pagina>
   </div>
 {:else}
-  <Pagina titolo="Impostazioni" indietro={{ etichetta: "Oggi", fai: () => vaiA("oggi") }}>
+  <Pagina stretta titolo="Impostazioni" indietro={{ etichetta: "Oggi", fai: () => vaiA("oggi") }}>
     <Sezione>
       {#each GENERALI as g (g.id)}
         <Riga
