@@ -1862,3 +1862,23 @@ corrisponde a niente.
 
 Toccati solo quei due file del modulo. Se la chat Abitudini stava lavorando
 lì, questo è il pezzo da rileggere.
+
+### Una trappola nel verificare: il service worker serve il vecchio
+
+Dopo un deploy riuscito, `#/abitudini` continuava a mostrare il testo
+vecchio. `sw.js` era già la versione nuova (`VERSIONE = "20260927215451"`)
+e il dato locale era giusto — a essere vecchio era il **chunk caricato
+pigramente** del modulo, servito dalla cache del service worker.
+
+Navigare di nuovo sulla stessa URL non basta, e nemmeno svuotare le cache
+una volta sola. Quello che funziona:
+
+```js
+for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+for (const k of await caches.keys()) await caches.delete(k);
+// poi navigare con una query diversa: /atlas/?v=9#/rotta
+```
+
+Vale la pena saperlo perché la conseguenza è peggio di una perdita di
+tempo: si guarda una schermata, si conclude che una correzione «non
+funziona» e si va a cercare un guasto che non c'è. È successo stanotte.
