@@ -53,7 +53,7 @@
 </Foglio>
 
 <style>
-  .verdetto { display: flex; flex-direction: column; gap: 4px; padding: var(--space-4); border-radius: var(--radius-xxl); background: var(--bg-grouped-secondary); }
+  .verdetto { display: flex; flex-direction: column; gap: 4px; padding: var(--space-4); border-radius: var(--radius-xxl); background: var(--lastra-dentro); }
   .verdetto[data-esito="ok"] .text-title2 { color: var(--color-green); }
   .verdetto[data-esito="attenzione"] .text-title2 { color: var(--color-orange); }
   .verdetto[data-esito="male"] .text-title2 { color: var(--color-red); }

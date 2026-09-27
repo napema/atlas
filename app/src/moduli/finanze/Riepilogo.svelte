@@ -182,7 +182,7 @@
     </Riga>
   </Sezione>
 {:else}
-  <button type="button" class="check" data-esito={d.check.esito} onclick={() => apri({ tipo: "check" })}>
+  <button type="button" class="check lastra" data-esito={d.check.esito} onclick={() => apri({ tipo: "check" })}>
     <span class="check-testa">
       <span class="text-footnote semibold">Check di oggi</span>
       {#if d.check.serie > 0}<span class="serie cifre"><Icona nome="fiamma" misura={14} tratto={2} />{d.check.serie}</span>{/if}
@@ -363,8 +363,10 @@
   .spunta-ok { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--color-green); color: #fff; }
   .check {
     display: flex; flex-direction: column; gap: 4px; padding: var(--space-4); text-align: left;
-    border-radius: var(--radius-xxxl); background: var(--bg-grouped-secondary);
-    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accento) 40%, transparent);
+    /* L'anello dell'accento SOSTITUISCE quello della lastra: e' il segno
+       che questa carta si tocca. L'ombra resta quella di tutte. */
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accento) 40%, transparent),
+                var(--lastra-ombra);
   }
   .check:active { opacity: 0.8; }
   .check-testa { display: flex; justify-content: space-between; align-items: center; color: var(--accento); }

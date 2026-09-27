@@ -65,7 +65,7 @@
 
 <style>
   .tre { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
-  .tre div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius-xl); background: var(--bg-grouped-secondary); }
+  .tre div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius-xl); background: var(--lastra-dentro); }
   .tre b { font-size: var(--text-headline); font-weight: var(--weight-semibold); }
   .avanzo { display: flex; flex-direction: column; gap: 6px; margin-top: calc(-1 * var(--space-3)); }
   .grafico { padding: var(--space-4); }

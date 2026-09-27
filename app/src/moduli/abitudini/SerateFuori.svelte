@@ -50,7 +50,7 @@
 <!-- Una riga sola, non due: sul telefono questa card costava novanta punti
      di altezza per un'informazione che ne vale una riga, e li rubava alla
      lista che sta sotto — che è quella per cui apri la schermata. -->
-<section class="serate" class:piena={usate >= quota} class:bloccate class:incassata>
+<section class="serate" class:lastra={!incassata} class:piena={usate >= quota} class:bloccate class:incassata>
   <div class="testi">
     <span class="eti text-footnote semibold">Serate fuori</span>
     <span class="text-footnote secondario">{nomeGiorno}</span>
@@ -76,13 +76,13 @@
   .serate {
     display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
     padding: var(--space-3) var(--space-4);
-    border-radius: 16px;
-    background: var(--bg-grouped-secondary);
-    box-shadow: inset 0 0 0 1.5px var(--separator);
+    border-radius: var(--radius-xl);
+    /* Come sopra: l'anello e' suo e dice la quota, l'ombra e' della lastra. */
+    box-shadow: inset 0 0 0 1.5px var(--separator), var(--lastra-ombra);
   }
   /* Quota raggiunta: il bordo si tinge, perché da quel momento una serata in
      più è la cosa che ti costa sette giorni. */
-  .serate.piena { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-orange) 60%, transparent); }
+  .serate.piena { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-orange) 60%, transparent), var(--lastra-ombra); }
   .serate.incassata, .serate.incassata.piena { padding: 0; background: none; box-shadow: none; border-radius: 0; }
 
   .testi { display: flex; flex-direction: column; min-width: 0; }

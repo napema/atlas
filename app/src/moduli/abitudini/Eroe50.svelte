@@ -67,7 +67,7 @@
   }
 </script>
 
-<section class="eroe" class:spenta={!d.attivo}>
+<section class="eroe lastra" class:spenta={!d.attivo}>
   {#if !d.attivo}
     <span class="eti text-footnote semibold">Project 50</span>
     <h2 class="invito text-title2">Otto voci, cinquanta giorni, niente sconti.</h2>
@@ -137,8 +137,8 @@
   .eroe {
     display: flex; flex-direction: column; gap: var(--space-3);
     padding: var(--space-4);
-    border-radius: var(--radius-xxxl);
-    background: var(--bg-grouped-secondary);
+    /* Il fondo, l'anello e l'ombra li mette `.lastra`: questa e' una carta
+       appoggiata alla pagina come tutte le altre. */
   }
   .eti { color: var(--accento); letter-spacing: 0.6px; text-transform: uppercase; }
 

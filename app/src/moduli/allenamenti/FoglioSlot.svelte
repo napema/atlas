@@ -288,7 +288,7 @@
   .eroe {
     display: flex; align-items: center; gap: var(--space-4);
     padding: var(--space-4) var(--space-5);
-    background: var(--bg-grouped-secondary); border-radius: var(--radius-xl);
+    background: var(--lastra-dentro); border-radius: var(--radius-xl);
   }
   .numeri { display: flex; flex-direction: column; gap: 2px; flex: none; }
   .etichetta { font-weight: var(--weight-semibold); color: var(--accento); }

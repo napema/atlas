@@ -89,12 +89,12 @@
 <style>
   textarea {
     width: 100%; min-height: 160px; padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-xl); background: var(--bg-grouped-secondary);
+    border-radius: var(--radius-xl); background: var(--lastra-dentro);
     font-family: var(--font-mono); font-size: 17px; line-height: 1.4; resize: vertical; outline: none;
   }
   .esempio {
     white-space: pre-wrap; font-family: var(--font-mono); font-size: var(--text-footnote);
-    padding: var(--space-3); border-radius: var(--radius-lg); background: var(--bg-grouped-secondary);
+    padding: var(--space-3); border-radius: var(--radius-lg); background: var(--lastra-dentro);
   }
   .file {
     position: relative; display: flex; align-items: center; justify-content: center; gap: var(--space-2);
