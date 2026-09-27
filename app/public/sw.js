@@ -7,10 +7,19 @@
  *  2. I DATI (api.github.com) non si mettono MAI in cache. Una risposta di
  *     sync vecchia farebbe credere al dispositivo di essere allineato.
  *
- * LA VERSIONE LA SCRIVE LA BUILD. `__VERSIONE__` qui sotto viene sostituito
- * da `vite.config.ts` a ogni compilazione. Nella app di prima andava alzata a
- * mano, ed era la regola 10 di CLAUDE.md proprio perché ce se ne dimenticava:
- * un guscio nuovo servito con la versione vecchia resta appiccicato.
+ * LA VERSIONE LA SCRIVE LA BUILD: il segnaposto nella costante qui sotto
+ * viene sostituito da `vite.config.ts` a ogni compilazione. Nella app di
+ * prima andava alzata a mano, ed era la regola 10 di CLAUDE.md proprio
+ * perché ce se ne dimenticava: un guscio nuovo servito con la versione
+ * vecchia resta appiccicato.
+ *
+ * Il segnaposto NON si nomina qui in chiaro, e non è pignoleria: la
+ * sostituzione prendeva la prima occorrenza del file, che era questa riga
+ * di commento, e la costante restava col segnaposto — quindi il nome della
+ * cache del guscio era lo stesso a ogni rilascio e quella vecchia non la
+ * cancellava più nessuno. Adesso la build sostituisce tutte le occorrenze e
+ * si ferma se non ne trova nessuna, ma una sola occorrenza resta la cosa
+ * giusta.
  *
  * Niente elenco di file da precaricare: i nomi dei file compilati cambiano a
  * ogni build (contengono l'impronta del contenuto). Si mettono in cache al

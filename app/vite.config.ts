@@ -52,6 +52,8 @@ function nucleoUnico(): Plugin {
  * Le ICONE stanno in `<repo>/assets/icons/`, condivise con la app di prima:
  * si copiano, non si duplicano nel repo.
  */
+const SEGNAPOSTO = "__VERSIONE__";
+
 function timbraRilascio(): Plugin {
   return {
     name: "atlas-timbra-rilascio",
@@ -60,7 +62,21 @@ function timbraRilascio(): Plugin {
       const dist = path.resolve(qui, "dist");
       const sw = path.join(dist, "sw.js");
       const versione = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
-      fs.writeFileSync(sw, fs.readFileSync(sw, "utf8").replace("__VERSIONE__", versione));
+      /* TUTTE le occorrenze, e un errore se non ce n'è nessuna.
+         Con `replace` e una stringa se ne sostituiva UNA — la prima del
+         file, che era dentro il commento in testa — e `const VERSIONE`
+         restava col segnaposto: il guscio si chiamava
+         `atlas2-guscio-__VERSIONE__` a ogni rilascio, quindi `activate` non
+         trovava mai una cache vecchia da cancellare e le voci stantie non
+         se ne andavano più. Un guasto che non si vede: la app si aggiorna
+         lo stesso, perché la navigazione va in rete per prima e i file
+         compilati hanno l'impronta nel nome. Ora se il segnaposto sparisce
+         la build si ferma, invece di pubblicare un guscio senza versione. */
+      const grezzo = fs.readFileSync(sw, "utf8");
+      if (!grezzo.includes(SEGNAPOSTO)) {
+        throw new Error(`[atlas] ${SEGNAPOSTO} non è più in sw.js: la versione del guscio non si può timbrare.`);
+      }
+      fs.writeFileSync(sw, grezzo.replaceAll(SEGNAPOSTO, versione));
       fs.cpSync(path.join(radiceRepo, "assets", "icons"), path.join(dist, "icons"), { recursive: true });
     },
   };
