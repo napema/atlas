@@ -165,6 +165,7 @@
   titolo={passo < 0 ? "Pianifica" : passo >= giorni.length ? "Ci siamo" : nomeGiorno}
   sopra={passo < 0 || passo >= giorni.length ? undefined : `Giorno ${passo + 1} di ${giorni.length}`}
   indietro={{ etichetta: "Pasti", fai: chiudi }}
+  stretta
 >
   {#snippet strumenti()}
     {#if passo >= 0}
