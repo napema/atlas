@@ -8,7 +8,7 @@
 import { avviso, plurale } from "../../core/ui.js";
 import { apriCanale, fondiRecord, potaLapidi, svegliaWorkflow } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
-import { agenda, casella, stato, settimanaDi, pianoDi } from "./dati.js";
+import { agenda, casella, stato, settimanaDi, pianoDi, slotDi, fatto, giornoSlot } from "./dati.js";
 import {
   progressoSettimana, restaSettimana, giorniRimasti, passoSettimana, kmFatti, km,
 } from "./calcolo.js";
@@ -32,11 +32,35 @@ export function quandoCambia(fn) { ridisegnaVista = fn || (() => {}); }
  * a inizio settimana e due su sei di sabato sono settimane diverse.
  */
 export function pubblicaSullaLavagna() {
-  const n = settimanaDi(giornoCorrente());
+  const oggi = giornoCorrente();
+  const n = settimanaDi(oggi);
   if (!n) return;
   const p = progressoSettimana(n);
   if (leggiFatto("allenamenti", "fatti") !== p.fatti) scriviFatto("allenamenti", "fatti", p.fatti);
   if (leggiFatto("allenamenti", "slot") !== p.totali) scriviFatto("allenamenti", "slot", p.totali);
+
+  /* E QUELLO CHE RIGUARDA OGGI, che i due numeri sopra non dicono: sono
+     settimanali, e «2 su 6» non risponde alla domanda «oggi mi tocca?».
+     La fa chi tiene un'abitudine «Workout»: quell'abitudine non è attesa
+     tutti i giorni, è attesa i giorni in cui il piano ha un allenamento.
+     Senza questi tre numeri dovrebbe indovinare, o conoscere Training —
+     e un modulo non ne conosce un altro (regola 12).
+
+     `giorni-scelti` sembra di troppo e non lo è: distingue «oggi è riposo»
+     da «al piano non hai ancora dato i giorni». Chi legge, nel secondo
+     caso, deve poter ripiegare sul proprio calendario invece di darsi una
+     giornata libera che nessuno ha deciso. */
+  const slot = slotDi(n);
+  const diOggi = slot.filter((s) => giornoSlot(s.id) === oggi);
+  const conGiorno = slot.filter((s) => giornoSlot(s.id));
+  const numeri = {
+    "oggi-previsti": diOggi.length,
+    "oggi-fatti": diOggi.filter((s) => fatto(s.id)).length,
+    "giorni-scelti": conGiorno.length,
+  };
+  for (const [chiave, valore] of Object.entries(numeri)) {
+    if (leggiFatto("allenamenti", chiave) !== valore) scriviFatto("allenamenti", chiave, valore);
+  }
 }
 
 /* ---------------------------------------------------------------- sync -- */
