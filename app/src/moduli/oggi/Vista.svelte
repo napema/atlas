@@ -56,7 +56,11 @@
 
   /** Quante righe in «Adesso» prima che diventi un elenco. Sul PC di più:
       c'è lo spazio, e una colonna mezza vuota non è sobrietà. */
-  const maxRighe = $derived(modo === 1 ? 5 : 8);
+  /* Tre righe sul telefono, quattro dove c'è posto. Sopra, si smette di
+     vedere le voci e si comincia a vedere una lista — e una lista chiede di
+     essere scorsa invece che fatta. Le altre non spariscono: le conta la
+     riga in fondo. */
+  const maxRighe = $derived(modo === 1 ? 3 : 4);
 
   // Tollerante di proposito: un modulo rotto non deve portarsi via la home,
   // che è la schermata che si apre più spesso di tutte.
@@ -92,6 +96,7 @@
   const elenco = $derived(q.prio.length ? q.prio : q.resta.slice(0, PROSSIME));
   const titoloAdesso = $derived(q.prio.length || !q.resta.length ? "Adesso" : "Più tardi");
   const mostrate = $derived(elenco.slice(0, maxRighe));
+  const tuttiTardi = $derived(mostrate.length > 1 && mostrate.every((v) => v.quando === "tardi"));
   const nascoste = $derived(q.resta.length - mostrate.length);
   const f = $derived(q.finanze);
   /* PROJECT 50 ha una card sua, distinta da Abitudini: la riga del modulo
@@ -134,7 +139,11 @@
   <!-- ADESSO: l'unica carta su cui si tocca per FARE invece che per andare. -->
   <Sezione titolo={titoloAdesso}>
     {#snippet coda()}
-      {#if q.prio.length}<span class="conta cifre">{q.prio.length}</span>{/if}
+      {#if q.inRitardo.length}
+        <span class="conta ritardo-conta cifre">{q.inRitardo.length} in ritardo</span>
+      {:else if q.prio.length}
+        <span class="conta cifre">{q.prio.length}</span>
+      {/if}
     {/snippet}
     {#if !q.resta.length}
       <!-- Niente da fare: una riga, non una carta vuota. -->
@@ -159,7 +168,11 @@
             </span>
             {#if v.dentro}<span class="text-subheadline secondario">{v.dentro}</span>{/if}
             {#snippet fine()}
-              {#if v.quando === "tardi"}
+              {#if v.quando === "tardi" && !tuttiTardi}
+                <!-- Quando SONO TUTTE in ritardo la scritta non distingue
+                     niente: cinque etichette rosse in colonna sono rumore, e
+                     il rosso smette di voler dire qualcosa. In quel caso lo
+                     dice una volta la testata, e qui resta il momento. -->
                 <span class="text-subheadline ritardo">in ritardo</span>
               {:else if v.nomeFascia}
                 <span class="text-subheadline secondario">{v.nomeFascia}</span>
@@ -341,6 +354,7 @@
      è il conto dei giorni, non un allarme. */
   .urgente { box-shadow: inset 0 0 0 1.5px var(--color-orange); border-radius: var(--radius-xxxl); }
 
+  .ritardo-conta { background: color-mix(in srgb, var(--color-orange) 18%, transparent); color: var(--color-orange); padding: 0 10px; }
   .conta {
     display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 8px;
     border-radius: var(--radius-full); background: var(--fill-tertiary);
