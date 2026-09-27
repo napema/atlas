@@ -1761,3 +1761,78 @@ la sfida è spenta (la carta dell'invito non dice il conteggio di oggi).
 ### Non provato
 
 Sempre e solo Chromium a 402 e a 1440. Sul telefono installato, niente.
+
+---
+
+## Una ricetta sola per ogni superficie *(27 set, notte, chat ATLAS)*
+
+Richiesta: «o le metti ovunque o da nessuna parte» — le carte di vetro —
+«ma non esagerare coi colori, altrimenti sembra un circo». E: cambiare il
+grigio delle carte, che «sa di cosa scrausa».
+
+### Il grigio, e perché non bastava cambiarlo
+
+`#1c1c1e` è il grigio giusto di iOS. Steso piatto su una carta grande
+contro il nero fa comunque un rettangolo spento, e il problema non era il
+valore: era che **una carta era un colore invece che un materiale**. Due
+correzioni, nessuna fuori dalla gamma di Apple:
+
+- il grigio sale di un punto sul blu, `#1c1c20` — quel filo di freddo che
+  lo separa dal marroncino (e a cascata `#2c2c31`, i grigi del foglio);
+- la carta diventa **`.lastra`**: fondo, luce che cade dall'alto, anello di
+  mezzo pixel, ombra. Una classe sola in `app.css`, globale.
+
+La ricetta, le tre eccezioni ammesse e il perché stanno in `docs/DESIGN.md`
+§3. **Chi aggiunge una schermata legge quello, non questo.**
+
+Due cose imparate scrivendola:
+
+- **Sul nero l'ombra non fa niente.** Nero su nero. A staccare la carta è
+  l'anello, e la leva da girare quando una carta non si stacca è quella.
+  L'ombra guadagna il posto dentro un foglio e sul tema chiaro.
+- **`--lastra-dentro` è `--fill-quaternary`.** Avevo inventato un valore
+  nuovo per «riquadro dentro una carta» quando iOS ha già quel ruolo e
+  mezza app lo usava. Due token per lo stesso mestiere sono esattamente
+  l'incoerenza che stavamo togliendo: adesso è un alias.
+
+### Il vetro filtrato, dove resta
+
+`backdrop-filter` solo dove dietro scorre davvero qualcosa: barra delle
+schede, toast, testate appiccicate. Sulle carte è **dipinto** — su iPhone
+quel filtro ricampiona il *contenuto* dell'elemento e sgrana l'icona e il
+numero dentro la carta.
+
+La barra compatta in cima è passata a **opaca**: al 94 per cento una cifra
+bianca grande si leggeva ancora dietro il titolo piccolo.
+
+### L'allineamento, che era la cosa urgente
+
+Due cause, tutte e due strutturali:
+
+1. La fascia dei quadrati **non era una `Sezione`**, quindi restava fuori dal
+   rimedio che `Pagina` ha già (`.testa-vuota`): cominciava 33 punti più in
+   alto di Finanze che le sta a fianco. Ora ha il suo titolo, «Moduli».
+2. La **testa di una sezione cresceva** col contenuto: una coda con la
+   pastiglia («8 in ritardo») è alta 28 punti contro i 25 della riga del
+   titolo, e faceva partire la sua carta tre punti più in basso. Adesso è
+   alta quanto la riga del titolo, sempre, e la pastiglia è centrata.
+
+Misurato a 1440: riga 1 a 183 e 183, riga 2 a 552 e 552.
+
+### Il resto del giro
+
+- `pasti/Pianifica` era un percorso guidato spalmato su tre colonne, con una
+  carta a sinistra e il resto nero: ora `stretta`, 680 punti centrati.
+- Carte che si disegnavano il fondo da sole e sono passate alla ricetta:
+  l'eroe di Project 50, il check di Finanze, le serate fuori, gli avvisi di
+  Finanze, il riquadro «Oggi» di Training. Dove avevano un **anello che dice
+  qualcosa** (l'accento = «si tocca», l'arancione = «quota finita») l'anello
+  resta: si aggiunge solo l'ombra.
+- Nei fogli i riquadri passano a `--lastra-dentro`, e lì `--lastra-ombra` si
+  abbassa: il fondo è già grigio e i due piani sono vicini.
+- Il velo colorato delle tessere della home: **dal 26 al 14 per cento**.
+
+### Non provato
+
+Chromium a 402 e a 1440, tema scuro. Il tema chiaro solo come valori
+calcolati, mai guardato. Sul telefono installato, niente.
