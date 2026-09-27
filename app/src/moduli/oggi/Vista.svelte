@@ -101,7 +101,7 @@
 
   <p class="verdetto text-title3">{verdetto(q)}</p>
 
-  <div class="griglia">
+  <div class="griglia" class:con-sfida={Boolean(sfida)}>
     <!-- ADESSO: l'unica carta su cui si tocca per FARE invece che per andare. -->
     <div class="area-adesso">
       <Sezione titolo="Adesso">
@@ -151,10 +151,12 @@
         {/if}
       </Sezione>
 
-      <!-- PROJECT 50. Sotto «Adesso» e non sopra: prima quello che si tocca
-           per fare, poi dove sei arrivato. La misura è il GIORNO, e la barra
-           è dei cinquanta giorni — non delle spunte di oggi, che sono la
-           riga piccola sotto. -->
+    </div>
+
+    <!-- PROJECT 50. Dopo «Adesso» e non prima: prima quello che si tocca per
+         fare, poi dove sei arrivato. La misura è il GIORNO, e la barra è dei
+         cinquanta giorni — non delle spunte di oggi, che sono la riga
+         piccola sotto. -->
       {#if sfida}
         <div class="area-sfida" style:--accento={voceDi("abitudini")?.accento}>
           <Sezione titolo="Project 50">
@@ -196,7 +198,6 @@
           </Sezione>
         </div>
       {/if}
-    </div>
 
     <!-- FINANZE: le tre domande che si fanno davanti a una cena fuori. -->
     {#if f}
@@ -258,24 +259,33 @@
       </Sezione>
     </div>
 
-    <!-- I MODULI: qui non si decide niente, si controlla. Una riga a testa. -->
+    <!-- I MODULI: qui non si decide niente, si controlla — ed è la cosa meno
+         importante della schermata. Era una colonna alta e magra che sul PC
+         lasciava mezzo schermo vuoto accanto a sé; come STRISCIA a tutta
+         larghezza fa da base alla pagina e, sul telefono, sta in due
+         colonne invece di cinque righe. -->
     <div class="area-moduli">
       <Sezione titolo="I moduli">
-        {#each schede as s (s.voce.id)}
-          <Riga titolo={s.voce.nome} href={s.dati?.azione?.rotta || `#/${s.voce.id}`} freccia>
-            {#snippet inizio()}
-              <span class="tessera" style:--colore={s.voce.accento}><Icona nome={s.voce.icona} misura={18} tratto={2} /></span>
-            {/snippet}
-            {#snippet fine()}
-              <span class="stato-mod cifre" class:ok={s.dati?.fatto === true}>
-                {#if s.dati?.fatto === true}<Icona nome="spunta" misura={14} tratto={2.6} />{/if}
-                <span class="stato-testo">{s.dati ? String(s.dati.valore ?? "—") : "—"}</span>
+        <div class="tessere">
+          {#each schede as s (s.voce.id)}
+            <!-- Nome e valore IN COLONNA, non in riga: in due colonne su un
+                 telefono una tessera è larga centosettanta punti, e in riga
+                 ci stava «Fina… 0,00 €». Un nome troncato in un cruscotto
+                 non si legge, si indovina. -->
+            <a class="tessera-mod" href={s.dati?.azione?.rotta || `#/${s.voce.id}`} style:--colore={s.voce.accento}>
+              <span class="tessera"><Icona nome={s.voce.icona} misura={18} tratto={2} /></span>
+              <span class="testi-mod">
+                <span class="nome-mod">{s.voce.nome}</span>
+                <span class="stato-mod cifre" class:ok={s.dati?.fatto === true}>
+                  {#if s.dati?.fatto === true}<Icona nome="spunta" misura={13} tratto={2.6} />{/if}
+                  <span class="stato-testo">{s.dati ? String(s.dati.valore ?? "—") : "—"}</span>
+                </span>
               </span>
-            {/snippet}
-          </Riga>
-        {:else}
-          <Riga><span class="secondario">Sto leggendo i moduli…</span></Riga>
-        {/each}
+            </a>
+          {:else}
+            <span class="secondario">Sto leggendo i moduli…</span>
+          {/each}
+        </div>
       </Sezione>
     </div>
   </div>
@@ -294,27 +304,43 @@
   /* `minmax(0, 1fr)` e non `1fr`: una colonna `1fr` non scende sotto la
      larghezza minima del suo contenuto, e il nome lungo di una cena la
      allargava oltre lo schermo del telefono. */
+  /* LE AREE SONO DUE DISEGNI, non uno con un buco. Una `grid-area` che
+     esiste sempre e resta vuota quando la sfida è spenta lascia una riga
+     alta zero E il suo spazio: sul PC si vedeva come una fascia di nero in
+     mezzo alla pagina. Con due `grid-template-areas` non c'è niente da
+     lasciar vuoto.
+
+     La gerarchia è nelle DIMENSIONI: «Adesso» e Finanze sono le due colonne
+     alte — la prima è l'unica su cui si tocca per fare, la seconda è la
+     cifra per cui si apre la app — le due carte di stato stanno in una
+     colonna più stretta, e i moduli sono la striscia in fondo. */
   .griglia {
     display: grid; gap: var(--space-6);
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "adesso" "finanze" "costanza" "moduli";
   }
+  .griglia.con-sfida { grid-template-areas: "adesso" "sfida" "finanze" "costanza" "moduli"; }
+
   @media (min-width: 900px) {
     .griglia {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start;
-      grid-template-areas: "adesso finanze" "costanza finanze" "costanza moduli";
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start;
+      grid-template-areas: "adesso finanze" "costanza finanze" "moduli moduli";
+    }
+    .griglia.con-sfida {
+      grid-template-areas: "adesso finanze" "sfida finanze" "costanza finanze" "moduli moduli";
     }
   }
   @media (min-width: 1300px) {
     .griglia {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      grid-template-areas: "adesso finanze moduli" "costanza finanze moduli";
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 0.9fr);
+      grid-template-areas: "adesso finanze costanza" "moduli moduli moduli";
+    }
+    .griglia.con-sfida {
+      grid-template-areas: "adesso finanze sfida" "adesso finanze costanza" "moduli moduli moduli";
     }
   }
-  /* La colonna di «Adesso» tiene due lastre: la checklist e Project 50.
-     Una grid-area in più avrebbe lasciato una riga vuota — e il suo spazio —
-     in tutte le giornate in cui la sfida è spenta. */
-  .area-adesso { grid-area: adesso; display: flex; flex-direction: column; gap: var(--space-6); }
+  .area-adesso { grid-area: adesso; }
+  .area-sfida { grid-area: sfida; }
 
   .sfida { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); }
   .sfida .capo { display: flex; align-items: baseline; gap: var(--space-2); }
@@ -332,6 +358,24 @@
   .area-finanze { grid-area: finanze; }
   .area-costanza { grid-area: costanza; }
   .area-moduli { grid-area: moduli; }
+
+  /* Due colonne sul telefono, quante ne stanno sul PC. `minmax(0, 1fr)` e
+     non `auto`: il nome lungo di un modulo allargava la sua colonna e
+     mandava le altre fuori squadra. */
+  .tessere {
+    display: grid; gap: 2px; padding: var(--space-2);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  }
+  .tessera-mod {
+    display: flex; align-items: center; gap: var(--space-3);
+    min-height: 60px; padding: var(--space-2) var(--space-3);
+    border-radius: 12px; color: var(--label-primary);
+  }
+  .tessera-mod:active { background: var(--fill-quaternary); }
+  .testi-mod { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+  .nome-mod { font-size: 15px; font-weight: var(--weight-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tessera-mod .stato-mod { font-size: var(--text-footnote); }
+  .tessera-mod .stato-testo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   .conta {
     display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 8px;
