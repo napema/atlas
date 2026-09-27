@@ -311,7 +311,7 @@
   {#snippet testata()}
     <!-- Il saluto è la prima cosa che vedi e pesava come un sottotitolo.
          Qui è grande davvero: apre la schermata invece di introdurla. -->
-    <h1 class="saluto">{saluto(ora.getHours())}, <span class="nome">{NOME}</span></h1>
+    <h1 class="saluto">{saluto(ora.getHours())}, {NOME}</h1>
   {/snippet}
   {#snippet sopra()}
     <span>{dataLunga}</span>
@@ -349,13 +349,18 @@
          siano — due, tre o sei. -->
     <div class="tessera striscia">
     {#each tessere as x (x.voce.id)}
-      <a class="quadrata" href={x.dati?.azione?.rotta || `#/${x.voce.id}`} style:--colore={x.voce.accento}>
-        <span class="q-icona"><Icona nome={x.voce.icona} misura={20} tratto={2} /></span>
-        <span class="q-nome text-footnote semibold">{x.voce.nome}</span>
-        <span class="q-valore cifre" class:ok={x.dati?.fatto === true}>
-          {x.dati ? String(x.dati.valore ?? "—") : "—"}
+      <a class="quadrata" class:fatta={x.dati?.fatto === true}
+         href={x.dati?.azione?.rotta || `#/${x.voce.id}`} style:--colore={x.voce.accento}>
+        <span class="q-alto">
+          <span class="q-icona"><Icona nome={x.voce.icona} misura={19} tratto={2} /></span>
+          {#if x.dati?.fatto === true}
+            <span class="q-fatto" title="Fatto"><Icona nome="spunta" misura={13} tratto={2.8} /></span>
+          {/if}
         </span>
-        {#if x.dati?.dettaglio}<span class="q-sotto text-caption1">{x.dati.dettaglio}</span>{/if}
+        <span class="q-basso">
+          <span class="q-nome text-footnote semibold">{x.voce.nome}</span>
+          <span class="q-valore cifre">{x.dati ? String(x.dati.valore ?? "—") : "—"}</span>
+        </span>
       </a>
     {/each}
     </div>
@@ -386,39 +391,73 @@
     font-size: clamp(38px, 7vw, 64px); line-height: 1.04; letter-spacing: -0.03em;
     overflow-wrap: anywhere;
   }
-  .saluto .nome { color: var(--accento, var(--color-blue)); }
 
   /* I QUADRATI. Colore del modulo, icona, e il numero che quel modulo dice
      di oggi — non un elenco di nomi ma uno stato per tessera. Il fondo è
      tinto piano: acceso pieno, sei tessere diventerebbero sei cartelloni e
      le carte grandi sparirebbero sotto. */
-  /* La fascia: ogni quadrato prende la stessa fetta, e sotto i 520 punti
-     vanno a capo invece di diventare francobolli. */
-  /* `flex-direction: row` esplicito: `.striscia` è anche `.tessera`, e da
-     lì ereditava `column` — i tre quadrati si impilavano a tutta larghezza
-     invece di affiancarsi. */
-  .striscia { display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--space-4); }
+  /* LA FASCIA È UNA GRIGLIA, non un flex che si allarga.
+
+     Con `flex: 1 1 170px` e l'a capo, l'ultima tessera di una riga cresceva
+     a riempire tutto lo spazio rimasto: su iPhone le prime due stavano
+     affiancate e la terza diventava un rettangolo largo quanto lo schermo.
+     Con `auto-fill` le celle restano tutte della stessa misura e quella
+     dispari occupa la sua, lasciando il posto vuoto dov'è. */
+  .striscia {
+    display: grid; gap: var(--space-3);
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  /* LA TESSERA, vetro di iOS 27.
+
+     Vetro nell'aspetto e non con `backdrop-filter`: sotto c'è il fondo
+     pieno della pagina, quindi non c'è niente da sfocare — e su iPhone quel
+     filtro ricampiona il CONTENUTO della tessera, cioè sgrana l'icona e il
+     numero. È lo stesso guasto che abbiamo tolto dalla barra in alto.
+     Quindi: fondo stratificato, anello chiaro sul bordo, una luce in alto a
+     sinistra e un alone del colore del modulo che sale dal basso. La
+     saturazione sta tutta nel bollo dell'icona, dove serve.
+
+     NIENTE VERDE QUI DENTRO. Il verde vuol dire «fatto» in tutta ATLAS, ma
+     scritto dentro una tessera tinta di rosa diventa una macchia che non si
+     può guardare. Il «fatto» lo dice una spunta in alto a destra, che è
+     dove si guarda, e il numero resta del colore del testo. */
   .quadrata {
-    flex: 1 1 150px; min-width: 0;
-    display: flex; flex-direction: column;
-    gap: 2px; padding: var(--space-4);
-    border-radius: 18px; color: inherit;
-    background: color-mix(in srgb, var(--colore) 13%, var(--bg-grouped-secondary));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--colore) 22%, transparent);
+    position: relative; overflow: hidden;
+    aspect-ratio: 1 / 1; min-height: 0;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: var(--space-4);
+    border-radius: 22px;
+    color: inherit;
+    background:
+      radial-gradient(120% 90% at 50% 130%, color-mix(in srgb, var(--colore) 26%, transparent), transparent 70%),
+      linear-gradient(180deg, color-mix(in srgb, #fff 6%, transparent), transparent 55%),
+      var(--bg-grouped-secondary);
+    box-shadow:
+      inset 0 0 0 0.5px var(--glass-rim),
+      inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent),
+      0 6px 20px rgba(0, 0, 0, 0.18);
     transition: transform var(--duration-fast) var(--ease-spring);
   }
   .quadrata:active { transform: scale(0.97); }
+
+  .q-alto { display: flex; align-items: flex-start; justify-content: space-between; }
   .q-icona {
-    display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px;
-    background: var(--colore); color: #fff; margin-bottom: var(--space-2);
+    display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
+    background: var(--colore); color: #fff;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--colore) 45%, transparent);
   }
-  .q-nome { color: var(--label-secondary); }
-  .q-valore { font-size: 26px; line-height: 1.1; font-weight: var(--weight-bold); }
-  .q-valore.ok { color: var(--color-green); }
-  .q-sotto {
-    color: var(--label-tertiary); margin-top: 2px;
-    overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
-    -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
+  .q-fatto {
+    display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+    background: color-mix(in srgb, #fff 16%, transparent); color: var(--label-primary);
+  }
+
+  .q-basso { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .q-nome { color: var(--label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .q-valore {
+    font-family: var(--font-display); font-size: 27px; line-height: 1.05;
+    font-weight: var(--weight-bold); letter-spacing: -0.02em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   /* La carta riempie la sua tessera: è questo che rende la riga una riga e
      non tre carte appoggiate alla stessa linea. */

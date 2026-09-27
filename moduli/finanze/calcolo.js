@@ -1104,7 +1104,20 @@ export const importoRicorrente = (r) =>
  * bolletta?», che è la domanda per cui si apre l'app la sera.
  */
 export function inArrivo(giorni = 14, iso = oggiISO()) {
-  const limite = isoDi(new Date(daISO(iso).getTime() + giorni * 86400000));
+  /* IL LIMITE NON SUPERA MAI LO STIPENDIO.
+
+     «In arrivo» rispondeva a «cosa esce nei prossimi trenta giorni», e
+     trenta giorni scavalcano l'arrivo dello stipendio: il 27 settembre
+     mostrava una rata del 27 ottobre, che si paga con i soldi del 23 e non
+     con questi. Una spesa che appartiene al ciclo dopo, messa in mezzo a
+     quelle di adesso, gonfia il totale di «mancano» e fa sembrare scoperto
+     un mese che invece torna.
+
+     La finestra finisce il giorno prima dello stipendio — la stessa data
+     su cui il resto del modulo fa tutti i conti. */
+  const fine = cicloDi(iso).a;
+  const richiesto = isoDi(new Date(daISO(iso).getTime() + giorni * 86400000));
+  const limite = richiesto < fine ? richiesto : fine;
   const voci = [];
   for (const r of ricorrentiVivi()) {
     if (!r.attivo) continue;

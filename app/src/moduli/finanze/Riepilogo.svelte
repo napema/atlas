@@ -228,7 +228,12 @@
 {/if}
 
 <!-- 3. IN ARRIVO — «posso permettermi questa cena, o fra tre giorni arriva una bolletta?» -->
-<Sezione titolo="In arrivo" piede={d.arrivo.voci.length ? "Prossimi 30 giorni." : "Niente in scadenza nei prossimi 30 giorni. I ricorrenti e i pagamenti previsti si configurano in Impostazioni."}>
+<!-- La finestra finisce con il ciclo, non a trenta giorni: quello che esce
+     dopo lo stipendio si paga con lo stipendio dopo, e messo qui gonfia il
+     «mancano» di un mese che invece torna. -->
+<Sezione titolo="In arrivo" piede={d.arrivo.voci.length
+  ? `Fino al ${dataBreve(d.ciclo.a)}, il giorno prima dello stipendio.`
+  : `Niente in scadenza entro il ${dataBreve(d.ciclo.a)}. I ricorrenti e i pagamenti previsti si configurano in Impostazioni.`}>
   {#snippet coda()}{#if d.arrivo.voci.length}<span class="cifre secondario text-subheadline">{euro(d.arrivo.totale, { tondo: true })}</span>{/if}{/snippet}
   {#if d.arrivo.voci.length}
     <div class="avvolge" style:--inizio-l="38px">
