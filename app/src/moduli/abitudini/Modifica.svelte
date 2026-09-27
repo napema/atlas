@@ -23,6 +23,8 @@
     abitudinePerId, salvaAbitudine, eliminaAbitudine, TINTE, FASCE, fasceUsate,
   } from "$condivisi/abitudini/dati.js";
   import { pianoDi } from "$condivisi/abitudini/calcolo.js";
+  import { attivo } from "$condivisi/abitudini/p50.js";
+  import { dati } from "$lib/core/reattivo.svelte";
 
   let {
     aperto = $bindable(false),
@@ -39,6 +41,7 @@
   };
 
   let bozza = $state<Bozza | null>(null);
+  const sfidaAttiva = $derived.by(() => { dati.versione; return attivo(); });
   let esistente = $state(false);
   let sicuro = $state(false);          // il secondo tocco su «Elimina»
   let timerSicuro: ReturnType<typeof setTimeout> | undefined;
@@ -135,6 +138,23 @@
     <Sezione titolo="Simbolo">
       <SceltaEmoji bind:valore={bozza.emoji} />
     </Sezione>
+
+    <!-- IL BLOCCO sta qui, dove si modifica l'abitudine, e non nella
+         schermata di tutti i giorni: è la decisione che dice quali voci
+         fanno ripartire il contatore, e accanto alla spunta si cambierebbe
+         per sbaglio proprio quando una voce sta per costarti il reset.
+         Compare solo a sfida accesa: senza, «Otto» non vuol dire niente. -->
+    {#if sfidaAttiva}
+      <Sezione titolo="Project 50" piede="Le otto sono non negoziabili: se ne manca una alla chiusura, il contatore riparte da 1. Il supporto no.">
+        <div class="blocco">
+          <Segmenti
+            opzioni={[{ id: "p50", testo: "Fra le otto" }, { id: "supporto", testo: "Supporto" }]}
+            valore={bozza.blocco === "p50" ? "p50" : "supporto"}
+            onscelta={(v) => { if (bozza) bozza.blocco = v; }}
+          />
+        </div>
+      </Sezione>
+    {/if}
 
     <Sezione titolo="Quando">
       <div class="blocco">

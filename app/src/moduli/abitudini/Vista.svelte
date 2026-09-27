@@ -23,6 +23,7 @@
   import Blocchi from "./Blocchi.svelte";
   import Chiusura from "./Chiusura.svelte";
   import Revisione from "./Revisione.svelte";
+  import NumeriSfida from "./NumeriSfida.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
   import { oggiISO, piuGiorni, dataUmana, plurale, tocco } from "$lib/core/ui";
@@ -179,8 +180,10 @@
          che permette di sentirsi a posto. -->
     <Testata50 giorno={sfida.giorno} fatte={sfida.fatte} previste={sfida.previste} chiuso={sfida.chiuso} />
     <!-- Le serate sono un'azione del giorno: sulla revisione, che è una
-         schermata che si legge e basta, sarebbero l'unica cosa da toccare. -->
-    {#if vista === "oggi"}<SerateFuori {giorno} />{/if}
+         schermata che si legge e basta, sarebbero l'unica cosa da toccare.
+         Al loro posto, lì, i tre numeri della sfida — che sul PC riempiono
+         la colonna del riepilogo invece di lasciarla col solo contatore. -->
+    {#if vista === "oggi"}<SerateFuori {giorno} />{:else}<NumeriSfida />{/if}
   {:else if vista === "serie"}
     <Serie parte="eroe" onapri={apriDettaglio} />
   {:else}

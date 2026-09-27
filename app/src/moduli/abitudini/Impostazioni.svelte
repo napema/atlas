@@ -10,7 +10,7 @@
   import Modifica from "./Modifica.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { avviso } from "$lib/core/ui";
-  import { stato, abitudiniVive, scriviMeta, salvaAbitudine } from "$condivisi/abitudini/dati.js";
+  import { stato, abitudiniVive, scriviMeta } from "$condivisi/abitudini/dati.js";
   import * as p50 from "$condivisi/abitudini/p50.js";
   import { etichettaPiano } from "$condivisi/abitudini/calcolo.js";
 
@@ -30,15 +30,6 @@
     };
   });
 
-  /* Il blocco si cambia da qui e da nessun'altra parte. È la decisione che
-     dice quali voci fanno ripartire il contatore: metterla nella schermata
-     di tutti i giorni, accanto alla spunta, vorrebbe dire poterla cambiare
-     per sbaglio proprio nel momento in cui una voce sta per costarti il
-     reset. */
-  function muovi(h: any, blocco: string) {
-    salvaAbitudine({ id: h.id, blocco });
-    avviso(blocco === "p50" ? "Nelle otto." : "Nel supporto.");
-  }
 </script>
 
 <Sezione titolo="Project 50" piede={d.sfida
@@ -58,35 +49,29 @@
   {/if}
 </Sezione>
 
-{#if d.sfida}
-  <Sezione titolo="Chi fa parte delle otto" piede="Le abitudini che esistevano prima della sfida stanno nel supporto: non finiscono fra le otto per un valore di fabbrica. Quelle che non usi più, archiviale.">
-    {#each d.vive as h (h.id)}
-      <Riga titolo={h.name}>
-        {#snippet inizio()}<span class="emoji simbolo">{h.emoji || "⭐️"}</span>{/snippet}
-        {#snippet fine()}
-          <span class="scelta">
-            <Segmenti
-              opzioni={[{ id: "p50", testo: "Otto" }, { id: "supporto", testo: "Supporto" }]}
-              valore={h.blocco === "p50" ? "p50" : "supporto"}
-              onscelta={(v) => muovi(h, v)}
-            />
-          </span>
-        {/snippet}
-      </Riga>
-    {/each}
-  </Sezione>
-{/if}
-
 <Sezione titolo="La settimana comincia" piede="Conta per le abitudini settimanali: cambia quando si azzera il conteggio delle volte.">
   <div class="blocco">
     <Segmenti opzioni={[{ id: "1", testo: "Lunedì" }, { id: "0", testo: "Domenica" }]} valore={d.inizio} onscelta={(v) => { scriviMeta({ weekStart: Number(v) }); avviso("Salvato."); }} />
   </div>
 </Sezione>
 
-<Sezione titolo="Le tue abitudini">
+<!-- UNA LISTA SOLA. Prima ce n'erano due, le stesse dodici abitudini
+     stampate una volta per scegliere il blocco e una per modificarle: due
+     elenchi identici nella stessa schermata non sono due funzioni, sono una
+     funzione e un sosia. Il blocco si sceglie dove si modifica l'abitudine,
+     e qui è scritto, non da scegliere. -->
+<Sezione titolo="Le tue abitudini"
+  piede={d.sfida ? "Il blocco si cambia aprendo l'abitudine. Le abitudini che esistevano prima della sfida stanno nel supporto: non finiscono fra le otto per un valore di fabbrica." : undefined}>
   {#each d.vive as h (h.id)}
-    <Riga titolo={h.name} valore={etichettaPiano(h)} freccia onclick={() => apri(h.id)}>
+    <Riga titolo={h.name} sottotitolo={etichettaPiano(h)} freccia onclick={() => apri(h.id)}>
       {#snippet inizio()}<span class="emoji simbolo">{h.emoji || "⭐️"}</span>{/snippet}
+      {#snippet fine()}
+        {#if d.sfida}
+          <span class="blocco-eti text-caption1 semibold" class:otto={h.blocco === "p50"}>
+            {h.blocco === "p50" ? "Otto" : "Supporto"}
+          </span>
+        {/if}
+      {/snippet}
     </Riga>
   {/each}
   <Riga titolo="Aggiungi un'abitudine" accento onclick={() => apri(null)} />
@@ -107,5 +92,12 @@
 <style>
   .blocco { padding: var(--space-4); }
   .simbolo { font-size: 20px; }
-  .scelta { width: 168px; }
+  /* L'etichetta del blocco è piccola e neutra: dice a quale delle due liste
+     appartiene, non è un secondo bersaglio da toccare. */
+  .blocco-eti {
+    padding: 3px 8px; border-radius: var(--radius-full);
+    background: var(--fill-tertiary); color: var(--label-secondary);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .blocco-eti.otto { background: color-mix(in srgb, var(--accento) 20%, transparent); color: var(--accento); }
 </style>
