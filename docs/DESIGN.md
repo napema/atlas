@@ -74,7 +74,54 @@ Tre cose che il repo annota esplicitamente:
    sfocatura zero con spread positivo. Non è una riga scura, come quasi
    tutti assumono.
 
-Il vetro vive in due posti: la barra delle schede e il toast. Basta.
+Il vetro **filtrato** vive dove dietro scorre davvero qualcosa: la barra
+delle schede, il toast, la testata che si stringe scorrendo. Basta.
+
+### Il vetro dipinto, che è ovunque
+
+Su una carta appoggiata al fondo pieno della pagina non c'è niente da
+sfocare — e su iPhone `backdrop-filter` ricampiona il *contenuto*
+dell'elemento, cioè sgrana l'icona e il numero **dentro** la carta. È il
+guasto che ha tolto la sfocatura dalla barra in alto e dalle tessere della
+home.
+
+Quindi il materiale, sulle carte, è **dipinto**, ed è sempre lo stesso:
+
+```css
+.lastra {
+  background:
+    var(--lastra-velo, none),                                  /* facoltativo */
+    linear-gradient(180deg, var(--lastra-luce), transparent 45%),
+    var(--lastra-fondo);
+  box-shadow: inset 0 0 0 .5px var(--lastra-rim), var(--lastra-ombra);
+}
+```
+
+Quattro strati: **fondo**, **luce che cade dall'alto**, **anello di mezzo
+pixel**, **ombra che stacca dal nero**. O una superficie è una lastra e li
+ha tutti e quattro, o non è una lastra e non si disegna un fondo suo.
+
+La classe sta in `app.css`, globale, e ci sono tre sole eccezioni ammesse:
+
+- `--lastra-velo` — un unico strato colorato sopra il fondo, per le tessere
+  della home che portano l'accento del modulo. Al **14 per cento**: quattro
+  tessere accese pieno sono quattro cartelloni.
+- un **anello proprio** al posto di quello della lastra, quando l'anello
+  *dice qualcosa* (l'accento del check di Finanze = «si tocca»; l'arancione
+  delle serate fuori = «quota finita»). L'ombra resta quella comune.
+- dentro un `Foglio`, `--lastra-ombra` si abbassa: i due piani sono vicini
+  e l'ombra della pagina farebbe una pozza attorno a ogni riquadro.
+
+Un riquadro **dentro** una lastra non è una seconda lastra: è
+`--lastra-dentro`, che è `--fill-quaternary`. Niente anello — due anelli
+concentrici a mezzo pixel fanno moiré sul retina.
+
+### Il grigio delle carte
+
+`#1c1c20`, non `#1c1c1e`. Il valore di iOS 18 è giusto come colore ma steso
+piatto su una carta grande contro il nero fa un rettangolo spento. Un punto
+in più sul blu è il filo di freddo che lo separa dal marroncino; il resto
+del lavoro lo fanno la luce, l'anello e l'ombra, non il colore.
 
 ---
 

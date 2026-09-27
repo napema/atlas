@@ -153,9 +153,15 @@
 
 <style>
   .foglio {
-    /* dentro un foglio i gruppi salgono di un gradino */
+    /* dentro un foglio i gruppi salgono di un gradino. `--lastra-fondo`
+       segue `--bg-grouped-secondary`, quindi le carte dentro il foglio
+       prendono la ricetta comune senza sapere di essere in un foglio. */
     --bg-grouped-primary: var(--foglio-fondo);
     --bg-grouped-secondary: var(--foglio-lastra);
+    /* L'ombra della lastra e' tarata per staccare dal nero della pagina.
+       Qui il fondo e' gia' grigio e i due piani sono vicini: la stessa
+       ombra farebbe una pozza scura attorno a ogni riquadro. */
+    --lastra-ombra: 0 1px 2px rgba(0, 0, 0, 0.22);
 
     position: fixed; inset: auto 0 0 0;
     width: 100%; max-width: 640px; max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 10px);

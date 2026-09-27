@@ -96,9 +96,15 @@
   --lastra-luce:   rgba(255, 255, 255, 0.05);
   --lastra-rim:    rgba(255, 255, 255, 0.08);
   --lastra-ombra:  0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.3);
-  /* I riquadri DENTRO una lastra: salgono di un gradino, senza anello
-     (due anelli concentrici a mezzo pixel fanno moiré sul retina). */
-  --lastra-dentro: rgba(255, 255, 255, 0.055);
+  /* I riquadri DENTRO una lastra: un gradino sopra, senza anello (due
+     anelli concentrici a mezzo pixel fanno moiré sul retina).
+
+     È `--fill-quaternary` e non un valore nuovo: quello È il ruolo che iOS
+     dà a questo velo, e mezza app lo usava già così. Due token diversi per
+     lo stesso mestiere sono esattamente l'incoerenza che stiamo togliendo;
+     l'alias serve solo a dire, dove si legge, che quella cosa è dentro una
+     lastra. */
+  --lastra-dentro: var(--fill-quaternary);
 
   /* il cursore del controllo a segmenti e la manopola dell'interruttore */
   --thumb:          #636366;
@@ -106,8 +112,8 @@
   --dim:            rgba(0, 0, 0, 0.48);   /* il velo dietro un foglio */
   /* Un foglio sale di un gradino: il suo fondo è il grigio dei gruppi e i
      suoi gruppi salgono ancora. Nero su nero, dentro un foglio, non si legge. */
-  --foglio-fondo:   #1c1c1e;
-  --foglio-lastra:  #2c2c2e;
+  --foglio-fondo:   #1c1c20;
+  --foglio-lastra:  #2c2c31;
 }
 
 /* --------------------------------------------------------------- chiaro --
@@ -159,7 +165,7 @@
   --lastra-luce:   rgba(255, 255, 255, 0);
   --lastra-rim:    rgba(0, 0, 0, 0.055);
   --lastra-ombra:  0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
-  --lastra-dentro: rgba(120, 120, 128, 0.09);
+  --lastra-dentro: var(--fill-quaternary);
 
   --thumb:        #ffffff;
   --thumb-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
@@ -186,7 +192,7 @@
     --lastra-fondo: var(--bg-grouped-secondary); --lastra-luce: rgba(255, 255, 255, 0);
     --lastra-rim: rgba(0, 0, 0, 0.055);
     --lastra-ombra: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
-    --lastra-dentro: rgba(120, 120, 128, 0.09);
+    --lastra-dentro: var(--fill-quaternary);
     --thumb: #ffffff; --dim: rgba(0, 0, 0, 0.2);
     --foglio-fondo: #f2f2f7; --foglio-lastra: #ffffff;
   }
