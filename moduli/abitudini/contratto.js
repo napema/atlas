@@ -16,7 +16,7 @@
 import { avviso, plurale } from "../../core/ui.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
-import { ascolta } from "../../core/bus.js";
+import { ascolta, EVENTI } from "../../core/bus.js";
 import { casella, stato, abitudiniVive, eFatta, alterna, alternaParte, semina } from "./dati.js";
 import { progressoGiorno, mancantiOggi, serie, promemoriaAdesso, restaOggi } from "./calcolo.js";
 import * as p50 from "./p50.js";
@@ -61,6 +61,36 @@ function spuntaDaSessione() {
   // La lavagna prima del disegno: la home legge quella, e se il modulo è
   // chiuso — cioè quasi sempre, quando finisci una sessione — è l'unica
   // cosa che le arriva.
+  pubblicaSullaLavagna();
+  ridisegnaVista();
+}
+
+/**
+ * L'allenamento fatto in Training spunta l'abitudine «Workout».
+ *
+ * Stessa idea della sessione di Mobilità, altro canale: lì c'è un annuncio
+ * («è appena successo»), qui i numeri sulla lavagna — Training non annuncia
+ * niente, e inventargli un evento vorrebbe dire modificarlo per un
+ * bisogno di un altro modulo.
+ *
+ * Va in una direzione sola: togliere la spunta quando in Training togli il
+ * fatto sarebbe una spunta che sparisce da sé sotto le dita, e per una
+ * voce non negoziabile è il genere di sorpresa che costa un contatore.
+ */
+function spuntaDaTraining() {
+  const oggi = giornoCorrente();
+  const previsti = leggiFatto("allenamenti", "oggi-previsti");
+  const fatti = leggiFatto("allenamenti", "oggi-fatti");
+  if (!previsti || (fatti || 0) < previsti) return;
+  const candidate = abitudiniVive().filter((h) => p50.SEGUE_TRAINING.test(h.name));
+  let spuntate = 0;
+  for (const h of candidate) {
+    if (eFatta(h.id, oggi)) continue;
+    alterna(h.id, oggi);
+    spuntate++;
+  }
+  if (!spuntate) return;
+  avviso("Allenamento fatto: abitudine spuntata.");
   pubblicaSullaLavagna();
   ridisegnaVista();
 }
@@ -140,6 +170,11 @@ export function avviaSync() {
   // stacca mai: è il posto degli ascolti che devono funzionare a modulo
   // chiuso.
   ascolta("mobilita:sessione-completata", spuntaDaSessione);
+
+  // Training non annuncia: scrive sulla lavagna. Il filtro sul modulo è
+  // quello che tiene questo ascolto lontano dai propri stessi fatti —
+  // spuntare scrive sulla lavagna, e senza filtro si richiamerebbe da solo.
+  ascolta(EVENTI.FATTO_SCRITTO, (d) => { if (d?.modulo === "allenamenti") spuntaDaTraining(); });
 
   /* LE ROUTINE SI COMPONGONO DOPO LA PRIMA LETTURA, mai prima.
      Seminare all'avvio è lo stesso errore dello scrivere prima di aver
