@@ -1,19 +1,22 @@
 <!--
   I due blocchi: le otto non negoziabili e il supporto.
 
-  È la modifica che conta più di tutte le altre messe insieme. Prima erano
-  una lista sola, tutte uguali: e se sono tutte uguali, quando ne manca una
-  non sai se hai perso il contatore o se hai saltato la skincare. La
-  gerarchia non è estetica — è l'informazione.
+  Sono DUE LASTRE PARI, affiancate sul PC e una sotto l'altra sul telefono,
+  dove affiancarle vorrebbe dire otto righe larghe mezzo schermo con i nomi
+  tagliati a metà.
 
-  Il blocco delle otto ha un bordo, una superficie sua e una testata che
-  resta in cima mentre scorri. Il supporto non ha niente: un titolino in
-  caps, un separatore, righe più basse e un filo di opacità in meno.
+  Restano due cose diverse, e questo è il punto che era costato caro
+  scoprirlo: in una lista sola, quando ne manca una non sai se hai perso il
+  contatore o se hai saltato la skincare. Ma la differenza sta nel CONTATORE
+  E NEL VERDETTO — solo le otto hanno «3/8» in testa e un bordo che diventa
+  verde — non nel far sembrare il supporto una voce di serie B. Le righe
+  basse, il testo piccolo e l'opacità dicevano «questa cosa conta meno di
+  te», e non è vero: è un'altra cosa, in parallelo.
 
-  IL BORDO RESTA NEUTRO FINO A 7/8. Diventa verde solo a otto su otto, e
-  questa è la regola che rende la cosa una sfida invece di un gioco: sette
-  su otto non è «quasi», è un giorno perso, e un feedback positivo parziale
-  lo racconterebbe come un successo a cui manca poco.
+  IL BORDO DELLE OTTO RESTA NEUTRO FINO A 7/8. Sette su otto non è «quasi»,
+  è un giorno perso, e un feedback positivo parziale lo racconterebbe come
+  un successo a cui manca poco. Il supporto invece può illuminarsi quando è
+  pieno senza mentire a nessuno: lì non c'è niente da perdere.
 -->
 <script lang="ts">
   import RigaAbitudine from "./RigaAbitudine.svelte";
@@ -24,6 +27,7 @@
     giorno,
     fatte,
     previste,
+    supportoFatte = 0,
     bloccato = false,
     onapri,
   }: {
@@ -32,19 +36,20 @@
     giorno: string;
     fatte: number;
     previste: number;
+    supportoFatte?: number;
     /** Giorno chiuso: le righe si leggono e non si toccano. */
     bloccato?: boolean;
     onapri: (id: string) => void;
   } = $props();
 
   const pieno = $derived(previste > 0 && fatte === previste);
+  const supportoPieno = $derived(supporto.length > 0 && supportoFatte === supporto.length);
 </script>
 
-<!-- `intera` tiene i due blocchi in una colonna sola: sul PC la griglia li
-     avrebbe messi uno accanto all'altro, e il supporto sarebbe diventato una
-     colonna pari alle otto. La gerarchia si legge solo se uno sta sotto. -->
-<div class="blocchi intera">
-<section class="blocco-a" class:pieno class:chiuso={bloccato}>
+<!-- Niente contenitore attorno ai due: sono due figli della griglia della
+     pagina, e sul PC si dispongono da sé nelle sue colonne. Un involucro li
+     avrebbe tenuti in una cella sola, che è come stavano prima. -->
+<section class="blocco" class:pieno class:chiuso={bloccato}>
   <header class="capo">
     <span class="titolo text-footnote semibold">Project 50</span>
     <span class="conto cifre">{fatte}/{previste}</span>
@@ -57,21 +62,21 @@
 </section>
 
 {#if supporto.length}
-  <section class="blocco-b">
-    <span class="eti text-caption1 semibold">Supporto</span>
+  <section class="blocco supporto" class:pieno={supportoPieno} class:chiuso={bloccato}>
+    <header class="capo">
+      <span class="titolo text-footnote semibold">Supporto</span>
+      <span class="conto cifre">{supportoFatte}/{supporto.length}</span>
+    </header>
     <div class="righe">
       {#each supporto as h (h.id)}
-        <RigaAbitudine {h} {giorno} compatta bloccata={bloccato} {onapri} />
+        <RigaAbitudine {h} {giorno} bloccata={bloccato} {onapri} />
       {/each}
     </div>
   </section>
 {/if}
-</div>
 
 <style>
-  .blocchi { display: flex; flex-direction: column; }
-
-  .blocco-a {
+  .blocco {
     border-radius: 16px;
     background: var(--bg-grouped-secondary);
     box-shadow: inset 0 0 0 1.5px var(--separator);
@@ -81,10 +86,9 @@
        pagina ferma. Gli angoli se li arrotonda la testata da sé. */
     transition: box-shadow var(--duration-slow) var(--ease-default);
   }
-  .blocco-a.pieno { box-shadow: inset 0 0 0 1.5px var(--color-green); }
+  .blocco.pieno { box-shadow: inset 0 0 0 1.5px var(--color-green); }
   /* Un giorno chiuso e perso non prende il rosso al bordo: il rosso è la
-     casella nella striscia e il verdetto nel foglio, detti una volta. Qui
-     resta il neutro, perché la card non è più un compito da finire. */
+     casella nella striscia e il verdetto nel foglio, detti una volta sola. */
 
   /* La testata resta in cima mentre scorri: con otto righe e la morning
      routine aperta, il contatore usciva dallo schermo proprio mentre lo
@@ -98,18 +102,12 @@
     box-shadow: 0 0.5px 0 var(--separator);
   }
   .titolo { letter-spacing: 0.8px; text-transform: uppercase; color: var(--label-secondary); }
-  .pieno .titolo { color: var(--color-green); }
   .conto { font-size: var(--text-title3); font-weight: var(--weight-semibold); }
-  .pieno .conto { color: var(--color-green); }
+  .pieno .titolo, .pieno .conto { color: var(--color-green); }
+  /* Il titolo del supporto è secondario anche da pieno: il verde lì dice
+     «fatto», non «contatore salvo». */
+  .supporto .conto { font-size: var(--text-headline); }
 
   .righe { padding: 0 var(--space-4) var(--space-2); }
   .righe > :global(.abitudine + .abitudine) { box-shadow: inset 0 0.5px 0 var(--separator); }
-
-  /* Trentadue punti di distacco: deve essere evidente a colpo d'occhio che
-     sono due cose diverse, non due parti della stessa lista. */
-  .blocco-b { margin-top: 32px; padding-top: var(--space-3); border-top: 0.5px solid var(--separator); }
-  .blocco-b .eti {
-    display: block; padding: 0 var(--space-4) var(--space-1);
-    letter-spacing: 0.8px; text-transform: uppercase; color: var(--label-tertiary);
-  }
 </style>

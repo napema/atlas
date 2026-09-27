@@ -53,6 +53,12 @@
   $effect(() => {
     if (resto[0] === "nuova") queueMicrotask(() => apriModifica(null));
     if (resto[0] === "serie") vista = p50.attivo() ? "sfida" : "serie";
+    // `#/abitudini/chiudi` apre il foglio di chiusura: ci arriva la card
+    // della home, e un domani il promemoria delle 21. Se il giorno non è
+    // chiudibile il foglio non si apre — la rotta non scavalca la regola.
+    if (resto[0] === "chiudi" && p50.chiudibile(oggiISO()) === "si") {
+      queueMicrotask(() => (chiusuraAperta = true));
+    }
   });
 
   /* Accendere o spegnere la sfida in Impostazioni cambia quali schede
@@ -99,6 +105,7 @@
     if (!p50.attivo()) return null;
     const b = p50.bilancio(giorno);
     const rec = p50.chiusuraDi(giorno);
+    const supporto = p50.delBlocco("supporto");
     return {
       giorno: p50.giornoCorrente(giorno),
       chiuso: Boolean(rec),
@@ -113,7 +120,12 @@
       // Il workout la domenica non è previsto: non sparisce, si spegne. Una
       // voce che sparisce fa contare sette caselle e chiedersi dov'è l'ottava.
       spente: p50.ottoVoci().filter((h: any) => !p50.vocePrevista(h, giorno)),
-      supporto: p50.delBlocco("supporto"),
+      supporto,
+      // Anche il supporto ha il suo conto, e con le PARTI vale la stessa
+      // regola delle otto: la skincare è fatta quando lo sono tutti e sei i
+      // passaggi. Un conto diverso fra i due blocchi sarebbe due modi di
+      // contare nella stessa schermata.
+      supportoFatte: supporto.filter((h: any) => p50.voceFatta(h, giorno)).length,
     };
   });
 
@@ -211,6 +223,7 @@
       {giorno}
       fatte={sfida.fatte}
       previste={sfida.previste}
+      supportoFatte={sfida.supportoFatte}
       bloccato={sfida.chiuso}
       onapri={apriDettaglio}
     />
@@ -224,8 +237,11 @@
 
     <!-- LA CHIUSURA sta in fondo, larga, dopo le righe: è l'ultima cosa
          della giornata e si tocca dopo aver guardato le otto, non prima.
-         In cima sarebbe la prima cosa sotto il pollice a schermata aperta. -->
-    <div class="chiusura">
+         In cima sarebbe la prima cosa sotto il pollice a schermata aperta.
+         `intera` la tiene a tutta larghezza sul PC: come cella della griglia
+         finiva in fondo alla colonna del supporto, dove non la cerca
+         nessuno. -->
+    <div class="chiusura intera">
       {#if sfida.chiuso}
         <p class="esito text-subheadline" class:male={sfida.rec?.esito !== "ok"}>
           <Icona nome={sfida.rec?.esito === "ok" ? "spunta" : "chiudi"} misura={15} tratto={2.4} />

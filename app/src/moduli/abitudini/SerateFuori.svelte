@@ -39,10 +39,13 @@
   }
 </script>
 
+<!-- Una riga sola, non due: sul telefono questa card costava novanta punti
+     di altezza per un'informazione che ne vale una riga, e li rubava alla
+     lista che sta sotto — che è quella per cui apri la schermata. -->
 <section class="serate" class:piena={usate >= quota} class:bloccate>
-  <div class="capo">
+  <div class="testi">
     <span class="eti text-footnote semibold">Serate fuori</span>
-    <span class="conto cifre">{usate}/{quota}</span>
+    <span class="text-footnote secondario">{nomeGiorno}</span>
   </div>
 
   <div class="caselle">
@@ -57,14 +60,14 @@
         onclick={() => tocca(i + 1)}
       ></button>
     {/each}
-    <span class="text-footnote secondario giorno">{nomeGiorno}</span>
+    <span class="conto cifre">{usate}/{quota}</span>
   </div>
 </section>
 
 <style>
   .serate {
-    display: flex; flex-direction: column; gap: var(--space-3);
-    padding: var(--space-4);
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
     border-radius: 16px;
     background: var(--bg-grouped-secondary);
     box-shadow: inset 0 0 0 1.5px var(--separator);
@@ -73,12 +76,13 @@
      più è la cosa che ti costa sette giorni. */
   .serate.piena { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-orange) 60%, transparent); }
 
-  .capo { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+  .testi { display: flex; flex-direction: column; min-width: 0; }
   .eti { letter-spacing: 0.6px; text-transform: uppercase; color: var(--label-secondary); }
   .conto { font-size: var(--text-title3); font-weight: var(--weight-semibold); }
   .piena .conto { color: var(--color-orange); }
 
   .caselle { display: flex; align-items: center; gap: var(--space-3); }
+  .conto { min-width: 34px; text-align: right; }
   .casella {
     width: 44px; height: 44px; border-radius: 12px;
     background: var(--fill-tertiary);
@@ -89,5 +93,4 @@
   .casella.presa { background: var(--color-orange); box-shadow: none; }
   .bloccate .casella { opacity: 0.6; }
   .bloccate .casella:active { transform: none; }
-  .giorno { margin-left: auto; }
 </style>
