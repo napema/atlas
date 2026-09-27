@@ -124,8 +124,46 @@ file perché non venga preso per un valore di Apple.
 5. **Un componente, un nome.** Il CSS è globale anche dentro un modulo:
    `grep -oE '^\.[a-z][a-z0-9_-]*' styles/base.css | sort -u`
 6. **Niente build, niente dipendenze, niente CDN.**
-7. **Lo stato vuoto non nasconde il contenitore**: cambia il contenuto, mai
-   l'ingombro.
+7. **Il contenitore prende la forma del contenuto.** Una carta con poco da
+   dire si riduce a una riga; una con niente da dire non c'è; una che non
+   ha niente *adesso* mostra quello che viene dopo (la carta «Adesso» della
+   home diventa «Più tardi»). *Riscritta il 27 settembre 2026, e al
+   contrario:* la regola vecchia diceva che lo stato vuoto cambia il
+   contenuto e mai l'ingombro, e il risultato erano carte grandi che
+   dicevano «niente» — mezza colonna per un'assenza. Della regola vecchia
+   resta la metà che contava: **durante il caricamento niente sparisce e
+   ricompare** — «Sto leggendo i moduli…» tiene il posto finché i dati non
+   arrivano.
+
+---
+
+## 5bis. L'impaginazione sul PC
+
+*27 settembre 2026.* Il difetto che si notava di più sul PC non era una
+carta brutta: erano i **buchi fra le carte**. La pagina era una griglia a
+righe, e una riga di griglia è alta quanto la sua carta più alta — sotto le
+altre restava il vuoto. Le regole che l'hanno tolto:
+
+1. **Le lastre scorrono in colonne, non in righe.** `.principale` di
+   `Pagina` è una multicolonna: ogni lastra si mette sotto la precedente
+   della sua colonna, e fra due lastre c'è sempre e solo il passo della
+   pagina. Le colonne finiscono ad altezze diverse solo in fondo. Mai una
+   colonna vuota: con due lastre al massimo due colonne, con una una sola.
+2. **L'ordine del documento è l'ordine d'importanza**, perché si legge
+   dall'alto in basso e poi a destra: la prima lastra del modulo è quella
+   in alto a sinistra. Quando l'ordine migliore per il PC non è quello del
+   telefono, si scrive quello del PC e sul telefono lo si rimette a posto
+   con `order` (vedi `Giornata.svelte` di Project 50).
+3. **La colonna del riepilogo (`laterale`) è per il contesto, non per
+   l'azione principale.** È stretta: 380 punti. La cosa che si fa — la
+   sessione di Mobilità — va nell'area larga.
+4. **`intera`** fa attraversare tutte le colonne a una lastra (una banda,
+   uno stato vuoto). **`stretta`** fa della pagina una colonna sola da 680
+   punti centrata: le impostazioni sono da compilare, non un cruscotto.
+5. **La home fa da sé**: le sue colonne sono PILE esplicite, scelte con
+   `MediaQuery` perché cambiano raggruppamento (telefono · PC medio · PC
+   largo), e **ogni modulo compare una volta sola**, come carta se ne ha
+   una, altrimenti come tessera in «Anche oggi».
 
 ---
 

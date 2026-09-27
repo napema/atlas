@@ -1623,3 +1623,68 @@ chat ripartono: è tutto qui sopra.
 
 Provato in Chromium a 1900×1050 in scuro (home, giorno, sfida, impostazioni)
 e a 390×844. **Sul telefono installato ancora no.**
+
+---
+
+## 27 settembre 2026 — la revisione del design, e Abitudini diventa Project 50 *(più perimetri)*
+
+Un giro su TUTTE le schermate, telefono (390×844) e PC (1180, 1600, 1885),
+in scuro e con dati verosimili in ogni modulo, prima di toccare niente. I
+problemi erano di sistema più che di schermata, e sono stati corretti lì.
+
+### Il sistema *(core)*
+
+- **I buchi fra le carte sul PC** venivano dalla griglia di `Pagina`: una
+  riga di griglia è alta quanto la carta più alta, e sotto le altre
+  restava il vuoto — in Home, Finanze, Mobilità, Training, Abitudini. Ora
+  `.principale` è una **multicolonna**: le lastre si impilano per colonna, e
+  fra due lastre c'è sempre e solo il passo della pagina. Mai una colonna
+  vuota (`:has()` limita le colonne al numero di lastre).
+- **`stretta`**: le Impostazioni sono una colonna sola da 680 punti,
+  centrata. Si spalmavano su tre colonne.
+- **DESIGN.md §5.7 è stata riscritta al contrario**: il contenitore prende
+  la forma del contenuto. La regola vecchia («lo stato vuoto cambia il
+  contenuto, mai l'ingombro») produceva carte grandi che dicevano
+  «niente». Resta la metà che contava: niente sparisce e ricompare durante
+  il caricamento. Nuova §5bis sull'impaginazione del PC.
+
+### La home *(core)*
+
+Ogni modulo **una volta sola** (carta se ne ha una, altrimenti tessera in
+«Anche oggi»); Costanza solo a sfida spenta; «Adesso» diventa «Più tardi» e
+mostra la giornata quando adesso non tocca niente; colonne come **pile**
+scelte con `MediaQuery` (telefono / PC medio / PC largo).
+
+### Project 50 *(Abitudini — e il nome in `registro.ts`)*
+
+Il modulo si chiama **Project 50**; l'id resta `abitudini` (casella, file
+nel repo dati, rotte delle notifiche). **Una lista sola divisa per momento**
+— Mattina, In giornata, Sera — al posto delle due liste otto/supporto; le
+otto hanno il segno «50» in cima al loro momento; un'abitudine con le parti
+finisce in più momenti, un pezzo per fascia. **La sfida in una carta**
+(`Eroe50.svelte`): giorno, barra, otto pallini, serate fuori, chiusura; in
+«Progressi» record/tenuti/ripartenze. Via `Blocchi`, `Testata50`,
+`NumeriSfida`. Segmenti rinominati **Oggi · Progressi**, come Mobilità.
+
+Una correzione di logica trovata strada facendo: la sfida e la home davano
+**due risposte diverse** a «il workout è previsto oggi?» (la sfida leggeva
+`days` anche su `daily`, la home no). Ora c'è `previstaNellaSfida()` in
+`calcolo.js`, usata da entrambe, e la regola di Training sta lì.
+
+### Mobilità *(fuori perimetro)*
+
+La sessione — la cosa che si fa — era nella colonna stretta del riepilogo;
+ora è la prima lastra dell'area larga, con «Hai corso oggi?» e la settimana
+nel riepilogo. Nessuna riga di logica toccata.
+
+### Cosa NON è stato toccato, e perché
+
+Finanze, Pasti e Training: con la multicolonna reggono, e sono perimetri di
+chat ferme. La tipografia, i colori, la barra delle schede: erano giusti.
+
+### Da sapere, se una chat riparte
+
+- Nella schermata vista dall'utente la card Project 50 **non c'era** sulla
+  home: con la sfida spenta su quel dispositivo `sfida` è `null` e la card
+  non esiste. Da spenta, adesso, la carta del modulo invita a cominciarla.
+- **Sul telefono installato non è stato provato niente.** Tutto in Chromium.
