@@ -108,6 +108,18 @@
      scheda la porti, e se non la porta nessuno la card non esiste. */
   const sfida = $derived(q.sfida);
 
+  /* LE TESSERE PICCOLE. Le avevo tolte perché ripetevano la barra delle
+     schede, e non era sbagliato: ripetono la navigazione. Ma toglierle ha
+     tolto anche l'unica cosa che dava colore e respiro al bento — tre
+     lastre grigie grandi e nient'altro — e soprattutto ha tolto Pasti e
+     Mobilità dalla schermata che dovrebbe dire come va la giornata.
+
+     Tornano come quadrati: l'accento del modulo, l'icona, e il NUMERO che
+     quel modulo dice di oggi. È la differenza fra un collegamento e uno
+     stato: la barra ti porta lì, questa ti dice se serve andarci. */
+  const tessere = $derived(schede.filter((x) =>
+    x.voce.id !== "finanze" && !(sfida && x.voce.id === "abitudini")));
+
   const nomeSfida = $derived(voceDi("abitudini")?.nome ?? "Project 50");
 
   const dataLunga = $derived(maiuscola(ora.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })));
@@ -296,6 +308,11 @@
 {/snippet}
 
 <Pagina titolo="{saluto(ora.getHours())}, {NOME}" larga>
+  {#snippet testata()}
+    <!-- Il saluto è la prima cosa che vedi e pesava come un sottotitolo.
+         Qui è grande davvero: apre la schermata invece di introdurla. -->
+    <h1 class="saluto">{saluto(ora.getHours())}, <span class="nome">{NOME}</span></h1>
+  {/snippet}
   {#snippet sopra()}
     <span>{dataLunga}</span>
     <span class="sync" title={statoSync.titolo}>
@@ -323,6 +340,17 @@
     <div class="tessera grande">{@render cartaAdesso()}</div>
     <div class="tessera alta">{@render cartaSfida()}</div>
     <div class="tessera media">{@render cartaFinanze()}</div>
+
+    {#each tessere as x (x.voce.id)}
+      <a class="tessera quadrata" href={x.dati?.azione?.rotta || `#/${x.voce.id}`} style:--colore={x.voce.accento}>
+        <span class="q-icona"><Icona nome={x.voce.icona} misura={20} tratto={2} /></span>
+        <span class="q-nome text-footnote semibold">{x.voce.nome}</span>
+        <span class="q-valore cifre" class:ok={x.dati?.fatto === true}>
+          {x.dati ? String(x.dati.valore ?? "—") : "—"}
+        </span>
+        {#if x.dati?.dettaglio}<span class="q-sotto text-caption1">{x.dati.dettaglio}</span>{/if}
+      </a>
+    {/each}
   </div>
 </Pagina>
 
@@ -344,6 +372,38 @@
      due francobolli. La gerarchia lì la fa l'ordine, che è già quello. */
   .bento { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); }
   .tessera { min-width: 0; display: flex; flex-direction: column; }
+
+  .saluto {
+    font-family: var(--font-display); font-weight: var(--weight-bold);
+    font-size: clamp(38px, 7vw, 64px); line-height: 1.04; letter-spacing: -0.03em;
+    overflow-wrap: anywhere;
+  }
+  .saluto .nome { color: var(--accento, var(--color-blue)); }
+
+  /* I QUADRATI. Colore del modulo, icona, e il numero che quel modulo dice
+     di oggi — non un elenco di nomi ma uno stato per tessera. Il fondo è
+     tinto piano: acceso pieno, sei tessere diventerebbero sei cartelloni e
+     le carte grandi sparirebbero sotto. */
+  .quadrata {
+    gap: 2px; padding: var(--space-4);
+    border-radius: 18px; color: inherit;
+    background: color-mix(in srgb, var(--colore) 13%, var(--bg-grouped-secondary));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--colore) 22%, transparent);
+    transition: transform var(--duration-fast) var(--ease-spring);
+  }
+  .quadrata:active { transform: scale(0.97); }
+  .q-icona {
+    display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px;
+    background: var(--colore); color: #fff; margin-bottom: var(--space-2);
+  }
+  .q-nome { color: var(--label-secondary); }
+  .q-valore { font-size: 26px; line-height: 1.1; font-weight: var(--weight-bold); }
+  .q-valore.ok { color: var(--color-green); }
+  .q-sotto {
+    color: var(--label-tertiary); margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+    -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
+  }
   /* La carta riempie la sua tessera: è questo che rende la riga una riga e
      non tre carte appoggiate alla stessa linea. */
   .tessera > :global(*) { flex: 1; min-height: 0; }
@@ -358,18 +418,20 @@
       align-items: stretch;
       gap: var(--space-6);
     }
-    .grande { grid-column: span 4; }
-    .alta   { grid-column: span 2; }
-    .media  { grid-column: span 3; }
-    /* Con tre tessere su sei colonne la seconda riga ne avrebbe tre vuote:
-       «media» si allarga a riempirle. Il puzzle si chiude sempre. */
+    .grande   { grid-column: span 4; }
+    .alta     { grid-column: span 2; }
+    .media    { grid-column: span 3; }
+    .quadrata { grid-column: span 2; aspect-ratio: auto; }
+    /* Se i moduli non hanno ancora risposto, Finanze resta l'ultima e si
+       allarga a chiudere la riga invece di lasciare mezzo vuoto. */
     .media:last-child { grid-column: span 6; }
   }
 
   @media (min-width: 1100px) {
-    .grande { grid-column: span 3; }
-    .alta   { grid-column: span 3; }
-    .media  { grid-column: span 6; }
+    .grande   { grid-column: span 4; }
+    .alta     { grid-column: span 2; }
+    .media    { grid-column: span 4; }
+    .quadrata { grid-column: span 1; }
     .media:last-child { grid-column: span 6; }
   }
 
