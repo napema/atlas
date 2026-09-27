@@ -140,7 +140,7 @@
   {:else}
     <!-- OGGI, in una riga. -->
     {#if settimana === settimanaCorrente()}
-      <div class="oggi intera" class:vuoto={!oggiQui.diOggi.length}>
+      <div class="oggi intera lastra" class:vuoto={!oggiQui.diOggi.length}>
         <span class="eti text-footnote semibold">Oggi</span>
         {#if oggiQui.diOggi.length}
           <span class="cose">
@@ -209,9 +209,13 @@
   .oggi {
     display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
     padding: var(--space-3) var(--space-4); border-radius: var(--radius-xl);
-    background: color-mix(in srgb, var(--accento) 13%, transparent);
+    /* Il velo della lastra, non un fondo suo: cosi' il riquadro con
+       l'allenamento e quello vuoto sono la stessa superficie, e cambia
+       solo se e' tinta. */
+    --lastra-velo: linear-gradient(color-mix(in srgb, var(--accento) 13%, transparent),
+                                   color-mix(in srgb, var(--accento) 13%, transparent));
   }
-  .oggi.vuoto { background: var(--bg-grouped-secondary); }
+  .oggi.vuoto { --lastra-velo: none; }
   .oggi .eti { color: var(--accento); flex: none; letter-spacing: 0.3px; }
   .oggi.vuoto .eti { color: var(--label-secondary); }
   .cose { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }

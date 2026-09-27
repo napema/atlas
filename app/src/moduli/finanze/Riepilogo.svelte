@@ -201,7 +201,7 @@
 {#if d.av.length}
   <div class="alert">
     {#each d.av as a, i (i)}
-      <p class="text-subheadline" data-livello={a.livello}><span class="pallino"></span>{a.testo}</p>
+      <p class="text-subheadline lastra" data-livello={a.livello}><span class="pallino"></span>{a.testo}</p>
     {/each}
   </div>
 {/if}
@@ -379,7 +379,7 @@
   .azione { display: inline-flex; align-items: center; gap: 4px; color: var(--accento); }
 
   .alert { display: flex; flex-direction: column; gap: var(--space-2); }
-  .alert p { display: flex; gap: var(--space-2); align-items: flex-start; padding: var(--space-3) var(--space-4); border-radius: var(--radius-xl); background: var(--bg-grouped-secondary); }
+  .alert p { display: flex; gap: var(--space-2); align-items: flex-start; padding: var(--space-3) var(--space-4); border-radius: var(--radius-xl); }
   .pallino { flex: none; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--accento); }
   [data-livello="critico"] .pallino { background: var(--color-red); }
   [data-livello="warn"] .pallino { background: var(--color-orange); }
