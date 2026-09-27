@@ -3,16 +3,30 @@
   (CLAUDE.md, §0): se al mattino non dice più di tre app aperte in fila,
   ATLAS non è servito a niente.
 
-  Quattro blocchi, sempre gli stessi, sempre nello stesso posto:
-    Adesso     le cose da fare in questa fascia, spuntabili da qui
-    Finanze    quanto puoi spendere e cosa sta per uscire
-    Costanza   la serie delle abitudini e la settimana che la spiega
-    I moduli   una riga per modulo, per controllare e basta
+  OGNI MODULO COMPARE UNA VOLTA SOLA. Come carta se ne ha una — Finanze,
+  Project 50 — altrimenti come tessera in «Anche oggi». Prima Finanze e
+  Abitudini c'erano due volte, carta e riga, e Costanza diceva la stessa
+  cosa di Project 50 con un altro numero: quattro carte per due notizie.
+
+  OGNI CARTA HA LA FORMA DEL SUO CONTENUTO. «Adesso» mostra quello che tocca
+  adesso; se adesso non tocca niente mostra quello che resta della
+  giornata, e se non resta niente si riduce a una riga. Non esiste più la
+  carta che occupa mezza colonna per dire che non ha niente da dire.
+
+  LE COLONNE SONO PILE, NON RIGHE. Sul PC ogni colonna impila le sue carte
+  senza sapere quanto sono alte le vicine: una riga di griglia è alta quanto
+  la sua carta più alta, e sotto le altre restava il buco. L'ordine delle
+  pile lo decide l'importanza:
+
+    telefono   adesso · project 50 · finanze · anche oggi
+    PC medio   [adesso, anche oggi]  [project 50, finanze]
+    PC largo   [adesso]  [project 50, anche oggi]  [finanze]
 
   Non ha dati propri: chiede a ogni modulo la sua `oggi()`.
 -->
 <script lang="ts">
   import { flip } from "svelte/animate";
+  import { MediaQuery } from "svelte/reactivity";
   import { slide } from "svelte/transition";
   import Pagina from "$lib/ui/Pagina.svelte";
   import Sezione from "$lib/ui/Sezione.svelte";
@@ -32,8 +46,17 @@
   let { resto = [] }: { resto?: string[] } = $props();
 
   const NOME = "Ema";
-  /** Quante righe in «Adesso» prima che diventi un elenco. */
-  const MAX_RIGHE = 5;
+
+  /* Le misure della pagina come STATO e non come CSS: le pile del PC sono
+     raggruppamenti diversi delle stesse carte, e un raggruppamento il CSS
+     non lo può cambiare — può solo spostare scatole che esistono già. */
+  const largo = new MediaQuery("min-width: 1300px");
+  const medio = new MediaQuery("min-width: 900px");
+  const modo = $derived(largo.current ? 3 : medio.current ? 2 : 1);
+
+  /** Quante righe in «Adesso» prima che diventi un elenco. Sul PC di più:
+      c'è lo spazio, e una colonna mezza vuota non è sobrietà. */
+  const maxRighe = $derived(modo === 1 ? 5 : 8);
 
   // Tollerante di proposito: un modulo rotto non deve portarsi via la home,
   // che è la schermata che si apre più spesso di tutte.
@@ -53,8 +76,13 @@
   const c = $derived.by(() => { dati.versione; return costanza(); });
   const ora = $derived.by(() => { dati.versione; return new Date(); });
 
-  const mostrate = $derived(q.prio.slice(0, MAX_RIGHE));
-  const nascoste = $derived(q.prio.length - mostrate.length + q.dopo);
+  /* «ADESSO» SI ADATTA. Se tocca qualcosa adesso, è quello. Se adesso non
+     tocca niente, la carta non dice «non ti tocca niente» mentre sedici
+     cose aspettano: le mostra, e si chiama «Più tardi». */
+  const elenco = $derived(q.prio.length ? q.prio : q.resta);
+  const titoloAdesso = $derived(q.prio.length || !q.resta.length ? "Adesso" : "Più tardi");
+  const mostrate = $derived(elenco.slice(0, maxRighe));
+  const nascoste = $derived(q.resta.length - mostrate.length);
   const f = $derived(q.finanze);
   /* PROJECT 50 ha una card sua, distinta da Abitudini: la riga del modulo
      dice quante ne hai spuntate oggi, questa dice a che GIORNO sei. Sono
@@ -64,6 +92,13 @@
      La home non conosce Abitudini (regola 12): prende `sfida` da qualunque
      scheda la porti, e se non la porta nessuno la card non esiste. */
   const sfida = $derived(q.sfida);
+
+  /* Le tessere: i moduli che non hanno già una carta. Finanze e Project 50
+     la loro ce l'hanno, e ripeterli in una riga sotto era la stessa cifra
+     detta due volte a trenta centimetri di distanza. */
+  const tessere = $derived(schede.filter((x) =>
+    !(x.voce.id === "finanze" && f) && !(x.voce.id === "abitudini" && sfida)));
+  const nomeSfida = $derived(voceDi("abitudini")?.nome ?? "Project 50");
 
   const dataLunga = $derived(maiuscola(ora.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })));
 
@@ -88,6 +123,185 @@
   })));
 </script>
 
+<!-- ============================================================ CARTE -->
+
+{#snippet cartaAdesso()}
+  <!-- ADESSO: l'unica carta su cui si tocca per FARE invece che per andare. -->
+  <Sezione titolo={titoloAdesso}>
+    {#snippet coda()}
+      {#if q.prio.length}<span class="conta cifre">{q.prio.length}</span>{/if}
+    {/snippet}
+    {#if !q.resta.length}
+      <!-- Niente da fare: una riga, non una carta vuota. -->
+      <div class="calmo">
+        <span class="segno ok"><Icona nome="fatto" misura={20} tratto={2} /></span>
+        <p>{q.conDati.length ? "Niente. Hai spuntato tutto quello che c'era oggi." : "Sto leggendo i moduli…"}</p>
+      </div>
+    {:else}
+      {#each mostrate as v (v.chiave)}
+        <div animate:flip={{ duration: 280 }} out:slide={{ duration: 220 }} class="voce avvolge" style:--tinta={tinta(v.tint)}>
+          <Riga onclick={() => tocca(v)} freccia={Boolean(v.apre)}>
+            {#snippet inizio()}
+              {#if v.apre}
+                <span class="apri"><Icona nome="play" misura={14} tratto={2.4} /></span>
+              {:else}
+                <Spunta finta misura={26} />
+              {/if}
+            {/snippet}
+            <span class="voce-nome">
+              {#if v.emoji}<span class="emoji">{v.emoji}</span>{/if}
+              {v.nome}
+            </span>
+            {#if v.dentro}<span class="text-subheadline secondario">{v.dentro}</span>{/if}
+            {#snippet fine()}
+              {#if v.quando === "tardi"}
+                <span class="text-subheadline ritardo">in ritardo</span>
+              {:else if v.nomeFascia}
+                <span class="text-subheadline secondario">{v.nomeFascia}</span>
+              {/if}
+            {/snippet}
+          </Riga>
+        </div>
+      {/each}
+      {#if nascoste > 0}
+        <Riga titolo="Altre {nascoste} in {nomeSfida}" href="#/abitudini" freccia accento />
+      {/if}
+    {/if}
+  </Sezione>
+{/snippet}
+
+{#snippet cartaSfida()}
+  {#if sfida}
+    <!-- PROJECT 50. La misura è il GIORNO: la barra è dei cinquanta giorni,
+         i pallini sono le otto di oggi. Da chiudere, il bordo si accende. -->
+    <div style:--accento={voceDi("abitudini")?.accento}>
+      <Sezione titolo={nomeSfida}>
+        {#snippet coda()}<a href="#/abitudini">Apri</a>{/snippet}
+        <div class="sfida" class:urgente={sfida.urgente} class:chiusa={sfida.chiuso}>
+          <div class="capo">
+            <span class="text-footnote">Giorno</span>
+            <span class="cifra cifre">{sfida.giorno}</span>
+            <span class="su text-title3 cifre secondario">/ {sfida.totale}</span>
+          </div>
+          <div class="asta" role="img" aria-label="{sfida.giorno - 1} giorni su {sfida.totale}">
+            <i style:width="{Math.round(Math.max(0, Math.min(1, (sfida.giorno - 1) / sfida.totale)) * 100)}%"></i>
+          </div>
+          {#if sfida.chiuso}
+            <p class="riga text-subheadline">
+              <Icona nome={sfida.esito === "ok" ? "spunta" : "chiudi"} misura={15} tratto={2.4} />
+              {sfida.esito === "ok" ? "Giorno chiuso." : `Giorno perso: da domani riparti dal ${sfida.prossimo}.`}
+            </p>
+          {:else}
+            <div class="riga">
+              <ol class="pallini" aria-label="Le otto di oggi">
+                {#each sfida.pallini ?? [] as p, i (i)}<li class:fatta={p.fatta} title={p.nome}></li>{/each}
+              </ol>
+              <span class="text-subheadline secondario">
+                {sfida.completo ? "tutte fatte"
+                  : sfida.nomiMancate.length === 1 ? `manca ${sfida.nomiMancate[0].toLowerCase()}`
+                  : `mancano ${sfida.nomiMancate.length}`}
+              </span>
+            </div>
+            <!-- Il bottone solo quando si può davvero chiudere: prima delle
+                 21, nessun bersaglio che si tocca per scoprire che non è
+                 ancora il momento. -->
+            {#if sfida.daChiudere}
+              <Pulsante variante="pieno" misura="media" larga href={sfida.rotta}>Chiudi il giorno</Pulsante>
+            {/if}
+          {/if}
+        </div>
+      </Sezione>
+    </div>
+  {:else}
+    <!-- COSTANZA, solo senza la sfida: con la sfida accesa il contatore di
+         Project 50 È la serie, e due numeri per la stessa domanda fanno
+         chiedere in che cosa differiscono. -->
+    <Sezione titolo="Costanza">
+      <div class="costanza">
+        <div class="serie">
+          <span class="cifra cifre" class:magra={c.serie > 0 && c.pieni === 0}>{c.serie}</span>
+          <span class="text-subheadline secondario">{c.serie === 1 ? "giorno di fila" : "giorni di fila"}</span>
+          {#if c.attese > 0}
+            <span class="rapporto text-footnote secondario"><b class="cifre">{c.spuntate}/{c.attese}</b> spunte in 7 giorni</span>
+          {/if}
+        </div>
+        <Settimana giorni={giorniCostanza} oggi={c.oggi} />
+        <p class="text-subheadline secondario">{fraseSerie(c.serie, c.pieni, c.vuotiDiFila)}</p>
+      </div>
+    </Sezione>
+  {/if}
+{/snippet}
+
+{#snippet cartaFinanze()}
+  {#if f}
+    <!-- FINANZE: le tre domande che si fanno davanti a una cena fuori. -->
+    <div style:--accento={voceDi("finanze")?.accento}>
+      <Sezione titolo="Finanze">
+        {#snippet coda()}<a href="#/finanze">Apri</a>{/snippet}
+        <div class="soldi">
+          <div class="eroe">
+            <span class="cifra cifre">{f.valore ?? "—"}</span>
+            <span class="text-subheadline secondario">{f.eti || "spendibili"}</span>
+          </div>
+          <div class="due">
+            <div><span class="text-footnote secondario">Oggi</span><span class="num cifre">{f.spesoOggi ?? "0 €"}</span></div>
+            <div><span class="text-footnote secondario">Al giorno</span><span class="num cifre">{f.alGiorno ?? "—"}</span></div>
+          </div>
+        </div>
+        <!-- Le uscite in arrivo solo se ci sono: «Niente in uscita» era una
+             riga intera per un'assenza. -->
+        {#if f.calendario?.length}
+          <div class="avvolge" style:--inizio-l="38px">
+          {#each f.calendario as e (e.chiave)}
+            <Riga>
+              {#snippet inizio()}
+                <span class="data" class:oggi={e.oggi}>
+                  <span class="data-g">{e.giornoNome}</span>
+                  <span class="data-n cifre">{e.giornoData.split(" ")[0]}</span>
+                </span>
+              {/snippet}
+              <span>{e.nome}</span>
+              {#if e.dettaglio}<span class="text-subheadline secondario">{e.dettaglio}</span>{/if}
+              {#snippet fine()}
+                <span class="cifre importo">{e.valore}</span>
+              {/snippet}
+            </Riga>
+          {/each}
+          </div>
+        {/if}
+        {#if q.allarme}
+          <div class="allarme text-subheadline"><span class="punto"></span>{q.allarme}</div>
+        {/if}
+      </Sezione>
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet cartaModuli()}
+  {#if tessere.length}
+    <!-- ANCHE OGGI: i moduli che non hanno una carta loro. Si controlla e
+         basta, quindi pesano meno di tutto il resto: tessere piccole, due
+         per riga. Nome e valore in colonna: in riga, a centosettanta punti,
+         si leggeva «Fina… 0,00 €». -->
+    <Sezione titolo="Anche oggi">
+      <div class="tessere">
+        {#each tessere as x (x.voce.id)}
+          <a class="tessera-mod" href={x.dati?.azione?.rotta || `#/${x.voce.id}`} style:--colore={x.voce.accento}>
+            <span class="tessera"><Icona nome={x.voce.icona} misura={18} tratto={2} /></span>
+            <span class="testi-mod">
+              <span class="nome-mod">{x.voce.nome}</span>
+              <span class="stato-mod cifre" class:ok={x.dati?.fatto === true}>
+                {#if x.dati?.fatto === true}<Icona nome="spunta" misura={13} tratto={2.6} />{/if}
+                <span class="stato-testo">{x.dati ? String(x.dati.valore ?? "—") : "—"}</span>
+              </span>
+            </span>
+          </a>
+        {/each}
+      </div>
+    </Sezione>
+  {/if}
+{/snippet}
+
 <Pagina titolo="{saluto(ora.getHours())}, {NOME}" larga>
   {#snippet sopra()}
     <span>{dataLunga}</span>
@@ -101,193 +315,17 @@
 
   <p class="verdetto text-title3">{verdetto(q)}</p>
 
-  <div class="griglia" class:con-sfida={Boolean(sfida)}>
-    <!-- ADESSO: l'unica carta su cui si tocca per FARE invece che per andare. -->
-    <div class="area-adesso">
-      <Sezione titolo="Adesso">
-        {#snippet coda()}
-          {#if q.prio.length}<span class="conta cifre">{q.prio.length}</span>{/if}
-        {/snippet}
-        {#if !q.resta.length}
-          <div class="calmo">
-            <span class="segno ok"><Icona nome="fatto" misura={22} tratto={2} /></span>
-            <p>{q.conDati.length ? "Niente. Hai spuntato tutto quello che c'era oggi." : "Sto leggendo i moduli…"}</p>
-          </div>
-        {:else if !q.prio.length}
-          <div class="calmo">
-            <span class="segno"><Icona nome="sole" misura={22} tratto={2} /></span>
-            <p>Adesso non ti tocca niente. {q.dopo === 1 ? "Una cosa aspetta" : `${q.dopo} cose aspettano`} più avanti.</p>
-          </div>
-          <Riga titolo="Vedi tutte le abitudini" href="#/abitudini" freccia accento />
-        {:else}
-          {#each mostrate as v (v.chiave)}
-            <div animate:flip={{ duration: 280 }} out:slide={{ duration: 220 }} class="voce avvolge" style:--tinta={tinta(v.tint)}>
-              <Riga onclick={() => tocca(v)} freccia={Boolean(v.apre)}>
-                {#snippet inizio()}
-                  {#if v.apre}
-                    <span class="apri"><Icona nome="play" misura={14} tratto={2.4} /></span>
-                  {:else}
-                    <Spunta finta misura={26} />
-                  {/if}
-                {/snippet}
-                <span class="voce-nome">
-                  {#if v.emoji}<span class="emoji">{v.emoji}</span>{/if}
-                  {v.nome}
-                </span>
-                {#if v.dentro}<span class="text-subheadline secondario">{v.dentro}</span>{/if}
-                {#snippet fine()}
-                  {#if v.quando === "tardi"}
-                    <span class="text-subheadline ritardo">in ritardo</span>
-                  {:else if v.nomeFascia}
-                    <span class="text-subheadline secondario">{v.nomeFascia}</span>
-                  {/if}
-                {/snippet}
-              </Riga>
-            </div>
-          {/each}
-          {#if nascoste > 0}
-            <Riga titolo="Altre {nascoste} in Abitudini" href="#/abitudini" freccia accento />
-          {/if}
-        {/if}
-      </Sezione>
-
-    </div>
-
-    <!-- PROJECT 50. Dopo «Adesso» e non prima: prima quello che si tocca per
-         fare, poi dove sei arrivato. La misura è il GIORNO, e la barra è dei
-         cinquanta giorni — non delle spunte di oggi, che sono la riga
-         piccola sotto. -->
-      {#if sfida}
-        <div class="area-sfida" style:--accento={voceDi("abitudini")?.accento}>
-          <Sezione titolo="Project 50">
-            {#snippet coda()}<a href="#/abitudini">Apri</a>{/snippet}
-            <div class="sfida" class:urgente={sfida.urgente} class:chiusa={sfida.chiuso}>
-              <div class="capo">
-                <span class="text-footnote secondario">Giorno</span>
-                <span class="cifra cifre">{sfida.giorno}</span>
-                <span class="su text-title3 cifre secondario">/ {sfida.totale}</span>
-              </div>
-
-              <div class="asta" role="img" aria-label="{sfida.giorno - 1} giorni su {sfida.totale}">
-                <i style:width="{Math.round(Math.max(0, Math.min(1, (sfida.giorno - 1) / sfida.totale)) * 100)}%"></i>
-              </div>
-
-              <p class="riga text-subheadline">
-                {#if sfida.chiuso}
-                  <Icona nome={sfida.esito === "ok" ? "spunta" : "chiudi"} misura={15} tratto={2.4} />
-                  {sfida.esito === "ok" ? "Giorno chiuso." : `Giorno perso: da domani riparti dal ${sfida.prossimo}.`}
-                {:else}
-                  <b class="cifre" class:tutte={sfida.completo}>{sfida.fatte}/{sfida.previste}</b>
-                  <span class="secondario">
-                    {sfida.completo ? "tutte fatte"
-                      : sfida.nomiMancate.length === 1 ? `manca ${sfida.nomiMancate[0].toLowerCase()}`
-                      : `mancano ${sfida.nomiMancate.slice(0, 2).map((n: string) => n.toLowerCase()).join(", ")}${sfida.nomiMancate.length > 2 ? "…" : ""}`}
-                  </span>
-                {/if}
-              </p>
-
-              <!-- Il bottone compare solo quando si può davvero chiudere:
-                   prima delle 21 una riga che lo dice, e nessun bersaglio
-                   che si tocca per scoprire che non è ancora il momento. -->
-              {#if sfida.daChiudere}
-                <Pulsante variante="pieno" misura="media" larga href={sfida.rotta}>Chiudi il giorno</Pulsante>
-              {:else if !sfida.chiuso}
-                <span class="text-footnote secondario">Si chiude dalle {sfida.dalleOre}.</span>
-              {/if}
-            </div>
-          </Sezione>
-        </div>
-      {/if}
-
-    <!-- FINANZE: le tre domande che si fanno davanti a una cena fuori. -->
-    {#if f}
-      <div class="area-finanze" style:--accento={voceDi("finanze")?.accento}>
-        <Sezione titolo="Finanze">
-          {#snippet coda()}<a href="#/finanze">Apri</a>{/snippet}
-          <div class="soldi">
-            <div class="eroe">
-              <span class="cifra cifre">{f.valore ?? "—"}</span>
-              <span class="text-subheadline secondario">{f.eti || "spendibili"}</span>
-            </div>
-            <div class="due">
-              <div><span class="text-footnote secondario">Oggi</span><span class="num cifre">{f.spesoOggi ?? "0 €"}</span></div>
-              <div><span class="text-footnote secondario">Al giorno</span><span class="num cifre">{f.alGiorno ?? "—"}</span></div>
-            </div>
-          </div>
-          {#if f.calendario?.length}
-            <div class="avvolge" style:--inizio-l="38px">
-            {#each f.calendario as e (e.chiave)}
-              <Riga>
-                {#snippet inizio()}
-                  <span class="data" class:oggi={e.oggi}>
-                    <span class="data-g">{e.giornoNome}</span>
-                    <span class="data-n cifre">{e.giornoData.split(" ")[0]}</span>
-                  </span>
-                {/snippet}
-                <span>{e.nome}</span>
-                {#if e.dettaglio}<span class="text-subheadline secondario">{e.dettaglio}</span>{/if}
-                {#snippet fine()}
-                  <span class="cifre importo">{e.valore}</span>
-                {/snippet}
-              </Riga>
-            {/each}
-            </div>
-          {:else}
-            <Riga><span class="secondario">Niente in uscita entro domenica.</span></Riga>
-          {/if}
-          {#if q.allarme}
-            <div class="allarme text-subheadline"><span class="punto"></span>{q.allarme}</div>
-          {/if}
-        </Sezione>
-      </div>
+  <div class="pile" data-modo={modo}>
+    {#if modo === 3}
+      <div class="pila">{@render cartaAdesso()}</div>
+      <div class="pila">{@render cartaSfida()}{@render cartaModuli()}</div>
+      <div class="pila">{@render cartaFinanze()}</div>
+    {:else if modo === 2}
+      <div class="pila">{@render cartaAdesso()}{@render cartaModuli()}</div>
+      <div class="pila">{@render cartaSfida()}{@render cartaFinanze()}</div>
+    {:else}
+      <div class="pila">{@render cartaAdesso()}{@render cartaSfida()}{@render cartaFinanze()}{@render cartaModuli()}</div>
     {/if}
-
-    <!-- COSTANZA: il numero è la serie, la striscia la spiega. -->
-    <div class="area-costanza">
-      <Sezione titolo="Costanza">
-        <div class="costanza">
-          <div class="serie">
-            <span class="cifra cifre" class:magra={c.serie > 0 && c.pieni === 0}>{c.serie}</span>
-            <span class="text-subheadline secondario">{c.serie === 1 ? "giorno di fila" : "giorni di fila"}</span>
-            {#if c.attese > 0}
-              <span class="rapporto text-footnote secondario"><b class="cifre">{c.spuntate}/{c.attese}</b> spunte in 7 giorni</span>
-            {/if}
-          </div>
-          <Settimana giorni={giorniCostanza} oggi={c.oggi} />
-          <p class="text-subheadline secondario">{fraseSerie(c.serie, c.pieni, c.vuotiDiFila)}</p>
-        </div>
-      </Sezione>
-    </div>
-
-    <!-- I MODULI: qui non si decide niente, si controlla — ed è la cosa meno
-         importante della schermata. Era una colonna alta e magra che sul PC
-         lasciava mezzo schermo vuoto accanto a sé; come STRISCIA a tutta
-         larghezza fa da base alla pagina e, sul telefono, sta in due
-         colonne invece di cinque righe. -->
-    <div class="area-moduli">
-      <Sezione titolo="I moduli">
-        <div class="tessere">
-          {#each schede as s (s.voce.id)}
-            <!-- Nome e valore IN COLONNA, non in riga: in due colonne su un
-                 telefono una tessera è larga centosettanta punti, e in riga
-                 ci stava «Fina… 0,00 €». Un nome troncato in un cruscotto
-                 non si legge, si indovina. -->
-            <a class="tessera-mod" href={s.dati?.azione?.rotta || `#/${s.voce.id}`} style:--colore={s.voce.accento}>
-              <span class="tessera"><Icona nome={s.voce.icona} misura={18} tratto={2} /></span>
-              <span class="testi-mod">
-                <span class="nome-mod">{s.voce.nome}</span>
-                <span class="stato-mod cifre" class:ok={s.dati?.fatto === true}>
-                  {#if s.dati?.fatto === true}<Icona nome="spunta" misura={13} tratto={2.6} />{/if}
-                  <span class="stato-testo">{s.dati ? String(s.dati.valore ?? "—") : "—"}</span>
-                </span>
-              </span>
-            </a>
-          {:else}
-            <span class="secondario">Sto leggendo i moduli…</span>
-          {/each}
-        </div>
-      </Sezione>
-    </div>
   </div>
 </Pagina>
 
@@ -301,63 +339,30 @@
 
   .verdetto { margin-top: calc(-1 * var(--space-3)); color: var(--label-secondary); font-weight: var(--weight-regular); }
 
-  /* `minmax(0, 1fr)` e non `1fr`: una colonna `1fr` non scende sotto la
-     larghezza minima del suo contenuto, e il nome lungo di una cena la
-     allargava oltre lo schermo del telefono. */
-  /* LE AREE SONO DUE DISEGNI, non uno con un buco. Una `grid-area` che
-     esiste sempre e resta vuota quando la sfida è spenta lascia una riga
-     alta zero E il suo spazio: sul PC si vedeva come una fascia di nero in
-     mezzo alla pagina. Con due `grid-template-areas` non c'è niente da
-     lasciar vuoto.
+  /* LE PILE. Ogni colonna è una pila che non sa niente delle altre: niente
+     righe condivise, quindi niente buchi FRA le carte — le colonne possono
+     finire ad altezze diverse solo in fondo. `minmax(0, …)` e non `1fr`:
+     una colonna `1fr` non scende sotto la larghezza del suo contenuto, e il
+     nome lungo di una cena la allargava oltre lo schermo. */
+  .pile { display: grid; gap: var(--space-6); grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .pile[data-modo="2"] { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); column-gap: var(--space-8); }
+  .pile[data-modo="3"] { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.9fr) minmax(0, 1.1fr); column-gap: var(--space-8); }
+  .pila { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
 
-     La gerarchia è nelle DIMENSIONI: «Adesso» e Finanze sono le due colonne
-     alte — la prima è l'unica su cui si tocca per fare, la seconda è la
-     cifra per cui si apre la app — le due carte di stato stanno in una
-     colonna più stretta, e i moduli sono la striscia in fondo. */
-  .griglia {
-    display: grid; gap: var(--space-6);
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "adesso" "finanze" "costanza" "moduli";
-  }
-  .griglia.con-sfida { grid-template-areas: "adesso" "sfida" "finanze" "costanza" "moduli"; }
-
-  @media (min-width: 900px) {
-    .griglia {
-      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start;
-      grid-template-areas: "adesso finanze" "costanza finanze" "moduli moduli";
-    }
-    .griglia.con-sfida {
-      grid-template-areas: "adesso finanze" "sfida finanze" "costanza finanze" "moduli moduli";
-    }
-  }
-  @media (min-width: 1300px) {
-    .griglia {
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 0.9fr);
-      grid-template-areas: "adesso finanze costanza" "moduli moduli moduli";
-    }
-    .griglia.con-sfida {
-      grid-template-areas: "adesso finanze sfida" "adesso finanze costanza" "moduli moduli moduli";
-    }
-  }
-  .area-adesso { grid-area: adesso; }
-  .area-sfida { grid-area: sfida; }
-
-  .sfida { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); }
+  .sfida { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
   .sfida .capo { display: flex; align-items: baseline; gap: var(--space-2); }
   .sfida .cifra { font-family: var(--font-display); font-size: 44px; line-height: 1; font-weight: var(--weight-bold); }
   .sfida .capo .text-footnote { color: var(--accento); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.6px; align-self: center; }
   .asta { height: 4px; border-radius: var(--radius-full); background: var(--fill-tertiary); overflow: hidden; }
   .asta i { display: block; height: 100%; background: var(--accento); border-radius: inherit; transition: width var(--duration-slow) var(--ease-default); }
-  .sfida .riga { display: flex; align-items: center; gap: 6px; }
-  .sfida .riga b { font-weight: var(--weight-semibold); }
-  .sfida .riga .tutte { color: var(--color-green); }
-  .chiusa .riga { color: var(--color-green); }
+  .sfida .riga { display: flex; align-items: center; gap: var(--space-3); margin: 0; }
+  .chiusa .riga { color: var(--color-green); gap: 6px; }
+  .pallini { display: flex; gap: 5px; }
+  .pallini li { width: 11px; height: 11px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--label-tertiary); }
+  .pallini li.fatta { background: var(--color-green); box-shadow: none; }
   /* Da chiudere: il bordo della lastra si accende. Il numero resta nero —
      è il conto dei giorni, non un allarme. */
-  .urgente { box-shadow: inset 0 0 0 1.5px var(--color-orange); border-radius: 14px; }
-  .area-finanze { grid-area: finanze; }
-  .area-costanza { grid-area: costanza; }
-  .area-moduli { grid-area: moduli; }
+  .urgente { box-shadow: inset 0 0 0 1.5px var(--color-orange); border-radius: var(--radius-xxxl); }
 
   /* Due colonne sul telefono, quante ne stanno sul PC. `minmax(0, 1fr)` e
      non `auto`: il nome lungo di un modulo allargava la sua colonna e
