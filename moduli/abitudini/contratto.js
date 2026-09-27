@@ -247,6 +247,11 @@ function schedaSfida() {
     totale: p50.TOTALE,
     fatte: b.fatte,
     previste: b.previste,
+    // Un pallino per ognuna delle otto previste oggi: la home li disegna,
+    // e un pallino vuoto su otto si vede dove «7/8» si leggeva come quasi.
+    pallini: p50.ottoVoci()
+      .filter((h) => p50.vocePrevista(h, g))
+      .map((h) => ({ nome: h.name, fatta: p50.voceFatta(h, g) })),
     completo: b.completo,
     nomiMancate: b.nomiMancate,
     chiuso: Boolean(rec),

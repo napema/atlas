@@ -14,8 +14,8 @@
   quattro era il journal» è una decisione — e lo storico è il posto dove
   quel numero si controlla, giorno per giorno.
 
-  I tre numeri (record, tenuti, ripartenze) stanno nel riepilogo, accanto al
-  contatore: vedi `NumeriSfida.svelte`.
+  I tre numeri (record, tenuti, ripartenze) stanno nella carta della sfida,
+  accanto al contatore: vedi `Eroe50.svelte`.
 -->
 <script lang="ts">
   import Sezione from "$lib/ui/Sezione.svelte";

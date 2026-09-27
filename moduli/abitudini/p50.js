@@ -23,7 +23,7 @@
 // record con id e `up` come tutto il resto — e quindi si fondono bene.
 
 import { oggiISO, piuGiorni, daISO, isoDi } from "../../core/ui.js";
-import { leggiFatto } from "../../core/contesto.js";
+import { previstaNellaSfida } from "./calcolo.js";
 import { casella, stato, abitudiniVive, statoDi, partiDi, parteFatta } from "./dati.js";
 
 export const TOTALE = 50;
@@ -105,45 +105,16 @@ export function voceFatta(h, data) {
   return statoDi(h.id, data) === "fatta";
 }
 
-/* LA VOCE CHE SEGUE IL PIANO DI TRAINING, riconosciuta per NOME.
-   È lo stesso riconoscimento grossolano della sessione di Mobilità in
-   `contratto.js`, e per lo stesso motivo: legarla con un id vorrebbe dire
-   che Abitudini conosce Training, che è esattamente l'accoppiamento che il
-   bus e la lavagna esistono per evitare. Il nome lo scegli tu, e se non
-   contiene nessuna di queste parole la voce resta sul proprio calendario. */
-export const SEGUE_TRAINING = /workout|allenamen|palestra/i;
+/* La regola di Training sta in calcolo.js, perché vale per tutto il modulo
+   e non solo per la sfida. Qui la si riesporta per `contratto.js`. */
+export { SEGUE_TRAINING } from "./calcolo.js";
 
 /**
- * Il piano di Training dice qualcosa su quel giorno? `true`/`false` se sì,
- * `null` se non ne sa abbastanza e la voce deve arrangiarsi da sé.
- *
- * `giorni-scelti` è la parte che conta: distingue «oggi è riposo» da «al
- * piano non hai ancora dato i giorni». Senza, un piano senza giorni
- * regalerebbe una voce non negoziabile ogni giorno, e sarebbe un contatore
- * che sale per un dato mancante.
+ * Una voce è prevista in quel giorno? La regola sta in calcolo.js, dove la
+ * legge anche la home: una regola sola, perché due regole davano due
+ * risposte — il workout «non previsto» qui e «da fare» sulla home.
  */
-function secondoTraining(h, data) {
-  if (!SEGUE_TRAINING.test(h?.name || "")) return null;
-  const scelti = leggiFatto("allenamenti", "giorni-scelti", data);
-  const previsti = leggiFatto("allenamenti", "oggi-previsti", data);
-  if (typeof previsti !== "number" || !scelti) return null;
-  return previsti > 0;
-}
-
-/**
- * Una voce è prevista in quel giorno?
- *
- * Il workout non lo decide il calendario dell'abitudine ma IL PIANO: è
- * atteso i giorni in cui Training ha un allenamento, e in quelli di riposo
- * non manca. Sei su sette scritto a mano era un'approssimazione di questo.
- */
-export function vocePrevista(h, data) {
-  const dalPiano = secondoTraining(h, data);
-  if (dalPiano !== null) return dalPiano;
-  const giorni = h?.sched?.days;
-  if (!Array.isArray(giorni) || !giorni.length) return true;
-  return giorni.includes(daISO(data).getDay());
-}
+export const vocePrevista = (h, data) => previstaNellaSfida(h, data);
 
 /** Come sta il giorno: quante voci previste, quante fatte, quali mancano. */
 export function bilancio(data = oggiISO()) {

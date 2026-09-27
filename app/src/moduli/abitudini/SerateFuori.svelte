@@ -15,7 +15,15 @@
   import { dati } from "$lib/core/reattivo.svelte";
   import { serateDi, scriviSerate, config, serateBloccate } from "$condivisi/abitudini/p50.js";
 
-  let { giorno = oggiISO() }: { giorno?: string } = $props();
+  let {
+    giorno = oggiISO(),
+    incassata = false,
+  }: {
+    giorno?: string;
+    /** Dentro un'altra carta (quella di Project 50): niente bordo e niente
+        fondo suoi, sarebbe una carta dentro una carta. */
+    incassata?: boolean;
+  } = $props();
 
   /* Le serate si bloccano quando la DOMENICA di quella settimana è chiusa,
      non quando lo è il giorno che stai guardando: la quota è settimanale e
@@ -42,7 +50,7 @@
 <!-- Una riga sola, non due: sul telefono questa card costava novanta punti
      di altezza per un'informazione che ne vale una riga, e li rubava alla
      lista che sta sotto — che è quella per cui apri la schermata. -->
-<section class="serate" class:piena={usate >= quota} class:bloccate>
+<section class="serate" class:piena={usate >= quota} class:bloccate class:incassata>
   <div class="testi">
     <span class="eti text-footnote semibold">Serate fuori</span>
     <span class="text-footnote secondario">{nomeGiorno}</span>
@@ -75,6 +83,7 @@
   /* Quota raggiunta: il bordo si tinge, perché da quel momento una serata in
      più è la cosa che ti costa sette giorni. */
   .serate.piena { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-orange) 60%, transparent); }
+  .serate.incassata, .serate.incassata.piena { padding: 0; background: none; box-shadow: none; border-radius: 0; }
 
   .testi { display: flex; flex-direction: column; min-width: 0; }
   .eti { letter-spacing: 0.6px; text-transform: uppercase; color: var(--label-secondary); }

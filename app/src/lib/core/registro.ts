@@ -39,6 +39,8 @@ export interface SchedaSfida {
   totale: number;
   fatte: number;
   previste: number;
+  /** Una per ognuna delle voci previste oggi, nell'ordine della sfida. */
+  pallini?: { nome: string; fatta: boolean }[];
   completo: boolean;
   nomiMancate: string[];
   chiuso: boolean;
@@ -103,7 +105,12 @@ export const MODULI: VoceModulo[] = [
     impostazioni: () => import("../../moduli/allenamenti/Impostazioni.svelte"),
   },
   {
-    id: "abitudini", nome: "Abitudini", icona: "abitudini", accento: "var(--color-indigo)",
+    /* «Project 50», non più «Abitudini»: la sfida è la funzione principale
+       del modulo, e le abitudini di supporto ci stanno intorno. L'id resta
+       `abitudini` — sono il nome della casella, del file nel repo dati e
+       delle rotte delle notifiche, e nessuno di questi deve cambiare per un
+       nome sulla barra. */
+    id: "abitudini", nome: "Project 50", icona: "abitudini", accento: "var(--color-indigo)",
     vista: () => import("../../moduli/abitudini/Vista.svelte"),
     contratto: () => import("$condivisi/abitudini/contratto.js"),
     impostazioni: () => import("../../moduli/abitudini/Impostazioni.svelte"),

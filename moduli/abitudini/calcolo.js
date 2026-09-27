@@ -18,6 +18,7 @@
 
 import { abitudiniVive, eFatta, eSaltata, stato, partiDi, parteFatta, FASCE, statoFascia } from "./dati.js";
 import { isoDi, daISO, piuGiorni, oggiISO } from "../../core/ui.js";
+import { leggiFatto } from "../../core/contesto.js";
 
 const PREDEFINITA = { type: "daily", days: [1, 2, 3, 4, 5, 6, 0], times: 3 };
 
@@ -74,8 +75,63 @@ export function settimanaleObbligatoria(h, iso) {
   return quota - fatte >= rimasti;
 }
 
+/* L'ABITUDINE CHE SEGUE IL PIANO DI TRAINING, riconosciuta per NOME.
+   È lo stesso riconoscimento grossolano della sessione di Mobilità in
+   `contratto.js`, e per lo stesso motivo: legarla con un id vorrebbe dire
+   che Abitudini conosce Training, che è esattamente l'accoppiamento che il
+   bus e la lavagna esistono per evitare. */
+export const SEGUE_TRAINING = /workout|allenamen|palestra/i;
+
+/**
+ * Il piano di Training dice qualcosa su quel giorno? `true`/`false` se sì,
+ * `null` se non ne sa abbastanza e l'abitudine deve arrangiarsi da sé.
+ *
+ * Sta QUI e non in p50.js perché vale per tutto il modulo: la home, la
+ * lista del giorno e la chiusura devono dare la stessa risposta, e prima
+ * la davano diversa — la chiusura seguiva il piano, la checklist della
+ * home il calendario dell'abitudine.
+ *
+ * `giorni-scelti` distingue «oggi è riposo» da «al piano non hai ancora
+ * dato i giorni»: senza, un piano senza giorni regalerebbe una voce libera
+ * ogni giorno.
+ */
+export function secondoTraining(h, iso) {
+  if (!SEGUE_TRAINING.test(h?.name || "")) return null;
+  const scelti = leggiFatto("allenamenti", "giorni-scelti", iso);
+  const previsti = leggiFatto("allenamenti", "oggi-previsti", iso);
+  if (typeof previsti !== "number" || !scelti) return null;
+  return previsti > 0;
+}
+
+/**
+ * Una delle otto è prevista in quel giorno?
+ *
+ * Nella sfida `days` vale anche con `type: "daily"`: il workout è seminato
+ * «ogni giorno, lunedì-sabato», ed è la sfida che ha deciso di leggerlo
+ * così. FUORI dalla sfida `days` con `daily` resta ignorato come dice lo
+ * schema — nell'archivio di partenza ci sono abitudini giornaliere con
+ * giorni residui, e onorarli le spegnerebbe il fine settimana.
+ *
+ * Stava in p50.js, e la home rispondeva con la regola del modulo invece
+ * che con questa: il workout era «non previsto oggi» nella schermata della
+ * sfida e «da fare» nella checklist della home, nello stesso momento.
+ */
+export function previstaNellaSfida(h, iso) {
+  const dalPiano = secondoTraining(h, iso);
+  if (dalPiano !== null) return dalPiano;
+  const giorni = h?.sched?.days;
+  if (!Array.isArray(giorni) || !giorni.length) return true;
+  return giorni.includes(dowDi(iso));
+}
+
+const nelleOtto = (h) => Boolean(stato().p50?.attivo) && h?.blocco === "p50";
+
 /** È attesa oggi? Per le settimanali: solo se obbligatoria o già fatta. */
 export function eAttesa(h, iso) {
+  if (h.created && iso < isoDi(new Date(h.created))) return false;
+  if (nelleOtto(h)) return previstaNellaSfida(h, iso);
+  const dalPiano = secondoTraining(h, iso);
+  if (dalPiano !== null) return dalPiano;
   if (!ePrevista(h, iso)) return false;
   if (pianoDi(h).type === "weekly") return settimanaleObbligatoria(h, iso) || fattaIl(h, iso);
   return true;
@@ -355,4 +411,77 @@ export function restaOggi(iso = oggiISO(), ora = new Date().getHours()) {
   // momento resta in fondo ma NON sparisce: è comunque roba di oggi.
   const peso = { tardi: 0, adesso: 1, presto: 2 };
   return out.sort((a, b) => (peso[a.quando] - peso[b.quando]) || (a.ordine - b.ordine));
+}
+
+/* =========================================================================
+   LA GIORNATA PER MOMENTI.
+
+   La lista del giorno era divisa per IMPORTANZA — le otto della sfida in un
+   blocco, il supporto in un altro — e la giornata non si vive così. La
+   mattina fai la morning routine e la skincare insieme, una dopo l'altra:
+   con due liste saltavi avanti e indietro fra due blocchi per fare tre cose
+   nello stesso quarto d'ora.
+
+   Ora è una lista sola divisa per MOMENTO, e l'importanza la dice la voce
+   stessa (le otto hanno il segno della sfida e stanno in cima al loro
+   momento). Un'abitudine con le parti finisce in più momenti, un pezzo per
+   fascia: la skincare della sera non ha niente da fare nel blocco della
+   mattina.
+
+   Dove finisce una voce senza parti: nel momento del suo promemoria, se ne
+   ha uno; altrimenti «In giornata». Le abitudini in negativo — «no phone»,
+   «no PMO» — non hanno un'ora perché valgono tutto il giorno, ed è lì che
+   devono stare.
+   ========================================================================= */
+
+export const MOMENTI = [
+  { id: "mattina", nome: "Mattina" },
+  { id: "giorno", nome: "In giornata" },
+  { id: "sera", nome: "Sera" },
+];
+
+const MOMENTO_DI_FASCIA = {
+  mattina: "mattina", pomeriggio: "giorno", preWorkout: "giorno", qualsiasi: "giorno", sera: "sera",
+};
+
+export const momentoDiFascia = (fascia) => MOMENTO_DI_FASCIA[fascia] || "giorno";
+
+/** Il momento di un orario «HH:MM»: prima delle 12 mattina, dalle 18 sera. */
+export function momentoDiOra(hhmm) {
+  const ora = Number(String(hhmm || "").split(":")[0]);
+  if (!Number.isFinite(ora) || !hhmm) return "giorno";
+  return ora < 12 ? "mattina" : ora >= 18 ? "sera" : "giorno";
+}
+
+/**
+ * Le abitudini date, distribuite nei tre momenti.
+ *
+ * Restituisce SOLO i momenti che hanno qualcosa: un blocco «Sera» vuoto
+ * sarebbe una lastra che occupa spazio per dire che non c'è niente.
+ *
+ * @param {object[]} abitudini  quelle attese nel giorno
+ * @param {(h: object) => boolean} [prima]  quali vanno in cima al loro momento
+ * @returns {{ id, nome, voci: { h, fascia: string|null }[] }[]}
+ */
+export function giornataPerMomenti(abitudini, prima = () => false) {
+  const per = new Map(MOMENTI.map((m) => [m.id, []]));
+  for (const h of abitudini) {
+    const parti = partiDi(h);
+    if (!parti.length) {
+      per.get(momentoDiOra(h.remind)).push({ h, fascia: null });
+      continue;
+    }
+    // Un pezzo per fascia, e ogni pezzo nel suo momento. Due fasce che
+    // cadono nello stesso momento (pomeriggio e pre-allenamento) restano
+    // due pezzi: hanno orari diversi e si spuntano in momenti diversi.
+    const fasce = [...new Set(parti.map((p) => p.fascia || "qualsiasi"))];
+    for (const f of fasce) per.get(momentoDiFascia(f)).push({ h, fascia: f });
+  }
+  const ordine = (a, b) =>
+    (Number(prima(b.h)) - Number(prima(a.h)))
+    || ((a.h.order ?? 0) - (b.h.order ?? 0))
+    || ((FASCE[a.fascia]?.ordine || 9) - (FASCE[b.fascia]?.ordine || 9));
+  return MOMENTI
+    .map((m) => ({ ...m, voci: per.get(m.id).sort(ordine) }))
+    .filter((m) => m.voci.length);
 }

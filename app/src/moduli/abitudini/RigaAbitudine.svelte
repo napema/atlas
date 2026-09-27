@@ -2,9 +2,15 @@
   Un'abitudine nella lista del giorno.
 
   A sinistra la spunta, al centro nome e piano (toccarli apre il dettaglio),
-  a destra la serie e «oggi no». Sotto, se ci sono, le PARTI raccolte per
-  fascia: la skincare sono due routine a quattordici ore di distanza, e in
-  una lista piatta si mescolavano.
+  a destra «oggi no». Sotto, se ci sono, le PARTI raccolte per fascia: la
+  skincare sono due routine a quattordici ore di distanza, e in una lista
+  piatta si mescolavano.
+
+  Con `fascia` la riga mostra solo le parti di quella fascia: la lista del
+  giorno è divisa per momenti, e la skincare della sera non ha niente da
+  fare nel blocco della mattina. La spunta in testa, allora, dice come sta
+  QUEL pezzo — tre passaggi del mattino fatti sono un pezzo finito, anche se
+  la sera è ancora da fare.
 -->
 <script lang="ts">
   import Spunta from "$lib/ui/Spunta.svelte";
@@ -15,7 +21,7 @@
   import {
     eSaltata, alterna, alternaSaltata, partiDi, parteFatta, alternaParte, gruppiParti,
   } from "$condivisi/abitudini/dati.js";
-  import { fattaIl, etichettaPiano } from "$condivisi/abitudini/calcolo.js";
+  import { fattaIl, etichettaPiano, pianoDi } from "$condivisi/abitudini/calcolo.js";
 
   let {
     h,
@@ -23,11 +29,17 @@
     spenta = false,
     compatta = false,
     bloccata = false,
+    fascia = null,
+    sfida = false,
     onapri,
   }: {
     h: any; giorno: string; spenta?: boolean; compatta?: boolean;
     /** Giorno chiuso: si legge e non si tocca. Vedi `chiudi()` in p50.js. */
     bloccata?: boolean;
+    /** Solo le parti di questa fascia (la lista per momenti). */
+    fascia?: string | null;
+    /** È una delle otto di Project 50: porta il segno della sfida. */
+    sfida?: boolean;
     onapri: (id: string) => void;
   } = $props();
 
@@ -35,19 +47,41 @@
     dati.versione;
     const parti = partiDi(h);
     const gruppi = parti.length
-      ? gruppiParti(h).map((g: any) => ({
-          ...g,
-          parti: g.parti.map((p: any) => ({ ...p, fatta: parteFatta(h.id, p.id, giorno) })),
-        }))
+      ? gruppiParti(h)
+          .filter((g: any) => !fascia || g.fascia === fascia)
+          .map((g: any) => ({
+            ...g,
+            parti: g.parti.map((p: any) => ({ ...p, fatta: parteFatta(h.id, p.id, giorno) })),
+          }))
       : [];
+    const mie = gruppi.reduce((n: number, g: any) => n + g.parti.length, 0);
     const quante = gruppi.reduce((n: number, g: any) => n + g.parti.filter((p: any) => p.fatta).length, 0);
     return {
       parti,
       gruppi,
-      fatta: fattaIl(h, giorno),
+      // Con una fascia sola la spunta in testa è quella del pezzo, non
+      // dell'abitudine intera: vedi il commento in cima.
+      fatta: fascia && parti.length ? mie > 0 && quante === mie : fattaIl(h, giorno),
       saltata: eSaltata(h.id, giorno),
-      frazione: parti.length ? quante / parti.length : 0,
+      frazione: mie ? quante / mie : 0,
+      // Il nome della fascia non si ripete: sta già nel titolo del momento.
+      // Resta l'ora, se c'è, che è l'informazione che il titolo non dà.
+      unGruppo: gruppi.length === 1,
     };
+  });
+
+  /* LA RIGA SOTTO IL NOME, solo quando dice qualcosa. Scriveva «Ogni
+     giorno» sotto undici voci su undici, in una lista che per definizione è
+     quella di oggi: undici volte la stessa parola che non informa. */
+  const sotto = $derived.by(() => {
+    if (stato.saltata) return "Oggi no";
+    if (fascia && stato.unGruppo) {
+      const g = stato.gruppi[0];
+      const fatte = g.parti.filter((p: any) => p.fatta).length;
+      return [g.ora, `${fatte} di ${g.parti.length}`].filter(Boolean).join(" · ");
+    }
+    if (pianoDi(h).type !== "daily" && pianoDi(h).type) return etichettaPiano(h);
+    return h.remind && !stato.parti.length ? `alle ${h.remind}` : "";
   });
 
   function spunta() {
@@ -87,10 +121,14 @@
     <button type="button" class="corpo" onclick={() => onapri(h.id)}>
       <span class="simbolo emoji" aria-hidden="true">{h.emoji || "⭐️"}</span>
       <span class="testi">
-        <span class="nome" class:fatta={stato.fatta}>{h.name}</span>
-        <span class="text-subheadline secondario">
-          {stato.saltata ? "Oggi no" : etichettaPiano(h)}
+        <span class="nome-riga">
+          <span class="nome" class:fatta={stato.fatta}>{h.name}</span>
+          <!-- Il segno della sfida: è l'unica cosa che distingue le otto dal
+               resto, adesso che stanno nella stessa lista. Piccolo e fermo,
+               accanto al nome: si legge prima di leggere la riga. -->
+          {#if sfida}<span class="sigla cifre" title="Project 50: non negoziabile">50</span>{/if}
         </span>
+        {#if sotto}<span class="text-subheadline secondario">{sotto}</span>{/if}
       </span>
     </button>
     {#if !stato.parti.length && !stato.fatta && !bloccata}
@@ -114,11 +152,14 @@
       {#each stato.gruppi as g (g.fascia)}
         {@const fatte = g.parti.filter((p: any) => p.fatta).length}
         <div class="gruppo" class:completo={fatte === g.parti.length}>
-          <div class="gruppo-testa text-footnote">
+          <!-- Con un pezzo solo la testata del gruppo ripeteva il momento,
+               che sta già nel titolo del blocco: ora e conto salgono nella
+               riga sotto il nome, e la riga costa trenta punti in meno. -->
+          {#if !stato.unGruppo || !fascia}<div class="gruppo-testa text-footnote">
             <span class="gruppo-nome">{g.nome}</span>
             {#if g.ora}<span class="ora secondario"><Icona nome="campanella" misura={11} tratto={2} />{g.ora}</span>{/if}
             <span class="conta cifre secondario">{fatte}/{g.parti.length}</span>
-          </div>
+          </div>{/if}
           <ul class="parti">
             {#each g.parti as p, i (p.id)}
               <li>
@@ -139,7 +180,7 @@
 </div>
 
 <style>
-  .abitudine { position: relative; padding: 10px var(--space-4); }
+  .abitudine { position: relative; padding: 6px var(--space-4); }
   :global(* + .abitudine)::before {
     content: ""; position: absolute; top: 0; right: 0; left: calc(var(--space-4) + 28px + var(--space-3));
     border-top: 0.5px solid var(--separator);
@@ -150,12 +191,12 @@
   .bloccata .corpo:active { opacity: 1; }
   .saltata .nome { color: var(--label-secondary); }
 
-  /* LE DUE ALTEZZE SONO LA GERARCHIA. Le otto voci della sfida stanno a 56
-     con il nome a 17 medium; il supporto a 44 con 15 regular e un filo di
-     opacità in meno. Non è decorazione: è l'unica cosa che dice, prima di
-     leggere, che le due liste non pesano uguale. */
-  .testa { display: flex; align-items: center; gap: var(--space-3); min-height: 56px; }
+  /* 52 di minimo, come le righe di sistema. Era 56 più dieci sopra e dieci
+     sotto: 76 punti per una riga di una parola, e otto righe così erano
+     una schermata e mezza di telefono per dire otto cose. */
+  .testa { display: flex; align-items: center; gap: var(--space-3); min-height: 52px; }
   .nome { font-size: 17px; font-weight: var(--weight-medium); }
+  /* `compatta` è per quello che oggi non è previsto: si legge, pesa meno. */
   .compatta .testa { min-height: 44px; }
   .compatta .nome { font-size: 15px; font-weight: var(--weight-regular); }
   .compatta { opacity: 0.78; }
@@ -167,6 +208,12 @@
     background: color-mix(in srgb, var(--tinta) 22%, transparent);
   }
   .testi { min-width: 0; display: flex; flex-direction: column; }
+  .nome-riga { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .sigla {
+    flex: none; padding: 1px 6px; border-radius: var(--radius-full);
+    font-size: 11px; line-height: 16px; font-weight: var(--weight-bold); letter-spacing: 0.2px;
+    color: var(--accento); background: color-mix(in srgb, var(--accento) 18%, transparent);
+  }
   .nome { overflow-wrap: anywhere; transition: color var(--duration-fast); }
   .nome.fatta { color: var(--label-secondary); }
 
