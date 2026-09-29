@@ -179,8 +179,8 @@
           <li class="text-subheadline" class:sfora={s.categoria.sfora}>
             {s.categoria.nome}: arrivi a <b class="cifre">{euro(s.categoria.dopo, { tondo: true })}</b>
             {#if s.categoria.budget > 0}
-              su {euro(s.categoria.budget, { tondo: true })} di budget{#if s.categoria.oltre > 0}
-                — lo sfori di <b class="cifre">{euro(s.categoria.oltre, { tondo: true })}</b>{/if}.
+              su {euro(s.categoria.budget, { tondo: true })} di budget{#if s.categoria.oltre > 0}{" — "}lo
+                sfori di <b class="cifre">{euro(s.categoria.oltre, { tondo: true })}</b>{/if}.
             {:else}
               <span class="secondario">(nessun budget su questa categoria)</span>
             {/if}
