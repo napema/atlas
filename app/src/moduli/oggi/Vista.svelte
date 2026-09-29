@@ -411,24 +411,26 @@
        li riempie `dense`, che ripesca una tessera più piccola e la mette nel
        vuoto lasciato da una più grande. Una carta che si accorcia non lascia
        un gradino: lascia un posto, e qualcun altro ci entra. -->
-  <div class="bento">
-    <div class="tessera grande">{@render cartaAdesso()}</div>
-    <div class="tessera alta">{@render cartaSfida()}</div>
-    <div class="tessera media">{@render cartaFinanze()}</div>
+  <!-- DUE PILE, non una griglia.
 
-    <!-- I quadrati stanno in una FASCIA loro, larga quanto la griglia, e si
-         dividono lo spazio in parti uguali. Messi come tessere della
-         griglia si incastravano finché erano il numero giusto: con tre e
-         sei colonne l'ultimo restava solo su una riga nuova, con cinque
-         colonne vuote a fianco. Così invece il puzzle si chiude comunque
-         siano — due, tre o sei. -->
-    <!-- La fascia sta dentro una Sezione, col suo titolo, per la ragione
-         per cui tutto il resto ce l'ha: senza titolo la lastra cominciava
-         33 punti piu' in alto di Finanze che le sta a fianco, e le due
-         colonne della riga partivano a quote diverse. `Pagina` ha gia' il
-         rimedio (`.testa-vuota`) ma vale per le Sezioni, e questa non lo
-         era. Meglio il titolo vero: i quadrati SONO gli altri moduli, e
-         ogni altro blocco della home si presenta. -->
+       La griglia condivide le righe: la seconda riga aspetta la carta piu'
+       alta della prima, e sotto quella corta resta un buco. Su 1750 punti
+       erano 71 di vuoto sotto Project 50 con «Adesso» a 345 — e piu' voci
+       hai, piu' cresce. Non e' un difetto di spaziatura: e' quello che fa
+       una griglia.
+
+       Due pile che non sanno niente l'una dell'altra non hanno righe in
+       comune, quindi non hanno buchi fra le carte. L'unico spazio che
+       avanza e' in fondo alla pila piu' corta, dove finisce la pagina — ed
+       e' spazio, non un buco. Era il disegno di partenza; l'avevo
+       sostituito con la griglia e il buco e' arrivato con lei. -->
+  <div class="bento">
+    <div class="pila">
+      <div class="tessera grande">{@render cartaAdesso()}</div>
+      <div class="tessera media">{@render cartaFinanze()}</div>
+    </div>
+    <div class="pila">
+      <div class="tessera alta">{@render cartaSfida()}</div>
     <div class="tessera moduli">
       <Sezione titolo="Moduli" nuda>
         <div class="striscia">
@@ -456,6 +458,7 @@
       </div>
     </Sezione>
     </div>
+    </div>
   </div>
 </Pagina>
 
@@ -475,7 +478,15 @@
      nome lungo di una cena la allargava oltre lo schermo. */
   /* Sul telefono una colonna: un bento a due tessere su 390 punti sarebbe
      due francobolli. La gerarchia lì la fa l'ordine, che è già quello. */
-  .bento { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); }
+  /* Sul telefono le pile spariscono (`display: contents`) e le quattro
+     carte tornano figlie dirette, in colonna: l'ordine lo rimette `order`,
+     perche' nel DOM adesso stanno appaiate due a due. */
+  .bento { display: flex; flex-direction: column; gap: var(--space-5); }
+  .pila { display: contents; }
+  .grande { order: 1; }
+  .alta   { order: 2; }
+  .media  { order: 3; }
+  .moduli { order: 4; }
   .tessera { min-width: 0; display: flex; flex-direction: column; }
 
   /* LE CARTE NON SI STIRANO. Avevo fatto il contrario — la carta tirata
@@ -575,32 +586,15 @@
 
   @media (min-width: 700px) {
     .bento {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      /* `dense` è la regola che tiene insieme il disegno quando il contenuto
-         cambia: senza, una tessera che non entra nella riga lascia il buco
-         dov'è e scende. Con `dense` il buco viene riempito da quella dopo. */
-      grid-auto-flow: dense;
-      /* `start` e non `stretch`: ogni carta è alta quanto il suo contenuto
-         e lo spazio che avanza resta fuori, sul fondo della pagina. */
-      align-items: start;
+      display: grid;
+      /* La pila di sinistra tiene «Adesso», che e' l'unica carta su cui si
+         TOCCA: le sue righe hanno bisogno di larghezza, le altre no. */
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
       gap: var(--space-6);
+      align-items: start;
     }
-    .grande   { grid-column: span 4; }
-    .alta     { grid-column: span 2; }
-    .media    { grid-column: 1 / -1; }
-    .moduli   { grid-column: 1 / -1; }
-  }
-
-  /* Al largo il bento si chiude a due righe: sopra la carta grande con la
-     colonna della sfida a fianco, sotto Finanze e i quadrati che si
-     dividono la riga. Tre fasce a tutta larghezza una sopra l'altra non
-     sono un bento — sono strisce, e su 1920 punti la gerarchia sparisce
-     perché tutto è largo uguale. */
-  @media (min-width: 1100px) {
-    .grande   { grid-column: span 4; }
-    .alta     { grid-column: span 2; }
-    .media    { grid-column: span 3; }
-    .moduli   { grid-column: span 3; }
+    .pila { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+    .grande, .alta, .media, .moduli { order: 0; }
   }
 
   .sfida { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
