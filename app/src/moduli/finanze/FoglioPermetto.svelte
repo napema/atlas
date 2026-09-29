@@ -18,8 +18,9 @@
   import Icona from "$lib/ui/Icona.svelte";
   import Pillole from "$lib/ui/Pillole.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
-  import { euro, oggiISO, daISO, dataBreve, maiuscola, GIORNI, nuovoId } from "$lib/core/ui";
+  import { euro, oggiISO, daISO, dataBreve, maiuscola, plurale, GIORNI, nuovoId } from "$lib/core/ui";
   import { stato } from "$condivisi/finanze/dati.js";
+  import { nomePocket } from "./comune";
   import { simula } from "$condivisi/finanze/calcolo.js";
   import { apri } from "./fogli.svelte";
 
@@ -52,11 +53,11 @@
   const SEGNO: Record<string, string> = {
     si: "spunta", forse: "info", riserva: "allarme", no: "chiudi",
   };
-  const TITOLO: Record<string, string> = {
-    si: "Sì, dalla settimana",
-    forse: "Sì, ma anticipi la Cassa",
-    riserva: "Solo da ING",
-    no: "No",
+  /* UNA PAROLA, prima di tutto il resto. «Sì, ma anticipi la Cassa» fa
+     leggere una subordinata per sapere se puoi comprare: la risposta e'
+     «sì», il prezzo lo dicono le righe sotto. */
+  const RISPOSTA: Record<string, string> = {
+    si: "Sì", forse: "Sì, ma ti costa", riserva: "Sì, ma solo dalla riserva", no: "No",
   };
 
   const gg = (iso: string) => {
@@ -118,44 +119,71 @@
   </Sezione>
 
   {#if s}
+    <!-- L'ORDINE E' L'ORDINE DELLE DOMANDE.
+
+         «Posso o no» prima di tutto, grande, una parola. Poi «cosa devo
+         fare», che e' un movimento di soldi da una tasca all'altra e non
+         un concetto. Poi «cosa cambia».
+
+         La versione di prima diceva «Sì, ma anticipi la Cassa» e sotto
+         «Lunedì 5 ricevi 123 € invece di 130 €». Sono frasi vere scritte
+         nel vocabolario interno dell'app: chi le legge davanti alla cassa
+         non sa se puo' comprare, ne' cosa deve spostare. -->
     <div class="verdetto lastra" data-esito={s.esito}>
       <span class="capo">
-        <span class="segno"><Icona nome={SEGNO[s.esito]} misura={20} tratto={2.2} /></span>
-        <span class="text-title3">{TITOLO[s.esito]}</span>
+        <span class="segno"><Icona nome={SEGNO[s.esito]} misura={22} tratto={2.2} /></span>
+        <span class="risposta">{RISPOSTA[s.esito]}</span>
       </span>
+
+      {#if s.azione}
+        <!-- IL GESTO. E' la riga che si esegue, quindi si stacca dalle
+             altre: le conseguenze le leggi, questa la fai. -->
+        <p class="azione">
+          Sposta <b class="cifre">{euro(s.azione.quanto, { tondo: true })}</b>
+          da <b>{nomePocket(s.azione.da)}</b> a <b>{nomePocket(s.azione.a)}</b>.
+        </p>
+      {:else if s.esito === "si"}
+        <p class="azione lieve">Esce dal Principale. Non devi spostare niente.</p>
+      {/if}
 
       <ul class="conseguenze">
         {#each s.righe as r (r.voce)}
           <li class="text-subheadline">
             {#if r.voce === "resta"}
-              Restano <b class="cifre">{euro(r.importo, { tondo: true })}</b> fino a {gg(r.fino)}
-              → <b class="cifre">{euro(r.a)}</b>/giorno <span class="secondario">(oggi {euro(r.da)})</span>
+              Ti restano <b class="cifre">{euro(r.importo, { tondo: true })}</b> per
+              {plurale(r.giorni, "giorno", "giorni")}, fino a {gg(r.fino)}:
+              <b class="cifre">{euro(r.a)}</b> al giorno invece di {euro(r.da)}.
             {:else if r.voce === "ricarica"}
-              {ggLungo(r.quando)} ricevi <b class="cifre">{euro(r.a, { tondo: true })}</b>
-              <span class="secondario">invece di {euro(r.da, { tondo: true })}</span>
+              {ggLungo(r.quando)} la ricarica cala a <b class="cifre">{euro(r.a, { tondo: true })}</b>
+              <span class="secondario">({euro(r.meno, { tondo: true })} in meno)</span>.
             {:else if r.voce === "ciclo"}
-              Fino al {daISO(r.fino).getDate()}: da <b class="cifre">{euro(r.da)}</b>
-              a <b class="cifre">{euro(r.a)}</b> al giorno
+              Da qui al {daISO(r.fino).getDate()} scendi a <b class="cifre">{euro(r.a)}</b>
+              al giorno <span class="secondario">(adesso {euro(r.da)})</span>.
             {:else if r.voce === "libera"}
-              Riserva libera: <b class="cifre">{euro(r.da, { tondo: true })}</b>
-              → <b class="cifre">{euro(r.a, { tondo: true })}</b>
+              La riserva libera passa da <b class="cifre">{euro(r.da, { tondo: true })}</b>
+              a <b class="cifre">{euro(r.a, { tondo: true })}</b>.
             {:else if r.voce === "minimo"}
-              Punto più basso previsto ({dataBreve(r.quando)}):
-              <b class="cifre">{euro(r.da, { tondo: true })}</b>
-              → <b class="cifre">{euro(r.a, { tondo: true })}</b>
+              Il punto più basso dell'anno ({dataBreve(r.quando)}) scende da
+              <b class="cifre">{euro(r.da, { tondo: true })}</b> a
+              <b class="cifre">{euro(r.a, { tondo: true })}</b>.
             {:else if r.voce === "mancano"}
-              Mancano <b class="cifre">{euro(r.importo, { tondo: true })}</b> anche usando la riserva libera
+              Mancano <b class="cifre">{euro(r.importo, { tondo: true })}</b> anche svuotando la riserva libera.
             {/if}
           </li>
         {/each}
 
         {#if s.categoria}
-          <!-- Vale anche quando i soldi ci sono: un budget sforato con la
-               settimana in pari resta un budget sforato. -->
+          <!-- «200 su 100» va letto e sottratto. «Lo sfori di 100» no, ed e'
+               la stessa cosa. Vale anche a soldi disponibili: un budget
+               sforato con la settimana in pari resta sforato. -->
           <li class="text-subheadline" class:sfora={s.categoria.sfora}>
-            {s.categoria.nome}: <b class="cifre">{euro(s.categoria.speso, { tondo: true })}</b>
-            → <b class="cifre">{euro(s.categoria.dopo, { tondo: true })}</b>
-            {#if s.categoria.budget > 0}<span class="secondario">su {euro(s.categoria.budget, { tondo: true })}</span>{/if}
+            {s.categoria.nome}: arrivi a <b class="cifre">{euro(s.categoria.dopo, { tondo: true })}</b>
+            {#if s.categoria.budget > 0}
+              su {euro(s.categoria.budget, { tondo: true })} di budget{#if s.categoria.oltre > 0}
+                — lo sfori di <b class="cifre">{euro(s.categoria.oltre, { tondo: true })}</b>{/if}.
+            {:else}
+              <span class="secondario">(nessun budget su questa categoria)</span>
+            {/if}
           </li>
         {/if}
       </ul>
@@ -167,7 +195,7 @@
     </div>
   {:else}
     <p class="vuoto text-subheadline secondario">
-      Scrivi quanto costa e ti dico da dove escono e cosa cambia dopo. Niente si muove finché non premi Registra.
+      Scrivi quanto costa e ti dico se puoi, cosa devi spostare e cosa cambia. Niente si muove finché non premi Registra.
     </p>
   {/if}
 
@@ -207,6 +235,17 @@
     padding: var(--space-4); margin-top: var(--space-4);
   }
   .capo { display: flex; align-items: center; gap: var(--space-3); }
+  .risposta {
+    font-family: var(--font-display); font-size: 27px; line-height: 1.1;
+    font-weight: var(--weight-bold); letter-spacing: -0.02em;
+  }
+  /* Il gesto si stacca: le conseguenze si leggono, questa si esegue. */
+  .azione {
+    font-size: var(--text-callout); line-height: var(--lh-callout);
+    padding: var(--space-3); border-radius: var(--radius-lg);
+    background: var(--lastra-dentro);
+  }
+  .azione.lieve { background: none; padding: 0; color: var(--label-secondary); }
   .segno {
     flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
     color: var(--label-secondary); background: var(--fill-tertiary);

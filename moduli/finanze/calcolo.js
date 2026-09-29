@@ -1008,6 +1008,9 @@ export function simula(prezzo, catId = null, iso = oggiISO()) {
     if (c) categoria = {
       id: c.id, nome: c.nome, budget: c.budget,
       speso: c.speso, dopo: c.speso + p,
+      // Di quanto lo sfori: «200 su 100» va letto e sottratto, «lo sfori di
+      // 100» no. E' la stessa cosa, ma una la capisci mentre cammini.
+      oltre: c.budget > 0 ? Math.max(0, c.speso + p - c.budget) : 0,
       sfora: c.budget > 0 && c.speso + p > c.budget,
     };
   }
@@ -1020,8 +1023,10 @@ export function simula(prezzo, catId = null, iso = oggiISO()) {
     const resta = gSett.importo - p;
     return {
       ...base, esito: "si", fonte: "settimana", pocket: "principale",
+      // Niente da spostare: i soldi sono gia' dove si spende.
+      azione: null,
       righe: [
-        { voce: "resta", importo: resta, fino: r.a,
+        { voce: "resta", importo: resta, giorni: r.giorni, fino: r.a,
           da: r.alGiorno, a: Math.floor(Math.max(0, resta) / r.giorni) },
       ],
     };
@@ -1029,20 +1034,24 @@ export function simula(prezzo, catId = null, iso = oggiISO()) {
 
   // --- B. anticipando la Cassa ---------------------------------------------
   if (p <= gCiclo.importo) {
-    /* Quello che manca lo tiri su dalla Cassa adesso, e la Cassa e' quella
-       da cui esce la ricarica di lunedi': la ricarica si accorcia. Non e'
-       un divieto, e' il prezzo — ed e' giusto vederlo prima di pagare. */
-    const anticipo = p - gSett.importo;
-    const cassaDopo = Math.max(0, r.ricarica.cassa - anticipo);
+    /* QUANTO MANCA, non quanto costa: e' quello che devi spostare. La Cassa
+       e' il parcheggio da cui esce la ricarica di lunedi', quindi tirarne
+       su adesso la accorcia — e quello e' il prezzo, non un divieto. */
+    const manca = p - gSett.importo;
+    const cassaDopo = Math.max(0, r.ricarica.cassa - manca);
     const quota = r.ricarica.cassa > 0 ? cassaDopo / r.ricarica.cassa : 0;
+    const ricaricaDopo = Math.round(r.ricarica.importo * quota);
     const righe = [];
     if (r.ricarica.quando) {
       righe.push({ voce: "ricarica", quando: r.ricarica.quando,
-        da: r.ricarica.importo, a: Math.round(r.ricarica.importo * quota) });
+        da: r.ricarica.importo, a: ricaricaDopo, meno: r.ricarica.importo - ricaricaDopo });
     }
-    righe.push({ voce: "ciclo", fino: ciclo.a,
+    righe.push({ voce: "ciclo", fino: ciclo.a, giorni: r.ciclo.giorni,
       da: r.ciclo.alGiorno, a: Math.floor(Math.max(0, r.ciclo.vita - p) / r.ciclo.giorni) });
-    return { ...base, esito: "forse", fonte: "cassa", pocket: "cassa", righe, anticipo };
+    return {
+      ...base, esito: "forse", fonte: "cassa", pocket: "cassa", righe,
+      azione: { quanto: manca, da: "cassa", a: "principale" },
+    };
   }
 
   // --- C. solo dalla riserva ------------------------------------------------
@@ -1052,12 +1061,17 @@ export function simula(prezzo, catId = null, iso = oggiISO()) {
     if (basso) {
       righe.push({ voce: "minimo", quando: basso.quando, da: basso.minimo, a: basso.minimo - p });
     }
-    return { ...base, esito: "riserva", fonte: "riserva", pocket: "ing", righe };
+    return {
+      ...base, esito: "riserva", fonte: "riserva", pocket: "ing", righe,
+      // Tutto, non la differenza: da ING si travasa la spesa intera, ed e'
+      // il movimento che poi registri davvero.
+      azione: { quanto: p, da: "ing", a: "principale" },
+    };
   }
 
   // --- D. no ----------------------------------------------------------------
   return {
-    ...base, esito: "no", fonte: null, pocket: null,
+    ...base, esito: "no", fonte: null, pocket: null, azione: null,
     righe: [{ voce: "mancano", importo: p - gRis.importo }],
   };
 }
