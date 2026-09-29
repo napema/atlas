@@ -117,17 +117,6 @@
     </Riga>
   </Sezione>
 
-  <!-- La categoria è facoltativa: senza, il verdetto sui soldi vale lo
-       stesso, e obbligarla prima di rispondere significa non rispondere. -->
-  <Sezione titolo="Di che cosa" piede="Serve a dire quanto resta di quel budget. Si può lasciare in bianco.">
-    <div class="blocco">
-      <Pillole
-        opzioni={categorie.map((c: any) => ({ id: c.id, testo: c.nome }))}
-        scelte={cat ? [cat] : []}
-        oncambio={(v: string[]) => (cat = v[0] ?? null)} />
-    </div>
-  </Sezione>
-
   {#if s}
     <div class="verdetto lastra" data-esito={s.esito}>
       <span class="capo">
@@ -181,6 +170,18 @@
       Scrivi quanto costa e ti dico da dove escono e cosa cambia dopo. Niente si muove finché non premi Registra.
     </p>
   {/if}
+
+  <!-- La categoria è facoltativa: senza, il verdetto sui soldi vale lo
+       stesso, e obbligarla prima di rispondere significa non rispondere. -->
+  <Sezione titolo="Di che cosa" piede="Serve a dire quanto resta di quel budget. Si può lasciare in bianco.">
+    <div class="blocco scorre">
+      <Pillole
+        opzioni={categorie.map((c: any) => ({ id: c.id, testo: c.nome }))}
+        scelte={cat ? [cat] : []}
+        oncambio={(v: string[]) => (cat = v[0] ?? null)} />
+    </div>
+  </Sezione>
+
 </Foglio>
 
 <style>
@@ -191,6 +192,11 @@
     font-weight: var(--weight-semibold); outline: none;
   }
   .blocco { padding: var(--space-3) var(--space-4); }
+  /* UNA RIGA SOLA CHE SCORRE. A capo, nove categorie facevano quattro righe
+     e spingevano il verdetto sotto la piega: la risposta finiva fuori
+     schermo proprio mentre la stavi leggendo. */
+  .scorre :global(.pillole) { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .scorre :global(.pillole::-webkit-scrollbar) { display: none; }
 
   .verdetto {
     display: flex; flex-direction: column; gap: var(--space-3);
