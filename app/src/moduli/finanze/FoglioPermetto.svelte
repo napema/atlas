@@ -68,16 +68,38 @@
     return `${maiuscola(GIORNI[(x.getDay() + 6) % 7])} ${x.getDate()}`;
   };
 
-  /* Registra non salva: apre il form di uscita già compilato. Il salvataggio
+  /* REGISTRA NON SALVA: apre il form di uscita già compilato. Il salvataggio
      resta un gesto solo, in un posto solo — e per una spesa sopra la soglia
      è quel form a chiedere «ci dormo su», che è la frizione che c'era già e
-     scatta esattamente alla cifra giusta. */
+     scatta esattamente alla cifra giusta.
+
+     Da dove esce dipende dal verdetto, e non è un dettaglio contabile:
+
+     - A: uscita dal Principale, e basta.
+     - B: uscita dalla Cassa. La Cassa è il parcheggio da cui esce la
+       ricarica di lunedì, quindi spendere di lì la accorcia — che è
+       esattamente la conseguenza che il verdetto ha appena mostrato.
+     - C: DUE movimenti. Prima la ricarica fuori budget ING → Principale,
+       poi l'uscita. Non è pignoleria: `deltaPocket` fa muovere i pocket
+       esterni SOLO a `giro` e `extra`, quindi un'uscita marcata «ING»
+       lascia la riserva dov'era. Il verdetto avrebbe promesso un calo che
+       non sarebbe mai successo — cioè la cosa peggiore che possa fare un
+       simulatore. */
   function registra() {
     if (!s) return;
-    apri({
-      tipo: "movimento", tipoMov: "out",
-      preset: { id: nuovoId("m"), imp: s.prezzo, cat, pocket: s.pocket || "principale" },
-    });
+    const uscita = {
+      tipo: "movimento" as const, tipoMov: "out",
+      preset: { id: nuovoId("m"), imp: s.prezzo, cat, pocket: s.fonte === "cassa" ? "cassa" : "principale" },
+    };
+    if (s.fonte === "riserva") {
+      apri({
+        tipo: "movimento", tipoMov: "extra",
+        preset: { id: nuovoId("m"), imp: s.prezzo, pocket: "ing", pocketTo: "principale" },
+        dopo: uscita,
+      });
+      return;
+    }
+    apri(uscita);
   }
 </script>
 

@@ -24,13 +24,15 @@
   } from "$condivisi/finanze/dati.js";
   import { autoCategoria, settimana } from "$condivisi/finanze/calcolo.js";
   import { coloreCat, testoDa, pulisciImporto } from "./comune";
+  import { apri } from "./fogli.svelte";
 
   let {
     aperto = $bindable(false),
     movimento = null,
     tipoIniziale = "out",
     preset = null,
-  }: { aperto: boolean; movimento?: any; tipoIniziale?: string; preset?: any } = $props();
+    dopo = null,
+  }: { aperto: boolean; movimento?: any; tipoIniziale?: string; preset?: any; dopo?: any } = $props();
 
   /* Da quale pocket parte e dove arriva, dato il tipo. UNA funzione sola per
      l'apertura e per il cambio di tipo: erano due posti, e hanno smesso di
@@ -139,6 +141,13 @@
     tocco(12);
     aperto = false;
     avviso(nuovo ? "Registrato." : "Aggiornato.");
+    /* IL PASSO DOPO. Una spesa dalla riserva sono DUE movimenti: la
+       ricarica fuori budget che porta i soldi da ING al Principale, e
+       l'uscita. Uno solo non basta — e non per pignoleria contabile: i
+       pocket esterni li muovono soltanto `giro` ed `extra`, quindi
+       un'uscita marcata «ING» lascia la riserva dov'era. Il simulatore
+       avrebbe promesso un calo che non succedeva. */
+    if (dopo) apri(dopo);
   }
 
   /* FRIZIONE SULLE SPESE GROSSE. Sopra la soglia si passa da una domanda:

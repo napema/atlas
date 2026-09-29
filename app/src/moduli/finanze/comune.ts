@@ -54,7 +54,7 @@ export type Foglio =
      modifica. Passarlo come `movimento` lo avrebbe fatto sembrare un record
      esistente, e con `nuovo = false` sarebbe saltata la frizione delle
      spese grosse — che e' proprio il momento in cui serve. */
-  | { tipo: "movimento"; movimento?: any; tipoMov?: string; preset?: any }
+  | { tipo: "movimento"; movimento?: any; tipoMov?: string; preset?: any; dopo?: Foglio }
   | { tipo: "dettaglio"; id: string }
   | { tipo: "categoria"; catId: string; mese: string }
   | { tipo: "sub"; catId: string; sub: string; mese: string }

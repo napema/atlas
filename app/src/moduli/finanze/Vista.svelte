@@ -117,7 +117,7 @@
 {#if f?.tipo === "permetto"}
   <FoglioPermetto bind:aperto={fogli.aperto} />
 {:else if f?.tipo === "movimento"}
-  <FoglioMovimento bind:aperto={fogli.aperto} movimento={f.movimento ?? null} preset={f.preset ?? null} tipoIniziale={f.tipoMov ?? f.movimento?.tipo ?? "out"} />
+  <FoglioMovimento bind:aperto={fogli.aperto} movimento={f.movimento ?? null} preset={f.preset ?? null} dopo={f.dopo ?? null} tipoIniziale={f.tipoMov ?? f.movimento?.tipo ?? "out"} />
 {:else if f?.tipo === "dettaglio"}
   <FoglioDettaglio bind:aperto={fogli.aperto} id={f.id} />
 {:else if f?.tipo === "check"}
