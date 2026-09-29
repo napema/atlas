@@ -51,7 +51,10 @@
      raggruppamenti diversi delle stesse carte, e un raggruppamento il CSS
      non lo può cambiare — può solo spostare scatole che esistono già. */
   const largo = new MediaQuery("min-width: 1300px");
-  const medio = new MediaQuery("min-width: 900px");
+  /* Il telefono in ORIZZONTALE (alto meno di 500) fa due pile come il PC
+     medio: una colonna sola larga 850 punti erano righe lunghe quanto lo
+     schermo e una carta alla volta. */
+  const medio = new MediaQuery("(min-width: 900px), (orientation: landscape) and (min-width: 640px) and (max-height: 500px)");
   const modo = $derived(largo.current ? 3 : medio.current ? 2 : 1);
 
   /** Quante righe in «Adesso» prima che diventi un elenco. Sul PC di più:

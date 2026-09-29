@@ -236,7 +236,13 @@
   --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
   --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
   --space-12: 48px; --space-16: 64px;
-  --content-inset: 16px;      /* contentMargin.iphone */
+  /* contentMargin.iphone è 16. Il max() è l'iPhone in ORIZZONTALE: con
+     `viewport-fit=cover` la pagina arriva sotto la Dynamic Island, e questo
+     margine era l'unica cosa che poteva tenerla fuori — non lo faceva. Il
+     più grande dei due lati, su tutti e due: iOS in orizzontale li dà
+     uguali, e il contenuto resta centrato. In verticale gli inset laterali
+     valgono zero e il margine torna 16. */
+  --content-inset: max(16px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
   --readable-width: 672px;    /* contentMargin.readableWidth */
 
   --radius-xs: 4px; --radius-sm: 8px; --radius-md: 10px; --radius-lg: 12px;

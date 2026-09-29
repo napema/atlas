@@ -85,4 +85,15 @@
     font-size: 10px; line-height: 12px; letter-spacing: 0.1px; font-weight: var(--weight-semibold);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
   }
+
+  /* In orizzontale la barra di sistema di iOS si abbassa e mette icona ed
+     etichetta sulla stessa riga. Alta 62 su 390 era un sesto dello schermo
+     coperto per cinque bottoni. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .capsula { height: 44px; max-width: 600px; padding: 3px; }
+    .pastiglia { top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / var(--n)); }
+    .scheda { flex-direction: row; gap: 6px; }
+    .scheda :global(svg) { width: 20px; height: 20px; }
+    .nome { font-size: 12px; line-height: 14px; }
+  }
 </style>

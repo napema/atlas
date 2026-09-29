@@ -237,8 +237,8 @@
      solo in cima alla terza colonna. Qui niente cade: ha un posto. */
   @media (min-width: 1000px) {
     :global(:root) { --larghezza-pagina: min(calc(100vw - 96px), 1640px); }
-    .pagina { padding-left: var(--space-8); padding-right: var(--space-8); }
-    .barra-riga { padding-left: var(--space-8); padding-right: var(--space-8); }
+    .pagina { padding-left: max(var(--space-8), var(--content-inset)); padding-right: max(var(--space-8), var(--content-inset)); }
+    .barra-riga { padding-left: max(var(--space-8), var(--content-inset)); padding-right: max(var(--space-8), var(--content-inset)); }
 
     .pagina:not(.larga) .contenuto {
       display: grid;
@@ -297,5 +297,43 @@
        partono tutte alla stessa quota. */
     .pagina:not(.stretta) .principale > :global(.sezione > .testa-vuota),
     .pagina:not(.stretta) .laterale > :global(.sezione:first-child > .testa-vuota) { display: block; }
+  }
+
+  /* L'IPHONE IN ORIZZONTALE: alto 375-430 punti, largo 667-932.
+
+     Con le regole del telefono in verticale la pagina restava una colonna
+     sola larga 672: titolo grande, segmenti e la prima domanda riempivano
+     da soli tutto lo schermo, la barra delle schede copriva quello che
+     veniva dopo, e la cosa da fare stava tre scorrimenti più in basso.
+
+     Qui la pagina prende tutta la larghezza meno gli inset (che adesso
+     tengono fuori la Dynamic Island, vedi `--content-inset`), il titolo si
+     accorcia — in orizzontale iOS non mostra affatto il titolo grande, qui
+     lo si tiene ma più basso perché porta le azioni e il selettore del
+     gruppo — e riepilogo e contenuto si mettono FIANCO A FIANCO, come sul
+     PC: il contesto a sinistra, la cosa da fare a destra, tutte e due nel
+     primo schermo.
+
+     Il riepilogo non è appiccicato: in 390 punti di altezza una colonna
+     ferma più alta dello schermo nasconderebbe per sempre il suo fondo. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    :global(:root) {
+      --larghezza-pagina: 100%;
+      --spazio-schede: calc(max(env(safe-area-inset-bottom, 0px), 8px) + 64px);
+    }
+    .pagina { padding-top: calc(var(--altezza-barra) - 12px); }
+    .titolo-grande { margin-bottom: var(--space-3); }
+    .titolo-grande :global(.text-large-title) { font-size: 28px; line-height: 34px; }
+    .contenuto { gap: var(--space-4); }
+    .contenuto.con-laterale {
+      display: grid;
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+      column-gap: var(--space-6); row-gap: var(--space-4);
+      align-items: start;
+    }
+    .strumenti { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: var(--space-6); row-gap: var(--space-3); }
+    .strumenti > :global(.segmenti) { flex: 1 1 280px; max-width: 420px; }
+    .strumenti > :global(.settimana) { flex: 1 1 320px; max-width: 520px; }
+    .laterale { position: static; }
   }
 </style>
