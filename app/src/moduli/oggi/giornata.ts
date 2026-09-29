@@ -52,6 +52,16 @@ export function quadro(schede: Scheda[], ora = new Date().getHours()) {
        un modulo per nome: così una seconda sfida, un domani, si accende
        senza toccare questo file. */
     sfida: (conDati.map((s) => s.dati!.sfida).find(Boolean) as any) ?? null,
+    /* Come la sfida: la porta la scheda di chi possiede le fasce, e se non
+       la porta nessuno la home dirà «per adesso» invece di un momento. */
+    fasciaOra: (conDati.map((s) => s.dati!.fasciaOra).find(Boolean) as
+      { id: string; nome: string } | undefined) ?? null,
+    /* IL PRIMO MOMENTO CHE VIENE DOPO. Quando la fascia in corso è finita,
+       la home non elenca più quello che verrà — ma dire fino a quando si è
+       liberi è un'informazione che calma, non una cosa da fare. Si legge
+       dai dati che i moduli hanno già dato, non da un orologio: il primo
+       che resta è il prossimo, perché `resta` è già ordinato. */
+    prossimoMomento: (resta.find((v) => v.nomeFascia)?.nomeFascia as string | undefined) ?? null,
   };
 }
 

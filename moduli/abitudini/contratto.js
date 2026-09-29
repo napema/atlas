@@ -17,7 +17,7 @@ import { avviso, plurale } from "../../core/ui.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { ascolta, EVENTI } from "../../core/bus.js";
-import { casella, stato, abitudiniVive, eFatta, alterna, alternaParte, semina } from "./dati.js";
+import { casella, stato, abitudiniVive, eFatta, alterna, alternaParte, semina, fasciaAdesso, FASCE } from "./dati.js";
 import { progressoGiorno, mancantiOggi, serie, promemoriaAdesso, restaOggi } from "./calcolo.js";
 import * as p50 from "./p50.js";
 
@@ -278,6 +278,23 @@ function schedaSfida() {
   };
 }
 
+/* IN CHE FASCIA SIAMO ADESSO, per la home.
+
+   La home ne ha bisogno per dire «a posto per la mattina» quando la fascia
+   in corso e' finita, e non puo' ricavarselo da se': le ore delle fasce
+   stanno qui, e una seconda copia in `oggi/` mentirebbe il giorno in cui
+   qualcuno le sposta. Regola 12 -- la home non conosce Abitudini: il dato
+   passa dalla scheda, come la sfida.
+
+   Solo le tre vere: `preWorkout` si sovrappone di proposito e `qualsiasi`
+   non e' un momento della giornata. Fuori da tutte (di notte) si torna
+   `null`, e la home dira' «per adesso». */
+const FASCE_DEL_GIORNO = ["mattina", "pomeriggio", "sera"];
+function fasciaOraDiOggi() {
+  const id = fasciaAdesso().find((x) => FASCE_DEL_GIORNO.includes(x));
+  return id ? { id, nome: FASCE[id].nome } : null;
+}
+
 /** La scheda per la home. Sincrona, senza effetti collaterali. */
 export function oggi() {
   const p = progressoGiorno(giornoCorrente());
@@ -290,7 +307,7 @@ export function oggi() {
     return sfida
       ? { titolo: "Abitudini", valore: "—", dettaglio: "Nessuna abitudine prevista oggi",
           resta: [], promemoria: [], avanzamento: 0, urgente: false,
-          azione: { rotta: "#/abitudini" }, sfida }
+          azione: { rotta: "#/abitudini" }, sfida, fasciaOra: fasciaOraDiOggi() }
       : null;
   }
   const mancano = mancantiOggi();
@@ -326,5 +343,6 @@ export function oggi() {
     // La sfida viaggia a parte, e la home ne fa una card sua: è un'altra
     // domanda, con un'altra unità di misura — i giorni, non le spunte.
     sfida,
+    fasciaOra: fasciaOraDiOggi(),
   };
 }

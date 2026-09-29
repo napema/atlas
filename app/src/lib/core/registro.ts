@@ -30,6 +30,11 @@ export interface SchedaOggi {
   /** Una sfida a giorni (Project 50): la home ne fa una card a parte,
       perché si misura in giorni e non nelle spunte del modulo. */
   sfida?: SchedaSfida | null;
+  /** In che momento della giornata siamo, secondo il modulo che possiede le
+      fasce. La home lo usa per dire «a posto per la mattina» quando la
+      fascia in corso è finita: le ore stanno nel modulo, e una seconda
+      copia qui mentirebbe il giorno in cui qualcuno le sposta. */
+  fasciaOra?: { id: string; nome: string } | null;
   [k: string]: any;
 }
 

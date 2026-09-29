@@ -92,10 +92,35 @@
      le DUE che vengono dopo e basta, col loro momento. Il numero di quelle
      che restano sta in una riga sola, che dice «ce n'è dell'altro» senza
      chiedere di essere letta. */
-  const PROSSIME = 2;
-  const elenco = $derived(q.prio.length ? q.prio : q.resta.slice(0, PROSSIME));
-  const titoloAdesso = $derived(q.prio.length || !q.resta.length ? "Adesso" : "Più tardi");
-  const mostrate = $derived(elenco.slice(0, maxRighe));
+  const mostrate = $derived(q.prio.slice(0, maxRighe));
+
+  /* A POSTO PER ADESSO — e non «ecco le prossime due».
+
+     Quando la fascia in corso è finita la home mostrava le due che vengono
+     dopo, col loro momento. Sembrava informativo e invece era il contrario:
+     alle nove di mattina, a lezione, non c'è NIENTE che si possa fare per
+     quelle due — sono lì solo a ricordare che la giornata non è finita. Una
+     schermata che a ogni apertura trova qualcosa da mostrarti non ti dice
+     mai che sei a posto, e «sei a posto» è l'unica cosa che quella
+     schermata poteva dirti di utile in quel momento.
+
+     Quindi: se non c'è niente ORA, si chiude il cerchio. Nessuna riga, un
+     segno di spunta, e fino a quando sei libero. */
+  const aPosto = $derived(!q.prio.length && q.resta.length > 0);
+
+  /* L'articolo sta qui e non nel modulo: «per la mattina» è come lo dice
+     la home, non un dato. Tre voci e una scappatoia — un momento che non
+     conosco diventa «per adesso», che è vero sempre e non mente mai. */
+  const PER: Record<string, string> = {
+    mattina: "per la mattina", pomeriggio: "per il pomeriggio", sera: "per la sera",
+  };
+  const perQuando = $derived((q.fasciaOra && PER[q.fasciaOra.id]) || "per adesso");
+  /* «Niente fino a sera» solo se il prossimo momento è DAVVERO un altro:
+     «a posto per la mattina, niente fino a mattina» è una frase che si
+     rilegge due volte per capire che non dice niente. */
+  const finoA = $derived(
+    q.prossimoMomento && q.prossimoMomento !== q.fasciaOra?.nome ? q.prossimoMomento : null,
+  );
   const tuttiTardi = $derived(mostrate.length > 1 && mostrate.every((v) => v.quando === "tardi"));
   const nascoste = $derived(q.resta.length - mostrate.length);
   const f = $derived(q.finanze);
@@ -149,7 +174,7 @@
 
 {#snippet cartaAdesso()}
   <!-- ADESSO: l'unica carta su cui si tocca per FARE invece che per andare. -->
-  <Sezione titolo={titoloAdesso}>
+  <Sezione titolo="Adesso">
     {#snippet coda()}
       {#if q.inRitardo.length}
         <span class="conta ritardo-conta cifre">{q.inRitardo.length} in ritardo</span>
@@ -162,6 +187,17 @@
       <div class="calmo">
         <span class="segno ok"><Icona nome="fatto" misura={20} tratto={2} /></span>
         <p>{q.conDati.length ? "Niente. Hai spuntato tutto quello che c'era oggi." : "Sto leggendo i moduli…"}</p>
+      </div>
+    {:else if aPosto}
+      <!-- La fascia è chiusa. Questa è l'unica carta della home che non
+           chiede niente, e deve sembrarlo: il segno è grande, il respiro
+           è largo, e non c'è un elenco sotto da cui farsi riprendere. -->
+      <div class="apposto">
+        <span class="bollo"><Icona nome="fatto" misura={30} tratto={2.2} /></span>
+        <p class="text-title3">A posto {perQuando}.</p>
+        {#if finoA}
+          <p class="text-subheadline secondario">Niente altro fino a {finoA.toLowerCase()}.</p>
+        {/if}
       </div>
     {:else}
       {#each mostrate as v (v.chiave)}
@@ -568,6 +604,33 @@
   }
 
   .calmo { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); }
+
+  /* A POSTO. In colonna e centrata, non una riga con un'icona a sinistra:
+     una riga sembra la prima voce di un elenco che non c'è, e l'occhio
+     resta a cercare le altre. Qui non c'è niente da cercare, e la carta lo
+     deve dire con la forma prima che con le parole. Il respiro è voluto:
+     e' l'unica carta della home che non chiede niente. */
+  .apposto {
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    gap: var(--space-2); padding: var(--space-8) var(--space-5);
+  }
+  .bollo {
+    display: grid; place-items: center; width: 60px; height: 60px; border-radius: 50%;
+    margin-bottom: var(--space-1);
+    color: var(--color-green);
+    background: color-mix(in srgb, var(--color-green) 14%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-green) 26%, transparent);
+    /* Una volta sola, all'apertura. Un'animazione che si ripete diventa un
+       tic; una che parte quando arrivi è un applauso breve. */
+    animation: bollo-entra 0.44s var(--ease-spring) both;
+  }
+  @keyframes bollo-entra {
+    from { transform: scale(0.72); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bollo { animation: none; }
+  }
   .segno {
     flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
     color: var(--color-orange); background: color-mix(in srgb, var(--color-orange) 16%, transparent);
