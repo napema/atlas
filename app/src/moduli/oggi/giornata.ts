@@ -56,12 +56,18 @@ export function quadro(schede: Scheda[], ora = new Date().getHours()) {
        la porta nessuno la home dirà «per adesso» invece di un momento. */
     fasciaOra: (conDati.map((s) => s.dati!.fasciaOra).find(Boolean) as
       { id: string; nome: string } | undefined) ?? null,
+    fasce: (conDati.map((s) => s.dati!.fasce).find(Boolean) as
+      { id: string; nome: string }[] | undefined) ?? [],
     /* IL PRIMO MOMENTO CHE VIENE DOPO. Quando la fascia in corso è finita,
        la home non elenca più quello che verrà — ma dire fino a quando si è
        liberi è un'informazione che calma, non una cosa da fare. Si legge
-       dai dati che i moduli hanno già dato, non da un orologio: il primo
-       che resta è il prossimo, perché `resta` è già ordinato. */
-    prossimoMomento: (resta.find((v) => v.nomeFascia)?.nomeFascia as string | undefined) ?? null,
+       dai dati che i moduli hanno già dato: il primo che resta è il
+       prossimo, perché `resta` è già ordinato.
+
+       L'ID, non `nomeFascia`: quello è l'etichetta di coda della riga e
+       Mobilità ci mette la durata. Leggerlo come momento produceva
+       «niente altro fino a 14 min». */
+    prossimaFascia: (resta.find((v) => v.fascia)?.fascia as string | undefined) ?? null,
   };
 }
 

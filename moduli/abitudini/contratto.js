@@ -295,6 +295,16 @@ function fasciaOraDiOggi() {
   return id ? { id, nome: FASCE[id].nome } : null;
 }
 
+/* Il vocabolario delle fasce, per la home.
+
+   Le serve per tradurre la `fascia` che le altre voci si portano dietro —
+   anche quelle di altri moduli, che usano questi stessi id. NON puo' usare
+   `nomeFascia`: quello e' l'etichetta di coda della riga, e Mobilita' ci
+   mette la durata («14 min»), non il momento. Chi legge `nomeFascia` come
+   se fosse un momento scrive «niente altro fino a 14 min». */
+const vocabolarioFasce = () =>
+  Object.entries(FASCE).map(([id, f]) => ({ id, nome: f.nome }));
+
 /** La scheda per la home. Sincrona, senza effetti collaterali. */
 export function oggi() {
   const p = progressoGiorno(giornoCorrente());
@@ -307,7 +317,7 @@ export function oggi() {
     return sfida
       ? { titolo: "Abitudini", valore: "—", dettaglio: "Nessuna abitudine prevista oggi",
           resta: [], promemoria: [], avanzamento: 0, urgente: false,
-          azione: { rotta: "#/abitudini" }, sfida, fasciaOra: fasciaOraDiOggi() }
+          azione: { rotta: "#/abitudini" }, sfida, fasciaOra: fasciaOraDiOggi(), fasce: vocabolarioFasce() }
       : null;
   }
   const mancano = mancantiOggi();
@@ -344,5 +354,6 @@ export function oggi() {
     // domanda, con un'altra unità di misura — i giorni, non le spunte.
     sfida,
     fasciaOra: fasciaOraDiOggi(),
+    fasce: vocabolarioFasce(),
   };
 }

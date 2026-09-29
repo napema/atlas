@@ -115,12 +115,24 @@
     mattina: "per la mattina", pomeriggio: "per il pomeriggio", sera: "per la sera",
   };
   const perQuando = $derived((q.fasciaOra && PER[q.fasciaOra.id]) || "per adesso");
-  /* «Niente fino a sera» solo se il prossimo momento è DAVVERO un altro:
-     «a posto per la mattina, niente fino a mattina» è una frase che si
-     rilegge due volte per capire che non dice niente. */
-  const finoA = $derived(
-    q.prossimoMomento && q.prossimoMomento !== q.fasciaOra?.nome ? q.prossimoMomento : null,
-  );
+
+  /* «Niente altro fino a sera» — ma solo quando dice davvero qualcosa.
+
+     Tre condizioni, e ognuna ha prodotto una frase sbagliata prima di
+     diventare una condizione: il momento dev'essere UNO DEI TRE (senza il
+     filtro usciva «fino a quando capita», che non è un'ora); dev'essere
+     DIVERSO da quello in corso («a posto per la mattina, niente fino a
+     mattina» si rilegge due volte per scoprire che non dice niente); e
+     dev'essere tradotto dall'ID, non preso da `nomeFascia`, che è
+     l'etichetta di coda della riga — Mobilità ci mette la durata, e
+     veniva fuori «niente altro fino a 14 min». */
+  const nomeDi = $derived((id: string | null) =>
+    id ? (q.fasce.find((f) => f.id === id)?.nome ?? null) : null);
+  const finoA = $derived.by(() => {
+    const id = q.prossimaFascia;
+    if (!id || !PER[id] || id === q.fasciaOra?.id) return null;
+    return nomeDi(id);
+  });
   const tuttiTardi = $derived(mostrate.length > 1 && mostrate.every((v) => v.quando === "tardi"));
   const nascoste = $derived(q.resta.length - mostrate.length);
   const f = $derived(q.finanze);

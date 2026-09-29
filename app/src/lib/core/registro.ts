@@ -35,6 +35,10 @@ export interface SchedaOggi {
       fascia in corso è finita: le ore stanno nel modulo, e una seconda
       copia qui mentirebbe il giorno in cui qualcuno le sposta. */
   fasciaOra?: { id: string; nome: string } | null;
+  /** Come si chiamano le fasce, per tradurre la `fascia` di una voce.
+      Serve perché `nomeFascia` NON è il nome del momento: è l'etichetta di
+      coda della riga, e un modulo ci mette la durata («14 min»). */
+  fasce?: { id: string; nome: string }[] | null;
   [k: string]: any;
 }
 
