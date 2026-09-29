@@ -12,7 +12,7 @@ import { annuncia } from "../../core/bus.js";
 import { casella, stato, movimentiVivi, migra, checkFatto, completaTravasi } from "./dati.js";
 import {
   statistiche, budgetTotale, meseDi, importoEffettivo,
-  settimana, orizzonte, inArrivo, spesoOggi, ricorrentiDiOggi, alert, calendarioUscite, giorniADomenica,
+  settimana, orizzonte, inArrivo, spesoOggi, ricorrentiDiOggi, alert, calendarioUscite, giorniADomenica, scala,
 } from "./calcolo.js";
 
 let ridisegnaVista = () => {};
@@ -244,6 +244,7 @@ export function oggi() {
 
   const s = settimana(iso);
   const o = orizzonte(iso);
+  const sc = scala(iso);
   const oggiRic = ricorrentiDiOggi(iso);
   const speso = spesoOggi(iso);
   const av = alert(iso);
@@ -299,6 +300,27 @@ export function oggi() {
     // dentro Finanze, in «In arrivo», che è la schermata fatta per
     // guardare più in là.
     calendario: calendarioUscite(iso, 6, giorniADomenica(iso)),
+
+    /* IL NUMERO DELLA HOME, con la stessa etichetta del modulo.
+
+       La carta dava `disponibile` — quanto c'e' nelle tasche — sotto la
+       scritta «da far bastare fino al 22 ott», e accanto due riquadri
+       «Oggi» e «Al giorno». Tre numeri per tre domande diverse, tutti
+       della stessa misura: a colpo d'occhio non si capiva quale fosse la
+       risposta a «posso spendere stasera».
+
+       La risposta e' UNA, ed e' la stessa che da' «Da spendere» dentro
+       Finanze: quanto puoi spendere oggi. Le due schermate devono dire lo
+       stesso numero con le stesse parole, altrimenti sono due app. */
+    oggiPuoi: euro(sc.oggi),
+    oggiFino: `fino a ${dataBreve(sc.gradini[1].fino)}, ${plurale(sc.gradini[1].giorniAllo, "giorno", "giorni")} allo stipendio`,
+    /* SOLO QUELLO CHE BRUCIA. Sei righe di scadenze in home sono un
+       estratto conto: si smettono di leggere, e con loro si smette di
+       vedere quella che conta. `tono` lo assegna gia' `comeEvento()` —
+       rosso se il pocket non la copre, ambra se esce entro due giorni — e
+       quelle due sole sono le uscite che cambiano la risposta di stasera.
+       Il resto sta in «In arrivo», che e' la schermata fatta per quello. */
+    urgenti: calendarioUscite(iso, 6, 30).filter((e) => e.tono).slice(0, 2),
 
     // Il check entra nella checklist della home solo dal pomeriggio: è un
     // gesto di chiusura, e chiederlo alle otto del mattino vuol dire

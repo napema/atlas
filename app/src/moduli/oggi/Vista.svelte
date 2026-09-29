@@ -341,24 +341,26 @@
     <div style:--accento={voceDi("finanze")?.accento}>
       <Sezione titolo="Finanze">
         {#snippet coda()}<a href="#/finanze">Apri</a>{/snippet}
+        <!-- UN NUMERO, con la stessa etichetta che usa il modulo. Erano
+             tre — il disponibile grande, «Oggi» e «Al giorno» in due
+             riquadri — tutti della stessa misura: a colpo d'occhio non si
+             capiva quale rispondesse a «posso spendere stasera». -->
         <div class="soldi">
-          <div class="eroe">
-            <span class="cifra cifre">{f.valore ?? "—"}</span>
-            <span class="text-subheadline secondario">{f.eti || "spendibili"}</span>
-          </div>
-          <div class="due">
-            <div><span class="text-footnote secondario">Oggi</span><span class="num cifre">{f.spesoOggi ?? "0 €"}</span></div>
-            <div><span class="text-footnote secondario">Al giorno</span><span class="num cifre">{f.alGiorno ?? "—"}</span></div>
-          </div>
+          <span class="eti-oggi text-footnote semibold">Puoi spendere oggi</span>
+          <span class="cifra cifre">{f.oggiPuoi ?? f.valore ?? "—"}</span>
+          <span class="text-subheadline secondario">{f.oggiFino ?? f.eti ?? ""}</span>
         </div>
-        <!-- Le uscite in arrivo solo se ci sono: «Niente in uscita» era una
-             riga intera per un'assenza. -->
-        {#if f.calendario?.length}
+
+        <!-- Solo le uscite che bruciano: quelle scoperte e quelle entro due
+             giorni, al massimo due. Sei righe di scadenze in home sono un
+             estratto conto — si smettono di leggere, e con loro si smette
+             di vedere quella che conta. -->
+        {#if f.urgenti?.length}
           <div class="avvolge" style:--inizio-l="38px">
-          {#each f.calendario as e (e.chiave)}
+          {#each f.urgenti as e (e.chiave)}
             <Riga>
               {#snippet inizio()}
-                <span class="data" class:oggi={e.oggi}>
+                <span class="data" data-tono={e.tono} class:oggi={e.oggi}>
                   <span class="data-g">{e.giornoNome}</span>
                   <span class="data-n cifre">{e.giornoData.split(" ")[0]}</span>
                 </span>
@@ -366,7 +368,7 @@
               <span>{e.nome}</span>
               {#if e.dettaglio}<span class="text-subheadline secondario">{e.dettaglio}</span>{/if}
               {#snippet fine()}
-                <span class="cifre importo">{e.valore}</span>
+                <span class="cifre importo" data-tono={e.tono}>{e.valore}</span>
               {/snippet}
             </Riga>
           {/each}
@@ -476,14 +478,17 @@
   .bento { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); }
   .tessera { min-width: 0; display: flex; flex-direction: column; }
 
-  /* LA CARTA SI TIRA FINO IN FONDO ALLA TESSERA. Senza, una carta corta
-     accanto a una lunga lasciava il vuoto nella GRIGLIA, e un buco nella
-     griglia si legge come una fetta di pagina mancante — non come spazio
-     dentro una carta. Tre gradini perché in mezzo ci può stare il div che
-     porta `--accento`, e la lastra sta dentro la sezione. */
-  .tessera > :global(*) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-  .tessera :global(.sezione) { flex: 1; }
-  .tessera :global(.sezione > .lastra) { flex: 1; }
+  /* LE CARTE NON SI STIRANO. Avevo fatto il contrario — la carta tirata
+     fino in fondo alla tessera — per non lasciare buchi nella griglia. Era
+     la cura sbagliata: una carta corta accanto a una lunga diventava una
+     carta CON DENTRO un vuoto di duecento punti, bordo compreso, e un
+     vuoto dentro una cornice si legge come una cosa rotta. Un vuoto fuori
+     dalle cornici è solo spazio.
+
+     E si portava dietro un guasto peggiore: i quadrati dei moduli sono
+     elementi di griglia, e da elementi stirati l'`aspect-ratio` perde —
+     avevano smesso di essere quadrati. */
+  .tessera > :global(*) { min-height: 0; }
 
   .invito { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
   .invito .capo { display: flex; align-items: baseline; gap: var(--space-2); }
@@ -575,7 +580,9 @@
          cambia: senza, una tessera che non entra nella riga lascia il buco
          dov'è e scende. Con `dense` il buco viene riempito da quella dopo. */
       grid-auto-flow: dense;
-      align-items: stretch;
+      /* `start` e non `stretch`: ogni carta è alta quanto il suo contenuto
+         e lo spazio che avanza resta fuori, sul fondo della pagina. */
+      align-items: start;
       gap: var(--space-6);
     }
     .grande   { grid-column: span 4; }
@@ -660,15 +667,12 @@
   }
   .ritardo { color: var(--color-red); font-weight: var(--weight-medium); }
 
-  .soldi { padding: var(--space-4) var(--space-4) var(--space-3); display: flex; flex-direction: column; gap: var(--space-4); }
-  .eroe { display: flex; flex-direction: column; gap: 2px; }
-  .eroe .cifra {
-    font-family: var(--font-display); font-size: 40px; line-height: 44px; letter-spacing: -0.5px;
-    font-weight: var(--weight-bold);
-  }
-  .due { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
-  .due div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius-xl); background: var(--fill-quaternary); }
-  .num { font-size: var(--text-title3); line-height: var(--lh-title3); font-weight: var(--weight-semibold); }
+  .soldi { padding: var(--space-4) var(--space-4) var(--space-3); display: flex; flex-direction: column; gap: 2px; }
+  .eti-oggi { color: var(--label-secondary); letter-spacing: 0.7px; text-transform: uppercase; }
+  /* Rosso solo quando il pocket non la copre, ambra entro due giorni: e' il
+     tono che `comeEvento()` assegna gia', e qui si limita a farsi vedere. */
+  .importo[data-tono="male"] { color: var(--color-red); }
+  .importo[data-tono="avviso"] { color: var(--color-orange); }
 
   .data {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
