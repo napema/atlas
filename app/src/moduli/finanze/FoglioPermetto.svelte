@@ -197,6 +197,10 @@
      schermo proprio mentre la stavi leggendo. */
   .scorre :global(.pillole) { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .scorre :global(.pillole::-webkit-scrollbar) { display: none; }
+  /* `flex: none` e non l'a capo: senza, le pastiglie si stringono sotto la
+     larghezza del loro testo e «Spesa alimentare» esce dal bordo. In una
+     riga che scorre ognuna tiene la sua misura ed e' la riga a muoversi. */
+  .scorre :global(.pillole > *) { flex: none; white-space: nowrap; }
 
   .verdetto {
     display: flex; flex-direction: column; gap: var(--space-3);
