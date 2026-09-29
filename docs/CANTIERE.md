@@ -1882,3 +1882,74 @@ for (const k of await caches.keys()) await caches.delete(k);
 Vale la pena saperlo perché la conseguenza è peggio di una perdita di
 tempo: si guarda una schermata, si conclude che una correzione «non
 funziona» e si va a cercare un guasto che non c'è. È successo stanotte.
+
+---
+
+## La scala dello spendibile e «Posso permettermelo?» *(29 set, chat ATLAS)*
+
+Richiesta sua, su Finanze — **perimetro della chat Finanze**: qui c'è cosa è
+cambiato e perché, da rileggere prima di ripartire di là.
+
+### «Da spendere»: un numero, tre gradini
+
+La carta dava **due medie giornaliere** — quella della settimana e quella
+del ciclo — una sotto l'altra. Sono due risposte giuste alla stessa domanda,
+e due risposte giuste sono peggio di una sbagliata: davanti a una cosa da
+venti euro non sai quale stai sforando. Resta la più stretta.
+
+Sotto, i tre serbatoi in ordine di **quanto costa attingerci**: Settimana
+(gratis, sono già tuoi), fino al giorno prima dello stipendio (costa la
+ricarica di lunedì), Riserva libera (costa il punto più basso dell'anno).
+
+`scala(iso)` in `calcolo.js` monta i tre gradini da roba che c'era già;
+l'unico conto nuovo è `riservaLibera()` = ING − impegni entro lo stipendio −
+pavimento.
+
+**Il pavimento è `soglie.ingMinimo`, che c'era già e vale 900.** La spec
+chiedeva un campo nuovo con default 400: è la stessa domanda, e un secondo
+pavimento accanto al primo vuol dire due numeri per lo stesso conto — e
+quello scritto nel posto sbagliato non lo scopri finché non ti fidi. Il
+valore di fabbrica **non** è stato toccato: riscriverlo avrebbe cambiato di
+nascosto i conti di chi non l'ha mai impostato.
+
+### Il simulatore
+
+`simula(prezzo, catId)` prova le fonti in ordine e si ferma alla prima che
+basta. Torna **dati**, non frasi: la prima stesura formattava le date in
+italiano dentro `calcolo.js` e mi mancavano i formattatori — che era il
+segno che stavo mescolando i livelli.
+
+`puntoPiuBasso()` proietta **a eventi**, non a mesi tondi: ogni uscita sulla
+riserva quando cade davvero, e il margine del mese quando arriva lo
+stipendio. Orizzonte: l'ultimo annuale in calendario. Oltre, un margine
+medio per due anni è un'opinione con l'aria di un numero.
+
+### Il guasto che stava per passare
+
+Il verdetto C precompilava un'uscita con `pocket: "ing"`. **Non funziona, e
+in silenzio:** `deltaPocket` fa muovere i pocket esterni solo con `giro` ed
+`extra`, quindi quell'uscita avrebbe lasciato la riserva dov'era. Il
+simulatore prometteva «2524 → 1924» e ING sarebbe rimasto 2524.
+
+Ora sono due movimenti incatenati — ricarica fuori budget ING → Principale,
+poi l'uscita — con un `dopo` sul preset che apre il secondo appena il primo
+è salvato. **Se tocchi il preset di `FoglioMovimento`, questa è la cosa da
+non rompere.**
+
+### Cosa NON è stato fatto, della spec
+
+- **«Ci dormo su» come terzo bottone nel simulatore.** Ci si arriva da
+  Registra: sopra `spesaGrossa` (50 €) è `FoglioMovimento` a chiederlo, con
+  la frizione che c'era già e scatta alla stessa cifra. Un secondo percorso
+  avrebbe voluto dire una seconda bozza da tenere allineata.
+- **Il campo «perché» sulla ricarica fuori ciclo.** C'è la nota del
+  movimento, non un campo etichettato così.
+
+### Provato
+
+Chromium a 402, con saldi finti seminati in `localStorage` (quell'origine
+non ha credenziali, quindi non scrive sul repo). Verdetti A, B, C, D tutti
+e quattro. A 45 € torna esattamente l'esempio della spec: «Restano 55 €
+fino a dom 4 → 9,16 €/giorno (oggi 16,66)» — 9,16 e non 9,17 perché
+`alGiorno` arrotonda per difetto in tutto il modulo, ed è il verso giusto
+per un'indennità.
