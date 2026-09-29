@@ -977,6 +977,177 @@ export function scala(iso = oggiISO()) {
   };
 }
 
+/* ------------------------------------------- posso permettermelo? ------- */
+/*
+   LA SIMULAZIONE. Non tocca niente: risponde e basta.
+
+   Prova le fonti IN ORDINE e si ferma alla prima che basta, perche' l'ordine
+   e' quanto costa attingerci. La settimana e' gratis — quei soldi sono gia'
+   tuoi per questa settimana. Il ciclo costa la ricarica di lunedi'. La
+   riserva costa il punto piu' basso dell'anno.
+
+   Ogni verdetto porta al massimo tre conseguenze, e sono NUMERI: «restano 55
+   fino a domenica, 9,17 al giorno invece di 16,66». Non «attenzione, stai
+   esagerando» — un'app che giudica si smette di aprirla, e per giunta
+   giudica senza sapere perche' stai comprando quella cosa.
+*/
+
+export function simula(prezzo, catId = null, iso = oggiISO()) {
+  const p = Math.max(0, Math.round(Number(prezzo) || 0));
+  const s = scala(iso);
+  const r = finoAllaRicarica(iso);
+  const ciclo = cicloDi(iso);
+  const [gSett, gCiclo, gRis] = s.gradini;
+
+  /* La categoria si legge sempre, qualunque sia l'esito: e' l'unica
+     conseguenza che vale anche quando i soldi ci sono. Un budget sforato
+     con la settimana in pari resta un budget sforato. */
+  let categoria = null;
+  if (catId) {
+    const c = categorieDelCiclo(ciclo).find((x) => x.id === catId);
+    if (c) categoria = {
+      id: c.id, nome: c.nome, budget: c.budget,
+      speso: c.speso, dopo: c.speso + p,
+      sfora: c.budget > 0 && c.speso + p > c.budget,
+    };
+  }
+
+  const soglie = { ...SOGLIE_PREDEFINITE, ...(stato().soglie || {}) };
+  const base = { prezzo: p, categoria, grossa: p >= soglie.spesaGrossa };
+
+  // --- A. dalla settimana ---------------------------------------------------
+  if (p <= gSett.importo) {
+    const resta = gSett.importo - p;
+    return {
+      ...base, esito: "si", fonte: "settimana", pocket: "principale",
+      righe: [
+        { voce: "resta", importo: resta, fino: r.a,
+          da: r.alGiorno, a: Math.floor(Math.max(0, resta) / r.giorni) },
+      ],
+    };
+  }
+
+  // --- B. anticipando la Cassa ---------------------------------------------
+  if (p <= gCiclo.importo) {
+    /* Quello che manca lo tiri su dalla Cassa adesso, e la Cassa e' quella
+       da cui esce la ricarica di lunedi': la ricarica si accorcia. Non e'
+       un divieto, e' il prezzo — ed e' giusto vederlo prima di pagare. */
+    const anticipo = p - gSett.importo;
+    const cassaDopo = Math.max(0, r.ricarica.cassa - anticipo);
+    const quota = r.ricarica.cassa > 0 ? cassaDopo / r.ricarica.cassa : 0;
+    const righe = [];
+    if (r.ricarica.quando) {
+      righe.push({ voce: "ricarica", quando: r.ricarica.quando,
+        da: r.ricarica.importo, a: Math.round(r.ricarica.importo * quota) });
+    }
+    righe.push({ voce: "ciclo", fino: ciclo.a,
+      da: r.ciclo.alGiorno, a: Math.floor(Math.max(0, r.ciclo.vita - p) / r.ciclo.giorni) });
+    return { ...base, esito: "forse", fonte: "cassa", pocket: "cassa", righe, anticipo };
+  }
+
+  // --- C. solo dalla riserva ------------------------------------------------
+  if (p <= gRis.importo) {
+    const righe = [{ voce: "libera", da: gRis.importo, a: gRis.importo - p }];
+    const basso = puntoPiuBasso(iso);
+    if (basso) {
+      righe.push({ voce: "minimo", quando: basso.quando, da: basso.minimo, a: basso.minimo - p });
+    }
+    return { ...base, esito: "riserva", fonte: "riserva", pocket: "ing", righe };
+  }
+
+  // --- D. no ----------------------------------------------------------------
+  return {
+    ...base, esito: "no", fonte: null, pocket: null,
+    righe: [{ voce: "mancano", importo: p - gRis.importo }],
+  };
+}
+
+/* ------------------------------------------- il punto piu' basso -------- */
+/*
+   FIN DOVE SCENDE LA RISERVA, PRIMA DI RISALIRE.
+
+   Per una spesa grossa il saldo di ING di oggi non e' il dato che conta:
+   conta il minimo che toccherai da qui al bollo e all'assicurazione. Mille
+   euro oggi con settecento di annuali in mezzo non sono mille euro.
+
+   Si proietta a eventi, non a mesi tondi: ogni uscita sulla riserva quando
+   cade davvero, e il margine del mese quando arriva lo stipendio. Il minimo
+   della somma cumulata e' la risposta, e la sua data e' quella che dice se
+   e' un problema vicino o lontano.
+
+   L'orizzonte e' l'ultimo ANNUALE in calendario: oltre non si proietta, non
+   perche' non si possa, ma perche' un margine medio moltiplicato per due
+   anni e' un'opinione con l'aria di un numero.
+*/
+
+/** Le prossime occorrenze di un ricorrente fino a una data, non solo la prima. */
+function occorrenzeFino(r, da, fine, massimo = 40) {
+  const fuori = [];
+  let cursore = da;
+  for (let i = 0; i < massimo; i++) {
+    const q = prossimaScadenza(r, cursore);
+    if (!q || q > fine) break;
+    fuori.push(q);
+    cursore = isoDi(new Date(daISO(q).getTime() + 86400000));
+  }
+  return fuori;
+}
+
+export function puntoPiuBasso(iso = oggiISO()) {
+  const ids = pocketRiserva();
+  if (!ids.length) return null;
+
+  const sulla = (x) => ids.includes(x.pocket || "");
+  const ricorrenti = ricorrentiVivi().filter((r) => r.attivo && sulla(r));
+
+  /* L'orizzonte: l'ultimo annuale in calendario. Senza annuali non c'e'
+     niente da proiettare che valga la pena di guardare, e una proiezione
+     che non dice niente e' peggio di nessuna proiezione. */
+  const annuali = ricorrenti
+    .filter((r) => r.cadenza === "annuale")
+    .map((r) => prossimaScadenza(r, iso))
+    .filter(Boolean);
+  if (!annuali.length) return null;
+  const fine = annuali.sort().at(-1);
+
+  const eventi = [];
+  for (const r of ricorrenti) {
+    for (const q of occorrenzeFino(r, iso, fine)) {
+      eventi.push({ data: q, delta: -importoRicorrente(r), nome: r.nome });
+    }
+  }
+  for (const v of previsti()) {
+    if (!sulla(v) || !v.quando || v.quando < iso || v.quando > fine) continue;
+    eventi.push({ data: v.quando, delta: -(v.imp || 0), nome: v.nome });
+  }
+
+  /* Il margine del mese entra con lo stipendio, non un dodicesimo al
+     giorno: e' il giorno in cui il saldo risale davvero. `differenza` sta
+     in EURO — e' il budget, non un movimento — quindi va portata in
+     centesimi come tutto il resto qui dentro. */
+  const giorno = giornoStipendio();
+  const margine = Math.round((quadratura(meseDiISO(iso)).differenza || 0) * 100);
+  const d0 = daISO(iso);
+  for (let k = 0; k <= 26; k++) {
+    const q = new Date(d0.getFullYear(), d0.getMonth() + k, giorno);
+    const q_ = isoDi(q);
+    if (q_ <= iso) continue;
+    if (q_ > fine) break;
+    eventi.push({ data: q_, delta: margine, nome: "stipendio" });
+  }
+
+  eventi.sort((a, b) => a.data.localeCompare(b.data));
+
+  let saldo = ids.reduce((t, id) => t + saldoPocket(id), 0);
+  let minimo = saldo;
+  let quando = iso;
+  for (const e of eventi) {
+    saldo += e.delta;
+    if (saldo < minimo) { minimo = saldo; quando = e.data; }
+  }
+  return { minimo, quando, fine, margine, eventi: eventi.length };
+}
+
 /* --------------------------------------------------------- la settimana -- */
 /*
    IL NUMERO. È il saldo del pocket Principale, non un calcolo di budget:

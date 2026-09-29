@@ -29,7 +29,8 @@
     aperto = $bindable(false),
     movimento = null,
     tipoIniziale = "out",
-  }: { aperto: boolean; movimento?: any; tipoIniziale?: string } = $props();
+    preset = null,
+  }: { aperto: boolean; movimento?: any; tipoIniziale?: string; preset?: any } = $props();
 
   /* Da quale pocket parte e dove arriva, dato il tipo. UNA funzione sola per
      l'apertura e per il cambio di tipo: erano due posti, e hanno smesso di
@@ -65,9 +66,12 @@
     b = movimento
       ? { ...movimento }
       : { id: nuovoId("m"), tipo: tipoIniziale, imp: 0, nota: "", cat: null, sub: null, rif: null, ecc: false,
-          data: oggiISO(), rimborsoDi: null, ...pocketPredefiniti(tipoIniziale) };
+          data: oggiISO(), rimborsoDi: null, ...pocketPredefiniti(tipoIniziale), ...(preset || {}) };
     testo = testoDa(b.imp);
-    manuale = Boolean(movimento?.cat);
+    // Una categoria che arriva dal preset l'ha scelta lui nel simulatore:
+    // vale come scelta a mano, altrimenti l'automatismo la riscriverebbe
+    // appena scrive la nota.
+    manuale = Boolean(movimento?.cat || preset?.cat);
     auto = false;
     fase = "modulo";
   });

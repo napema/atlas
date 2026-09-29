@@ -50,7 +50,11 @@ export function descriviMovimento(m: any, cat: any, origine?: any) {
 /* ------------------------------------------------ la pila dei fogli -- */
 
 export type Foglio =
-  | { tipo: "movimento"; movimento?: any; tipoMov?: string }
+  /* `preset` riempie un movimento NUOVO senza farlo passare per una
+     modifica. Passarlo come `movimento` lo avrebbe fatto sembrare un record
+     esistente, e con `nuovo = false` sarebbe saltata la frizione delle
+     spese grosse — che e' proprio il momento in cui serve. */
+  | { tipo: "movimento"; movimento?: any; tipoMov?: string; preset?: any }
   | { tipo: "dettaglio"; id: string }
   | { tipo: "categoria"; catId: string; mese: string }
   | { tipo: "sub"; catId: string; sub: string; mese: string }
@@ -60,7 +64,8 @@ export type Foglio =
   | { tipo: "ricaricaSett" }
   | { tipo: "saldoING" }
   | { tipo: "pocket" }
-  | { tipo: "dormo"; imp: number; bozza: any; conferma: () => void };
+  | { tipo: "dormo"; imp: number; bozza: any; conferma: () => void }
+  | { tipo: "permetto" };
 
 export const CADENZE: [string, string][] = [["mensile", "Ogni mese"], ["bimestrale", "Ogni 2 mesi"], ["trimestrale", "Ogni 3 mesi"], ["annuale", "Ogni anno"]];
 const MESI_LUNGHI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];

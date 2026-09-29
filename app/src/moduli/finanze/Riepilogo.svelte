@@ -366,7 +366,6 @@
     margin-top: var(--space-2); padding-top: var(--space-3); border-top: 0.5px solid var(--separator);
   }
   .ricarica .piu { color: var(--color-green); font-weight: var(--weight-semibold); }
-  .avviso { color: var(--color-orange); }
   .due-bottoni { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); margin-top: var(--space-2); }
   .male { color: var(--color-red); }
   .ok { color: var(--color-green); }

@@ -18,6 +18,7 @@
   import Movimenti from "./Movimenti.svelte";
   import Analisi from "./Analisi.svelte";
   import FoglioMovimento from "./FoglioMovimento.svelte";
+  import FoglioPermetto from "./FoglioPermetto.svelte";
   import FoglioDettaglio from "./FoglioDettaglio.svelte";
   import FoglioCheck from "./FoglioCheck.svelte";
   import FoglioArrivo from "./FoglioArrivo.svelte";
@@ -103,13 +104,20 @@
   <button type="button" class="rapida entrata" onclick={() => apri({ tipo: "movimento", tipoMov: "in" })}>
     <Icona nome="piu" misura={18} tratto={2.6} />Entrata
   </button>
+  <!-- Chiedere prima di pagare e' un gesto suo, e sta accanto agli altri
+       due perche' arriva nello stesso momento: sei davanti alla cassa. -->
+  <button type="button" class="rapida chiedi" aria-label="Posso permettermelo?" onclick={() => apri({ tipo: "permetto" })}>
+    <Icona nome="info" misura={18} tratto={2.2} />
+  </button>
   <button type="button" class="rapida altro" aria-label="Giroconto, rimborso, reso, ricarica" onclick={() => apri({ tipo: "movimento", tipoMov: "giro" })}>
     <Icona nome="sync" misura={18} tratto={2.2} />
   </button>
 </div>
 
-{#if f?.tipo === "movimento"}
-  <FoglioMovimento bind:aperto={fogli.aperto} movimento={f.movimento ?? null} tipoIniziale={f.tipoMov ?? f.movimento?.tipo ?? "out"} />
+{#if f?.tipo === "permetto"}
+  <FoglioPermetto bind:aperto={fogli.aperto} />
+{:else if f?.tipo === "movimento"}
+  <FoglioMovimento bind:aperto={fogli.aperto} movimento={f.movimento ?? null} preset={f.preset ?? null} tipoIniziale={f.tipoMov ?? f.movimento?.tipo ?? "out"} />
 {:else if f?.tipo === "dettaglio"}
   <FoglioDettaglio bind:aperto={fogli.aperto} id={f.id} />
 {:else if f?.tipo === "check"}
@@ -153,6 +161,6 @@
      direzione dei soldi, ovunque, e solo quella. */
   .uscita { background: var(--color-red); }
   .entrata { background: var(--color-green); }
-  .altro { width: 44px; padding: 0; justify-content: center; color: var(--label-primary); background: var(--fill-tertiary); }
+  .altro, .chiedi { width: 44px; padding: 0; justify-content: center; color: var(--label-primary); background: var(--fill-tertiary); }
   :global(.pagina):has(~ .azioni-rapide) { padding-bottom: calc(var(--spazio-schede) + 64px); }
 </style>
