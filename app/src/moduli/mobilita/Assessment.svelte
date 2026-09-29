@@ -271,4 +271,15 @@
   .foto input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
   .accento { color: var(--accento); }
   .piede { flex: none; width: 100%; max-width: var(--readable-width); margin: 0 auto; padding: var(--space-3) var(--content-inset) calc(env(safe-area-inset-bottom, 0px) + var(--space-3)); display: flex; flex-direction: column; gap: var(--space-2); text-align: center; border-top: 0.5px solid var(--separator); }
+
+  /* IN ORIZZONTALE, su iPhone. Il fondo con pulsante e nota impilati era
+     alto 130 punti su 390, e le anteprime dei video — 16:9 larghe 640 —
+     alte 360: più di tutto lo spazio che restava per scorrere. Il fondo
+     diventa una riga sola, e un'anteprima non supera metà dello schermo. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .testa { padding-top: var(--space-1); padding-bottom: var(--space-1); }
+    .piede { flex-direction: row; align-items: center; gap: var(--space-4); text-align: left; padding-top: var(--space-2); }
+    .piede > :global(.pulsante) { flex: none; width: auto; min-width: 260px; }
+    .video { max-width: calc(50dvh * 16 / 9); }
+  }
 </style>

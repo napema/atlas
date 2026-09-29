@@ -151,7 +151,14 @@
   $effect(() => { clip; video?.play?.().catch(() => {}); });
 </script>
 
-<dialog bind:this={dialogo} class="player" class:prep={inPrep} oncancel={(e) => { e.preventDefault(); chiudi(); }}>
+<dialog
+  bind:this={dialogo}
+  class="player"
+  class:prep={inPrep}
+  class:corso={fase === "corso" && Boolean(d)}
+  class:con-video={Boolean(clip)}
+  oncancel={(e) => { e.preventDefault(); chiudi(); }}
+>
   <div class="testa">
     <Pulsante variante="vetro" misura="media" tondo icona="chiudi" etichetta="Esci" onclick={chiudi} />
     <span class="text-subheadline semibold cifre">{fase === "corso" && d ? `${d.numero} di ${totale}` : ""}</span>
@@ -210,6 +217,7 @@
         </div>
       {/if}
 
+      <div class="testo">
       <div class="timer">
         <div class="titoli">
           <span class="stato text-footnote semibold">{stato}</span>
@@ -234,6 +242,7 @@
         </ol>
       {/if}
       {#if d.nota}<p class="text-footnote secondario">{d.nota}</p>{/if}
+      </div>
     </div>
     <div class="piede">
       <Pulsante variante="pieno" larga onclick={() => engine?.avanti()}>{inPrep ? "Sono pronto" : "Avanti"}</Pulsante>
@@ -302,5 +311,51 @@
     flex: none; width: 100%; max-width: var(--readable-width); margin: 0 auto;
     padding: var(--space-3) var(--content-inset) calc(env(safe-area-inset-bottom, 0px) + var(--space-4));
     display: flex; flex-direction: column; gap: var(--space-2);
+  }
+  .testo { display: flex; flex-direction: column; gap: var(--space-4); }
+
+  /* IN ORIZZONTALE, su iPhone: 390 punti di altezza. Impilato come in
+     verticale il video 16:10 largo 640 era alto 400 — più dello schermo —
+     e il timer, cioè la cosa che si guarda mentre si tiene la posizione,
+     finiva sotto, fuori vista. È la schermata per cui si gira il telefono,
+     ed era quella che si rompeva.
+
+     Ora sono due colonne: il VIDEO a sinistra, alto quanto lo schermo, e a
+     destra nome, secondi, passi e «Avanti» in fondo, dove cade il pollice
+     destro. Le schermate senza video (ripresa, collo, fine) mettono il
+     messaggio a sinistra e i pulsanti a destra: impilati, il pulsante
+     scendeva sotto il bordo. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .player[open] {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      column-gap: var(--space-4);
+      padding-left: var(--content-inset);
+      padding-right: var(--content-inset);
+    }
+    .testa, .avanzamento { grid-column: 1 / -1; }
+    .testa { max-width: none; padding: var(--space-1) 0; }
+    .avanzamento { margin-bottom: var(--space-3); }
+
+    /* Le colonne portano già il margine: i blocchi dentro non ne aggiungono. */
+    .scorre, .centro, .piede { max-width: none; margin: 0; padding-left: 0; padding-right: 0; }
+
+    .centro { grid-column: 1; grid-row: 3 / 5; padding-top: 0; }
+    .centro .segno { width: 56px; height: 56px; }
+    .piede { grid-column: 2; grid-row: 3 / 5; align-self: center; padding-top: 0; }
+
+    .player.corso .scorre { display: contents; }
+    .player.corso .media {
+      grid-column: 1; grid-row: 3 / 5;
+      aspect-ratio: auto; height: 100%; min-height: 0;
+      margin-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-3));
+    }
+    .player.corso .testo { grid-column: 2; grid-row: 3; min-height: 0; overflow-y: auto; gap: var(--space-3); }
+    .player.corso .piede { grid-row: 4; align-self: end; }
+    /* Senza video il testo si prende tutte e due le colonne. */
+    .player.corso:not(.con-video) .testo, .player.corso:not(.con-video) .piede { grid-column: 1 / -1; }
+
+    .secondi { font-size: 64px; line-height: 62px; }
   }
 </style>
