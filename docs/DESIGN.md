@@ -219,6 +219,21 @@ altre restava il vuoto. Le regole che l'hanno tolto:
    largo), e **ogni modulo compare una volta sola**, come carta se ne ha
    una, altrimenti come tessera in «Anche oggi».
 
+### L'iPhone in orizzontale
+
+*29 settembre 2026.* Tutto sta dietro una condizione sola,
+`(orientation: landscape) and (max-height: 500px)`: sono i telefoni girati,
+non gli iPad e non il PC. Tre regole:
+
+1. **Nessun margine orizzontale scritto a mano**: si usa `--content-inset`,
+   che vale 16 in verticale e in orizzontale tiene fuori la Dynamic Island.
+   Un `padding: 0 16px` scritto a mano finisce sotto la tacca.
+2. **La pagina si mette su due zone** (riepilogo e contenuto affiancati) e
+   il riepilogo non è appiccicato: 390 punti non bastano a tenerlo fermo.
+3. **Un foglio a tutto schermo in orizzontale si divide in due colonne**,
+   la cosa da guardare a sinistra e quella da toccare a destra: impilato,
+   il pulsante esce dal bordo. Vedi il player di Mobilità.
+
 ---
 
 ## 6. La tipografia

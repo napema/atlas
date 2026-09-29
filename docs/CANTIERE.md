@@ -1953,3 +1953,23 @@ e quattro. A 45 € torna esattamente l'esempio della spec: «Restano 55 €
 fino a dom 4 → 9,16 €/giorno (oggi 16,66)» — 9,16 e non 9,17 perché
 `alGiorno` arrotonda per difetto in tutto il modulo, ed è il verso giusto
 per un'indennità.
+
+## 29 settembre 2026 — l'iPhone in orizzontale *(core + Mobilità)*
+
+«Appena giro il telefono si bugga tutto.» Tre cause sommate:
+
+- **La Dynamic Island**: con `viewport-fit=cover` la pagina arriva sotto la
+  tacca e non c'era un solo `safe-area-inset-left` in tutta la app. Ora
+  `--content-inset` è `max(16px, inset sinistro, inset destro)`, e tutti i
+  margini orizzontali passano da lì.
+- **La pagina** restava una colonna da 672 alta 390: in orizzontale ora ha
+  due zone, titolo più basso, riepilogo non appiccicato; la home fa due pile.
+  La barra delle schede si abbassa a 44 con icona ed etichetta in riga.
+- **Il player di Mobilità** impilava un video alto 400 su uno schermo alto
+  390, con il timer sotto, fuori vista: ora video a sinistra e timer a
+  destra. L'assessment ha il fondo su una riga.
+
+Verticale e PC **identici al pixel** (catture prima/dopo nello stesso minuto).
+Provato su 852×393, 932×430, 667×375 con gli inset simulati; **sul telefono
+vero no** — se la Dynamic Island copre ancora qualcosa, è un margine scritto
+a mano che non passa da `--content-inset`.
