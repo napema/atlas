@@ -22,7 +22,7 @@
     pendenti, togliDaSospeso, salvaMovimento,
   } from "$condivisi/finanze/dati.js";
   import {
-    cicloDi, finoAllaRicarica, pocketConSaldi, inArrivo, comeSpendi, sforamenti, alert,
+    cicloDi, finoAllaRicarica, pocketConSaldi, inArrivo, comeSpendi, sforamenti, alert, scala,
     esitoCheck, comeEvento, categorieDelCiclo, categorieDelMese, nomeCiclo, nomeMese,
   } from "$condivisi/finanze/calcolo.js";
   import { nuovoId } from "$lib/core/ui";
@@ -47,6 +47,7 @@
     return {
       oggi, ciclo, configurato,
       r: finoAllaRicarica(oggi),
+      scala: scala(oggi),
       arrivo: inArrivo(30, oggi),
       av: alert(oggi),
       check: esitoCheck(oggi),
@@ -118,61 +119,53 @@
       <p class="text-subheadline secondario">I pocket non hanno ancora un saldo, quindi il conto della settimana non può partire.</p>
       <Pulsante variante="pieno" larga onclick={() => apri({ tipo: "pocket" })}>Imposta i saldi</Pulsante>
       <p class="text-footnote secondario">Si copiano da Revolut e da ING una volta sola. Da lì in poi li muovono i movimenti.</p>
-    {:else if d.r.livello === "finita"}
-      <div class="testa">
-        <span class="text-footnote semibold male">Questa settimana</span>
-        <span class="text-footnote secondario">{gg(d.r.da)} – {gg(d.r.a)}</span>
-      </div>
-      <Importo centesimi={0} misura={52} tono="male" />
-      <p class="text-subheadline secondario">
-        Settimana finita · {plurale(d.r.giorni, "giorno", "giorni")}{d.r.ricarica.quando ? " alla ricarica" : " allo stipendio"}
-      </p>
-      <div class="due-bottoni">
-        <Pulsante variante="grigio" onclick={() => avviso("Va bene così. Lunedì si riparte.")}>Non ricaricare</Pulsante>
-        <Pulsante variante="pieno" onclick={() => apri({ tipo: "ricarica" })}>Devo ricaricare</Pulsante>
-      </div>
     {:else}
-      <div class="testa">
-        <span class="text-footnote secondario semibold">Questa settimana</span>
-        <span class="text-footnote secondario">{gg(d.r.da)} – {gg(d.r.a)}</span>
-      </div>
-      <Importo centesimi={d.r.spendibile} misura={52} tono={tono as any} />
-      <p class="text-subheadline secondario">
-        <b class="cifre">{euro(d.r.alGiorno)}</b> al giorno · {plurale(d.r.giorni, "giorno", "giorni")}
-      </p>
+      <!-- UN NUMERO SOLO.
 
-      <div class="consumo"><i style:width="{Math.round(d.r.frazione * 100)}%"></i></div>
-      <p class="text-footnote secondario">speso {euro(d.r.speso, { tondo: true })} questa settimana</p>
+           Qui sopra ce n'erano due — la media della settimana e quella del
+           ciclo — e nessuna delle due vinceva: davanti a una cosa da venti
+           euro non sapevi quale delle due stavi sforando. Resta la più
+           stretta, che è l'unica che non ti fa sforare senza accorgertene. -->
+      <span class="eti text-footnote semibold">Puoi spendere oggi</span>
+      <Importo centesimi={d.scala.oggi} misura={52} tono={tono as any} />
 
-      {#if d.r.livello === "sotto"}
-        <!-- Fattuale, non un rimprovero: due numeri accanto, decide lui. -->
-        <p class="text-footnote avviso">
-          Il piano prevede {euro(d.r.quotaPiano)} al giorno. Ne hai {euro(d.r.alGiorno)} fino a {gg(d.r.a)}.
-        </p>
+      <!-- I TRE SERBATOI, in ordine di quanto costa attingerci. Sempre tutti
+           e tre, anche quando uno è a zero: è la scala che si legge, e una
+           scala a cui manca un gradino si conta col dito. -->
+      <ul class="scala">
+        {#each d.scala.gradini as g (g.id)}
+          <li>
+            <span class="g-nome text-subheadline">{g.nome}</span>
+            <span class="g-cifra cifre semibold" class:sotto={g.importo <= 0}>
+              {euro(g.importo, { tondo: true })}
+            </span>
+            <span class="g-nota text-footnote secondario">
+              {#if g.id === "settimana"}fino a {gg(g.fino)}
+              {:else if g.id === "ciclo"}stipendio tra {plurale(g.giorniAllo ?? 0, "giorno", "giorni")}
+              {:else}ING, già tolti gli impegni{/if}
+            </span>
+          </li>
+        {/each}
+      </ul>
+
+      {#if d.r.livello === "finita"}
+        <div class="due-bottoni">
+          <Pulsante variante="grigio" onclick={() => avviso("Va bene così. Lunedì si riparte.")}>Non ricaricare</Pulsante>
+          <Pulsante variante="pieno" onclick={() => apri({ tipo: "ricarica" })}>Devo ricaricare</Pulsante>
+        </div>
       {/if}
 
-      {#if d.r.ricarica.quando}
+      {#if d.scala.ricarica.quando}
         <div class="ricarica">
-          <span class="text-subheadline semibold">{ggLungo(d.r.ricarica.quando)}</span>
+          <span class="text-subheadline semibold">{ggLungo(d.scala.ricarica.quando)}</span>
           <span class="text-subheadline secondario">
-            <b class="cifre piu">+{euro(d.r.ricarica.importo, { tondo: true })}</b> dalla Cassa
+            <b class="cifre piu">+{euro(d.scala.ricarica.importo, { tondo: true })}</b> dalla Cassa
           </span>
         </div>
       {/if}
     {/if}
   </div>
 </Sezione>
-
-<!-- 1ter. IL CICLO, sotto e in piccolo. Serve a sapere se il mese nel
-     complesso regge, e non deve competere col numero della settimana: è
-     una riga di testo, non una scheda. -->
-{#if d.configurato}
-  <p class="ciclo text-footnote secondario">
-    Ciclo {dataBreve(d.r.ciclo.da)} – {dataBreve(d.r.ciclo.a)} · vita:
-    <b class="cifre">{euro(d.r.ciclo.vita, { tondo: true })}</b> per {plurale(d.r.ciclo.giorni, "giorno", "giorni")} ·
-    <b class="cifre">{euro(d.r.ciclo.alGiorno)}</b>/giorno
-  </p>
-{/if}
 
 <!-- 1bis. IL CHECK — il gesto quotidiano. Costa trenta secondi o si salta. -->
 {#if d.check.fatto}
@@ -340,13 +333,31 @@
 
 <style>
   .numero { padding: var(--space-5) var(--space-4) var(--space-4); display: flex; flex-direction: column; gap: 6px; }
-  .testa { display: flex; justify-content: space-between; gap: var(--space-2); }
-  .ciclo { padding: 0 var(--space-4); margin: calc(-1 * var(--space-3)) 0 0; }
+  .eti { color: var(--label-secondary); letter-spacing: 0.7px; text-transform: uppercase; }
   .cifra-vuota { font-family: var(--font-display); font-size: 52px; line-height: 58px; font-weight: var(--weight-bold); color: var(--label-tertiary); }
-  .consumo { height: 6px; border-radius: 3px; overflow: hidden; background: var(--fill-tertiary); margin: var(--space-2) 0; }
-  .consumo i { display: block; height: 100%; border-radius: inherit; background: var(--accento); transition: width var(--duration-slow) var(--ease-default); }
-  [data-tono="avviso"] .consumo i { background: var(--color-orange); }
-  [data-tono="male"] .consumo i { background: var(--color-red); }
+
+  /* LA SCALA. Tre righe a griglia e non tre flex: i nomi incolonnati a
+     sinistra e le cifre incolonnate a destra si confrontano con l'occhio,
+     senza rileggere l'etichetta di ognuna. La nota è la terza colonna dove
+     c'è spazio e va a capo sotto sul telefono, perché è la parte che si
+     legge una volta sola. */
+  .scala {
+    display: grid; grid-template-columns: auto 1fr; gap: 2px var(--space-3);
+    margin: var(--space-3) 0 var(--space-1);
+    padding-top: var(--space-3); border-top: 0.5px solid var(--separator);
+  }
+  .scala li { display: contents; }
+  .g-nome { color: var(--label-secondary); }
+  .g-cifra { justify-self: end; font-size: var(--text-callout); font-variant-numeric: tabular-nums; }
+  /* Un gradino a zero o sotto non è un errore da segnare in rosso: è un
+     serbatoio vuoto, e il prossimo gradino è la risposta. */
+  .g-cifra.sotto { color: var(--label-tertiary); }
+  .g-nota { grid-column: 1 / -1; margin-bottom: var(--space-2); }
+  @media (min-width: 520px) {
+    .scala { grid-template-columns: auto auto 1fr; }
+    .g-cifra { justify-self: end; }
+    .g-nota { grid-column: auto; justify-self: end; margin-bottom: 0; align-self: baseline; }
+  }
   /* La ricarica che arriva: non è un avviso, è un fatto del calendario, e
      sta in fondo alla scheda perché è quello che spiega perché i giorni
      sono quattro e non ventinove. */

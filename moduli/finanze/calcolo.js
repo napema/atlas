@@ -878,6 +878,105 @@ export function finoAllaRicarica(iso = oggiISO()) {
   };
 }
 
+/* ------------------------------------------------------------ la scala -- */
+/*
+   QUANTO POSSO SPENDERE, in un numero e tre gradini.
+
+   La carta diceva DUE medie giornaliere — 16,66 della settimana e 18,12 del
+   ciclo — una sotto l'altra. Sono due risposte giuste alla stessa domanda,
+   e due risposte giuste sono peggio di una sbagliata: davanti a una cosa da
+   venti euro non sai quale delle due stai sforando. Qui la media è UNA, la
+   più stretta, ed è il numero grande. Sotto ci sono i tre serbatoi da cui
+   quella cifra può allargarsi, in ordine di quanto costa attingerci.
+
+   Ogni gradino risponde da solo a «una cosa da X euro ci sta?», e la
+   risposta è sempre un confronto fra due numeri, mai una frase.
+*/
+
+/** I pocket di riserva: stanno fuori dall'app e non si spendono per sbaglio. */
+export const pocketRiserva = () =>
+  (stato().pockets || []).filter((p) => p.tipo === "riserva").map((p) => p.id);
+
+/**
+ * Quanto deve restare intoccabile sulla riserva. In centesimi.
+ *
+ * È `soglie.ingMinimo`, che c'era già ed è la stessa domanda: il pavimento
+ * sotto cui non si scende. Serviva anche prima, per tingere di ambra il
+ * pocket; qui diventa il numero che toglie dal libero. Un secondo campo
+ * accanto, con un altro valore di fabbrica, avrebbe voluto dire due
+ * pavimenti diversi per lo stesso conto — e quello scritto nel posto
+ * sbagliato non lo scopri finché non ti fidi del numero libero.
+ */
+export const sogliaRiserva = () => {
+  const v = stato().soglie?.ingMinimo;
+  return v == null ? SOGLIE_PREDEFINITE.ingMinimo : Number(v) || 0;
+};
+
+/**
+ * La riserva LIBERA: quello che c'è su ING meno quello che ne uscirà da qui
+ * allo stipendio, meno la soglia che non si tocca.
+ *
+ * Il saldo nudo di ING non è una risposta: ci sono sopra il bollo e la maxi
+ * rata, e sono già impegnati anche se non sono ancora usciti. Toglierli
+ * prima è la differenza fra «ho mille euro» e «ne ho liberi seicento».
+ *
+ * Non si azzera se viene negativo: una riserva sotto la soglia è un fatto
+ * da vedere, non da nascondere dietro uno zero.
+ */
+export function riservaLibera(iso = oggiISO()) {
+  const ids = pocketRiserva();
+  const saldo = ids.reduce((t, id) => t + saldoPocket(id), 0);
+  // `inArrivo` si ferma da sé al giorno prima dello stipendio: chiedergli
+  // dieci anni vuol dire chiedergli «tutto quello che resta in questo ciclo».
+  const per = inArrivo(3650, iso).perPocket;
+  const impegni = ids.reduce((t, id) => t + (per[id]?.totale || 0), 0);
+  const soglia = sogliaRiserva();
+  return { saldo, impegni, soglia, libera: saldo - impegni - soglia };
+}
+
+export function scala(iso = oggiISO()) {
+  const r = finoAllaRicarica(iso);
+  const ciclo = cicloDi(iso);
+  const ris = riservaLibera(iso);
+
+  /* «Lo stipendio fra N giorni»: `giorniFra` conta gli estremi, quindi da
+     oggi al giorno PRIMA dello stipendio dà esattamente i giorni che
+     mancano all'arrivo. Il 29 settembre con stipendio il 21: 22. */
+  const allo = Math.max(0, giorniFra(iso, ciclo.a > iso ? ciclo.a : iso));
+
+  return {
+    iso,
+    /* IL NUMERO. È la media più stretta — quella della settimana — perché è
+       l'unica che non ti fa sforare senza accorgertene: se avanzi, avanzi. */
+    oggi: r.alGiorno,
+    livello: r.livello,
+    quotaPiano: r.quotaPiano,
+    gradini: [
+      {
+        id: "settimana",
+        nome: "Settimana",
+        importo: r.spendibile,
+        fino: r.a,
+      },
+      {
+        id: "ciclo",
+        // Il giorno, non «il ciclo»: «fino al 22» si controlla col calendario.
+        nome: `Fino al ${daISO(ciclo.a).getDate()}`,
+        importo: r.ciclo.vita,
+        fino: ciclo.a,
+        giorniAllo: allo,
+      },
+      {
+        id: "riserva",
+        nome: "Riserva libera",
+        importo: ris.libera,
+        ...ris,
+      },
+    ],
+    ricarica: r.ricarica,
+  };
+}
+
 /* --------------------------------------------------------- la settimana -- */
 /*
    IL NUMERO. È il saldo del pocket Principale, non un calcolo di budget:

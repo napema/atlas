@@ -142,6 +142,9 @@
 </Sezione>
 
 <Sezione titolo="Soglie">
+  <!-- Due mestieri, un numero solo: tinge di ambra il pocket quando ci
+       scende sotto, e nella scala di «Da spendere» è quello che viene
+       tolto per ottenere la riserva LIBERA. -->
   <RigaNumero etichetta="Minimo della riserva ING" valore={(d.soglie.ingMinimo || 0) / 100} decimali unita="€" onsalva={(n) => scriviSoglia("ingMinimo", Math.round(n * 100))} />
   <RigaNumero etichetta="Frizione sulle spese grosse" valore={(d.soglie.spesaGrossa || 0) / 100} decimali unita="€" onsalva={(n) => scriviSoglia("spesaGrossa", Math.round(n * 100))} />
   <div class="blocco">
