@@ -2040,3 +2040,28 @@ Il passo «controllo dei tipi» in `pubblica.yml` ha `continue-on-error: true`:
 **non fa fallire la corsa**. Una corsa verde non vuol dire tipi puliti — va
 letta la riga `svelte-check found N errors` nel log. Ci sono già cascato una
 volta oggi.
+
+---
+
+## 30 settembre 2026 — la pagina scorre solo in verticale *(core + Allenamenti + Mobilità)*
+
+- **Il trascinamento laterale su iPhone**: su `<html>` c'era
+  `touch-action: pan-x pan-y`, il permesso esplicito di spostare la pagina
+  di lato, e in Training una riga (`.dett`, `nowrap` con tetto 46ch) usciva
+  dallo schermo: la pagina era larga 423 su 390. Ora `<html>` ha
+  `touch-action: pan-y`, `overflow-x: hidden` e
+  `overscroll-behavior-x: none`, e la riga ha tetto `min(46ch, 100%)`. Le
+  fasce che scorrono per conto loro (filtri di Finanze, settimane di
+  Training) scorrono ancora.
+- **Per provarlo in Chromium** lo scorrimento sintetico
+  (`Input.synthesizeScrollGesture`) non serve: non scorre niente nemmeno in
+  verticale e fa sembrare rotto quello che non lo è. Servono tocchi veri a
+  passi con `Input.dispatchTouchEvent`.
+- **L'intestazione di Mobilità** era l'unica con la riga sopra il titolo:
+  diciotto punti più in basso degli altri moduli. Via; la settimana del
+  programma è nella testata di «Questa settimana». La riga del titolo è
+  alta 44 anche senza azioni.
+- **Le settimane di Training** riempiono la fascia (da 52 fino a 88 punti).
+
+Verticale e PC identici al pixel a `main` tranne le schermate toccate.
+Sul telefono vero non provato.
