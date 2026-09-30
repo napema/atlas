@@ -126,6 +126,23 @@ export function proiezione(oggi = oggiISO()) {
   };
 }
 
+/**
+ * Quanto vale una corsa SUI 5 KM, con Riegel.
+ *
+ * E' l'unica cosa che l'orologio non puo' dire: Garmin sa com'e' andata
+ * quella corsa, non sa che stai andando verso un 5000 sotto i venti. Un
+ * 3,53 in 17:01 e un 8 in 41:00 non si confrontano; i loro equivalenti sui
+ * 5 km si', ed e' l'unico modo per vedere se stai avvicinandoti.
+ *
+ * `null` sotto i 2 km: l'esponente di Riegel regge fra il mezzo e il
+ * doppio della distanza, e su uno sprint di 800 m darebbe un numero
+ * bellissimo e falso.
+ */
+export function equivalente5k(c) {
+  if (!c || !(c.km >= 2) || !(c.secondi > 0)) return null;
+  return c.secondi * Math.pow(OBIETTIVO.metri / 1000 / c.km, 1.06);
+}
+
 /* ------------------------------------------------------------- il resto -- */
 
 /** Gli slot ancora aperti nella settimana n, nell'ordine del piano. */

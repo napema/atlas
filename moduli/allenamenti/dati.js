@@ -122,14 +122,15 @@ export const PIANO = [
     facile: { testo: "40' Z2 @ 6:50/km + 6 allunghi da 20\"", km: 6 },
     qualita: { testo: "FATTO 30/09 · Pista variazioni 300 spinti + 100 lenti per 3,5 km", km: 3.5 },
     lunga: { testo: "8 km Z2 @ 6:50/km + 4 allunghi a fine corsa", km: 8 },
-    /* La seduta di spalle di questa settimana e' la Upper B, non la A: il
-       nome sta qui e non dentro il testo perche' la vista spezza il testo
-       sui punti mediani per contare serie e muscoli, e «Upper B» finirebbe
-       contato come un esercizio. */
-    nomi: { upper: "Upper B" },
+    /* La Upper di questa settimana e' la A, come nelle altre quattro: e'
+       quella che hai fatto. La B era finita qui dal CSV ed era una doppia —
+       la stessa seduta compariva come slot del programma E come modello del
+       bonus, cioe' due volte nella stessa schermata. La B resta il modello
+       del «+», che e' il suo posto. Panca a 45: e' il gradino prima del
+       47,5 della settimana 2. */
     palestra: {
       lower: "Stacco 3×3 @ 65 kg RPE 7 · Affondi 2×8/gamba · Leg curl 2×8 · Polpacci 3×15 · Tibialis 3×20",
-      upper: "Military press bilanciere 5×5 @ 30 kg · Chin-up 4×max-2 · Panca presa stretta 3×8 · Rematore al cavo presa larga 3×12 · Alzate ai cavi 3×15 · Face pull 3×15 · Curl a martello 3×12 + French press EZ 3×12",
+      upper: "Panca 5×5 @ 45 kg · Trazioni 8×50% max · Military manubri 3×10 · Rematore manubrio 3×10 · Alzate 4×15 · Curl + Pushdown",
       total: "Squat 3×5 @ 35 kg · Panca inclinata manubri 3×9 · Lat machine 3×12 · Dip 3×9 · Plank 3×45\"",
     } },
 

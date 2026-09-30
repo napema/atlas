@@ -23,7 +23,8 @@
   import Riga from "$lib/ui/Riga.svelte";
   import Corpo from "./Corpo.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
-  import { avviso, tocco, piuGiorni, plurale, GIORNI_INIZIALI } from "$lib/core/ui";
+  import { avviso, tocco, piuGiorni, plurale, dataUmana, GIORNI_INIZIALI } from "$lib/core/ui";
+  import { slide } from "svelte/transition";
   import {
     slotDi, fatto, giornoSlot, alternaSlot, scegliGiorno, inizioSettimana, recordSlot, ripristinaSlot, togliBonus,
     oraDi, scegliOra, oraPredefinita,
@@ -48,7 +49,31 @@
   const coperto = $derived.by(() => { dati.versione; return Boolean(id && recordSlot(id)?.testo); });
   const ora = $derived.by(() => { dati.versione; return s ? oraDi(s) : ""; });
 
-  const giorni = $derived(s ? Array.from({ length: 7 }, (_, i) => ({ id: piuGiorni(inizioSettimana(s.sett), i), testo: GIORNI_INIZIALI[i] })) : []);
+  /* CHI C'E' GIA' IN QUEL GIORNO. Il piano lascia i giorni liberi, quindi
+     mettere due allenamenti lo stesso giorno non e' vietato — ma quasi
+     sempre e' una svista, e scoprirlo il giorno stesso costa una seduta.
+     Il pallino lo dice prima; la conferma lo dice al momento di farlo. */
+  const occupanti = $derived.by(() => {
+    dati.versione;
+    if (!s) return new Map<string, string[]>();
+    const m = new Map<string, string[]>();
+    for (const x of slotDi(s.sett) as any[]) {
+      if (x.id === s.id) continue;
+      const g = giornoSlot(x.id);
+      if (!g) continue;
+      m.set(g, [...(m.get(g) || []), x.nome]);
+    }
+    return m;
+  });
+
+  const giorni = $derived(s ? Array.from({ length: 7 }, (_, i) => {
+    const id = piuGiorni(inizioSettimana(s.sett), i);
+    return { id, testo: GIORNI_INIZIALI[i], punto: (occupanti.get(id) || []).length > 0 };
+  }) : []);
+
+  /** Lo spostamento in attesa di conferma: `null` quando non c'e' niente da chiedere. */
+  let conflitto = $state<{ giorno: string; chi: string[] } | null>(null);
+  $effect(() => { if (!aperto) conflitto = null; });
   const letto = $derived(s?.genere === "corsa" ? leggiAllenamento(s.testo) : null);
   let creo = $state(false);
 
@@ -115,7 +140,20 @@
      Chi non vuole pianificare spunta e basta. Toccare di nuovo lo toglie. */
   function giornoScelto(v: string[]) {
     if (!s) return;
-    scegliGiorno(s.id, v[0] === giorno ? "" : v[0]);
+    const scelto = v[0];
+    // Toccare di nuovo il giorno scelto lo toglie: non c'e' niente da chiedere.
+    if (!scelto || scelto === giorno) { conflitto = null; scegliGiorno(s.id, ""); return; }
+    const chi = occupanti.get(scelto) || [];
+    if (chi.length) { conflitto = { giorno: scelto, chi }; return; }
+    conflitto = null;
+    scegliGiorno(s.id, scelto);
+  }
+
+  function confermaConflitto() {
+    if (!s || !conflitto) return;
+    scegliGiorno(s.id, conflitto.giorno);
+    conflitto = null;
+    tocco(12);
   }
 
   async function copiaGarmin() {
@@ -235,6 +273,22 @@
       <div class="blocco">
         <Pillole opzioni={giorni} scelte={giorno ? [giorno] : []} oncambio={giornoScelto} etichetta="Giorno" />
       </div>
+      {#if conflitto}
+        <!-- In linea, non un dialogo sopra un dialogo: due fogli impilati su
+             un telefono non si leggono, e la domanda nasce a due centimetri
+             dalla pastiglia che hai appena toccato. -->
+        <div class="conflitto" transition:slide={{ duration: 200 }}>
+          <p class="text-subheadline">
+            {dataUmana(conflitto.giorno)} c'è già
+            {conflitto.chi.length === 1 ? conflitto.chi[0] : `${conflitto.chi.length} allenamenti`}.
+            Ce lo metto lo stesso?
+          </p>
+          <div class="due">
+            <Pulsante variante="grigio" misura="media" onclick={() => (conflitto = null)}>No</Pulsante>
+            <Pulsante variante="pieno" misura="media" onclick={confermaConflitto}>Sì, mettilo lì</Pulsante>
+          </div>
+        </div>
+      {/if}
       <Riga titolo="Ora">
         {#snippet fine()}
           <input
@@ -350,6 +404,11 @@
   .serie.piccolo { font-size: 17px; color: var(--label-tertiary); }
 
   .lavoro-testo { padding: var(--space-4); }
+  .conflitto {
+    display: flex; flex-direction: column; gap: var(--space-3);
+    padding: var(--space-3) var(--space-4) var(--space-4);
+  }
+  .conflitto .due { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
   .blocco { padding: var(--space-4); }
   /* 17px: sotto, iOS zooma al focus e non torna indietro. */
   .ora { font-size: 17px; background: none; color: var(--label-primary); text-align: right; }

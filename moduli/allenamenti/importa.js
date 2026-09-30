@@ -11,6 +11,8 @@
 // Nessuna libreria: il CSV lo legge una funzione di venti righe, perché
 // l'unica cosa che ci vuole davvero è rispettare le virgolette.
 
+import { oggiISO } from "../../core/ui.js";
+
 /* --------------------------------------------------------------- il CSV -- */
 
 /**
@@ -169,6 +171,19 @@ export function corseDaCSV(testo) {
   const cTit = colonna(testa, "titolo", "title", "nome", "name");
   const cFC = colonna(testa, "fc media", "avg hr", "frequenza cardiaca media", "average heart rate");
 
+  /* IL FILE DEI GIRI. Garmin esporta due cose diverse con lo stesso tasto:
+     dalla LISTA delle attivita' esce una riga per corsa, con la data; dalla
+     PAGINA di una corsa esce una riga per giro piu' una di riepilogo, e la
+     data non c'e' da nessuna parte — e' nella pagina, non nel file.
+
+     Il secondo finiva sempre contro «non trovo la colonna della data», che
+     e' vero ma inutile: quel file UNA corsa la descrive, e la descrive
+     meglio dell'altro. Qui si riconosce e si legge come una corsa sola. */
+  if (cData < 0) {
+    const giri = daGiri(righe, testa, cDist, cTempo, cFC);
+    if (giri) return giri;
+  }
+
   if (cData < 0 || cDist < 0) {
     return { corse: [], scartate: 0,
       motivo: "Non trovo le colonne della data e della distanza. Servono almeno quelle due." };
@@ -192,6 +207,60 @@ export function corseDaCSV(testo) {
     });
   }
   return { corse, scartate, motivo: corse.length ? "" : "Nessuna riga sembrava una corsa." };
+}
+
+/**
+ * Una corsa sola, letta dal file dei giri.
+ *
+ * Si riconosce da due segni insieme: una colonna «Lap» o «Giro», e una riga
+ * di riepilogo in fondo. Uno solo dei due non basta — un elenco di attivita'
+ * puo' avere una colonna «giri» e non essere questo.
+ *
+ * LA DATA NON C'E' NEL FILE. Non e' una mancanza del parser: Garmin non la
+ * scrive proprio, sta nella pagina da cui hai premuto «esporta». Quindi si
+ * mette OGGI e si dice — `dataSupposta` — perche' chi importa deve poterla
+ * correggere invece di scoprire fra un mese che quella corsa e' sul giorno
+ * sbagliato.
+ */
+function daGiri(righe, testa, cDist, cTempo, cFC) {
+  const cLap = colonna(testa, "lap", "giro", "giri");
+  if (cLap < 0 || cDist < 0) return null;
+
+  const eRiepilogo = (r) => /^(riepilogo|summary|totale?|total)$/i.test(String(r[cLap] || "").trim());
+  const somma = righe.slice(1).find(eRiepilogo);
+  if (!somma) return null;
+
+  const km = numero(somma[cDist]);
+  if (!km || km <= 0) return null;
+
+  const cFCmax = colonna(testa, "fc max", "max hr", "frequenza cardiaca massima");
+  const cCal = colonna(testa, "calorie", "calories");
+  const fc = cFC >= 0 ? numero(somma[cFC]) : null;
+  const fcMax = cFCmax >= 0 ? numero(somma[cFCmax]) : null;
+  const cal = cCal >= 0 ? numero(somma[cCal]) : null;
+
+  return {
+    corse: [{
+      data: oggiISO(),
+      dataSupposta: true,
+      km: Math.round(km * 100) / 100,
+      secondi: cTempo >= 0 ? (secondi(somma[cTempo]) || 0) : 0,
+      titolo: "Corsa",
+      // I giri servono al grafico del passo: sono l'unica cosa che questo
+      // file ha in piu' dell'altro, e buttarla via sarebbe uno spreco.
+      giri: righe.slice(1).filter((r) => !eRiepilogo(r)).map((r) => ({
+        km: Math.round((numero(r[cDist]) || 0) * 100) / 100,
+        secondi: cTempo >= 0 ? (secondi(r[cTempo]) || 0) : 0,
+        ...(cFC >= 0 && numero(r[cFC]) ? { fc: Math.round(numero(r[cFC])) } : {}),
+      })).filter((g) => g.km > 0),
+      ...(fc ? { fc: Math.round(fc) } : {}),
+      ...(fcMax ? { fcMax: Math.round(fcMax) } : {}),
+      ...(cal ? { calorie: Math.round(cal) } : {}),
+    }],
+    scartate: 0,
+    motivo: "",
+    daGiri: true,
+  };
 }
 
 /* ------------------------------------------------- GLI ALLENAMENTI -- */

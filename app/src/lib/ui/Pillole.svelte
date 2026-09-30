@@ -11,7 +11,8 @@
     etichetta,
     oncambio,
   }: {
-    opzioni: { id: T; testo: string }[];
+    /** `punto` accende un pallino sull'opzione: «qui c'e' gia' qualcosa». */
+    opzioni: { id: T; testo: string; punto?: boolean }[];
     scelte: T[];
     multiplo?: boolean;
     etichetta?: string;
@@ -32,12 +33,20 @@
       class:scelta={scelte.includes(o.id)}
       aria-pressed={scelte.includes(o.id)}
       onclick={() => tocca(o.id)}
-    >{o.testo}</button>
+    >{o.testo}{#if o.punto}<span class="punto" aria-hidden="true"></span>{/if}</button>
   {/each}
 </div>
 
 <style>
   .pillole { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  /* Il pallino non dice «vietato», dice «guarda». Sta dentro la pastiglia e
+     non accanto: fuori diventerebbe una seconda colonna da leggere. */
+  button { position: relative; }
+  .punto {
+    position: absolute; left: 50%; bottom: 5px; translate: -50% 0;
+    width: 4px; height: 4px; border-radius: 50%; background: var(--color-orange);
+  }
+  .scelta .punto { background: currentColor; opacity: 0.7; }
   button {
     min-width: 44px; height: 36px; padding: 0 var(--space-4);
     border-radius: var(--radius-full);

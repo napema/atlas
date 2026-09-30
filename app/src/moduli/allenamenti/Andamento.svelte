@@ -13,7 +13,7 @@
   import { dati } from "$lib/core/reattivo.svelte";
   import { dataBreve, avviso } from "$lib/core/ui";
   import { OBIETTIVO, corseVive, eliminaCorsa, salvaCorse } from "$condivisi/allenamenti/dati.js";
-  import { andamento, proiezione, kmTotali, mmss, passo, km } from "$condivisi/allenamenti/calcolo.js";
+  import { andamento, proiezione, kmTotali, mmss, passo, km, equivalente5k } from "$condivisi/allenamenti/calcolo.js";
   import { fase } from "./comune";
 
   const d = $derived.by(() => {
@@ -23,7 +23,13 @@
       righe,
       massimo: Math.max(1, ...righe.map((r) => Math.max(r.previsti, r.fatti))),
       pr: proiezione(),
-      corse: (corseVive() as any[]).slice(-12).reverse(),
+      /* Ogni corsa porta il suo EQUIVALENTE sui 5 km. E' la sola cosa che
+         l'orologio non dice: Garmin sa com'e' andata quella corsa, non sa
+         che stai andando verso un 5000 sotto i venti. Cosi' un 3,5 e un 8
+         diventano confrontabili, ed e' l'unico modo per vedere se ti stai
+         avvicinando invece di rileggere una seduta gia' vista. */
+      corse: (corseVive() as any[]).slice(-12).reverse()
+        .map((c) => ({ ...c, eq: equivalente5k(c) as number | null })),
       totale: kmTotali(),
     };
   });
@@ -76,14 +82,32 @@
   {#each d.corse as c (c.id)}
     <Riga
       titolo={c.titolo || "Corsa"}
-      sottotitolo="{dataBreve(c.data)} · {c.secondi && c.km ? passo(c.secondi / c.km) : '—'}"
-      valore={km(c.km)}
+      sottotitolo="{dataBreve(c.data)} · {c.secondi && c.km ? passo(c.secondi / c.km) : '—'} · {km(c.km)}"
       onclick={() => togli(c)}
-    />
+    >
+      {#snippet fine()}
+        {#if c.eq}
+          <span class="eq" class:dentro={c.eq <= OBIETTIVO.secondi}>
+            <span class="cifre">{mmss(c.eq)}</span>
+            <span class="text-caption2">sui 5 km</span>
+          </span>
+        {:else}
+          <span class="text-subheadline secondario cifre">{km(c.km)}</span>
+        {/if}
+      {/snippet}
+    </Riga>
   {/each}
 </Sezione>
 
 <style>
+  /* L'equivalente e' verde solo quando E' sotto il muro. Non «quasi»: una
+     previsione che si colora a meta' strada e' quella su cui poi decidi di
+     alzare il ritmo. */
+  .eq { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
+  .eq .cifre { font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; }
+  .eq .text-caption2 { color: var(--label-tertiary); }
+  .eq.dentro .cifre { color: var(--color-green); }
+
   .proiezione { padding: var(--space-4); display: flex; flex-direction: column; gap: 4px; }
   .cifre-riga { display: flex; align-items: baseline; gap: var(--space-3); }
   .cifra { font-family: var(--font-display); font-size: 48px; line-height: 52px; font-weight: var(--weight-bold); }

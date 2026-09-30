@@ -43,11 +43,19 @@
 
   function importa() {
     if (scelta === "corse") {
-      const { corse, scartate, motivo } = corseDaCSV(testo);
+      const { corse, scartate, motivo, daGiri } = corseDaCSV(testo) as any;
       if (!corse.length) { avviso(motivo || "Non ho trovato corse.", { tipo: "errore" }); return; }
       const { nuove, aggiornate } = salvaCorse(corse);
       aperto = false;
-      avviso(`${nuove} nuove, ${aggiornate} già c'erano${scartate ? `, ${scartate} scartate` : ""}.`);
+      /* IL FILE DEI GIRI NON HA LA DATA — non e' il parser che non la trova,
+         Garmin non la scrive proprio: sta nella pagina da cui hai premuto
+         «esporta». Quindi va detto che l'abbiamo messa a oggi, altrimenti
+         lo si scopre fra un mese con la corsa sul giorno sbagliato. */
+      if (daGiri) {
+        avviso(`Importata: ${corse[0].km} km. Il file dei giri non ha la data — l'ho messa a oggi.`, { durata: 5200 });
+      } else {
+        avviso(`${nuove} nuove, ${aggiornate} già c'erano${scartate ? `, ${scartate} scartate` : ""}.`);
+      }
     } else {
       const { settimane, scartate, motivo } = allenamentiDaCSV(testo);
       if (!settimane.length) { avviso(motivo || "Non ho trovato allenamenti.", { tipo: "errore" }); return; }

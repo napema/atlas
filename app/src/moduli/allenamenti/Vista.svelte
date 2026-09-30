@@ -152,7 +152,9 @@
   {:else}
     <!-- OGGI, in una riga. -->
     {#if settimana === settimanaCorrente()}
-      <div class="oggi intera lastra" class:vuoto={!oggiQui.diOggi.length}>
+      <div class="oggi intera lastra"
+           class:vuoto={!oggiQui.diOggi.length}
+           class:chiuso={oggiQui.diOggi.length > 0 && oggiQui.fattiOggi === oggiQui.diOggi.length}>
         <span class="eti text-footnote semibold">Oggi</span>
         {#if oggiQui.diOggi.length}
           <span class="cose">
@@ -244,8 +246,21 @@
                                    color-mix(in srgb, var(--accento) 13%, transparent));
   }
   .oggi.vuoto { --lastra-velo: none; }
+  /* FATTO NON E' UN ALLARME. L'accento di Training e' rosso, quindi a
+     giornata chiusa il riquadro diventava una fascia rossa con dentro un
+     titolo barrato: la forma di un errore addosso a un risultato. Quando
+     e' tutto fatto il velo passa al verde, che in ATLAS vuol dire una cosa
+     sola — questa. */
+  .oggi.chiuso {
+    --lastra-velo: linear-gradient(color-mix(in srgb, var(--color-green) 11%, transparent),
+                                   color-mix(in srgb, var(--color-green) 11%, transparent));
+  }
   .oggi .eti { color: var(--accento); flex: none; letter-spacing: 0.3px; }
   .oggi.vuoto .eti { color: var(--label-secondary); }
+  .oggi.chiuso .eti, .oggi.chiuso .stato { color: var(--color-green); }
+  /* Barrato E sbiadito era il doppio del necessario, e il barrato su un
+     fondo tinto si legge peggio. Resta lo sbiadito, e il colore lo dice. */
+  .oggi.chiuso .cosa.fatta .nome-oggi { text-decoration: none; }
   .cose { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
   .cosa { display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-width: 0; max-width: 100%; }
   .cosa:active { opacity: 0.6; }
@@ -303,8 +318,13 @@
     padding: 1px 7px; border-radius: var(--radius-full); font-weight: var(--weight-semibold);
     color: var(--color-indigo); background: color-mix(in srgb, var(--color-indigo) 16%, transparent);
   }
+  /* ACCANTO AL NOME, non spinto al bordo. `margin-left: auto` lo mandava
+     all'altro capo della riga: fra il titolo e la pastiglia restavano
+     centottanta punti di vuoto, e con i titoli di lunghezza diversa la
+     colonna delle date non si allineava con niente — sembravano storte
+     perche' ognuna partiva da un punto suo. */
   .quando {
-    margin-left: auto; padding: 2px 8px; border-radius: var(--radius-full);
+    padding: 2px 8px; border-radius: var(--radius-full);
     background: var(--fill-tertiary); color: var(--label-secondary); font-weight: var(--weight-medium);
   }
   .testo { overflow-wrap: anywhere; }
