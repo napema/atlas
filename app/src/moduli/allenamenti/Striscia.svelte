@@ -1,8 +1,14 @@
 <!--
-  Tredici settimane in una riga che scorre. Il blocco intero resta sempre
-  sotto il pollice; la fase si legge dal colore della barra. Una barra e non
-  sei pallini: tredici settimane × sei pallini sono settantotto puntini, e
-  da lontano diventano rumore.
+  Le settimane del blocco in una riga. Il blocco intero resta sempre sotto
+  il pollice; la fase si legge dal colore della barra. Una barra e non sei
+  pallini: tredici settimane × sei pallini sono settantotto puntini, e da
+  lontano diventano rumore.
+
+  Le tessere SI ALLARGANO A RIEMPIRE LA RIGA. Erano da 52 punti fissi,
+  pensate per le tredici settimane del blocco di prima che scorrevano; con
+  un blocco da cinque restavano ammucchiate a sinistra con un terzo della
+  riga vuoto. Adesso crescono fino a 88 punti, e se le settimane sono
+  tante da non starci tornano da 52 e la riga scorre come prima.
 -->
 <script lang="ts">
   import { dati } from "$lib/core/reattivo.svelte";
@@ -56,7 +62,7 @@
   }
   .nastro::-webkit-scrollbar { display: none; }
   .sett {
-    flex: none; width: 52px; height: 60px; scroll-snap-align: center;
+    flex: 1 0 52px; max-width: 88px; height: 60px; scroll-snap-align: center;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
     border-radius: var(--radius-xl);
     background: var(--bg-grouped-secondary);

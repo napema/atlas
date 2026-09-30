@@ -247,11 +247,15 @@
   .oggi .eti { color: var(--accento); flex: none; letter-spacing: 0.3px; }
   .oggi.vuoto .eti { color: var(--label-secondary); }
   .cose { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
-  .cosa { display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-width: 0; }
+  .cosa { display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-width: 0; max-width: 100%; }
   .cosa:active { opacity: 0.6; }
   .nome-oggi { font-weight: var(--weight-semibold); }
   .cosa.fatta .nome-oggi { color: var(--label-secondary); text-decoration: line-through; }
-  .dett { color: var(--label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46ch; }
+  /* `min(46ch, 100%)` e non 46ch: su un iPhone 46 caratteri sono più della
+     larghezza disponibile, e la riga — che non va a capo — invece di
+     troncarsi coi puntini usciva dallo schermo di trenta punti. La pagina
+     diventava più larga dello schermo, e su iOS si trascinava di lato. */
+  .dett { color: var(--label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: min(46ch, 100%); }
   .stato { flex: none; }
 
   .slot { position: relative; display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); min-height: 76px; }
