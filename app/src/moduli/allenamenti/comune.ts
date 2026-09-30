@@ -4,8 +4,12 @@
    verde e niente rosso: in ATLAS vogliono dire «fatto» e «male». */
 export function fase(nome: string) {
   if (/ricostr/i.test(nome)) return { chiave: "ricostruzione", colore: "var(--color-teal)" };
+  if (/svilupp/i.test(nome)) return { chiave: "sviluppo", colore: "var(--color-orange)" };
   if (/soglia/i.test(nome)) return { chiave: "soglia", colore: "var(--color-yellow)" };
   if (/specifico/i.test(nome)) return { chiave: "specifico", colore: "var(--color-orange)" };
+  /* Il test ha il colore della meta, non quello del taper che lo precede:
+     sono due settimane diverse e la striscia deve farle vedere diverse. */
+  if (/test/i.test(nome)) return { chiave: "test", colore: "var(--color-green)" };
   return { chiave: "taper", colore: "var(--color-indigo)" };
 }
 

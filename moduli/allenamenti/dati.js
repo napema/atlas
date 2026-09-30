@@ -2,7 +2,7 @@
 //
 // LA DIVISIONE CHE REGGE TUTTO IL MODULO: il piano è CODICE, il resto è DATI.
 //
-// Le tredici settimane stanno qui sotto come costante. Non vengono seminate
+// Le settimane stanno qui sotto come costante. Non vengono seminate
 // nell'archivio, non si sincronizzano, non possono essere sovrascritte da un
 // dispositivo appena installato — perché non sono un dato dell'utente, sono
 // il programma scritto dal suo allenatore. Tutta la classe di guasti che ha
@@ -17,13 +17,18 @@ import { apriCasella } from "../../core/storage.js";
 import { daISO, piuGiorni, oggiISO } from "../../core/ui.js";
 
 /* =========================================================================
-   IL BLOCCO — 13 settimane.
+   IL BLOCCO — 7 settimane.
 
    PARTE LUNEDÌ 14 SETTEMBRE, non il 15 come diceva il foglio. Non è un
    capriccio: il 15 era un martedì, e far partire la settimana 1 di martedì
-   avrebbe spezzato in due ogni conteggio settimanale per tre mesi. Dal 14 le
-   tredici settimane sono lunedì→domenica pulite e finiscono domenica 13
-   dicembre, con il test dentro l'ultima.
+   avrebbe spezzato in due ogni conteggio settimanale. Dal 14 le settimane
+   sono lunedì→domenica pulite.
+
+   ERANO TREDICI, fino al test di dicembre. Il test è stato anticipato a
+   fine ottobre e il blocco si è accorciato a sette: la 7 finisce domenica
+   1 novembre, con il test dentro. Le settimane 1 e 2 sono rimaste quelle
+   che erano — sono passate, e riscrivere il passato perché somigli al
+   piano nuovo vuol dire perdere cosa hai fatto davvero.
 
    I SEI SLOT NON HANNO UN GIORNO, ed è il piano a volerlo: «3 corse + 3
    palestre a settimana, giorni liberi. Domenica pianifichi la settimana e
@@ -33,7 +38,11 @@ import { daISO, piuGiorni, oggiISO } from "../../core/ui.js";
    ========================================================================= */
 
 export const INIZIO = "2026-09-14";
-export const SETTIMANE = 13;
+/* SETTE, non tredici. Il test dei 5 km e' stato anticipato a fine ottobre:
+   il blocco si accorcia, non si comprime. Le settimane 1 e 2 restano quelle
+   che sono — sono passate, e riscrivere il passato per farlo somigliare al
+   piano nuovo vuol dire perdere cosa hai fatto davvero. */
+export const SETTIMANE = 7;
 
 export const OBIETTIVO = {
   nome: "5 km sub-20",
@@ -59,10 +68,12 @@ export const REGOLE = [
 export const VINCOLO =
   "Mai palestra gambe il giorno prima della qualità. La lunga invece tollera le gambe stanche: è in Z2.";
 
-/* Gli accessori NON cambiano in tredici settimane: cambia il carico del lift
-   principale, +5 kg su stacco e squat e +2,5 sulla panca. Tenerli una volta
-   sola invece di ricopiarli tredici volte non è pigrizia — è la forma che
-   rende visibile la progressione, che è l'unica cosa che si muove. */
+/* Gli accessori delle prime due settimane: lì cambiava solo il carico del
+   lift principale, e tenerli una volta sola invece di ricopiarli era la
+   forma che rendeva visibile la progressione. Dalla 3 in poi cambiano anche
+   serie e accessori, e ogni settimana scrive la sua seduta per esteso in
+   `palestra` — vedi `slotDi()`. Questi restano perché la 1 e la 2 sono
+   storico e si leggono ancora. */
 export const PALESTRA = {
   lower: {
     nome: "Lower",
@@ -70,7 +81,11 @@ export const PALESTRA = {
     accessori: ["Hack squat 4×8", "Leg curl 3×12", "Affondi 3×12", "Polpacci 4×15", "Tibialis 3×20"],
   },
   upper: {
-    nome: "Upper",
+    /* «Upper A» perche' adesso esiste una Upper B, che pero' e' un bonus e
+       non un quarto slot del programma. La CHIAVE resta `upper`: da lei
+       dipende l'id dello slot (`s03-upper`), e dall'id dipendono le spunte
+       che hai gia' dato. Cambiarla avrebbe azzerato la settimana in corso. */
+    nome: "Upper A",
     lift: "Panca 5×5",
     accessori: ["Trazioni 8×50%max", "Military manubri 3×10", "Rematore 3×10", "Alzate 4×15", "Curl+Pushdown"],
   },
@@ -100,78 +115,65 @@ export const PIANO = [
     lunga: { testo: "7 km @ 6:55/km Z2", km: 7 },
     carichi: { lower: 62.5, upper: 42.5, total: 32.5 } },
 
-  { n: 3, fase: "Ricostruzione",
-    facile: { testo: "40' Z2 @ 6:50/km", km: kmDaTempo(40, 6.83) },
-    qualita: { testo: "10' Z2 + 2×8' Z3 (5:40/km) rec 3' + 10' Z2", km: kmDaTempo(42, 6.3) },
-    lunga: { testo: "8 km @ 6:50/km Z2", km: 8 },
-    carichi: { lower: 65, upper: 45, total: 35 } },
+  /* DA QUI IN POI IL PIANO E' SCRITTO PER ESTESO, seduta per seduta.
 
-  { n: 4, fase: "Ricostruzione",
-    facile: { testo: "40' Z2 @ 6:45/km", km: kmDaTempo(40, 6.75) },
-    qualita: { testo: "10' Z2 + 3×8' Z3 (5:35/km) rec 3' + 10' Z2", km: kmDaTempo(50, 6.2) },
-    lunga: { testo: "9 km @ 6:45/km Z2", km: 9 },
-    carichi: { lower: 67.5, upper: 47.5, total: 37.5 } },
+     Fino alla settimana 2 la palestra era `carichi` piu' gli accessori fissi
+     di `PALESTRA`: una forma che rende visibile la progressione quando
+     l'unica cosa che si muove e' il carico del lift principale. Da qui in
+     avanti cambiano anche serie, ripetizioni e accessori — nel taper
+     spariscono le gambe — e quella forma non li sa dire. Percio' `palestra`
+     prende il posto di `carichi`: il testo della seduta, uno per slot. */
 
-  { n: 5, fase: "Soglia · VO₂max",
-    facile: { testo: "40' Z2 @ 6:40/km", km: kmDaTempo(40, 6.67) },
-    qualita: { testo: "15' risc + 20' continui Z3 (5:30/km) + 10' defat", km: kmDaTempo(45, 6.2) },
-    lunga: { testo: "10 km @ 6:45/km Z2", km: 10 },
-    carichi: { lower: 70, upper: 50, total: 40 } },
+  { n: 3, fase: "Sviluppo",
+    facile: { testo: "40' Z2 @ 6:50/km + 6 allunghi da 20\"", km: 6 },
+    qualita: { testo: "FATTO · Pista variazioni 300 spinti + 100 lenti per 3,5 km", km: 3.5 },
+    lunga: { testo: "8 km Z2 @ 6:50/km + 4 allunghi a fine corsa", km: 8 },
+    palestra: {
+      lower: "Stacco 3×3 @ 65 kg RPE 7 · Affondi 2×8/gamba · Leg curl 2×8 · Polpacci 3×15 · Tibialis 3×20",
+      upper: "Panca 5×5 @ 45 kg · Trazioni 8×50% max · Military manubri 3×10 · Rematore manubrio 3×10 · Alzate 4×15 · Curl + Pushdown",
+      total: "Squat 3×5 @ 35 kg · Panca inclinata manubri 3×9 · Lat machine 3×12 · Dip 3×9 · Plank 3×45\"",
+    } },
 
-  { n: 6, fase: "Soglia · VO₂max",
-    facile: { testo: "45' Z2 @ 6:40/km", km: kmDaTempo(45, 6.67) },
-    qualita: { testo: "15' risc + 5×1000 @ 4:30/km rec 90\" + 10' defat", km: 10 },
-    lunga: { testo: "11 km @ 6:45/km Z2", km: 11 },
-    carichi: { lower: 72.5, upper: 52.5, total: 42.5 } },
+  { n: 4, fase: "Sviluppo",
+    facile: { testo: "40' Z2 @ 6:45/km + 6 allunghi da 20\"", km: 6 },
+    qualita: { testo: "INTERVALLI · 15' risc + 4 allunghi · 4×1000 m @ 4:30/km rec 2' trotto · 10' defat", km: 8.5 },
+    lunga: { testo: "8 km · primi 6 Z2 @ 6:45/km · ultimi 2 km @ 4:55/km", km: 8 },
+    palestra: {
+      lower: "Stacco 3×3 @ 67,5 kg RPE 7 · Affondi 2×8/gamba · Leg curl 2×8 · Polpacci 3×15 · Tibialis 3×20",
+      upper: "Panca 5×5 @ 47,5 kg · Trazioni 8×50% max · Military manubri 3×10 · Rematore manubrio 3×10 · Alzate 4×15 · Curl + Pushdown",
+      total: "Squat 3×5 @ 37,5 kg · Panca inclinata manubri 3×9 · Lat machine 3×12 · Dip 3×9 · Plank 3×45\"",
+    } },
 
-  { n: 7, fase: "Soglia · VO₂max",
-    facile: { testo: "45' Z2 @ 6:35/km", km: kmDaTempo(45, 6.58) },
-    qualita: { testo: "15' risc + 25' continui Z3 (5:25/km) + 10' defat", km: kmDaTempo(50, 6.1) },
-    lunga: { testo: "12 km @ 6:40/km Z2", km: 12 },
-    carichi: { lower: 75, upper: 55, total: 45 } },
+  { n: 5, fase: "Sviluppo",
+    facile: { testo: "35' Z2 @ 6:40/km + 6 allunghi da 20\"", km: 5.2 },
+    qualita: { testo: "INTERVALLI · 15' risc + 4 allunghi · 5×1000 m @ 4:28/km rec 2' trotto · 10' defat", km: 9.5 },
+    lunga: { testo: "9 km · primi 6 Z2 @ 6:40/km · ultimi 3 km @ 4:55/km", km: 9 },
+    palestra: {
+      lower: "Stacco 3×3 @ 70 kg RPE 7-8 · Affondi 2×8/gamba · Leg curl 2×8 · Polpacci 3×15 · Tibialis 3×20",
+      upper: "Panca 5×5 @ 50 kg · Trazioni 8×50% max · Military manubri 3×10 · Rematore manubrio 3×10 · Alzate 4×15 · Curl + Pushdown",
+      total: "Squat 3×5 @ 40 kg · Panca inclinata manubri 3×9 · Lat machine 3×12 · Dip 3×9 · Plank 3×45\"",
+    } },
 
-  { n: 8, fase: "Soglia · VO₂max", scarico: true,
-    facile: { testo: "40' Z2 @ 6:35/km", km: kmDaTempo(40, 6.58) },
-    qualita: { testo: "15' risc + 6×1000 @ 4:25/km rec 90\" + 10' defat", km: 11 },
-    lunga: { testo: "10 km SCARICO @ 6:45/km", km: 10 },
-    carichi: { lower: 70, upper: 52.5, total: 42.5 } },
+  { n: 6, fase: "Taper",
+    facile: { testo: "30' Z2 + 4 allunghi da 20\"", km: 4.5 },
+    qualita: { testo: "RITMO GARA · 15' risc + 4 allunghi · 3×1200 m @ 4:24/km rec 2' trotto · 10' defat", km: 7.7 },
+    lunga: { testo: "6 km Z2 @ 6:40/km", km: 6 },
+    palestra: {
+      lower: "Stacco 2×3 @ 65 kg RPE 6 · Polpacci 2×15 · Tibialis 2×20",
+      upper: "Panca 4×5 @ 50 kg · Trazioni 6×50% max · Military manubri 2×10 · Rematore manubrio 2×10 · Alzate 3×15",
+      total: "Squat 2×5 @ 35 kg · Panca inclinata manubri 3×9 · Lat machine 3×12",
+    } },
 
-  { n: 9, fase: "Soglia · VO₂max",
-    facile: { testo: "45' Z2 @ 6:30/km", km: kmDaTempo(45, 6.5) },
-    qualita: { testo: "15' risc + 4×1500 @ 4:25/km rec 2' + 10' defat", km: 11 },
-    lunga: { testo: "12 km @ 6:40/km Z2", km: 12 },
-    carichi: { lower: 77.5, upper: 57.5, total: 47.5 } },
-
-  { n: 10, fase: "Specifico 5K",
-    facile: { testo: "40' Z2 @ 6:30/km", km: kmDaTempo(40, 6.5) },
-    qualita: { testo: "15' risc + 8×400 @ 3:45/km rec 90\" + 10' defat", km: 8.5 },
-    lunga: { testo: "12 km @ 6:40/km Z2", km: 12 },
-    carichi: { lower: 80, upper: 60, total: 50 } },
-
-  { n: 11, fase: "Specifico 5K",
-    facile: { testo: "40' Z2 @ 6:30/km", km: kmDaTempo(40, 6.5) },
-    qualita: { testo: "15' risc + 3×1600 @ 4:00/km rec 2'30\" + 10' defat", km: 9.5 },
-    lunga: { testo: "10 km @ 6:40/km Z2", km: 10 },
-    carichi: { lower: 82.5, upper: 62.5, total: 52.5 } },
-
-  { n: 12, fase: "Specifico 5K",
-    facile: { testo: "35' Z2 @ 6:30/km", km: kmDaTempo(35, 6.5) },
-    qualita: { testo: "15' risc + 10×400 @ 3:40/km rec 75\" + 10' defat", km: 9 },
-    lunga: { testo: "8 km @ 6:40/km Z2", km: 8 },
-    // «mantieni»: la forza smette di salire mentre la corsa diventa
-    // specifica. Non è una dimenticanza del piano, è il piano.
-    carichi: null },
-
-  { n: 13, fase: "Taper · Test", test: true,
-    facile: { testo: "30' Z2 + 4 allunghi", km: kmDaTempo(30, 6.5) },
-    qualita: { testo: "15' molto facili", km: kmDaTempo(15, 6.8) },
-    lunga: { testo: "TEST 5 KM — obiettivo sub-20:00", km: 5, stella: true },
-    // Una seduta sola, e solo upper. Il resto della settimana le gambe non
-    // si toccano.
-    soloPalestra: ["upper"],
-    palestraTest: "Solo upper, leggero, a inizio settimana · Panca 3×5 al 70% · Trazioni 3×5 · Alzate 3×15 · Curl+Pushdown",
-    avvertenza: "Niente gambe nei 5 giorni prima del test. Nessuno stacco, nessuno squat, nessun affondo.",
-    carichi: null },
+  { n: 7, fase: "Test", test: true,
+    facile: { testo: "3 giorni prima del test · 15' risc + 4×400 m @ 4:15/km rec 90\" + 5' defat", km: 5 },
+    qualita: { testo: "TEST 5000 m · 15' risc + 4 allunghi + 5 km @ 4:24/km + 10' defat", km: 8.7, stella: true },
+    lunga: { testo: "Giorno prima del test · 20' facilissimi + 3 allunghi", km: 3 },
+    palestra: {
+      lower: "NIENTE GAMBE nei 5 giorni prima del test",
+      upper: "Inizio settimana · Panca 3×5 al 70% · Trazioni 3×5 · Alzate 3×15",
+      total: "NIENTE GAMBE prima del test · dopo il test seduta libera",
+    },
+    avvertenza: "Niente gambe nei 5 giorni prima del test. Nessuno stacco, nessuno squat, nessun affondo." },
 ];
 
 /* ------------------------------------------------------------- archivio -- */
@@ -188,6 +190,10 @@ export const PREDEFINITO = {
      allenamenti quella settimana ne ha tre, non tre più i sei del piano.
      Vedi `slotDi()`. */
   settimane: [],
+  /* GLI ALLENAMENTI IN PIU'. Fuori dal programma per costruzione: il piano
+     e' codice e non si tocca da dentro l'app, questi invece nascono da un
+     tocco e vanno da qualche parte. `id` = "b03-<chiave>". */
+  bonus: [],
   config: { inizio: INIZIO },
   configUp: 0,
 };
@@ -279,14 +285,33 @@ export function slotDi(n) {
   }
   for (const k of (p.soloPalestra || ORDINE_PALESTRA)) {
     const g = PALESTRA[k];
+    /* Se la settimana scrive la seduta per esteso vince lei, e il lift con
+       gli accessori fissi non si disegna: sono due modi di dire la stessa
+       cosa, e messi insieme la dicono due volte. */
+    const suo = p.palestra?.[k];
     fuori.push(conScostamento({
       id: idSlot(n, k), sett: n, genere: "palestra", chiave: k,
       nome: g.nome,
-      lift: p.carichi ? `${g.lift} @ ${carico(p.carichi[k])} kg` : `${g.lift} @ mantieni`,
-      accessori: p.palestraTest ? [] : g.accessori,
-      testo: p.palestraTest || null,
+      ...(suo
+        ? { lift: null, accessori: [], testo: suo }
+        : {
+            lift: p.carichi ? `${g.lift} @ ${carico(p.carichi[k])} kg` : `${g.lift} @ mantieni`,
+            accessori: p.palestraTest ? [] : g.accessori,
+            testo: p.palestraTest || null,
+          }),
       km: 0,
     }));
+  }
+  /* I BONUS IN FONDO, e marcati. Sono allenamenti veri — si spuntano, hanno
+     le loro serie e i loro muscoli — ma non fanno parte del programma:
+     `progressoSettimana` li tiene fuori dal conto, altrimenti aggiungerne
+     uno farebbe scendere la percentuale della settimana, che e' il
+     contrario di quello che e' successo. */
+  for (const b of bonusDi(n)) {
+    fuori.push({
+      id: b.id, sett: n, genere: "palestra", chiave: b.id,
+      nome: b.nome, testo: b.testo || "", km: 0, bonus: true,
+    });
   }
   return fuori;
 }
@@ -349,6 +374,40 @@ export function salvaSettimana(n, voci) {
 
 /** Toglie la settimana importata: si torna al blocco. */
 export const togliSettimana = (n) => salvaSettimana(n, []);
+
+/* ---------------------------------------------------------- i bonus ----- */
+
+/** Il modello dell'allenamento in piu' che si aggiunge con un tocco. */
+export const UPPER_B = {
+  nome: "Upper B",
+  testo: "Military press bilanciere in piedi 5×5 @ 30 kg · Chin-up presa supina 4×max-2 · Panca presa stretta 3×8 · Rematore al cavo presa larga 3×12 · Alzate laterali ai cavi 3×15 · Face pull 3×15 · Curl a martello 3×12 + French press EZ 3×12",
+};
+
+export const bonusDi = (n) =>
+  (stato().bonus || []).filter((b) => b.sett === n && !b.del);
+
+export function aggiungiBonus(n, { nome, testo }) {
+  const pulito = String(nome || "").trim() || "Bonus";
+  /* L'id porta dentro il nome, come per gli slot del piano: due «Upper B»
+     nella stessa settimana sarebbero lo stesso allenamento due volte, e lo
+     stesso id li fa collassare in uno — che e' il comportamento giusto. */
+  const id = `b${String(n).padStart(2, "0")}-${chiaveNome(pulito)}`;
+  casella.aggiorna((s) => {
+    if (!Array.isArray(s.bonus)) s.bonus = [];
+    const i = s.bonus.findIndex((b) => b.id === id);
+    const rec = { id, sett: n, nome: pulito, testo: String(testo || "").trim(), del: false, up: Date.now() };
+    if (i >= 0) s.bonus[i] = rec; else s.bonus.push(rec);
+  });
+  return id;
+}
+
+/** Lapide, non rimozione: senza, l'altro dispositivo lo resuscita. */
+export function togliBonus(id) {
+  casella.aggiorna((s) => {
+    const i = (s.bonus || []).findIndex((b) => b.id === id);
+    if (i >= 0) s.bonus[i] = { id, del: true, up: Date.now() };
+  });
+}
 
 
 const trova = (elenco, id) => elenco.findIndex((r) => r.id === id);

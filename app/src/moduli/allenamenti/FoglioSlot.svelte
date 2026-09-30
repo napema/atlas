@@ -25,7 +25,7 @@
   import { dati } from "$lib/core/reattivo.svelte";
   import { avviso, tocco, piuGiorni, plurale, GIORNI_INIZIALI } from "$lib/core/ui";
   import {
-    slotDi, fatto, giornoSlot, alternaSlot, scegliGiorno, inizioSettimana, recordSlot, ripristinaSlot,
+    slotDi, fatto, giornoSlot, alternaSlot, scegliGiorno, inizioSettimana, recordSlot, ripristinaSlot, togliBonus,
     oraDi, scegliOra, oraPredefinita,
   } from "$condivisi/allenamenti/dati.js";
   import { km } from "$condivisi/allenamenti/calcolo.js";
@@ -279,6 +279,15 @@
     {#if coperto}
       <Pulsante variante="testo" larga onclick={() => { if (s) { ripristinaSlot(s.id); avviso("Rimesso il piano."); } }}>
         Rimetti il piano originale
+      </Pulsante>
+    {/if}
+
+    {#if s?.bonus}
+      <!-- Solo i bonus si tolgono. Uno slot del programma non si cancella:
+           si lascia non spuntato, ed e' un'informazione — «questa seduta non
+           l'ho fatta» — che cancellandola andrebbe persa. -->
+      <Pulsante variante="testo" distruttivo larga onclick={() => { if (s) { togliBonus(s.id); avviso("Allenamento tolto."); aperto = false; } }}>
+        Togli questo allenamento
       </Pulsante>
     {/if}
   {/if}

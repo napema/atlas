@@ -1,5 +1,5 @@
 <!--
-  Training — tredici settimane verso i 5 km sotto i venti minuti.
+  Training — sette settimane verso i 5 km sotto i venti minuti.
 
   LA DOMANDA DELLA SCHERMATA È UNA SOLA: cosa mi resta questa settimana.
   «Quanto ho corso in tutto» e «a che punto è il blocco» sono buone domande
@@ -17,6 +17,7 @@
   import TestataSettimana from "./TestataSettimana.svelte";
   import FoglioSlot from "./FoglioSlot.svelte";
   import FoglioImport from "./FoglioImport.svelte";
+  import FoglioBonus from "./FoglioBonus.svelte";
   import Andamento from "./Andamento.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
@@ -36,8 +37,10 @@
 
   let vista = $state<"settimana" | "andamento">("settimana");
   let settimana = $state<number>(settimanaCorrente());
-  let fSlot = $state(false), fImport = $state(false);
+  let fSlot = $state(false), fImport = $state(false), fBonus = $state(false);
   let slotId = $state<string | null>(null);
+
+  const apriBonus = () => { fBonus = true; };
   let quale = $state<"corse" | "allenamenti">("corse");
 
   $effect(() => {
@@ -81,7 +84,16 @@
             altri: Math.max(0, gr.length - 3),
           };
         });
-        return { g, nome: NOMI_GENERE[g] ?? g, slot: miei, fatti: miei.filter((s) => s.fatto).length };
+        /* Il contatore conta il PROGRAMMA. I bonus si contano a parte:
+           «3/3 + 1 bonus» dice due cose vere, «4/4» ne dice una falsa —
+           che il programma prevedeva quattro sedute. */
+        const delPiano = miei.filter((s: any) => !s.bonus);
+        return {
+          g, nome: NOMI_GENERE[g] ?? g, slot: miei,
+          fatti: delPiano.filter((s: any) => s.fatto).length,
+          totali: delPiano.length,
+          bonus: miei.filter((s: any) => s.bonus).length,
+        };
       })
       .filter((x) => x.slot.length);
   });
@@ -168,7 +180,21 @@
 
     {#each gruppi as gr (gr.g)}
       <Sezione titolo={gr.nome}>
-        {#snippet coda()}<span class="text-subheadline secondario cifre">{gr.fatti}/{gr.slot.length}</span>{/snippet}
+        {#snippet coda()}
+          <span class="text-subheadline secondario cifre">
+            {gr.fatti}/{gr.totali}{#if gr.bonus}<span class="piu-bonus"> + {gr.bonus} bonus</span>{/if}
+          </span>
+          {#if gr.g === "palestra"}
+            <!-- Piccolo e in coda al titolo: e' una cosa che si trova
+                 quando la cerchi, non una che compete con le sedute del
+                 programma. Giallo perche' in ATLAS il verde vuol dire
+                 «fatto» e il rosso e' uno stato negativo: nessuno dei due
+                 dice «in piu'». -->
+            <button type="button" class="aggiungi" aria-label="Aggiungi un allenamento" onclick={apriBonus}>
+              <Icona nome="piu" misura={15} tratto={2.6} />
+            </button>
+          {/if}
+        {/snippet}
         {#each gr.slot as s (s.id)}
           <div class="slot" class:fatto={s.fatto}>
             <Spunta fatta={s.fatto} etichetta={s.fatto ? `Riapri ${s.nome}` : `Segna ${s.nome} come fatto`} onclick={() => spunta(s)} />
@@ -176,6 +202,7 @@
               <span class="alto">
                 <span class="nome">{s.nome}</span>
                 {#if s.stella}<span class="stella" title="Seduta chiave"><Icona nome="bersaglio" misura={14} tratto={2.2} /></span>{/if}
+                {#if s.bonus}<span class="etichetta bonus text-caption2">bonus</span>{/if}
                 {#if s.cambiato}<span class="etichetta text-caption2">importato</span>{/if}
                 {#if s.quando}<span class="quando text-caption1">{s.quando} · {s.ora}</span>{/if}
               </span>
@@ -204,6 +231,7 @@
 
 <FoglioSlot bind:aperto={fSlot} id={slotId} />
 <FoglioImport bind:aperto={fImport} {quale} />
+<FoglioBonus bind:aperto={fBonus} {settimana} />
 
 <style>
   .oggi {
@@ -246,6 +274,22 @@
   .nome { font-weight: var(--weight-semibold); }
   .fatto .nome, .fatto .testo { color: var(--label-secondary); }
   .stella { color: var(--accento); display: inline-flex; }
+  /* Il «+» non compete con le sedute: sta in coda al titolo, e' piccolo e
+     giallo — in ATLAS il verde e' «fatto» e il rosso e' uno stato
+     negativo, nessuno dei due dice «in piu'». */
+  .aggiungi {
+    display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+    margin-left: var(--space-2);
+    color: var(--color-yellow);
+    background: color-mix(in srgb, var(--color-yellow) 16%, transparent);
+    transition: transform var(--duration-fast) var(--ease-spring);
+  }
+  .aggiungi:active { transform: scale(0.9); }
+  .piu-bonus { color: var(--color-yellow); }
+
+  .etichetta.bonus {
+    color: var(--color-yellow); background: color-mix(in srgb, var(--color-yellow) 16%, transparent);
+  }
   .etichetta {
     padding: 1px 7px; border-radius: var(--radius-full); font-weight: var(--weight-semibold);
     color: var(--color-indigo); background: color-mix(in srgb, var(--color-indigo) 16%, transparent);

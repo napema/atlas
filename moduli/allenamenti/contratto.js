@@ -78,6 +78,7 @@ export function avviaSync() {
          `applica` non si legge: quello che conta resta `slot`. */
       return {
         v: 1, slot: s.slot, corse: s.corse, settimane: s.settimane || [],
+        bonus: s.bonus || [],
         config: s.config, configUp: s.configUp || 0,
         agenda: agenda(),
       };
@@ -115,6 +116,7 @@ export function avviaSync() {
         s.slot = potaLapidi(fondiRecord(s.slot, remoto.slot));
         s.corse = potaLapidi(fondiRecord(s.corse, remoto.corse));
         s.settimane = potaLapidi(fondiRecord(s.settimane || [], remoto.settimane));
+        s.bonus = potaLapidi(fondiRecord(s.bonus || [], remoto.bonus));
         // `config` non ha id: si confronta con un timestamp solo. Un remoto a
         // zero non deve poter vincere su un locale che è stato toccato.
         if ((remoto.configUp || 0) > (s.configUp || 0)) {

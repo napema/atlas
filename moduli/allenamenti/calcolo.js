@@ -27,7 +27,10 @@ export const km = (n) => `${(Math.round((n || 0) * 10) / 10).toString().replace(
 
 /** Quanti slot sono chiusi, e quanti sono in tutto. */
 export function progressoSettimana(n) {
-  const slot = slotDi(n);
+  /* SENZA I BONUS. Un allenamento in piu' non fa parte del programma:
+     contarlo nel totale farebbe SCENDERE la percentuale della settimana
+     appena lo aggiungi — cioe' il contrario di quello che e' successo. */
+  const slot = slotDi(n).filter((s) => !s.bonus);
   const fatti = slot.filter((s) => fatto(s.id));
   return {
     fatti: fatti.length,
