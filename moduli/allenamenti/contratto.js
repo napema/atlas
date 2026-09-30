@@ -8,7 +8,7 @@
 import { avviso, plurale } from "../../core/ui.js";
 import { apriCanale, fondiRecord, potaLapidi, svegliaWorkflow } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
-import { agenda, casella, stato, settimanaDi, pianoDi, slotDi, fatto, giornoSlot } from "./dati.js";
+import { agenda, casella, stato, settimanaDi, pianoDi, slotDi, fatto, giornoSlot, resetBlocco } from "./dati.js";
 import {
   progressoSettimana, restaSettimana, giorniRimasti, passoSettimana, kmFatti, km,
 } from "./calcolo.js";
@@ -128,12 +128,29 @@ export function avviaSync() {
                                                // i due dispositivi si rimbalzano
                                                // PUT a vicenda per sempre
     },
-    ridisegna: () => { pubblicaSullaLavagna(); ridisegnaVista(); },
+    ridisegna: () => { resetQuandoPronto(); pubblicaSullaLavagna(); ridisegnaVista(); },
   });
+
+  /* IL RESET DEL BLOCCO, e solo dopo aver letto.
+
+     `letturaFatta` e' il gancio: su un archivio ancora vuoto il reset non
+     troverebbe niente da cancellare, si segnerebbe come fatto, e poi il
+     sync farebbe entrare i record del blocco vecchio — che a quel punto
+     non li cancella piu' nessuno. `off` vuol dire sync non configurato:
+     li' non c'e' nessuna lettura da aspettare e rimandare all'infinito
+     vorrebbe dire non resettare mai. */
+  const resetQuandoPronto = () => {
+    if (!canale.letturaFatta && canale.stato !== "off") return;
+    if (!resetBlocco()) return;
+    pubblicaSullaLavagna();
+    ridisegnaVista();
+  };
 
   pubblicaSullaLavagna();
   casella.osserva((_, origine) => { if (origine !== "sync") canale.segnalaModifica(); });
   canale.avvia();
+  // Col sync spento la lettura non arriva mai: qui il reset parte subito.
+  resetQuandoPronto();
   return canale;
 }
 

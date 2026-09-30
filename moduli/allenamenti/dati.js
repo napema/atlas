@@ -37,12 +37,16 @@ import { daISO, piuGiorni, oggiISO } from "../../core/ui.js";
    Il giorno, se lo scegli, è un dato tuo e sta nell'archivio.
    ========================================================================= */
 
-export const INIZIO = "2026-09-14";
+export const INIZIO = "2026-09-30";
 /* SETTE, non tredici. Il test dei 5 km e' stato anticipato a fine ottobre:
    il blocco si accorcia, non si comprime. Le settimane 1 e 2 restano quelle
    che sono — sono passate, e riscrivere il passato per farlo somigliare al
    piano nuovo vuol dire perdere cosa hai fatto davvero. */
-export const SETTIMANE = 7;
+export const SETTIMANE = 5;
+
+/* La firma del blocco. Cambiala e il reset riparte UNA volta sola, su ogni
+   dispositivo, dopo che ha letto. Vedi `resetBlocco()`. */
+export const BLOCCO = "2026-09-30-5w";
 
 export const OBIETTIVO = {
   nome: "5 km sub-20",
@@ -103,38 +107,33 @@ export const ORDINE_PALESTRA = ["lower", "upper", "total"];
 const kmDaTempo = (minuti, passoMinKm) => Math.round((minuti / passoMinKm) * 10) / 10;
 
 export const PIANO = [
-  { n: 1, fase: "Ricostruzione",
-    facile: { testo: "30' Z2 @ 7:00/km", km: kmDaTempo(30, 7) },
-    qualita: { testo: "35' con 6×30\" allunghi · cammino 90\" tra uno e l'altro", km: kmDaTempo(35, 6.8) },
-    lunga: { testo: "6 km @ 7:00/km Z2", km: 6 },
-    carichi: { lower: 60, upper: 40, total: 30 } },
+  /* CINQUE SETTIMANE, dal 30 settembre al test dell'1 novembre.
 
-  { n: 2, fase: "Ricostruzione",
-    facile: { testo: "35' Z2 @ 6:55/km", km: kmDaTempo(35, 6.92) },
-    qualita: { testo: "35' con 8×30\" allunghi", km: kmDaTempo(35, 6.7) },
-    lunga: { testo: "7 km @ 6:55/km Z2", km: 7 },
-    carichi: { lower: 62.5, upper: 42.5, total: 32.5 } },
+     La settimana 1 e' corta — comincia di mercoledi' e finisce la domenica —
+     e i sei slot ci stanno dentro tutti: uno, la qualita', e' gia' fatto il
+     giorno stesso. Le altre quattro sono lunedi'->domenica.
 
-  /* DA QUI IN POI IL PIANO E' SCRITTO PER ESTESO, seduta per seduta.
+     La palestra e' scritta per esteso, seduta per seduta: da qui cambiano
+     serie e accessori, non solo il carico, e nel taper spariscono le gambe.
+     La forma `carichi` + accessori fissi sapeva dire solo la progressione
+     del lift principale. */
 
-     Fino alla settimana 2 la palestra era `carichi` piu' gli accessori fissi
-     di `PALESTRA`: una forma che rende visibile la progressione quando
-     l'unica cosa che si muove e' il carico del lift principale. Da qui in
-     avanti cambiano anche serie, ripetizioni e accessori — nel taper
-     spariscono le gambe — e quella forma non li sa dire. Percio' `palestra`
-     prende il posto di `carichi`: il testo della seduta, uno per slot. */
-
-  { n: 3, fase: "Sviluppo",
+  { n: 1, fase: "Sviluppo",
     facile: { testo: "40' Z2 @ 6:50/km + 6 allunghi da 20\"", km: 6 },
-    qualita: { testo: "FATTO · Pista variazioni 300 spinti + 100 lenti per 3,5 km", km: 3.5 },
+    qualita: { testo: "FATTO 30/09 · Pista variazioni 300 spinti + 100 lenti per 3,5 km", km: 3.5 },
     lunga: { testo: "8 km Z2 @ 6:50/km + 4 allunghi a fine corsa", km: 8 },
+    /* La seduta di spalle di questa settimana e' la Upper B, non la A: il
+       nome sta qui e non dentro il testo perche' la vista spezza il testo
+       sui punti mediani per contare serie e muscoli, e «Upper B» finirebbe
+       contato come un esercizio. */
+    nomi: { upper: "Upper B" },
     palestra: {
       lower: "Stacco 3×3 @ 65 kg RPE 7 · Affondi 2×8/gamba · Leg curl 2×8 · Polpacci 3×15 · Tibialis 3×20",
-      upper: "Panca 5×5 @ 45 kg · Trazioni 8×50% max · Military manubri 3×10 · Rematore manubrio 3×10 · Alzate 4×15 · Curl + Pushdown",
+      upper: "Military press bilanciere 5×5 @ 30 kg · Chin-up 4×max-2 · Panca presa stretta 3×8 · Rematore al cavo presa larga 3×12 · Alzate ai cavi 3×15 · Face pull 3×15 · Curl a martello 3×12 + French press EZ 3×12",
       total: "Squat 3×5 @ 35 kg · Panca inclinata manubri 3×9 · Lat machine 3×12 · Dip 3×9 · Plank 3×45\"",
     } },
 
-  { n: 4, fase: "Sviluppo",
+  { n: 2, fase: "Sviluppo",
     facile: { testo: "40' Z2 @ 6:45/km + 6 allunghi da 20\"", km: 6 },
     qualita: { testo: "INTERVALLI · 15' risc + 4 allunghi · 4×1000 m @ 4:30/km rec 2' trotto · 10' defat", km: 8.5 },
     lunga: { testo: "8 km · primi 6 Z2 @ 6:45/km · ultimi 2 km @ 4:55/km", km: 8 },
@@ -144,7 +143,7 @@ export const PIANO = [
       total: "Squat 3×5 @ 37,5 kg · Panca inclinata manubri 3×9 · Lat machine 3×12 · Dip 3×9 · Plank 3×45\"",
     } },
 
-  { n: 5, fase: "Sviluppo",
+  { n: 3, fase: "Sviluppo",
     facile: { testo: "35' Z2 @ 6:40/km + 6 allunghi da 20\"", km: 5.2 },
     qualita: { testo: "INTERVALLI · 15' risc + 4 allunghi · 5×1000 m @ 4:28/km rec 2' trotto · 10' defat", km: 9.5 },
     lunga: { testo: "9 km · primi 6 Z2 @ 6:40/km · ultimi 3 km @ 4:55/km", km: 9 },
@@ -154,7 +153,7 @@ export const PIANO = [
       total: "Squat 3×5 @ 40 kg · Panca inclinata manubri 3×9 · Lat machine 3×12 · Dip 3×9 · Plank 3×45\"",
     } },
 
-  { n: 6, fase: "Taper",
+  { n: 4, fase: "Taper",
     facile: { testo: "30' Z2 + 4 allunghi da 20\"", km: 4.5 },
     qualita: { testo: "RITMO GARA · 15' risc + 4 allunghi · 3×1200 m @ 4:24/km rec 2' trotto · 10' defat", km: 7.7 },
     lunga: { testo: "6 km Z2 @ 6:40/km", km: 6 },
@@ -164,7 +163,7 @@ export const PIANO = [
       total: "Squat 2×5 @ 35 kg · Panca inclinata manubri 3×9 · Lat machine 3×12",
     } },
 
-  { n: 7, fase: "Test", test: true,
+  { n: 5, fase: "Test", test: true,
     facile: { testo: "3 giorni prima del test · 15' risc + 4×400 m @ 4:15/km rec 90\" + 5' defat", km: 5 },
     qualita: { testo: "TEST 5000 m · 15' risc + 4 allunghi + 5 km @ 4:24/km + 10' defat", km: 8.7, stella: true },
     lunga: { testo: "Giorno prima del test · 20' facilissimi + 3 allunghi", km: 3 },
@@ -317,7 +316,7 @@ export function slotDi(n) {
     const suo = p.palestra?.[k];
     fuori.push(conScostamento({
       id: idSlot(n, k), sett: n, genere: "palestra", chiave: k,
-      nome: g.nome,
+      nome: p.nomi?.[k] || g.nome,
       ...(suo
         ? { lift: null, accessori: [], testo: suo }
         : {
@@ -400,6 +399,56 @@ export function salvaSettimana(n, voci) {
 
 /** Toglie la settimana importata: si torna al blocco. */
 export const togliSettimana = (n) => salvaSettimana(n, []);
+
+/* ------------------------------------------------------- il reset ------- */
+/*
+   RIPARTIRE DA UN BLOCCO NUOVO, cancellando quello vecchio.
+
+   Il piano e' codice e cambia con un commit; quello che succede — spunte,
+   giorni scelti, settimane importate, bonus — sta nell'archivio ed e'
+   sincronizzato. Cambiare il piano da solo non basta: gli id degli slot si
+   RIUSANO (`s01-facile` c'e' in tutti e due i blocchi), quindi le spunte del
+   programma vecchio riapparirebbero sul nuovo, sulle sedute sbagliate.
+
+   DUE REGOLE, e sono le due che ci sono gia' costate care:
+
+   1. LAPIDI, non rimozioni. Un record tolto e basta lo rimette l'altro
+      dispositivo alla prima sincronizzazione.
+   2. SOLO DOPO AVER LETTO. Chiamato all'avvio su un archivio ancora vuoto,
+      questo non troverebbe niente da cancellare, si segnerebbe come fatto, e
+      poi il sync farebbe entrare i cinquanta record del blocco vecchio — che
+      a quel punto non li cancella piu' nessuno. Il gancio e'
+      `canale.letturaFatta`, in contratto.js.
+
+   Le corse NON si toccano: sono quello che hai fatto davvero, e non
+   appartengono al programma. Lo dice anche il nome del file.
+*/
+export function resetBlocco() {
+  if (stato().config?.blocco === BLOCCO) return false;
+
+  const ora = Date.now();
+  casella.aggiorna((s) => {
+    const lapida = (elenco) =>
+      (elenco || []).filter((r) => r && !r.del).map((r) => ({ id: r.id, del: true, up: ora }));
+
+    s.slot = lapida(s.slot);
+    s.bonus = lapida(s.bonus);
+    s.settimane = lapida(s.settimane);
+    // `corse` non compare qui apposta.
+
+    /* La data di partenza sta nel CONFIG, non solo nella costante: la
+       prima installazione ci ha scritto dentro il 14 settembre e da li' si
+       e' sincronizzata. Cambiare `INIZIO` senza riscrivere questo lascia il
+       blocco fermo dov'era. */
+    s.config = { ...(s.config || {}), inizio: INIZIO, blocco: BLOCCO };
+    s.configUp = ora;
+
+    /* Quello che era gia' fatto quando il blocco e' nato: la qualita' del
+       30 settembre, corsa il giorno stesso. */
+    s.slot.push({ id: idSlot(1, "qualita"), fatta: true, giorno: INIZIO, del: false, up: ora });
+  });
+  return true;
+}
 
 /* ---------------------------------------------------------- i bonus ----- */
 
