@@ -182,7 +182,7 @@
       <Sezione titolo={gr.nome}>
         {#snippet coda()}
           <span class="text-subheadline secondario cifre">
-            {gr.fatti}/{gr.totali}{#if gr.bonus}<span class="piu-bonus"> + {gr.bonus} bonus</span>{/if}
+            {gr.fatti}/{gr.totali}{#if gr.bonus}<span class="piu-bonus">{" + "}{gr.bonus} bonus</span>{/if}
           </span>
           {#if gr.g === "palestra"}
             <!-- Piccolo e in coda al titolo: e' una cosa che si trova
