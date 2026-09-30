@@ -1973,3 +1973,70 @@ Verticale e PC **identici al pixel** (catture prima/dopo nello stesso minuto).
 Provato su 852×393, 932×430, 667×375 con gli inset simulati; **sul telefono
 vero no** — se la Dynamic Island copre ancora qualcosa, è un margine scritto
 a mano che non passa da `--content-inset`.
+
+---
+
+## Training riparte: 5 settimane dal 30 settembre *(30 set, chat ATLAS)*
+
+**Perimetro della chat Allenamenti.** Richiesta sua, fatta qui: qui c'è cosa
+è cambiato, e soprattutto *perché in quell'ordine*.
+
+Il test dei 5 km è stato anticipato a fine ottobre. Il blocco di 13
+settimane partito il 14 settembre è stato cancellato e sostituito: 5
+settimane da mercoledì 30 settembre al test di domenica 1 novembre.
+
+### La prima settimana può essere corta
+
+`inizioSettimana(n)` era `INIZIO + (n-1)×7`, blocchi fissi. Con un blocco
+che parte di mercoledì o la settimana 1 finisce la domenica — e dura cinque
+giorni — o tutte le successive cadono a metà settimana vera, e il lunedì in
+cui pianifichi non è più l'inizio di niente. Ora: settimana 1 da `INIZIO`
+alla prima domenica compresa, dalla 2 in poi lunedì→domenica.
+
+È stato messo **prima** del cambio di data, in un commit suo, perché su un
+blocco che parte di lunedì è un **no-op** — verificato: stesse date, sette
+giorni ciascuna. Una modifica strutturale che si può provare mentre non
+sposta ancora niente vale il commit in più.
+
+### Il reset, e le due regole che ci sono già costate care
+
+Cambiare il piano da solo **non basta**, e il motivo non è ovvio: gli id
+degli slot si **riusano**. `s01-facile` esiste nel blocco vecchio e in
+quello nuovo, quindi le spunte del programma morto sarebbero riapparse sul
+programma nuovo, su sedute diverse.
+
+1. **Lapidi, non rimozioni.** Un record tolto e basta lo rimette l'altro
+   dispositivo alla prima sincronizzazione.
+2. **Solo dopo aver letto.** Chiamato all'avvio su un archivio ancora vuoto,
+   `resetBlocco()` non troverebbe niente da cancellare, si segnerebbe come
+   fatto (`config.blocco`), e poi il sync farebbe entrare i record del blocco
+   vecchio — che a quel punto non li cancella più nessuno. Il gancio è
+   `canale.letturaFatta`, lo stesso che Abitudini usa per seminare.
+
+`corse` non compare nel reset, apposta: Garmin e Hevy sono quello che hai
+fatto davvero e non appartengono al programma.
+
+**E la data sta anche nel config.** `PREDEFINITO.config = { inizio: INIZIO }`
+è stato scritto alla prima installazione e da lì si è sincronizzato:
+cambiare la costante senza riscrivere `config.inizio` lasciava il blocco
+fermo al 14 settembre. È il genere di cosa che si scopre solo guardando chi
+legge davvero quel valore.
+
+### Il resto
+
+- `palestra: { lower, upper, total }` sulla settimana del piano: da qui
+  cambiano serie e accessori, non solo il carico, e la forma `carichi` +
+  accessori fissi sapeva dire solo la progressione del lift principale.
+- `nomi: { upper: "Upper B" }` per la settimana 1. Il nome sta lì e non
+  dentro il testo perché la vista spezza il testo sui punti mediani per
+  contare serie e muscoli: «Upper B» sarebbe stato contato come esercizio.
+- L'allenamento **bonus** (commit precedente) resta: `bonus[]` nella casella,
+  fuori da `progressoSettimana`, con il «+» giallo in coda al titolo della
+  Palestra.
+
+### Da controllare, se qualcosa non torna
+
+Il passo «controllo dei tipi» in `pubblica.yml` ha `continue-on-error: true`:
+**non fa fallire la corsa**. Una corsa verde non vuol dire tipi puliti — va
+letta la riga `svelte-check found N errors` nel log. Ci sono già cascato una
+volta oggi.
