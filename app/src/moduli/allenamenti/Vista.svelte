@@ -191,7 +191,7 @@
                  «fatto» e il rosso e' uno stato negativo: nessuno dei due
                  dice «in piu'». -->
             <button type="button" class="aggiungi" aria-label="Aggiungi un allenamento" onclick={apriBonus}>
-              <Icona nome="piu" misura={15} tratto={2.6} />
+              <Icona nome="piu" misura={17} tratto={2.4} />
             </button>
           {/if}
         {/snippet}
@@ -277,14 +277,19 @@
   /* Il «+» non compete con le sedute: sta in coda al titolo, e' piccolo e
      giallo — in ATLAS il verde e' «fatto» e il rosso e' uno stato
      negativo, nessuno dei due dice «in piu'». */
+  /* UN SEGNO, non un bollo. Pieno e tondo pesava come un bottone di
+     sistema e si piantava accanto al contatore come un adesivo: qui e' il
+     glifo e basta, giallo, alla stessa altezza della cifra. L'area da
+     toccare resta comoda — il padding la porta a 44 — e si mangia lo
+     spazio con un margine negativo, cosi' non sposta niente. */
   .aggiungi {
-    display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
-    margin-left: var(--space-2);
+    display: inline-flex; align-items: center;
+    padding: var(--space-3); margin: calc(-1 * var(--space-3));
+    margin-left: 0;
     color: var(--color-yellow);
-    background: color-mix(in srgb, var(--color-yellow) 16%, transparent);
-    transition: transform var(--duration-fast) var(--ease-spring);
+    transition: opacity var(--duration-fast) var(--ease-default);
   }
-  .aggiungi:active { transform: scale(0.9); }
+  .aggiungi:active { opacity: 0.45; }
   .piu-bonus { color: var(--color-yellow); }
 
   .etichetta.bonus {

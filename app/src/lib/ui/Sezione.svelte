@@ -63,7 +63,13 @@
     padding: 0 var(--space-1);
     margin-bottom: var(--space-2);
   }
-  .coda { color: var(--accento); }
+  /* La coda e' una RIGA. Era un blocco, e con due cose dentro — un
+     contatore e un bottone — la seconda andava a capo e finiva a penzolare
+     sotto, fuori dalla testa che ha altezza fissa. */
+  .coda {
+    display: flex; align-items: center; gap: var(--space-2);
+    color: var(--accento);
+  }
   /* Lo stesso ingombro della testa piena: riga del titolo più il distacco. */
   .testa-vuota { display: none; height: calc(var(--lh-title3) + var(--space-2)); }
   /* Il fondo, l'anello, la luce e l'ombra della lastra stanno in `app.css`,
