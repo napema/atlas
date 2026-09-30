@@ -51,9 +51,26 @@
 html {
   background: var(--bg-grouped-primary);
   -webkit-text-size-adjust: 100%;
-  /* Niente zoom col pizzico, ma lo scorrimento resta: `pan-x pan-y` e non
-     `none`. Su Safari il pizzico passa lo stesso e lo chiude main.ts. */
-  touch-action: pan-x pan-y;
+  /* LA PAGINA SCORRE SOLO IN VERTICALE, come un'app iOS. Tre righe, e
+     servono tutte e tre:
+
+     `touch-action: pan-y` — il gesto orizzontale non muove la pagina. Era
+     `pan-x pan-y`, cioè il permesso esplicito di trascinarla di lato. I
+     contenitori che scorrono in orizzontale per conto loro (le settimane di
+     Training, i filtri di Finanze) continuano a farlo: il browser guarda il
+     `touch-action` solo fino al primo contenitore che scorre, e per loro
+     quel contenitore sono loro stessi. Il pizzico resta chiuso come prima
+     (e su Safari lo chiude anche main.ts).
+
+     `overflow-x: hidden` — se un giorno una riga esce dallo schermo, viene
+     tagliata invece di allargare la pagina. Sta su <html>, che lo passa
+     alla finestra: messo su <body> farebbe di <body> un contenitore che
+     scorre, e le testate appiccicate smetterebbero di appiccicarsi.
+
+     `overscroll-behavior-x: none` — niente rimbalzo orizzontale. */
+  touch-action: pan-y;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 body {

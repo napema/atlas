@@ -202,7 +202,10 @@
   .sopra { margin: 0 0 2px; min-height: var(--lh-footnote); }
   .titolo-grande { margin-bottom: var(--space-4); }
   .titolo-grande h1 { overflow-wrap: anywhere; }
-  .titolo-riga { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-width: 0; }
+  /* Alta sempre quanto un bottone, anche quando il bottone non c'è: il
+     titolo di Mobilità, senza azioni, stava tre punti più su di quelli dei
+     moduli che le hanno, e passando da una scheda all'altra si vedeva. */
+  .titolo-riga { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-width: 0; min-height: var(--touch-target); }
   .titolo-testo { min-width: 0; flex: 1; }
   /* LE AZIONI STANNO COL TITOLO, ovunque. Nella barra erano un bottone
      solo, in alto a destra, a un centinaio di punti dal titolo di cui sono
