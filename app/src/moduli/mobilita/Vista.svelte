@@ -10,10 +10,8 @@
   import Oggi from "./Oggi.svelte";
   import Progressi from "./Progressi.svelte";
   import Player from "./Player.svelte";
-  import { dati } from "$lib/core/reattivo.svelte";
-  import { maiuscola } from "$lib/core/ui";
   import { getState } from "$condivisi/mobilita/ponte.js";
-  import { settimanaEffettiva, tipoDelGiorno, oggiISO } from "$condivisi/mobilita/sessione.js";
+  import { tipoDelGiorno, oggiISO } from "$condivisi/mobilita/sessione.js";
 
   let { resto = [] }: { resto?: string[] } = $props();
 
@@ -32,11 +30,12 @@
     }
   });
 
-  const sopra = $derived.by(() => {
-    dati.versione;
-    const data = new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
-    return `${maiuscola(data)} · settimana ${settimanaEffettiva(getState())}`;
-  });
+  /* NIENTE RIGA SOPRA IL TITOLO. Mobilità era l'unico modulo ad averla
+     («Mercoledì 30 settembre · settimana 1»), e su iPhone il titolo partiva
+     diciotto punti più in basso degli altri: passando da una scheda
+     all'altra l'intestazione saltava. La data la dice già la home; la
+     settimana del programma sta dove serve, nella testata di «Questa
+     settimana». */
 </script>
 
 {#snippet strumenti()}
@@ -47,7 +46,7 @@
   {#if vista === "oggi"}<Oggi parte="lato" oninizia={inizia} />{:else}<Progressi parte="lato" />{/if}
 {/snippet}
 
-<Pagina titolo="Mobilità" {sopra} {strumenti} laterale={riepilogo}>
+<Pagina titolo="Mobilità" {strumenti} laterale={riepilogo}>
   {#snippet testata()}<TitoloGruppo id="mobilita" />{/snippet}
 
   {#if vista === "oggi"}

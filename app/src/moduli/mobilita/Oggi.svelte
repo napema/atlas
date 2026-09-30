@@ -79,7 +79,9 @@
 </Sezione>
 
 <Sezione titolo="Questa settimana" piede="Il puntino segna il giorno di palestra.{d.streakValida ? '' : ' Più di 3 giorni fermi: lo streak riparte, il programma no.'}">
-  {#snippet coda()}<span class="text-subheadline secondario cifre">{nFatte} di 7</span>{/snippet}
+  <!-- La settimana del programma sta qui: era nella riga sopra il titolo,
+       l'unica di tutta la app, e spostava l'intestazione di Mobilità. -->
+  {#snippet coda()}<span class="text-subheadline secondario cifre">Settimana {d.settimana} · {nFatte} di 7</span>{/snippet}
   <ol class="settimana">
     {#each d.giorni as g, i (g.iso)}
       <li class:oggi={g.iso === d.oggi} class:fatta={g.fatta} class:futuro={g.futuro}>
