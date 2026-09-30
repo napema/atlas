@@ -23,10 +23,10 @@
   import Riga from "$lib/ui/Riga.svelte";
   import Corpo from "./Corpo.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
-  import { avviso, tocco, piuGiorni, plurale, dataUmana, GIORNI_INIZIALI } from "$lib/core/ui";
+  import { avviso, tocco, piuGiorni, plurale, dataUmana, daISO, GIORNI_INIZIALI } from "$lib/core/ui";
   import { slide } from "svelte/transition";
   import {
-    slotDi, fatto, giornoSlot, alternaSlot, scegliGiorno, inizioSettimana, recordSlot, ripristinaSlot, togliBonus,
+    slotDi, fatto, giornoSlot, alternaSlot, scegliGiorno, inizioSettimana, fineSettimana, recordSlot, ripristinaSlot, togliBonus,
     oraDi, scegliOra, oraPredefinita,
   } from "$condivisi/allenamenti/dati.js";
   import { km } from "$condivisi/allenamenti/calcolo.js";
@@ -66,10 +66,27 @@
     return m;
   });
 
-  const giorni = $derived(s ? Array.from({ length: 7 }, (_, i) => {
-    const id = piuGiorni(inizioSettimana(s.sett), i);
-    return { id, testo: GIORNI_INIZIALI[i], punto: (occupanti.get(id) || []).length > 0 };
-  }) : []);
+  /* I GIORNI VERI DI QUELLA SETTIMANA, con la loro iniziale.
+
+     Erano sette a partire dall'inizio, etichettati L M M G V S D per
+     posizione. Finche' ogni settimana cominciava di lunedi' combaciava; da
+     quando la prima puo' essere corta no: la settimana 1 parte di
+     mercoledi', quindi la pastiglia «L» era il 30 settembre e le ultime due
+     sconfinavano nella settimana dopo. L'iniziale si prende dalla DATA, e
+     la lista finisce dove finisce la settimana. */
+  const giorni = $derived.by(() => {
+    if (!s) return [];
+    const da = inizioSettimana(s.sett), a = fineSettimana(s.sett);
+    const fuori = [];
+    for (let id = da; id <= a; id = piuGiorni(id, 1)) {
+      fuori.push({
+        id,
+        testo: GIORNI_INIZIALI[(daISO(id).getDay() + 6) % 7],
+        punto: (occupanti.get(id) || []).length > 0,
+      });
+    }
+    return fuori;
+  });
 
   /** Lo spostamento in attesa di conferma: `null` quando non c'e' niente da chiedere. */
   let conflitto = $state<{ giorno: string; chi: string[] } | null>(null);
