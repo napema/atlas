@@ -205,14 +205,40 @@ export const inizioBlocco = () => stato().config?.inizio || INIZIO;
 
 /* -------------------------------------------------------------- le date -- */
 
-export const inizioSettimana = (n) => piuGiorni(inizioBlocco(), (n - 1) * 7);
-export const fineSettimana = (n) => piuGiorni(inizioBlocco(), (n - 1) * 7 + 6);
+/* LA PRIMA SETTIMANA PUO' ESSERE CORTA.
+
+   Finche' il blocco partiva di lunedi', «settimana n» era `INIZIO + (n-1)×7`
+   e bastava. Un blocco che parte di mercoledi' no: o la settimana 1 finisce
+   la domenica — e allora dura cinque giorni — oppure tutte le settimane
+   successive cadono a meta' settimana vera, e il lunedi' in cui pianifichi
+   non coincide piu' con l'inizio di niente.
+
+   Quindi: la settimana 1 va da `INIZIO` alla prima domenica compresa; dalla
+   2 in poi sono lunedi'→domenica pulite. Se `INIZIO` e' gia' un lunedi' la
+   regola non cambia niente — la prima domenica e' sei giorni dopo — ed e'
+   per questo che si puo' mettere prima di spostare la data. */
+
+/** La prima domenica a partire da `iso` compresa. */
+const domenicaDa = (iso) => {
+  const d = daISO(iso);
+  const dow = (d.getDay() + 6) % 7;        // 0 = lunedì … 6 = domenica
+  return piuGiorni(iso, 6 - dow);
+};
+
+export const fineSettimana = (n) =>
+  n <= 1 ? domenicaDa(inizioBlocco())
+         : piuGiorni(domenicaDa(inizioBlocco()), (n - 1) * 7);
+
+export const inizioSettimana = (n) =>
+  n <= 1 ? inizioBlocco() : piuGiorni(fineSettimana(n - 1), 1);
 
 /** In quale settimana del blocco cade `iso`? `null` se fuori. */
 export function settimanaDi(iso = oggiISO()) {
-  const giorni = Math.floor((daISO(iso) - daISO(inizioBlocco())) / 86400000);
-  if (giorni < 0) return null;
-  const n = Math.floor(giorni / 7) + 1;
+  if (iso < inizioBlocco()) return null;
+  const prima = domenicaDa(inizioBlocco());
+  if (iso <= prima) return 1;
+  const giorni = Math.floor((daISO(iso) - daISO(prima)) / 86400000);
+  const n = Math.ceil(giorni / 7) + 1;
   return n <= SETTIMANE ? n : null;
 }
 
