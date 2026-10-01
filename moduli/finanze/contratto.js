@@ -207,8 +207,13 @@ export function avviaSync() {
          gancio. Rimappa i movimenti gia' registrati e riscrive categorie e
          profili DENTRO l'archivio — le costanti bastano a chi installa da
          zero, non a chi ha gia' i dati. Gira una volta sola: il marchio sta
-         in `config.bloccoCategorie`. */
-      if (canale.letturaFatta && dividiPersonale()) { pubblicaSullaLavagna(); }
+         in `config.bloccoCategorie`.
+
+         `stato === "off"` vuol dire sync non configurato: li' non c'e'
+         nessuna lettura da aspettare, e aspettarla vorrebbe dire non
+         migrare mai — chi non ha messo il token resterebbe con «Personale»
+         per sempre. */
+      migraCategorie();
       pubblicaSullaLavagna();
       ridisegnaVista();
     },
@@ -225,7 +230,22 @@ export function avviaSync() {
     annuncia("finanze:movimento-registrato", {});
   });
 
+  /* IL GANCIO, e perche' sta in due posti.
+
+     `ridisegna` scatta dopo ogni lettura del repo: e' li' che la
+     migrazione deve girare, perche' «chi non ha letto non scrive». Ma col
+     sync NON configurato `avvia()` esce subito e `ridisegna` non viene
+     chiamata mai: senza la seconda chiamata, chi non ha messo il token
+     resterebbe con «Personale» per sempre. */
+  function migraCategorie() {
+    if (!canale.letturaFatta && canale.stato !== "off") return;
+    if (!dividiPersonale()) return;
+    pubblicaSullaLavagna();
+    ridisegnaVista();
+  }
+
   canale.avvia();
+  migraCategorie();
   return canale;
 }
 
