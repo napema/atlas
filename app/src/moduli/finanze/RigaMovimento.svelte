@@ -37,6 +37,11 @@
     <span class="nome">{m.nota || ETICHETTA_TIPO[m.tipo] || "—"}</span>
     {#if d.straordinario}<span class="tag ambra text-caption2">straordinaria</span>{/if}
     {#if m.tipo === "extra"}<span class="tag rosso text-caption2">sforamento</span>{/if}
+    <!-- La divisione di «Personale» non e' riuscita a capire dove va questo:
+         sta in Svago senza sottocategoria. Un badge, non un silenzio --
+         indovinare una sottocategoria per riempire la casella sarebbe il
+         modo di non accorgersene mai piu'. -->
+    {#if m.rivedi}<span class="tag viola text-caption2">da rivedere</span>{/if}
   </span>
   <span class="text-subheadline secondario">{d.descrizione}</span>
   {#snippet fine()}
@@ -58,6 +63,7 @@
   .tag { flex: none; padding: 1px 7px; border-radius: var(--radius-full); font-weight: var(--weight-semibold); }
   .tag.ambra { color: var(--color-orange); background: color-mix(in srgb, var(--color-orange) 16%, transparent); }
   .tag.rosso { color: var(--color-red); background: color-mix(in srgb, var(--color-red) 16%, transparent); }
+  .tag.viola { color: var(--color-purple); background: color-mix(in srgb, var(--color-purple) 16%, transparent); }
   .cifra { display: flex; flex-direction: column; align-items: flex-end; font-weight: var(--weight-medium); }
   .entrata { color: var(--color-green); }
   .uscita { color: var(--color-red); }

@@ -9,7 +9,7 @@ import { oggiISO, euro, plurale, dataBreve } from "../../core/ui.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { annuncia } from "../../core/bus.js";
-import { casella, stato, movimentiVivi, migra, checkFatto, completaTravasi } from "./dati.js";
+import { casella, stato, movimentiVivi, migra, checkFatto, completaTravasi, dividiPersonale } from "./dati.js";
 import {
   statistiche, budgetTotale, meseDi, importoEffettivo,
   settimana, orizzonte, inArrivo, spesoOggi, ricorrentiDiOggi, alert, calendarioUscite, giorniADomenica, scala,
@@ -203,6 +203,12 @@ export function avviaSync() {
       // in vita dal telefono. È la regola «chi non ha letto non scrive»,
       // applicata a una scrittura che parte da sola.
       if (canale.letturaFatta) completaTravasi();
+      /* La divisione di «Personale» in Cura e Svago: stessa regola, stesso
+         gancio. Rimappa i movimenti gia' registrati e riscrive categorie e
+         profili DENTRO l'archivio — le costanti bastano a chi installa da
+         zero, non a chi ha gia' i dati. Gira una volta sola: il marchio sta
+         in `config.bloccoCategorie`. */
+      if (canale.letturaFatta && dividiPersonale()) { pubblicaSullaLavagna(); }
       pubblicaSullaLavagna();
       ridisegnaVista();
     },

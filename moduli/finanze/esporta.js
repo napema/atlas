@@ -122,7 +122,10 @@ export function pacchettoAnalisi() {
     },
 
     profilo: {
-      entrateMensili: eur(s.config?.entrate),
+      /* `entrate` e' gia' in EURO, non in centesimi: `eur()` lo divideva
+         per cento e sputava 21 — che sembrava il giorno dello stipendio e
+         invece erano 2100 euro schiacciati. */
+      entrateMensili: Number(s.config?.entrate) || 0,
       cassaSettimanale: eur(s.config?.cassaSettimanale),
       cassaSettimanaleSpiegazione:
         "Quanto passa ogni lunedì dal pocket Cassa al pocket Principale. È il budget della settimana per le spese di decisione quotidiana.",

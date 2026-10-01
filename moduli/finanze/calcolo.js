@@ -78,7 +78,10 @@ export function statistiche(mese) {
 
     if (m.tipo === "out") {
       const e = importoEffettivo(m);
-      const cid = m.cat && perCat[m.cat] ? m.cat : "personale";
+      // Il ripiego per un movimento senza categoria valida: «svago», che
+      // e' la casella di chi non ha ancora deciso. Era «personale», che non
+      // esiste piu'.
+      const cid = m.cat && perCat[m.cat] ? m.cat : "svago";
       if (m.ecc) { eccezionale += e; perCat[cid].ecc += e; movEccezionali.push(m); }
       else { ordinaria += e; perCat[cid].ord += e; }
       perCat[cid].tot += e;
@@ -309,28 +312,38 @@ export const DIZIONARIO = {
   mcdonald: ["cibo", "Fast food"], "burger king": ["cibo", "Fast food"], kfc: ["cibo", "Fast food"],
   kebab: ["cibo", "Fast food"], autogrill: ["cibo", "Fast food"], roadhouse: ["cibo", "Fast food"],
 
-  cinema: ["personale", "Uscite e svago"], concerto: ["personale", "Uscite e svago"],
-  discoteca: ["personale", "Uscite e svago"], stadio: ["personale", "Uscite e svago"],
-  serata: ["personale", "Uscite e svago"], "booking com": ["personale", "Uscite e svago"],
-  airbnb: ["personale", "Uscite e svago"], ticketone: ["personale", "Uscite e svago"],
-  zara: ["personale", "Abbigliamento"], bershka: ["personale", "Abbigliamento"],
-  zalando: ["personale", "Abbigliamento"], vinted: ["personale", "Abbigliamento"],
-  scarpe: ["personale", "Abbigliamento"], abbigliamento: ["personale", "Abbigliamento"],
-  shein: ["personale", "Abbigliamento"], nike: ["personale", "Abbigliamento"],
-  "foot locker": ["personale", "Abbigliamento"], ovs: ["personale", "Abbigliamento"],
-  barbiere: ["personale", "Barbiere"], parrucchiere: ["personale", "Barbiere"],
-  farmacia: ["personale", "Cura personale"], profumeria: ["personale", "Cura personale"],
-  tigota: ["personale", "Cura personale"], sephora: ["personale", "Cura personale"],
-  kiko: ["personale", "Cura personale"], douglas: ["personale", "Cura personale"],
-  "acqua e sapone": ["personale", "Cura personale"], parafarmacia: ["personale", "Cura personale"],
-  integratori: ["personale", "Integratori"], proteine: ["personale", "Integratori"],
-  creatina: ["personale", "Integratori"], myprotein: ["personale", "Integratori"],
-  palestra: ["personale", "Sport"], piscina: ["personale", "Sport"], padel: ["personale", "Sport"],
-  calcetto: ["personale", "Sport"], decathlon: ["personale", "Sport"], cisalfa: ["personale", "Sport"],
-  amazon: ["personale", "Shopping"], tabacchi: ["personale", "Shopping"], tabaccheria: ["personale", "Shopping"],
-  regalo: ["personale", "Regali"],
-  mediaworld: ["personale", "Tech"], unieuro: ["personale", "Tech"], gamestop: ["personale", "Tech"],
-  apple: ["personale", "Tech"],
+  cinema: ["svago", "Uscite e serate"], concerto: ["svago", "Uscite e serate"],
+  discoteca: ["svago", "Uscite e serate"], stadio: ["svago", "Uscite e serate"],
+  serata: ["svago", "Uscite e serate"], ticketone: ["svago", "Uscite e serate"],
+  "booking com": ["svago", "Viaggi e hotel"], booking: ["svago", "Viaggi e hotel"],
+  airbnb: ["svago", "Viaggi e hotel"], hotel: ["svago", "Viaggi e hotel"],
+  "tassa di soggiorno": ["svago", "Viaggi e hotel"], ostello: ["svago", "Viaggi e hotel"],
+  zara: ["svago", "Abbigliamento"], bershka: ["svago", "Abbigliamento"],
+  zalando: ["svago", "Abbigliamento"], scarpe: ["svago", "Abbigliamento"],
+  abbigliamento: ["svago", "Abbigliamento"], shein: ["svago", "Abbigliamento"],
+  nike: ["svago", "Abbigliamento"], "foot locker": ["svago", "Abbigliamento"],
+  ovs: ["svago", "Abbigliamento"],
+  amazon: ["svago", "Shopping"], aliexpress: ["svago", "Shopping"], vinted: ["svago", "Shopping"],
+  tabacchi: ["svago", "Shopping"], tabaccheria: ["svago", "Shopping"],
+  mediaworld: ["svago", "Tech"], unieuro: ["svago", "Tech"], gamestop: ["svago", "Tech"],
+  apple: ["svago", "Tech"],
+  palestra: ["svago", "Sport e attrezzatura"], piscina: ["svago", "Sport e attrezzatura"],
+  padel: ["svago", "Sport e attrezzatura"], calcetto: ["svago", "Sport e attrezzatura"],
+  decathlon: ["svago", "Sport e attrezzatura"], cisalfa: ["svago", "Sport e attrezzatura"],
+  regalo: ["svago", "Regali"],
+
+  barbiere: ["cura", "Barbiere"], parrucchiere: ["cura", "Barbiere"],
+  lavanderia: ["cura", "Lavanderia"],
+  farmacia: ["cura", "Farmacia e salute"], parafarmacia: ["cura", "Farmacia e salute"],
+  medicine: ["cura", "Farmacia e salute"], creme: ["cura", "Farmacia e salute"],
+  redcare: ["cura", "Farmacia e salute"], dottore: ["cura", "Farmacia e salute"],
+  profumeria: ["cura", "Igiene e cosmetica"], tigota: ["cura", "Igiene e cosmetica"],
+  sephora: ["cura", "Igiene e cosmetica"], kiko: ["cura", "Igiene e cosmetica"],
+  douglas: ["cura", "Igiene e cosmetica"], "acqua e sapone": ["cura", "Igiene e cosmetica"],
+  integratori: ["cura", "Integratori"], proteine: ["cura", "Integratori"],
+  creatina: ["cura", "Integratori"], myprotein: ["cura", "Integratori"],
+  stampe: ["cura", "Studio"], sbobbine: ["cura", "Studio"], libro: ["cura", "Studio"],
+  libri: ["cura", "Studio"], cancelleria: ["cura", "Studio"],
 
   netflix: ["fisse", "Abbonamenti"], spotify: ["fisse", "Abbonamenti"], prime: ["fisse", "Abbonamenti"],
   icloud: ["fisse", "Abbonamenti"], dazn: ["fisse", "Abbonamenti"], disney: ["fisse", "Abbonamenti"],
@@ -735,7 +748,7 @@ export function orizzonte(iso = oggiISO()) {
   const alGiorno = giorni > 0 ? Math.floor(Math.max(0, disponibile) / giorni) : 0;
 
   // Il ritmo che il piano prevedeva, per settimana diviso sette.
-  const piano = Math.round((Number(stato().config?.cassaSettimanale) || 0) / 7);
+  const piano = Math.round(tettoSettimanale(iso).centesimi / 7);
   const rapporto = piano > 0 ? alGiorno / piano : 1;
 
   return {
@@ -850,7 +863,7 @@ export function finoAllaRicarica(iso = oggiISO()) {
     .reduce((t, m) => t + importoEffettivo(m), 0);
 
   // Il piano: la cassa settimanale divisa sette. È il metro, non un vincolo.
-  const quotaPiano = Math.round((Number(stato().config?.cassaSettimanale) || 0) / 7);
+  const quotaPiano = Math.round(tettoSettimanale(iso).centesimi / 7);
 
   // Il quadro del mese, sotto e in piccolo: tutto quello che resta da vivere
   // (spendibile + Cassa) sui giorni che mancano allo stipendio.
@@ -876,6 +889,34 @@ export function finoAllaRicarica(iso = oggiISO()) {
       : quotaPiano > 0 && alGiorno < quotaPiano ? "sotto"
       : "linea",
   };
+}
+
+/**
+ * IL TETTO SETTIMANALE, CALCOLATO E NON SCRITTO A MANO.
+ *
+ * Era un numero in Impostazioni, e un numero scritto a mano va in deriva: i
+ * budget cambiano e lui resta dov'era, finche' il tetto non c'entra piu'
+ * niente con quello che hai deciso di spendere.
+ *
+ * Adesso e' la somma delle categorie marcate `cassa` nel profilo, divisa
+ * per i giorni del ciclo e moltiplicata per sette. Con i budget di Regime:
+ * 615 / 30 x 7 = 143 a settimana.
+ *
+ * `config.cassaSettimanale` resta come SCAVALCO: se c'e' vince lui, perche'
+ * puo' esserci una ragione per fissarlo che il calcolo non conosce. Ma non
+ * e' piu' il valore di partenza.
+ */
+export function tettoSettimanale(iso = oggiISO()) {
+  const forzato = Number(stato().config?.cassaSettimanale) || 0;
+  if (forzato > 0) return { centesimi: forzato, calcolato: false };
+
+  const ciclo = cicloDi(iso);
+  const p = profiloDi(ciclo.indice);
+  const quali = Array.isArray(p.cassaCats) ? p.cassaCats : CATEGORIE_CASSA;
+  // I budget del profilo sono in EURO: qui tutto il resto e' in centesimi.
+  const mese = quali.reduce((t, id) => t + (Number(p.b?.[id]) || 0), 0) * 100;
+  const giorni = Math.max(1, ciclo.giorni);
+  return { centesimi: Math.round((mese / giorni) * 7), calcolato: true };
 }
 
 /* ------------------------------------------------------------ la scala -- */
@@ -1181,7 +1222,7 @@ export function settimana(iso = oggiISO()) {
   // che puoi spendere questa settimana.
   const spendibili = pocketSpendibili();
   const resta = spendibili.reduce((s, id) => s + saldoPocket(id), 0);
-  const budget = Number(stato().config?.cassaSettimanale) || 0;
+  const budget = tettoSettimanale(iso).centesimi;
   const giorniRimasti = 7 - dow;                    // oggi compreso
 
   /* QUANTO HAI SPESO SI CONTA, non si deduce dal budget.

@@ -13,7 +13,8 @@ const COLORI: Record<string, string> = {
   spesa: "var(--color-teal)",
   trasporti: "var(--color-indigo)",
   cibo: "var(--color-pink)",
-  personale: "var(--color-purple)",
+  cura: "var(--color-purple)",
+  svago: "var(--color-yellow)",
   acc: "var(--color-mint)",
   risp: "var(--color-cyan)",
 };

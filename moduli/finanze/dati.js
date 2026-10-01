@@ -45,7 +45,12 @@ export function categorieIniziali() {
     { id: "spesa",     nome: "Spesa alimentare", sub: ["Supermercato", "Alimentari freschi", "Acqua e bibite"] },
     { id: "trasporti", nome: "Trasporti",        sub: ["Treno", "Mezzi urbani", "Taxi", "Aereo"] },
     { id: "cibo",      nome: "Cibo fuori",       sub: ["Ristorante", "Pizzeria", "Bar e colazioni", "Delivery", "Gelateria", "Aperitivo", "Fast food"] },
-    { id: "personale", nome: "Personale",        sub: ["Uscite e svago", "Abbigliamento", "Barbiere", "Cura personale", "Integratori", "Sport", "Shopping", "Regali", "Tech"] },
+    /* PERSONALE ERA DUE COSE. Barbiere e lavanderia sono cose che DEVI
+       fare; shopping e tech sono cose che SCEGLI di fare. Sotto un budget
+       solo non si capiva mai se avevi sforato per necessita' o per sfizio,
+       e «Come spendi» le metteva nello stesso mucchio. */
+    { id: "cura",      nome: "Cura e necessità", sub: ["Barbiere", "Lavanderia", "Farmacia e salute", "Igiene e cosmetica", "Integratori", "Studio"] },
+    { id: "svago",     nome: "Svago e shopping", sub: ["Uscite e serate", "Abbigliamento", "Shopping", "Tech", "Sport e attrezzatura", "Regali", "Viaggi e hotel"] },
     { id: "acc",       nome: "Accantonamenti",   sub: ["Assicurazione", "Bollo", "Tagliando", "Fondo emergenze"] },
     { id: "risp",      nome: "Risparmio",        sub: ["Deposito", "Investimenti"] },
   ];
@@ -57,7 +62,7 @@ export function categorieIniziali() {
  * addebiti automatici o fondi: metterli nel tetto settimanale renderebbe il
  * tetto ingovernabile, perché sforerebbe da solo il giorno dell'affitto.
  */
-export const CATEGORIE_CASSA = ["spesa", "cibo", "personale"];
+export const CATEGORIE_CASSA = ["spesa", "cibo", "cura", "svago", "casa", "auto", "trasporti"];
 
 /**
  * I colori delle categorie: tinte di SISTEMA, non esadecimali inventati.
@@ -74,7 +79,8 @@ export const COLORI_CAT = {
   spesa:     "var(--verde)",
   trasporti: "var(--indaco)",
   cibo:      "var(--rosa)",
-  personale: "var(--viola)",
+  cura:      "var(--viola)",
+  svago:     "var(--giallo)",
   acc:       "var(--menta)",
   risp:      "var(--ciano)",
 };
@@ -89,21 +95,24 @@ export const coloreCat = (id) => COLORI_CAT[id] || "var(--grigio)";
  */
 export const EMOJI_CAT = {
   fisse: "📄", casa: "🏠", auto: "🚗", spesa: "🛒", trasporti: "🚆",
-  cibo: "🍝", personale: "🧴", acc: "🏦", risp: "🌱",
+  cibo: "🍝", cura: "🧼", svago: "🎟️", acc: "🏦", risp: "🌱",
 };
 export const emojiCat = (id) => EMOJI_CAT[id] || "•";
 
+/* I BUDGET DI REGIME. Sommano a 2041, quanto le entrate attese: il margine
+   non allocato e' zero per scelta — quello che avanza ha gia' un nome, e si
+   chiama Accantonamenti o Risparmio.
+
+   `cassaCats` NON e' piu' tutto. Il tetto settimanale copre solo le
+   categorie che dipendono da decisioni di giornata: metterci dentro Fisse
+   voleva dire che il tetto sforava da solo il giorno dell'affitto, ed e'
+   la ragione degli allarmi di fine settimana che arrivavano a caso. */
 export function profiliIniziali() {
   return {
-    ago: {
-      nome: "Agosto",
-      b: { fisse: 455, casa: 50, auto: 300, spesa: 100, trasporti: 200, cibo: 150, personale: 120, acc: 125, risp: 0 },
-      cassa: 90, cassaCats: [...CATEGORIE_CASSA], dal: 1, al: 31,
-    },
     reg: {
       nome: "Regime",
-      b: { fisse: 1055, casa: 185, auto: 120, spesa: 220, trasporti: 90, cibo: 120, personale: 100, acc: 125, risp: 85 },
-      cassa: 100, cassaCats: [...CATEGORIE_CASSA], dal: 1, al: 31,
+      b: { fisse: 1235, casa: 30, auto: 80, trasporti: 20, spesa: 220, cibo: 120, cura: 75, svago: 70, acc: 115, risp: 76 },
+      cassaCats: [...CATEGORIE_CASSA], dal: 1, al: 31,
     },
   };
 }
@@ -135,8 +144,18 @@ export const categoriaPerId = (id) => stato().cats.find((c) => c.id === id) || n
  * somigliano a quelle degli altri mesi e usare lo stesso budget produce uno
  * sforamento annunciato ogni anno.
  */
-export const chiaveProfilo = (mese) => (Number(mese.split("-")[1]) === 8 ? "ago" : "reg");
-export const profiloDi = (mese) => stato().profili[chiaveProfilo(mese)];
+/* UN PROFILO SOLO. Ad agosto ne scattava uno suo — spese diverse, budget
+   diverso — ma era tarato su un agosto che non c'e' piu', e un profilo
+   obsoleto che si accende da solo una volta l'anno e' peggio di nessun
+   profilo: cambia i numeri sotto il naso senza che tu te lo ricordi.
+
+   La chiave resta una funzione, non una costante, perche' il giorno che
+   serve davvero un secondo profilo si riaccende qui e basta. */
+export const chiaveProfilo = () => "reg";
+/* Il ripiego non e' decorativo: un archivio sincronizzato da un dispositivo
+   fermo a prima puo' ancora non avere `reg`, e senza questo ogni lettura di
+   un budget esploderebbe. */
+export const profiloDi = () => stato().profili?.[chiaveProfilo()] || profiliIniziali().reg;
 
 // ------------------------------------------------------------- scritture --
 
@@ -299,16 +318,15 @@ export function ricorrentiIniziali() {
  */
 export const CLASSE_CAT = {
   fisse: "automatico", casa: "automatico", acc: "automatico", risp: "automatico",
-  spesa: "necessario", auto: "necessario",
-  cibo: "discrezionale", personale: "discrezionale", trasporti: "discrezionale",
+  spesa: "necessario", auto: "necessario", cura: "necessario",
+  cibo: "discrezionale", svago: "discrezionale", trasporti: "discrezionale",
 };
 export const CLASSI_SUB = {
   "auto|Manutenzione": "necessario",
   "auto|Carburante": "necessario",
   "auto|Lavaggio": "discrezionale",
   "auto|Multe": "discrezionale",
-  "personale|Cura personale": "necessario",
-  "personale|Integratori": "necessario",
+
   "trasporti|Treno": "discrezionale",
   "trasporti|Mezzi urbani": "necessario",
 };
@@ -321,6 +339,106 @@ export const SOGLIE_PREDEFINITE = {
   catAvviso: 0.85,       // categoria all'85% del budget del ciclo
   spesaGrossa: 5000,     // sopra, il foglio chiede conferma
 };
+
+/* ------------------------------------------- da Personale a due ---------- */
+/*
+   LA DIVISIONE DI «PERSONALE», sui movimenti gia' registrati.
+
+   Tre regole, e le prime due sono quelle che ci sono gia' costate care:
+
+   1. SOLO DOPO AVER LETTO. Girare all'avvio su un archivio ancora vuoto
+      vorrebbe dire segnarsi come fatta senza aver toccato niente, e poi il
+      sync fa entrare duecento movimenti che a quel punto non rimappa piu'
+      nessuno. Il gancio e' `canale.letturaFatta`, in contratto.js.
+   2. `cats` E `profili` STANNO DENTRO `meta`, che si fonde a blocchi sotto
+      il cancello di `metaUp`. Cambiarli nelle costanti serve solo a chi
+      installa da zero: per l'archivio che esiste gia' vanno riscritti qui,
+      e `metaUp` va alzato — altrimenti il prossimo pacchetto remoto li
+      riporta a «personale».
+   3. CHI HA GIA' UNA CATEGORIA NUOVA NON SI TOCCA. La rimappatura guarda
+      solo `cat === "personale"`: ripassarci sopra non puo' spostare niente
+      che tu abbia corretto a mano nel frattempo.
+
+   Quello che non si riesce a classificare finisce in Svago SENZA
+   sottocategoria e con `rivedi: true`: un badge nella lista, non un
+   silenzio. Indovinare una sottocategoria per riempire una casella sarebbe
+   il modo di non accorgersene mai piu'.
+*/
+
+export const BLOCCO_CATEGORIE = "2026-10-01-cura-svago";
+
+/** Sottocategoria vecchia → [categoria, sottocategoria] nuove. */
+const DA_PERSONALE = {
+  "Barbiere": ["cura", "Barbiere"],
+  "Cura personale": ["cura", "Igiene e cosmetica"],
+  "Integratori": ["cura", "Integratori"],
+  "Uscite e svago": ["svago", "Uscite e serate"],
+  "Abbigliamento": ["svago", "Abbigliamento"],
+  "Shopping": ["svago", "Shopping"],
+  "Tech": ["svago", "Tech"],
+  "Sport": ["svago", "Sport e attrezzatura"],
+  "Regali": ["svago", "Regali"],
+};
+
+/* Per i movimenti SENZA sottocategoria, che sono tanti: si guarda la nota.
+   L'ordine conta — la prima che combacia vince — quindi le piu' precise
+   stanno prima. */
+const DALLA_NOTA = [
+  [/lavanderi/i,                      ["cura", "Lavanderia"]],
+  [/medicin|farmaci|crem|redcare/i,   ["cura", "Farmacia e salute"]],
+  [/stamp|sbobbin|libr/i,             ["cura", "Studio"]],
+  [/booking|hotel|tassa di soggiorno/i, ["svago", "Viaggi e hotel"]],
+  [/amazon|aliexpress|vinted/i,       ["svago", "Shopping"]],
+];
+
+export function dividiPersonale() {
+  if (stato().config?.bloccoCategorie === BLOCCO_CATEGORIE) return false;
+
+  const ora = Date.now();
+  casella.aggiorna((s) => {
+    // --- le categorie dell'archivio ---------------------------------------
+    const nuove = categorieIniziali();
+    const perId = new Map(nuove.map((c) => [c.id, c]));
+    s.cats = (s.cats || [])
+      .filter((c) => c.id !== "personale")
+      .map((c) => perId.get(c.id) || c);
+    for (const c of nuove) if (!s.cats.some((x) => x.id === c.id)) s.cats.push(c);
+
+    // --- i movimenti -------------------------------------------------------
+    for (const m of s.movs || []) {
+      if (!m || m.del || m.cat !== "personale") continue;
+      let dove = m.sub ? DA_PERSONALE[m.sub] : null;
+      if (!dove) {
+        const nota = String(m.nota || "");
+        dove = (DALLA_NOTA.find(([re]) => re.test(nota)) || [])[1] || null;
+      }
+      if (dove) { m.cat = dove[0]; m.sub = dove[1]; delete m.rivedi; }
+      else { m.cat = "svago"; m.sub = null; m.rivedi = true; }
+      m.up = ora;
+    }
+
+    // --- i budget ----------------------------------------------------------
+    s.profili = { ...(s.profili || {}), ...profiliIniziali() };
+    delete s.profili.ago;              // Agosto e' obsoleto: via dalla scelta
+    /* `cassaSettimanale: 0` = calcolalo dai budget. Era 140 scritto a mano
+       e non c'entrava piu' niente con le categorie marcate cassa. */
+    s.config = { ...(s.config || {}), entrate: 2041, cassaSettimanale: 0, bloccoCategorie: BLOCCO_CATEGORIE };
+
+    // --- il ricorrente delle utenze ---------------------------------------
+    for (const r of s.ricorrenti || []) {
+      if (!r || r.del) continue;
+      if (/gas|luce|acqua/i.test(String(r.nome || ""))) {
+        r.cat = "fisse"; r.sub = "Abbonamenti"; r.pocket = "fisse"; r.up = ora;
+      }
+    }
+
+    /* `metaUp` va alzato, o il prossimo pacchetto remoto riporta categorie e
+       profili a com'erano: `meta` si fonde a blocchi e vince chi ha il
+       timestamp piu' fresco. */
+    s.metaUp = ora;
+  });
+  return true;
+}
 
 /* ---------------------------------------------------------- migrazione -- */
 
@@ -348,7 +466,10 @@ export function migra() {
     // alla fine del mese" usano il ciclo 21→20: con il mese solare i numeri
     // non tornavano mai, ed è il motivo per cui non tornavano.
     if (st.config.giornoStipendio == null) st.config.giornoStipendio = 21;
-    if (st.config.cassaSettimanale == null) st.config.cassaSettimanale = 13000;
+    /* ZERO vuol dire «calcolalo»: il tetto settimanale lo ricava
+       `tettoSettimanale()` dai budget marcati cassa. Un numero scritto a
+       mano va in deriva — i budget cambiano e lui resta dov'era. */
+    if (st.config.cassaSettimanale == null) st.config.cassaSettimanale = 0;
     if (st.config.pendenti == null) st.config.pendenti = [];
     // Da oggi in avanti i movimenti muovono i pocket. Prima è storico.
     if (st.config.pocketDa == null) st.config.pocketDa = new Date().toISOString().slice(0, 10);
