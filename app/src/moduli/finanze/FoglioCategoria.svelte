@@ -1,4 +1,12 @@
-<!-- Una categoria: sei mesi, le sottocategorie, i movimenti del mese. -->
+<!--
+  Una categoria, DENTRO IL CICLO.
+
+  Era sul mese solare: la barra che si tocca conta da stipendio a stipendio,
+  questo foglio elencava il mese del calendario. Due finestre diverse a un
+  tocco di distanza, e il risultato era una categoria che diceva «91 su 90»
+  e sotto nessun movimento — perche' quelle spese erano del ciclo ma di un
+  altro mese. Nessuno dei due numeri era sbagliato: erano due domande.
+-->
 <script lang="ts">
   import Foglio from "$lib/ui/Foglio.svelte";
   import Sezione from "$lib/ui/Sezione.svelte";
@@ -9,7 +17,8 @@
   import { dati } from "$lib/core/reattivo.svelte";
   import { euro, plurale } from "$lib/core/ui";
   import { categoriaPerId, profiloDi } from "$condivisi/finanze/dati.js";
-  import { statistiche, categoriaSuSeiMesi } from "$condivisi/finanze/calcolo.js";
+  import { statisticheDelCiclo, categoriaSuSeiCicli, cicloDi, nomeCiclo } from "$condivisi/finanze/calcolo.js";
+  import { oggiISO } from "$lib/core/ui";
   import { coloreCat } from "./comune";
   import { apri } from "./fogli.svelte";
 
@@ -19,13 +28,14 @@
     dati.versione;
     const c = categoriaPerId(catId);
     if (!c) return null;
-    const st = statistiche(mese);
+    const ciclo = cicloDi(oggiISO());
+    const st = statisticheDelCiclo(ciclo);
     const x = st.perCat[catId] || { tot: 0, movs: [], sub: {} };
-    const budget = Math.round((profiloDi(mese).b[catId] || 0) * 100);
+    const budget = Math.round((profiloDi().b[catId] || 0) * 100);
     return {
-      c, x, budget,
+      c, x, budget, ciclo,
       medio: x.movs.length ? Math.round(x.tot / x.movs.length) : 0,
-      sei: categoriaSuSeiMesi(mese, catId),
+      sei: categoriaSuSeiCicli(ciclo, catId),
       sub: Object.entries(x.sub as Record<string, any>).sort((a, b) => b[1].tot - a[1].tot),
     };
   });
@@ -34,7 +44,7 @@
 <Foglio bind:aperto titolo={d?.c.nome ?? ""}>
   {#if d}
     <div class="tre">
-      <div><span class="text-footnote secondario">Questo mese</span><b class="cifre">{euro(d.x.tot)}</b></div>
+      <div><span class="text-footnote secondario">Questo ciclo</span><b class="cifre">{euro(d.x.tot)}</b></div>
       <div><span class="text-footnote secondario">Pocket</span><b class="cifre">{d.budget ? euro(d.budget, { tondo: true }) : "—"}</b></div>
       <div><span class="text-footnote secondario">Scontrino medio</span><b class="cifre">{d.x.movs.length ? euro(d.medio) : "—"}</b></div>
     </div>
@@ -45,7 +55,7 @@
       </div>
     {/if}
 
-    <Sezione titolo="Sei mesi">
+    <Sezione titolo="Sei cicli" piede={nomeCiclo(d.ciclo)}>
       <div class="grafico"><GraficoBarre valori={d.sei.valori} etichette={d.sei.etichette} evidenzia={5} retta={d.budget || null} colore={coloreCat(catId)} /></div>
     </Sezione>
 
@@ -57,7 +67,7 @@
       </Sezione>
     {/if}
 
-    <Sezione titolo="Movimenti del mese" piede={d.x.movs.length ? undefined : "Nessun movimento questo mese."}>
+    <Sezione titolo="Movimenti del ciclo" piede={d.x.movs.length ? nomeCiclo(d.ciclo) : `Nessun movimento fra il ${nomeCiclo(d.ciclo)}.`}>
       {#each d.x.movs as m (m.id)}<RigaMovimento {m} />{/each}
     </Sezione>
   {/if}

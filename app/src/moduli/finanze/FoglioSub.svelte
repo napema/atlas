@@ -1,23 +1,31 @@
-<!-- Una sottocategoria: cosa ci sta sotto, anche fuori dal mese. -->
+<!--
+  Una sottocategoria: cosa ci sta sotto in questo ciclo, e cosa c'era prima.
+
+  Il ciclo e non il mese solare, come il foglio da cui si arriva: due
+  finestre a un tocco di distanza fanno due numeri diversi per la stessa
+  domanda, ed e' il modo di non fidarsi piu' di nessuno dei due.
+-->
 <script lang="ts">
   import Foglio from "$lib/ui/Foglio.svelte";
   import Sezione from "$lib/ui/Sezione.svelte";
   import RigaMovimento from "./RigaMovimento.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
-  import { euro, MESI } from "$lib/core/ui";
+  import { euro, oggiISO } from "$lib/core/ui";
   import { categoriaPerId } from "$condivisi/finanze/dati.js";
-  import { movimentiSottocategoria, importoEffettivo } from "$condivisi/finanze/calcolo.js";
+  import { movimentiSottocategoria, importoEffettivo, cicloDi, nomeCiclo } from "$condivisi/finanze/calcolo.js";
 
   let { aperto = $bindable(false), catId, sub, mese }: { aperto: boolean; catId: string; sub: string; mese: string } = $props();
 
   const d = $derived.by(() => {
     dati.versione;
+    const ciclo = cicloDi(oggiISO());
     const tutti = movimentiSottocategoria(catId, sub) as any[];
-    const delMese = tutti.filter((m) => m.data.slice(0, 7) === mese);
+    const dentro = (m: any) => m.data >= ciclo.da && m.data <= ciclo.a;
+    const delMese = tutti.filter(dentro);
     const tot = (xs: any[]) => xs.reduce((s, m) => s + importoEffettivo(m), 0);
     return {
-      c: categoriaPerId(catId), tutti, delMese,
-      prima: tutti.filter((m) => m.data.slice(0, 7) !== mese).slice(0, 12),
+      c: categoriaPerId(catId), tutti, delMese, ciclo,
+      prima: tutti.filter((m) => !dentro(m)).slice(0, 12),
       totMese: tot(delMese), totTutti: tot(tutti),
     };
   });
@@ -26,15 +34,15 @@
 <Foglio bind:aperto titolo={sub}>
   <p class="text-subheadline secondario centro">{d.c?.nome}</p>
   <div class="tre">
-    <div><span class="text-footnote secondario">Questo mese</span><b class="cifre">{euro(d.totMese)}</b></div>
+    <div><span class="text-footnote secondario">Questo ciclo</span><b class="cifre">{euro(d.totMese)}</b></div>
     <div><span class="text-footnote secondario">Volte</span><b class="cifre">{d.delMese.length}</b></div>
     <div><span class="text-footnote secondario">Medio</span><b class="cifre">{d.delMese.length ? euro(Math.round(d.totMese / d.delMese.length)) : "—"}</b></div>
   </div>
-  <Sezione titolo="Movimenti di {MESI[Number(mese.slice(5, 7)) - 1]}" piede={d.delMese.length ? undefined : "Nessun movimento questo mese."}>
+  <Sezione titolo="Movimenti del ciclo" piede={d.delMese.length ? nomeCiclo(d.ciclo) : `Nessun movimento fra il ${nomeCiclo(d.ciclo)}.`}>
     {#each d.delMese as m (m.id)}<RigaMovimento {m} />{/each}
   </Sezione>
   {#if d.prima.length}
-    <Sezione titolo="Prima di questo mese" piede="In archivio: {d.tutti.length} movimenti per {euro(d.totTutti)} in totale.">
+    <Sezione titolo="Prima di questo ciclo" piede="In archivio: {d.tutti.length} movimenti per {euro(d.totTutti)} in totale.">
       {#each d.prima as m (m.id)}<RigaMovimento {m} />{/each}
     </Sezione>
   {/if}

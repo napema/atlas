@@ -63,8 +63,16 @@ export function importoEffettivo(m) {
 }
 
 /** Il quadro completo di un mese. Tutti gli importi in centesimi. */
-export function statistiche(mese) {
-  const movimenti = movimentiDelMese(mese);
+/**
+ * I conti di una finestra di tempo.
+ *
+ * Prende i movimenti gia' filtrati, non il mese: cosi' la stessa funzione
+ * serve il ciclo e il mese solare senza due copie che col tempo smettono di
+ * dire la stessa cosa. `statistiche(mese)` resta per le schermate che
+ * confrontano mesi fra loro — Analisi — e il ciclo passa da
+ * `statisticheDelCiclo()`.
+ */
+export function statisticheDi(movimenti) {
   const perCat = {};
   for (const c of stato().cats) perCat[c.id] = { tot: 0, ord: 0, ecc: 0, sub: {}, movs: [] };
 
@@ -110,6 +118,12 @@ export function statistiche(mese) {
     nMovimenti: movimenti.length,
   };
 }
+
+/** I conti del mese solare. Serve ad Analisi, che confronta mesi fra loro. */
+export const statistiche = (mese) => statisticheDi(movimentiDelMese(mese));
+
+/** I conti del CICLO, da stipendio a stipendio. È la finestra dell'app. */
+export const statisticheDelCiclo = (ciclo) => statisticheDi(movimentiDelCiclo(ciclo));
 
 /** Il budget totale del mese, in centesimi. */
 export function budgetTotale(mese) {
@@ -520,6 +534,24 @@ export function categoriaSuSeiMesi(mese, catId) {
   return {
     etichette: mesi.map((m) => MESI_BREVI[Number(m.split("-")[1]) - 1]),
     valori: mesi.map((m) => statistiche(m).perCat[catId]?.tot || 0),
+  };
+}
+
+/**
+ * La stessa cosa sui CICLI, che e' la finestra dell'app.
+ *
+ * Sei mesi solari accanto a un totale di ciclo erano due misure diverse
+ * nello stesso foglio: la barra diceva 91 su 90 e la colonna del mese
+ * diceva un altro numero, e nessuno dei due era sbagliato — erano due
+ * domande. Il ciclo si chiama col mese in cui comincia, che e' come lo
+ * chiami anche tu.
+ */
+export function categoriaSuSeiCicli(ciclo, catId) {
+  const cicli = [];
+  for (let i = 5; i >= 0; i--) cicli.push(spostaCiclo(ciclo.indice, -i));
+  return {
+    etichette: cicli.map((c) => MESI_BREVI[Number(c.indice.split("-")[1]) - 1]),
+    valori: cicli.map((c) => statisticheDelCiclo(c).perCat[catId]?.tot || 0),
   };
 }
 
