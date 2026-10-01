@@ -417,7 +417,6 @@
   .verifica { display: flex; justify-content: space-between; padding: var(--space-3) var(--space-4); border-top: 0.5px solid var(--separator); color: var(--color-green); }
   .verifica.male { color: var(--color-red); }
 
-  .blocco { padding: var(--space-3) var(--space-4) var(--space-2); }
   .categoria { width: 100%; display: flex; flex-direction: column; gap: 6px; padding: 10px var(--space-4) 12px; text-align: left; }
   .categoria:active { background: var(--fill-quaternary); }
   .cat-alto { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
