@@ -21,9 +21,10 @@
   import Andamento from "./Andamento.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
-  import { oggiISO, piuGiorni, plurale, tocco, GIORNI_INIZIALI, daISO } from "$lib/core/ui";
+  import { oggiISO, piuGiorni, plurale, tocco } from "$lib/core/ui";
   import { settimanaCorrente, slotDi, fatto, giornoSlot, alternaSlot, oraDi } from "$condivisi/allenamenti/dati.js";
   import { gruppiSeduta, serieTotali } from "$condivisi/allenamenti/muscoli.js";
+  import { quandoLungo } from "./comune";
   import { km } from "$condivisi/allenamenti/calcolo.js";
 
   const NOMI_GRUPPI: Record<string, string> = {
@@ -53,13 +54,7 @@
     dati.versione;
     const oggi = oggiISO();
     const slot = (slotDi(settimana) as any[]).map((s) => ({ ...s, fatto: fatto(s.id), giorno: giornoSlot(s.id) }));
-    const etichetta = (iso: string) => {
-      if (!iso) return "";
-      if (iso === oggi) return "oggi";
-      if (iso === piuGiorni(oggi, -1)) return "ieri";
-      const d = daISO(iso);
-      return `${GIORNI_INIZIALI[(d.getDay() + 6) % 7]} ${d.getDate()}`;
-    };
+    const etichetta = (iso: string) => quandoLungo(iso, oggi);
     /* I generi PRESENTI, non quelli previsti. Erano due, scritti a mano, e
        un allenamento che non fosse corsa o palestra spariva dalla schermata
        pur essendo nei dati: importavi tre righe e ne vedevi due. */

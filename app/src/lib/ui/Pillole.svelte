@@ -8,6 +8,7 @@
     opzioni,
     scelte = $bindable([]),
     multiplo = false,
+    controllato = false,
     etichetta,
     oncambio,
   }: {
@@ -15,14 +16,23 @@
     opzioni: { id: T; testo: string; punto?: boolean }[];
     scelte: T[];
     multiplo?: boolean;
+    /** La selezione la governa il chiamante: il tocco si limita a dirlo. */
+    controllato?: boolean;
     etichetta?: string;
     oncambio?: (v: T[]) => void;
   } = $props();
 
+  /* `controllato`: la pastiglia NON si accende da sola, lo decide chi la
+     usa. Serve dove il tocco puo' non andare a buon fine — una conferma in
+     mezzo, una regola che lo rifiuta. Senza, la pastiglia si accendeva
+     comunque e il dato non veniva scritto: sembrava pianificato finche' non
+     ricaricavi, e allora spariva. */
   function tocca(id: T) {
-    if (multiplo) scelte = scelte.includes(id) ? scelte.filter((x) => x !== id) : [...scelte, id];
-    else scelte = [id];
-    oncambio?.(scelte);
+    const nuove = multiplo
+      ? (scelte.includes(id) ? scelte.filter((x) => x !== id) : [...scelte, id])
+      : [id];
+    if (!controllato) scelte = nuove;
+    oncambio?.(nuove);
   }
 </script>
 

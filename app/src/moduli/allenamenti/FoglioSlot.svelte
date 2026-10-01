@@ -23,7 +23,8 @@
   import Riga from "$lib/ui/Riga.svelte";
   import Corpo from "./Corpo.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
-  import { avviso, tocco, piuGiorni, plurale, dataUmana, daISO, GIORNI_INIZIALI } from "$lib/core/ui";
+  import { quandoCorto } from "./comune";
+  import { avviso, tocco, piuGiorni, plurale, dataUmana } from "$lib/core/ui";
   import { slide } from "svelte/transition";
   import {
     slotDi, fatto, giornoSlot, alternaSlot, scegliGiorno, inizioSettimana, fineSettimana, recordSlot, ripristinaSlot, togliBonus,
@@ -81,7 +82,7 @@
     for (let id = da; id <= a; id = piuGiorni(id, 1)) {
       fuori.push({
         id,
-        testo: GIORNI_INIZIALI[(daISO(id).getDay() + 6) % 7],
+        testo: quandoCorto(id),
         punto: (occupanti.get(id) || []).length > 0,
       });
     }
@@ -288,7 +289,7 @@
       ? "La palestra la mattina è chiusa: l'ora predefinita è del pomeriggio. Qui la cambi solo per questo allenamento."
       : "Facoltativo. Il piano lascia i giorni liberi: se lo scegli, la home e i consigli ne tengono conto."}>
       <div class="blocco">
-        <Pillole opzioni={giorni} scelte={giorno ? [giorno] : []} oncambio={giornoScelto} etichetta="Giorno" />
+        <Pillole opzioni={giorni} scelte={giorno ? [giorno] : []} controllato oncambio={giornoScelto} etichetta="Giorno" />
       </div>
       {#if conflitto}
         <!-- In linea, non un dialogo sopra un dialogo: due fogli impilati su
