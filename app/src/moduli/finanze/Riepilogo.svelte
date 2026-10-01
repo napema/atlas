@@ -12,7 +12,6 @@
   import Sezione from "$lib/ui/Sezione.svelte";
   import Riga from "$lib/ui/Riga.svelte";
   import Pulsante from "$lib/ui/Pulsante.svelte";
-  import Segmenti from "$lib/ui/Segmenti.svelte";
   import Icona from "$lib/ui/Icona.svelte";
   import Importo from "$lib/ui/Importo.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
@@ -23,19 +22,15 @@
   } from "$condivisi/finanze/dati.js";
   import {
     cicloDi, finoAllaRicarica, pocketConSaldi, inArrivo, comeSpendi, sforamenti, alert, scala,
-    esitoCheck, comeEvento, categorieDelCiclo, categorieDelMese, nomeCiclo, nomeMese,
+    esitoCheck, comeEvento, categorieDelCiclo, nomeCiclo,
   } from "$condivisi/finanze/calcolo.js";
   import { nuovoId } from "$lib/core/ui";
   import { coloreCat, nomePocket } from "./comune";
   import { apri } from "./fogli.svelte";
 
-  /* Ciclo o mese solare nelle categorie: una preferenza di lettura, non un
-     dato. Non si salva e non si sincronizza; riparte da «ciclo», che è la
-     vista giusta. */
   /** `lato`: il numero, il check, gli allarmi (la colonna sinistra sul PC). */
   let { parte }: { parte: "lato" | "resto" } = $props();
 
-  let modoCategorie = $state<"ciclo" | "mese">("ciclo");
 
   const d = $derived.by(() => {
     dati.versione;
@@ -59,11 +54,29 @@
     };
   });
 
+  /* UNA FINESTRA SOLA, E E' IL CICLO.
+
+     C'erano due viste, «Ciclo» e «Mese solare», e la seconda era offerta
+     «per confronto». Due risposte alla stessa domanda nella stessa
+     schermata non sono una scelta: sono un dubbio, e gli allarmi — che
+     leggono sempre il ciclo — potevano contraddire quello che avevi sotto
+     gli occhi.
+
+     Il ciclo, e non per gusto. Lo stipendio arriva il 23: «quanto posso
+     ancora spendere» si misura da li' al 22, perche' e' quello il momento
+     in cui entrano soldi nuovi. E soprattutto il mese solare SPEZZA IN DUE
+     il mese delle bollette: quelle del 28-30 cadono in un mese, quelle del
+     1-9 in quello dopo, e nessuno dei due contiene un giro completo di
+     spese fisse. Il ciclo ne contiene esattamente uno di ciascuna. E' il
+     motivo per cui «Fisse» nel ciclo dice 1520 e nel mese diceva meno: non
+     e' il ciclo a gonfiare, e' il mese solare a tagliare.
+
+     Il mese solare resta in Analisi, dove serve a confrontare mesi fra
+     loro — un'altra domanda, in un'altra schermata. */
   const categorie = $derived.by(() => {
     dati.versione;
-    const perCiclo = modoCategorie === "ciclo";
     const mese = d.oggi.slice(0, 7);
-    const tutte = (perCiclo ? categorieDelCiclo(d.ciclo) : categorieDelMese(mese)).filter((c: any) => c.budget > 0 || c.speso > 0);
+    const tutte = (categorieDelCiclo(d.ciclo) as any[]).filter((c: any) => c.budget > 0 || c.speso > 0);
     // Solo quelle della cassa settimanale più le due che sforano di più:
     // nove barre non si leggono, e le sei che vanno bene rendono invisibili
     // le tre che non vanno.
@@ -74,8 +87,8 @@
       .slice(0, 2);
     return {
       voci: [...cassa, ...altre],
-      finestra: perCiclo ? nomeCiclo(d.ciclo) : nomeMese(mese),
-      profilo: profiloDi(perCiclo ? d.ciclo.indice : mese).nome,
+      finestra: nomeCiclo(d.ciclo),
+      profilo: profiloDi(d.ciclo.indice).nome,
       mese,
     };
   });
@@ -277,12 +290,9 @@
 {#if categorie.voci.length}
   <Sezione
     titolo="Le categorie"
-    piede={modoCategorie === "ciclo"
-      ? `Dal giorno dello stipendio: è la finestra su cui l'app fa tutti i conti. Budget del profilo ${categorie.profilo}.`
-      : `Mese solare, per confronto. I conti dell'app seguono il ciclo. Budget del profilo ${categorie.profilo}.`}
+    piede={`Da stipendio a stipendio: è la finestra su cui l'app fa ogni conto, allarmi compresi. Il mese solare taglia a metà il giro delle bollette, quindi non torna mai. Budget del profilo ${categorie.profilo}.`}
   >
     {#snippet coda()}<span class="text-footnote secondario">{categorie.finestra}</span>{/snippet}
-    <div class="blocco"><Segmenti opzioni={[{ id: "ciclo", testo: "Ciclo" }, { id: "mese", testo: "Mese solare" }]} bind:valore={modoCategorie} /></div>
     {#each categorie.voci as c (c.id)}
       {@const f = c.budget > 0 ? c.speso / c.budget : 0}
       {@const oltre = c.budget > 0 && c.speso > c.budget}

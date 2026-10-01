@@ -1651,8 +1651,28 @@ export function alert(iso = oggiISO()) {
     out.push({ id: "ing_sotto_minimo", livello: "warn", testo: "Riserva sotto il minimo di sicurezza." });
   }
 
+  /* GLI ALLARMI SOLO SU QUELLO CHE PUOI ANCORA GOVERNARE.
+
+     «Fisse ha superato il budget di 465 €» e' un'informazione vera e
+     inutile: l'affitto e' uscito, le rate escono comunque, e non c'e'
+     niente che tu possa fare oggi per rientrare. Peggio, ha la forma di un
+     rimprovero su un comportamento quando il problema e' il budget tarato
+     male — e un'app che rimprovera per cose non tue si smette di aprirla.
+
+     Quindi: le categorie `automatico` non producono un avviso per
+     categoria. Se nel complesso sfondano, lo si dice UNA volta e come
+     fatto — «le fisse di questo ciclo costano piu' del previsto» — che e'
+     una cosa da sistemare in Impostazioni, non stasera.
+
+     E' la stessa divisione di «Come spendi», che gia' dice la cosa giusta:
+     gli automatici non sono spese che fai, sono spese che ti fanno. */
+  let autoSpeso = 0, autoBudget = 0;
   for (const c of categorieDelCiclo(ciclo)) {
     if (!c.budget) continue;
+    if (classeDi(c.id, null) === "automatico") {
+      autoSpeso += c.speso; autoBudget += c.budget;
+      continue;
+    }
     if (c.speso > c.budget) {
       out.push({ id: `cat_sforata:${c.id}`, livello: "warn",
         testo: `${c.nome} ha superato il budget di ${eu(c.speso - c.budget)}.` });
@@ -1660,6 +1680,10 @@ export function alert(iso = oggiISO()) {
       out.push({ id: `cat_soglia:${c.id}`, livello: "info",
         testo: `${c.nome}: ${eu(c.speso)} su ${eu(c.budget)}. Restano ${eu(c.budget - c.speso)}.` });
     }
+  }
+  if (autoBudget > 0 && autoSpeso > autoBudget) {
+    out.push({ id: "auto_oltre", livello: "info",
+      testo: `Le spese automatiche di questo ciclo costano ${eu(autoSpeso)} contro ${eu(autoBudget)} di budget. Non è una spesa di troppo: è il budget da rivedere.` });
   }
 
   for (const v of arrivo.voci) {
