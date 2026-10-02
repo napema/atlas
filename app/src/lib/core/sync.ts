@@ -98,7 +98,21 @@ export async function svegliaWorkflow(file: string): Promise<{ ok: boolean; moti
   }
 }
 
-export const b64enc = (s: string) => btoa(String.fromCharCode(...new TextEncoder().encode(s)));
+/* A PEZZI, NON TUTTO IN UNA VOLTA. Era `String.fromCharCode(...byte)`:
+   ogni byte del file diventa un argomento della chiamata, e Safari su
+   iPhone ne regge circa 65 mila. Il 2 ottobre finanze.json ha passato i
+   64 KB e ogni scrittura di Finanze moriva qui con «Maximum call stack
+   size exceeded» — prima della PUT, quindi senza perdere niente, ma
+   senza più sincronizzare. Gli altri file erano solo più piccoli. */
+const PEZZO_B64 = 0x2000;
+export const b64enc = (s: string) => {
+  const byte = new TextEncoder().encode(s);
+  let bin = "";
+  for (let i = 0; i < byte.length; i += PEZZO_B64) {
+    bin += String.fromCharCode(...byte.subarray(i, i + PEZZO_B64));
+  }
+  return btoa(bin);
+};
 export const b64dec = (s: string) => new TextDecoder().decode(
   Uint8Array.from(atob(s.replace(/\s/g, "")), (c) => c.charCodeAt(0)),
 );
@@ -324,6 +338,7 @@ export function apriCanale({ id, file, impacchetta, applica, dopoScrittura, ridi
       segnala("ok");
       pianificaRidisegno();
     } catch (e: any) {
+      console.error(`[sync ${id}]`, e);
       segnala("err", e?.message || String(e));
     } finally {
       canale.occupato = false;

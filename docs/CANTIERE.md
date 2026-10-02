@@ -29,6 +29,19 @@ Chi apre una chat comincia da `git log --oneline -20` e da questo file.
 
 ## Stato
 
+### ✅ 2 ottobre — Finanze non sincronizzava più: «Maximum call stack size exceeded»
+
+Non era Finanze, era il nucleo. `b64enc` in `sync.ts` (e in `core/sync.js`
+per `v1.html`) faceva `String.fromCharCode(...byte)`: un argomento per ogni
+byte del file. Safari su iPhone ne regge circa 65 mila, e finanze.json —
+il file più grosso — ha passato i 64 KB. L'errore scattava PRIMA della PUT:
+nessun dato perso né in locale né sul repo, solo le modifiche di Finanze
+ferme sul telefono. Ora si codifica a pezzi da 8 KB; il base64 che esce è
+identico byte per byte a quello di prima (provato fino a 70 KB, e a 3 MB
+dove il vecchio esplodeva anche su Chrome). Il canale ora stampa in console
+l'errore intero, con lo stack: la riga in Impostazioni da sola non bastava a
+capire dove.
+
 ### ✅ La app in Svelte + TypeScript (21 settembre 2026)
 
 Tutta la app è stata riscritta in `app/` — Svelte 5, TypeScript 6, Vite 8 —
