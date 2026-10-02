@@ -22,10 +22,10 @@
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
   import { oggiISO, piuGiorni, plurale, tocco } from "$lib/core/ui";
-  import { settimanaCorrente, slotDi, fatto, giornoSlot, alternaSlot, oraDi } from "$condivisi/allenamenti/dati.js";
+  import { settimanaCorrente, slotDi, fatto, giornoSlot, alternaSlot, oraDi, RITMI, REGOLE_FASE, pianoDi } from "$condivisi/allenamenti/dati.js";
   import { gruppiSeduta, serieTotali } from "$condivisi/allenamenti/muscoli.js";
   import { quandoLungo } from "./comune";
-  import { km } from "$condivisi/allenamenti/calcolo.js";
+  import { km, tettoLunga } from "$condivisi/allenamenti/calcolo.js";
 
   const NOMI_GRUPPI: Record<string, string> = {
     petto: "Petto", spalle: "Spalle", bicipiti: "Bicipiti", avambracci: "Avambracci",
@@ -42,6 +42,12 @@
   let slotId = $state<string | null>(null);
 
   const apriBonus = () => { fBonus = true; };
+
+  /* Le due carte da consultare, chiuse. Aperte sempre sarebbero due muri di
+     testo in cima a una schermata che serve a spuntare; chiuse sono due
+     righe, e chi ha un dubbio sa dove guardare. */
+  let apriRitmi = $state(false);
+  let apriRegole = $state(false);
   let quale = $state<"corse" | "allenamenti">("corse");
 
   $effect(() => {
@@ -72,8 +78,18 @@
             : s.genere === "palestra" ? String(s.testo || "").split(/\s*[·;]\s*/) : []
           ).map((x: string) => String(x).trim()).filter(Boolean) as string[];
           const gr = righe.length ? gruppiSeduta(righe) : [];
+          /* NELLA SETTIMANA DEL TEST IL NOME DELLO SLOT MENTE: «Lunga» e'
+             il test dei 5000, «Soglia» e' venti minuti facilissimi il
+             giorno prima. Quando il testo comincia dicendo cos'e', e' lui
+             il titolo — il nome dello slot resta sotto, piccolo, perche'
+             serve solo a sapere quale casella stai spuntando. */
+          const capo = String(s.testo || "").split(/\s*·\s*/)[0] || "";
+          const titoloVero = /^(TEST|\d+ giorni? prima|Giorno prima|Inizio settimana)/i.test(capo) ? capo : null;
+          const tetto = s.chiave === "lunga" ? tettoLunga(oggi) : null;
           return {
             ...s, quando: etichetta(s.giorno), ora: oraDi(s),
+            titoloVero,
+            tetto, oltreIlTetto: Boolean(tetto && s.km > tetto),
             serie: righe.length ? serieTotali(righe) : 0,
             top: gr.slice(0, 3).map((x: any) => ({ id: x.id, nome: NOMI_GRUPPI[x.id] ?? x.id })),
             altri: Math.max(0, gr.length - 3),
@@ -175,6 +191,39 @@
     {/if}
 
 
+    <!-- I RITMI E LE REGOLE, a portata ma chiuse. In quattro settimane i
+         numeri non si imparano a memoria, e averli qui evita di cercarli
+         altrove proprio mentre stai per uscire a correre. -->
+    <div class="consulta">
+      <button type="button" class="apri-card lastra" onclick={() => (apriRitmi = !apriRitmi)}>
+        <span class="text-headline">Ritmi</span>
+        <span class="verso" class:giu={apriRitmi}><Icona nome="freccia" misura={14} tratto={2.4} /></span>
+      </button>
+      {#if apriRitmi}
+        <div class="lastra dentro-card">
+          {#each RITMI as r (r.id)}
+            <div class="ritmo">
+              <span class="r-nome text-subheadline semibold">{r.nome}</span>
+              <span class="r-passo cifre semibold">{r.passo}</span>
+              <span class="r-nota text-caption1 secondario">{r.nota}</span>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <button type="button" class="apri-card lastra" onclick={() => (apriRegole = !apriRegole)}>
+        <span class="text-headline">Regole fase</span>
+        <span class="verso" class:giu={apriRegole}><Icona nome="freccia" misura={14} tratto={2.4} /></span>
+      </button>
+      {#if apriRegole}
+        <div class="lastra dentro-card">
+          <ul class="regole">
+            {#each REGOLE_FASE as r (r)}<li class="text-subheadline">{r}</li>{/each}
+          </ul>
+        </div>
+      {/if}
+    </div>
+
     {#each gruppi as gr (gr.g)}
       <Sezione titolo={gr.nome}>
         {#snippet coda()}
@@ -197,13 +246,22 @@
             <Spunta fatta={s.fatto} etichetta={s.fatto ? `Riapri ${s.nome}` : `Segna ${s.nome} come fatto`} onclick={() => spunta(s)} />
             <button type="button" class="corpo" onclick={() => { slotId = s.id; fSlot = true; }}>
               <span class="alto">
-                <span class="nome">{s.nome}</span>
+                <span class="nome">{s.titoloVero ?? s.nome}</span>
+                {#if s.titoloVero}<span class="etichetta slot text-caption2">{s.nome}</span>{/if}
                 {#if s.stella}<span class="stella" title="Seduta chiave"><Icona nome="bersaglio" misura={14} tratto={2.2} /></span>{/if}
                 {#if s.bonus}<span class="etichetta bonus text-caption2">bonus</span>{/if}
                 {#if s.cambiato}<span class="etichetta text-caption2">importato</span>{/if}
                 {#if s.quando}<span class="quando text-caption1">{s.quando} · {s.ora}</span>{/if}
               </span>
               <span class="text-subheadline secondario testo">{s.lift ? s.lift : s.testo}</span>
+              {#if s.tetto}
+                <!-- Il freno, non una regola del piano: il salto di
+                     distanza e' il modo piu' comune di rompersi, e in
+                     quattro settimane non c'e' il tempo di rimettersi. -->
+                <span class="tetto text-caption1" class:oltre={s.oltreIlTetto}>
+                  Massimo consigliato oggi {km(s.tetto)}{s.oltreIlTetto ? " — oggi il piano chiede di più" : ""}
+                </span>
+              {/if}
               {#if s.top?.length}
                 <span class="muscoli text-caption1 terziario">
                   {#each s.top as g, i (g.id)}<span class="punto" class:forte={i === 0}></span>{g.nome}{/each}
@@ -215,7 +273,7 @@
               {#if s.serie}
                 <span class="grande cifre">{s.serie}</span><span class="text-caption2 terziario">serie</span>
               {:else if s.km}
-                <span class="grande cifre">{km(s.km)}</span>
+                <span class="grande cifre" class:oltre={s.oltreIlTetto}>{km(s.km)}</span>
               {/if}
               <span class="freccia"><Icona nome="freccia" misura={16} tratto={2.4} /></span>
             </span>
@@ -323,4 +381,33 @@
     background: var(--fill-tertiary); color: var(--label-secondary); font-weight: var(--weight-medium);
   }
   .testo { overflow-wrap: anywhere; }
+
+  .consulta { display: flex; flex-direction: column; gap: var(--space-2); }
+  .apri-card {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--space-3) var(--space-4); width: 100%; min-height: 48px;
+  }
+  .apri-card:active { opacity: 0.6; }
+  .verso { color: var(--label-tertiary); transition: transform var(--duration-fast) var(--ease-default); }
+  .verso.giu { transform: rotate(90deg); }
+  .dentro-card { padding: var(--space-2) var(--space-4) var(--space-4); }
+
+  /* Nome e passo incolonnati: i quattro ritmi si confrontano con l'occhio,
+     che e' il motivo per cui si apre questa carta. */
+  .ritmo {
+    display: grid; grid-template-columns: auto 1fr; gap: 0 var(--space-3);
+    padding: var(--space-3) 0; border-top: 0.5px solid var(--separator);
+  }
+  .ritmo:first-child { border-top: 0; }
+  .r-passo { justify-self: end; color: var(--accento); font-variant-numeric: tabular-nums; }
+  .r-nota { grid-column: 1 / -1; }
+  .regole { display: flex; flex-direction: column; gap: var(--space-3); }
+  .regole li { padding-left: var(--space-4); position: relative; }
+  .regole li::before {
+    content: ""; position: absolute; left: 0; top: 9px;
+    width: 5px; height: 5px; border-radius: 50%; background: var(--accento);
+  }
+  .tetto { color: var(--label-tertiary); }
+  .tetto.oltre, .grande.oltre { color: var(--color-yellow); }
+  .etichetta.slot { color: var(--label-secondary); background: var(--fill-tertiary); }
 </style>

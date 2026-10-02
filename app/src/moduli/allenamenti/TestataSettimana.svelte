@@ -11,7 +11,7 @@
   import Icona from "$lib/ui/Icona.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { oggiISO, plurale } from "$lib/core/ui";
-  import { SETTIMANE, pianoDi, settimanaDi } from "$condivisi/allenamenti/dati.js";
+  import { SETTIMANE, pianoDi, settimanaDi, FASE, dataTest } from "$condivisi/allenamenti/dati.js";
   import {
     progressoSettimana, kmFatti, kmPrevisti, giorniRimasti, passoSettimana, consiglio, km,
   } from "$condivisi/allenamenti/calcolo.js";
@@ -35,14 +35,31 @@
       // Il consiglio parla solo per la settimana in corso: su una passata
       // sarebbe un rimprovero su qualcosa che non si può più fare.
       consiglio: corrente ? consiglio(n, oggi) : null,
+      /* I giorni al test. Da oggi, non dall'inizio della settimana: e' un
+         conto alla rovescia, e un conto alla rovescia che non scende ogni
+         giorno non e' un conto alla rovescia. */
+      alTest: Math.round(
+        (new Date(`${dataTest()}T00:00:00`).getTime() - new Date(`${oggi}T00:00:00`).getTime()) / 86400000,
+      ),
     };
   });
 </script>
 
 <div class="testata" data-tono={d.tono}>
   <div class="alto">
-    <span class="text-footnote secondario semibold">Settimana {n} di {SETTIMANE}</span>
+    <span class="bollo-fase text-caption1 semibold">{FASE}</span>
     <span class="fase text-caption1" style:--fase={fase(d.piano.fase).colore}>{d.piano.fase}</span>
+  </div>
+
+  <div class="alto">
+    <span class="text-footnote secondario semibold">
+      Settimana {n} di {SETTIMANE} · {km(d.fatti)} / {km(d.previsti)}
+    </span>
+    {#if d.alTest >= 0}
+      <span class="text-footnote semibold conto">
+        {d.alTest === 0 ? "Test oggi" : d.alTest === 1 ? "Test domani" : `Test tra ${d.alTest} giorni`}
+      </span>
+    {/if}
   </div>
 
   <div class="centro">
@@ -77,6 +94,15 @@
 <style>
   .testata { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
   .alto { display: flex; justify-content: space-between; align-items: center; }
+  /* Il nome della fase sta sempre in testa: in quattro settimane non c'e'
+     il tempo di dimenticarsi perche' si sta facendo questa cosa, ma c'e'
+     quello di perdere di vista che ha una fine. */
+  .bollo-fase {
+    padding: 2px 8px; border-radius: var(--radius-full);
+    letter-spacing: 0.8px; text-transform: uppercase;
+    color: var(--accento); background: color-mix(in srgb, var(--accento) 16%, transparent);
+  }
+  .conto { color: var(--accento); }
   .fase {
     padding: 3px 10px; border-radius: var(--radius-full); font-weight: var(--weight-semibold);
     color: var(--fase); background: color-mix(in srgb, var(--fase) 16%, transparent);

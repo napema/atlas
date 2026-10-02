@@ -143,6 +143,24 @@ export function equivalente5k(c) {
   return c.secondi * Math.pow(OBIETTIVO.metri / 1000 / c.km, 1.06);
 }
 
+/**
+ * IL TETTO DI OGGI SULLA LUNGA: la corsa piu' lunga degli ultimi trenta
+ * giorni, piu' il dieci per cento.
+ *
+ * Non e' una regola del piano, e' il freno che impedisce al piano di farti
+ * male: il salto di distanza e' il modo piu' comune di rompersi, e in quattro
+ * settimane non c'e' il tempo di rimettersi. `null` quando non c'e' storico —
+ * senza dati un tetto sarebbe un numero inventato, e un numero inventato su
+ * questa domanda e' peggio di nessun numero.
+ */
+export function tettoLunga(iso = oggiISO()) {
+  const da = piuGiorni(iso, -30);
+  const recenti = corseVive().filter((c) => c.data >= da && (c.km || 0) > 0);
+  if (!recenti.length) return null;
+  const max = Math.max(...recenti.map((c) => c.km));
+  return Math.round(max * 1.1 * 10) / 10;
+}
+
 /* ------------------------------------------------------------- il resto -- */
 
 /** Gli slot ancora aperti nella settimana n, nell'ordine del piano. */
@@ -198,7 +216,10 @@ export function consiglio(n, oggi = oggiISO()) {
   const aperti = restaSettimana(n);
   if (!aperti.length) return null;
 
-  const qualita = aperti.find((s) => s.chiave === "qualita");
+  /* LE DUE SEDUTE DURE. Nella fase 5K la «qualita'» si e' sdoppiata in
+     intervalli e soglia: sono quelle che chiedono gambe fresche, e le
+     regole che valevano per una valgono per tutte e due. */
+  const dura = aperti.find((s) => s.chiave === "intervalli" || s.chiave === "soglia");
   const piano = pianoDi(n);
 
   // La settimana del test ha una regola sua, più forte di tutte le altre.
@@ -206,15 +227,15 @@ export function consiglio(n, oggi = oggiISO()) {
     return { tono: "avviso", testo: "Settimana del test: la palestra va a inizio settimana, e solo upper." };
   }
 
-  if (qualita && gambeIl(piuGiorni(oggi, -1))) {
-    return { tono: "avviso", testo: "Gambe ieri: oggi la qualità no. La lunga sì, è in Z2." };
+  if (dura && gambeIl(piuGiorni(oggi, -1))) {
+    return { tono: "avviso", testo: `Gambe ieri: oggi ${dura.nome.toLowerCase()} no. La lunga sì, è in Z2.` };
   }
 
-  // La qualità è l'unica seduta della settimana che chiede gambe fresche.
-  // Lasciarla per ultima è il modo tipico di sprecarla, e succede perché è
-  // anche la più faticosa da cominciare.
-  if (qualita && giorniRimasti(n, oggi) <= 3) {
-    return { tono: "avviso", testo: "La qualità è ancora aperta, e va fatta da freschi. Non lasciarla a domenica." };
+  // Le sedute dure chiedono gambe fresche. Lasciarle per ultime è il modo
+  // tipico di sprecarle, e succede perché sono anche le più faticose da
+  // cominciare.
+  if (dura && giorniRimasti(n, oggi) <= 3) {
+    return { tono: "avviso", testo: `${dura.nome} è ancora aperta, e va fatta da freschi. Non lasciarla a domenica.` };
   }
   return null;
 }

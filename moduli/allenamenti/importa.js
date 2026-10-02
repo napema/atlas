@@ -267,7 +267,9 @@ function daGiri(righe, testa, cDist, cTempo, cFC) {
 
 const CHIAVI = {
   facile: "facile", easy: "facile",
-  qualita: "qualita", quality: "qualita",
+  qualita: "soglia", quality: "soglia",
+  intervalli: "intervalli", intervals: "intervalli", ripetute: "intervalli",
+  soglia: "soglia", threshold: "soglia",
   lunga: "lunga", long: "lunga", lungo: "lunga",
   lower: "lower", gambe: "lower",
   upper: "upper",
@@ -278,7 +280,7 @@ const CHIAVI = {
  * Il CSV degli allenamenti dalla chat di fitness.
  *
  * Una riga per slot: `settimana, slot, testo, km`. `slot` è una delle sei
- * parole — facile, qualita, lunga, lower, upper, total — e `km` serve solo
+ * parole — intervalli, soglia, facile, lunga, lower, upper — e `km` serve solo
  * alla corsa, per il conteggio settimanale.
  *
  * Quello che torna NON sostituisce il piano: lo copre, slot per slot. Il
@@ -290,7 +292,8 @@ const CHIAVI = {
    altra parola va bene lo stesso ed entra con il nome che le hai dato. */
 const SCORCIATOIE = {
   facile:  { nome: "Facile",   genere: "corsa" },
-  qualita: { nome: "Qualità",  genere: "corsa" },
+  intervalli: { nome: "Intervalli", genere: "corsa" },
+  soglia:  { nome: "Soglia",   genere: "corsa" },
   lunga:   { nome: "Lunga",    genere: "corsa" },
   lower:   { nome: "Lower",    genere: "palestra" },
   upper:   { nome: "Upper",    genere: "palestra" },

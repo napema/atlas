@@ -37,21 +37,25 @@ import { daISO, piuGiorni, oggiISO } from "../../core/ui.js";
    Il giorno, se lo scegli, è un dato tuo e sta nell'archivio.
    ========================================================================= */
 
-export const INIZIO = "2026-09-30";
+export const INIZIO = "2026-10-05";
 /* SETTE, non tredici. Il test dei 5 km e' stato anticipato a fine ottobre:
    il blocco si accorcia, non si comprime. Le settimane 1 e 2 restano quelle
    che sono — sono passate, e riscrivere il passato per farlo somigliare al
    piano nuovo vuol dire perdere cosa hai fatto davvero. */
-export const SETTIMANE = 5;
+export const SETTIMANE = 4;
 
 /* La firma del blocco. Cambiala e il reset riparte UNA volta sola, su ogni
    dispositivo, dopo che ha letto. Vedi `resetBlocco()`. */
-export const BLOCCO = "2026-09-30-5w";
+export const BLOCCO = "2026-10-05-fase5k";
 
+/* 22:00, non 20:00. Il sub-20 era l'obiettivo del blocco di tredici
+   settimane: su quattro settimane sarebbe un numero che fa sembrare un
+   fallimento una corsa andata bene. 21:30 resta il tetto che si prova a
+   toccare, e sta nel testo del test. */
 export const OBIETTIVO = {
-  nome: "5 km sub-20",
-  passo: "4:00/km",
-  secondi: 20 * 60,
+  nome: "5 km in 22:00",
+  passo: "4:24/km",
+  secondi: 22 * 60,
   metri: 5000,
 };
 
@@ -100,78 +104,96 @@ export const PALESTRA = {
   },
 };
 
-export const CORSA = { facile: "Facile", qualita: "Qualità", lunga: "Lunga" };
-export const ORDINE_PALESTRA = ["lower", "upper", "total"];
+/* FASE 5K: quattro corse, e l'ordine conta — e' quello in cui pesano. Gli
+   intervalli e la soglia sono le due sedute che fanno il tempo, la facile e
+   la lunga quelle che lo reggono. */
+export const CORSA = { intervalli: "Intervalli", soglia: "Soglia", facile: "Facile", lunga: "Lunga" };
+export const ORDINE_CORSA = ["intervalli", "soglia", "facile", "lunga"];
+
+/** Il nome della fase, in testa alla schermata. */
+export const FASE = "FASE 5K";
+
+/** Il giorno del test. Si cambia in Impostazioni. */
+export const DATA_TEST = "2026-10-31";
+export const dataTest = () => stato().config?.dataTest || DATA_TEST;
+
+/* I ritmi della fase, una volta sola: li legge la card «Ritmi» e li legge
+   chi vuole sapere cosa vuol dire «facile» alle sei di mattina. */
+export const RITMI = [
+  { id: "facile", nome: "Facile", passo: "6:10-6:40/km", nota: "FC ≤ 155. Devi poter parlare a frasi intere." },
+  { id: "soglia", nome: "Soglia", passo: "4:52-4:55/km", nota: "Frasi di tre o quattro parole, non di più." },
+  { id: "intervalli", nome: "Intervalli", passo: "4:18-4:20/km", nota: "La seduta che fa il tempo." },
+  { id: "gara", nome: "Ritmo gara", passo: "4:22-4:24/km", nota: "Quello del test: 22:00 sui 5 km." },
+];
+
+/* Le regole della fase. Stanno nei dati e non nella vista perche' sono il
+   programma, non un testo di contorno: chi cambia il piano le cambia qui. */
+export const REGOLE_FASE = [
+  "Mai Lower il giorno prima di Intervalli o Soglia. Meglio il giorno dopo una corsa dura.",
+  "Almeno un giorno fra Intervalli e Soglia.",
+  "Facile vuol dire FC ≤ 155 e conversazione possibile. Il passo è quello che esce.",
+  "Se chiudi l'ultima ripetuta con due ripetute di margine, la settimana dopo −3 s/km.",
+  "Dolore localizzato che peggiora o cambia la corsa: stop, e la seduta diventa facile.",
+  "Serata storta in palestra: il primo esercizio pesante e a casa. Mai zero.",
+];
+export const ORDINE_PALESTRA = ["lower", "upper"];
 
 /** I km previsti di uno slot a tempo: minuti ÷ passo. Serve al conteggio. */
 const kmDaTempo = (minuti, passoMinKm) => Math.round((minuti / passoMinKm) * 10) / 10;
 
 export const PIANO = [
-  /* CINQUE SETTIMANE, dal 30 settembre al test dell'1 novembre.
+  /* FASE 5K — quattro settimane, dal 5 ottobre al test del 31.
 
-     La settimana 1 e' corta — comincia di mercoledi' e finisce la domenica —
-     e i sei slot ci stanno dentro tutti: uno, la qualita', e' gia' fatto il
-     giorno stesso. Le altre quattro sono lunedi'->domenica.
+     Quattro corse e due palestre. Ogni seduta e' scritta per esteso: in una
+     fase cosi' corta non c'e' una progressione di carico da rendere
+     visibile, c'e' una sequenza da seguire. */
 
-     La palestra e' scritta per esteso, seduta per seduta: da qui cambiano
-     serie e accessori, non solo il carico, e nel taper spariscono le gambe.
-     La forma `carichi` + accessori fissi sapeva dire solo la progressione
-     del lift principale. */
-
-  { n: 1, fase: "Sviluppo",
-    facile: { testo: "40' Z2 @ 6:50/km + 6 allunghi da 20\"", km: 6 },
-    qualita: { testo: "FATTO 30/09 · Pista variazioni 300 spinti + 100 lenti per 3,5 km", km: 3.5 },
-    lunga: { testo: "8 km Z2 @ 6:50/km + 4 allunghi a fine corsa", km: 8 },
-    /* La Upper di questa settimana e' la A, come nelle altre quattro: e'
-       quella che hai fatto. La B era finita qui dal CSV ed era una doppia —
-       la stessa seduta compariva come slot del programma E come modello del
-       bonus, cioe' due volte nella stessa schermata. La B resta il modello
-       del «+», che e' il suo posto. Panca a 45: e' il gradino prima del
-       47,5 della settimana 2. */
+  { n: 1, fase: "Costruzione",
+    corsa: {
+      intervalli: { testo: "15' risc + 4 allunghi · 5×800 m @ 4:20/km rec 2' trotto · 10' defat", km: 7.6 },
+      soglia: { testo: "12' risc · 3×7' @ 4:55/km rec 2' trotto · 8' defat", km: 7 },
+      facile: { testo: "30' FC ≤155 + 6 allunghi da 20\"", km: 4.8 },
+      lunga: { testo: "8,2 km FC ≤155", km: 8.2 },
+    },
     palestra: {
-      lower: "Stacco 3×3 @ 65 kg RPE 7 · Affondi 2×8/gamba · Leg curl 2×8 · Polpacci 3×15 · Tibialis 3×20",
+      lower: "Squat 4×4 @ RPE 8 rec 3' · RDL 3×6 @ RPE 7-8 · Bulgarian split squat 3×6/gamba · Pogo jump 3×20 · Polpacci seduto 3×12 pesante · Tibialis 3×20",
       upper: "Panca 5×5 @ 45 kg · Trazioni 8×50% max · Military manubri 3×10 · Rematore manubrio 3×10 · Alzate 4×15 · Curl + Pushdown",
-      total: "Squat 3×5 @ 35 kg · Panca inclinata manubri 3×9 · Lat machine 3×12 · Dip 3×9 · Plank 3×45\"",
     } },
 
-  { n: 2, fase: "Sviluppo",
-    facile: { testo: "40' Z2 @ 6:45/km + 6 allunghi da 20\"", km: 6 },
-    qualita: { testo: "INTERVALLI · 15' risc + 4 allunghi · 4×1000 m @ 4:30/km rec 2' trotto · 10' defat", km: 8.5 },
-    lunga: { testo: "8 km · primi 6 Z2 @ 6:45/km · ultimi 2 km @ 4:55/km", km: 8 },
+  { n: 2, fase: "Picco",
+    corsa: {
+      intervalli: { testo: "15' risc + 4 allunghi · 5×1000 m @ 4:20/km rec 2' trotto · 10' defat", km: 8.6 },
+      soglia: { testo: "12' risc · 2×12' @ 4:52/km rec 2' trotto · 8' defat", km: 7.7 },
+      facile: { testo: "35' FC ≤155 + 6 allunghi da 20\"", km: 5.7 },
+      lunga: { testo: "9 km FC ≤155 · ultimo km progressivo", km: 9 },
+    },
     palestra: {
-      lower: "Stacco 3×3 @ 67,5 kg RPE 7 · Affondi 2×8/gamba · Leg curl 2×8 · Polpacci 3×15 · Tibialis 3×20",
+      lower: "Squat 4×4 @ RPE 8 (+2,5 kg se la settimana 1 è stata pulita) · RDL 3×6 · Bulgarian split squat 3×6/gamba · Pogo jump 3×20 · Polpacci seduto 3×12 · Tibialis 3×20",
       upper: "Panca 5×5 @ 47,5 kg · Trazioni 8×50% max · Military manubri 3×10 · Rematore manubrio 3×10 · Alzate 4×15 · Curl + Pushdown",
-      total: "Squat 3×5 @ 37,5 kg · Panca inclinata manubri 3×9 · Lat machine 3×12 · Dip 3×9 · Plank 3×45\"",
     } },
 
-  { n: 3, fase: "Sviluppo",
-    facile: { testo: "35' Z2 @ 6:40/km + 6 allunghi da 20\"", km: 5.2 },
-    qualita: { testo: "INTERVALLI · 15' risc + 4 allunghi · 5×1000 m @ 4:28/km rec 2' trotto · 10' defat", km: 9.5 },
-    lunga: { testo: "9 km · primi 6 Z2 @ 6:40/km · ultimi 3 km @ 4:55/km", km: 9 },
+  { n: 3, fase: "Taper",
+    corsa: {
+      intervalli: { testo: "15' risc + 4 allunghi · 3×1600 m @ 4:22/km rec 2'30\" trotto · 10' defat", km: 8.4 },
+      soglia: { testo: "12' risc · 15' continui @ 4:52/km · 8' defat", km: 6 },
+      facile: { testo: "30' FC ≤155 + 4 allunghi da 20\"", km: 4.7 },
+      lunga: { testo: "7 km FC ≤155", km: 7 },
+    },
     palestra: {
-      lower: "Stacco 3×3 @ 70 kg RPE 7-8 · Affondi 2×8/gamba · Leg curl 2×8 · Polpacci 3×15 · Tibialis 3×20",
-      upper: "Panca 5×5 @ 50 kg · Trazioni 8×50% max · Military manubri 3×10 · Rematore manubrio 3×10 · Alzate 4×15 · Curl + Pushdown",
-      total: "Squat 3×5 @ 40 kg · Panca inclinata manubri 3×9 · Lat machine 3×12 · Dip 3×9 · Plank 3×45\"",
+      lower: "Squat 3×3 @ RPE 7 · RDL 2×6 · Polpacci seduto 2×12 · Tibialis 2×20 · niente pogo",
+      upper: "Panca 4×5 @ 47,5 kg · Trazioni 6×50% max · Military manubri 2×10 · Rematore manubrio 2×10 · Alzate 3×15",
     } },
 
-  { n: 4, fase: "Taper",
-    facile: { testo: "30' Z2 + 4 allunghi da 20\"", km: 4.5 },
-    qualita: { testo: "RITMO GARA · 15' risc + 4 allunghi · 3×1200 m @ 4:24/km rec 2' trotto · 10' defat", km: 7.7 },
-    lunga: { testo: "6 km Z2 @ 6:40/km", km: 6 },
-    palestra: {
-      lower: "Stacco 2×3 @ 65 kg RPE 6 · Polpacci 2×15 · Tibialis 2×20",
-      upper: "Panca 4×5 @ 50 kg · Trazioni 6×50% max · Military manubri 2×10 · Rematore manubrio 2×10 · Alzate 3×15",
-      total: "Squat 2×5 @ 35 kg · Panca inclinata manubri 3×9 · Lat machine 3×12",
-    } },
-
-  { n: 5, fase: "Test", test: true,
-    facile: { testo: "3 giorni prima del test · 15' risc + 4×400 m @ 4:15/km rec 90\" + 5' defat", km: 5 },
-    qualita: { testo: "TEST 5000 m · 15' risc + 4 allunghi + 5 km @ 4:24/km + 10' defat", km: 8.7, stella: true },
-    lunga: { testo: "Giorno prima del test · 20' facilissimi + 3 allunghi", km: 3 },
+  { n: 4, fase: "Test", test: true,
+    corsa: {
+      intervalli: { testo: "3 giorni prima del test · 12' risc · 4×400 m @ 4:10/km rec 90\" · 5' defat", km: 4.5 },
+      soglia: { testo: "Giorno prima del test · 15-20' facilissimi + 3 allunghi", km: 3 },
+      facile: { testo: "2 giorni prima del test · 25' FC ≤155 + 4 allunghi", km: 4 },
+      lunga: { testo: "TEST 5000 m · 15' risc + 4 allunghi · 5 km @ 4:24/km · 10' defat", km: 8.5, stella: true },
+    },
     palestra: {
       lower: "NIENTE GAMBE nei 5 giorni prima del test",
       upper: "Inizio settimana · Panca 3×5 al 70% · Trazioni 3×5 · Alzate 3×15",
-      total: "NIENTE GAMBE prima del test · dopo il test seduta libera",
     },
     avvertenza: "Niente gambe nei 5 giorni prima del test. Nessuno stacco, nessuno squat, nessun affondo." },
 ];
@@ -303,10 +325,15 @@ export function slotDi(n) {
   const p = pianoDi(n);
   if (!p) return [];
   const fuori = [];
-  for (const k of ["facile", "qualita", "lunga"]) {
+  /* Solo le corse che la settimana prevede davvero: nella settimana del
+     test non ce ne sono quattro, e una casella vuota con dentro «—» e'
+     peggio di nessuna casella. */
+  for (const k of ORDINE_CORSA) {
+    const c = p.corsa?.[k];
+    if (!c) continue;
     fuori.push(conScostamento({
       id: idSlot(n, k), sett: n, genere: "corsa", chiave: k,
-      nome: CORSA[k], testo: p[k].testo, km: p[k].km, stella: Boolean(p[k].stella),
+      nome: CORSA[k], testo: c.testo, km: c.km, stella: Boolean(c.stella),
     }));
   }
   for (const k of (p.soloPalestra || ORDINE_PALESTRA)) {
@@ -441,12 +468,11 @@ export function resetBlocco() {
        prima installazione ci ha scritto dentro il 14 settembre e da li' si
        e' sincronizzata. Cambiare `INIZIO` senza riscrivere questo lascia il
        blocco fermo dov'era. */
-    s.config = { ...(s.config || {}), inizio: INIZIO, blocco: BLOCCO };
+    s.config = { ...(s.config || {}), inizio: INIZIO, blocco: BLOCCO, dataTest: DATA_TEST };
     s.configUp = ora;
 
-    /* Quello che era gia' fatto quando il blocco e' nato: la qualita' del
-       30 settembre, corsa il giorno stesso. */
-    s.slot.push({ id: idSlot(1, "qualita"), fatta: true, giorno: INIZIO, del: false, up: ora });
+    /* La fase 5K comincia il 5 ottobre: alla sua nascita non c'e' ancora
+       niente di fatto. */
   });
   return true;
 }
