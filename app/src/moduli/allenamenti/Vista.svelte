@@ -22,7 +22,7 @@
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
   import { oggiISO, piuGiorni, plurale, tocco } from "$lib/core/ui";
-  import { settimanaCorrente, slotDi, fatto, giornoSlot, alternaSlot, oraDi, RITMI, REGOLE_FASE, pianoDi } from "$condivisi/allenamenti/dati.js";
+  import { settimanaCorrente, slotDi, fatto, giornoSlot, alternaSlot, oraDi, inizioSettimana, RITMI, REGOLE_FASE } from "$condivisi/allenamenti/dati.js";
   import { gruppiSeduta, serieTotali } from "$condivisi/allenamenti/muscoli.js";
   import { quandoLungo } from "./comune";
   import { km, tettoLunga } from "$condivisi/allenamenti/calcolo.js";
@@ -131,6 +131,15 @@
       // Senza giorno assegnato non si può dire «oggi tocca questo»: si dice
       // quanti ne restano, che è vero comunque.
       senzaGiorno: aperti.filter((s: any) => !s.giorno).length,
+      /* IL BLOCCO PUO' NON ESSERE ANCORA COMINCIATO. Fino a ieri «la
+         settimana corrente» era sempre una settimana in corso; con una fase
+         che parte lunedi' prossimo non e' piu' vero, e dire «restano sei
+         allenamenti questa settimana» di venerdi' fa sembrare che tu sia
+         gia' indietro di sei. Non sei indietro di niente: non e' ancora
+         cominciata. */
+      daInizio: Math.round(
+        (new Date(`${inizioSettimana(1)}T00:00:00`).getTime() - new Date(`${iso}T00:00:00`).getTime()) / 86400000,
+      ),
     };
   });
 
@@ -179,11 +188,16 @@
           <span class="text-footnote secondario stato">{oggiQui.fattiOggi}/{oggiQui.diOggi.length} fatto</span>
         {:else}
           <span class="text-subheadline secondario cose">
-            Niente in programma per oggi.
-            {#if oggiQui.aperti}
-              Restano {plurale(oggiQui.aperti, "allenamento", "allenamenti")} questa settimana{oggiQui.senzaGiorno ? `, ${oggiQui.senzaGiorno} senza giorno` : ""}.
+            {#if oggiQui.daInizio > 0}
+              La fase comincia {quandoLungo(inizioSettimana(1), oggiQui.iso)}.
+              {plurale(oggiQui.aperti, "allenamento", "allenamenti")} nella prima settimana.
             {:else}
-              La settimana è chiusa.
+              Niente in programma per oggi.
+              {#if oggiQui.aperti}
+                Restano {plurale(oggiQui.aperti, "allenamento", "allenamenti")} questa settimana{oggiQui.senzaGiorno ? `, ${oggiQui.senzaGiorno} senza giorno` : ""}.
+              {:else}
+                La settimana è chiusa.
+              {/if}
             {/if}
           </span>
         {/if}

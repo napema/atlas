@@ -11,7 +11,7 @@
   import Icona from "$lib/ui/Icona.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { oggiISO, plurale } from "$lib/core/ui";
-  import { SETTIMANE, pianoDi, settimanaDi, FASE, dataTest } from "$condivisi/allenamenti/dati.js";
+  import { SETTIMANE, pianoDi, settimanaDi, inizioSettimana, FASE, dataTest } from "$condivisi/allenamenti/dati.js";
   import {
     progressoSettimana, kmFatti, kmPrevisti, giorniRimasti, passoSettimana, consiglio, km,
   } from "$condivisi/allenamenti/calcolo.js";
@@ -35,6 +35,8 @@
       // Il consiglio parla solo per la settimana in corso: su una passata
       // sarebbe un rimprovero su qualcosa che non si può più fare.
       consiglio: corrente ? consiglio(n, oggi) : null,
+      /* Prima dell'inizio il blocco non e' «in ritardo»: non e' partito. */
+      daIniziare: oggi < inizioSettimana(n),
       /* I giorni al test. Da oggi, non dall'inizio della settimana: e' un
          conto alla rovescia, e un conto alla rovescia che non scende ogni
          giorno non e' un conto alla rovescia. */
@@ -67,7 +69,9 @@
     <p class="text-subheadline secondario">
       {d.aperti === 0
         ? `Tutti e ${d.p.totali} gli slot fatti.`
-        : `${plurale(d.aperti, "slot aperto", "slot aperti")} su ${d.p.totali}` + (d.corrente ? ` · ${plurale(d.giorni, "giorno", "giorni")} per piazzarli` : "")}
+        : d.daIniziare
+          ? `${plurale(d.p.totali, "allenamento", "allenamenti")}, da lunedì.`
+          : `${plurale(d.aperti, "slot aperto", "slot aperti")} su ${d.p.totali}` + (d.corrente ? ` · ${plurale(d.giorni, "giorno", "giorni")} per piazzarli` : "")}
     </p>
   </div>
 
