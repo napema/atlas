@@ -84,7 +84,7 @@
              il titolo — il nome dello slot resta sotto, piccolo, perche'
              serve solo a sapere quale casella stai spuntando. */
           const capo = String(s.testo || "").split(/\s*·\s*/)[0] || "";
-          const titoloVero = /^(TEST|\d+ giorni? prima|Giorno prima|Inizio settimana)/i.test(capo) ? capo : null;
+          const titoloVero = /^(TEST\b|\d+ giorni? prima|Giorno prima|Inizio settimana)/i.test(capo) ? capo : null;
           const tetto = s.chiave === "lunga" ? tettoLunga(oggi) : null;
           return {
             ...s, quando: etichetta(s.giorno), ora: oraDi(s),
