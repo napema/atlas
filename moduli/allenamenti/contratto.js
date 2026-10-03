@@ -34,7 +34,25 @@ export function quandoCambia(fn) { ridisegnaVista = fn || (() => {}); }
 export function pubblicaSullaLavagna() {
   const oggi = giornoCorrente();
   const n = settimanaDi(oggi);
-  if (!n) return;
+
+  /* FUORI DAL BLOCCO SI PARLA LO STESSO, e prima si taceva.
+     
+     Qui c'era un `return` secco: prima dell'inizio e dopo la fine, Training
+     non scriveva niente sulla lavagna. Ma chi legge non distingue «non ho
+     niente da dirti» da «non c'e' nessuno a dirlo»: l'abitudine Workout,
+     non trovando risposta, ripiegava sul proprio calendario e si dava per
+     prevista. Il 3 ottobre, con la fase che comincia il 5, diceva che oggi
+     c'era un allenamento che il piano non prevede.
+
+     Fuori dal blocco la risposta non manca: e' zero, ed e' certa. */
+  if (!n) {
+    const fuori = { "fuori-blocco": 1, "oggi-previsti": 0, "oggi-fatti": 0, "giorni-scelti": 0 };
+    for (const [k, v] of Object.entries(fuori)) {
+      if (leggiFatto("allenamenti", k) !== v) scriviFatto("allenamenti", k, v);
+    }
+    return;
+  }
+  if (leggiFatto("allenamenti", "fuori-blocco") !== 0) scriviFatto("allenamenti", "fuori-blocco", 0);
   const p = progressoSettimana(n);
   if (leggiFatto("allenamenti", "fatti") !== p.fatti) scriviFatto("allenamenti", "fatti", p.fatti);
   if (leggiFatto("allenamenti", "slot") !== p.totali) scriviFatto("allenamenti", "slot", p.totali);

@@ -22,7 +22,7 @@
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
   import { oggiISO, piuGiorni, plurale, tocco } from "$lib/core/ui";
-  import { settimanaCorrente, slotDi, fatto, giornoSlot, alternaSlot, oraDi, inizioSettimana, RITMI, REGOLE_FASE } from "$condivisi/allenamenti/dati.js";
+  import { settimanaCorrente, slotDi, fatto, giornoSlot, alternaSlot, oraDi, inizioSettimana } from "$condivisi/allenamenti/dati.js";
   import { gruppiSeduta, serieTotali } from "$condivisi/allenamenti/muscoli.js";
   import { quandoLungo } from "./comune";
   import { km, tettoLunga } from "$condivisi/allenamenti/calcolo.js";
@@ -43,11 +43,6 @@
 
   const apriBonus = () => { fBonus = true; };
 
-  /* Le due carte da consultare, chiuse. Aperte sempre sarebbero due muri di
-     testo in cima a una schermata che serve a spuntare; chiuse sono due
-     righe, e chi ha un dubbio sa dove guardare. */
-  let apriRitmi = $state(false);
-  let apriRegole = $state(false);
   let quale = $state<"corse" | "allenamenti">("corse");
 
   $effect(() => {
@@ -204,39 +199,6 @@
       </div>
     {/if}
 
-
-    <!-- I RITMI E LE REGOLE, a portata ma chiuse. In quattro settimane i
-         numeri non si imparano a memoria, e averli qui evita di cercarli
-         altrove proprio mentre stai per uscire a correre. -->
-    <div class="consulta">
-      <button type="button" class="apri-card lastra" onclick={() => (apriRitmi = !apriRitmi)}>
-        <span class="text-headline">Ritmi</span>
-        <span class="verso" class:giu={apriRitmi}><Icona nome="freccia" misura={14} tratto={2.4} /></span>
-      </button>
-      {#if apriRitmi}
-        <div class="lastra dentro-card">
-          {#each RITMI as r (r.id)}
-            <div class="ritmo">
-              <span class="r-nome text-subheadline semibold">{r.nome}</span>
-              <span class="r-passo cifre semibold">{r.passo}</span>
-              <span class="r-nota text-caption1 secondario">{r.nota}</span>
-            </div>
-          {/each}
-        </div>
-      {/if}
-
-      <button type="button" class="apri-card lastra" onclick={() => (apriRegole = !apriRegole)}>
-        <span class="text-headline">Regole fase</span>
-        <span class="verso" class:giu={apriRegole}><Icona nome="freccia" misura={14} tratto={2.4} /></span>
-      </button>
-      {#if apriRegole}
-        <div class="lastra dentro-card">
-          <ul class="regole">
-            {#each REGOLE_FASE as r (r)}<li class="text-subheadline">{r}</li>{/each}
-          </ul>
-        </div>
-      {/if}
-    </div>
 
     {#each gruppi as gr (gr.g)}
       <Sezione titolo={gr.nome}>
@@ -396,31 +358,7 @@
   }
   .testo { overflow-wrap: anywhere; }
 
-  .consulta { display: flex; flex-direction: column; gap: var(--space-2); }
-  .apri-card {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: var(--space-3) var(--space-4); width: 100%; min-height: 48px;
-  }
-  .apri-card:active { opacity: 0.6; }
-  .verso { color: var(--label-tertiary); transition: transform var(--duration-fast) var(--ease-default); }
-  .verso.giu { transform: rotate(90deg); }
-  .dentro-card { padding: var(--space-2) var(--space-4) var(--space-4); }
 
-  /* Nome e passo incolonnati: i quattro ritmi si confrontano con l'occhio,
-     che e' il motivo per cui si apre questa carta. */
-  .ritmo {
-    display: grid; grid-template-columns: auto 1fr; gap: 0 var(--space-3);
-    padding: var(--space-3) 0; border-top: 0.5px solid var(--separator);
-  }
-  .ritmo:first-child { border-top: 0; }
-  .r-passo { justify-self: end; color: var(--accento); font-variant-numeric: tabular-nums; }
-  .r-nota { grid-column: 1 / -1; }
-  .regole { display: flex; flex-direction: column; gap: var(--space-3); }
-  .regole li { padding-left: var(--space-4); position: relative; }
-  .regole li::before {
-    content: ""; position: absolute; left: 0; top: 9px;
-    width: 5px; height: 5px; border-radius: 50%; background: var(--accento);
-  }
   .tetto { color: var(--label-tertiary); }
   .tetto.oltre, .grande.oltre { color: var(--color-yellow); }
   .etichetta.slot { color: var(--label-secondary); background: var(--fill-tertiary); }

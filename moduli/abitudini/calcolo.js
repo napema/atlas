@@ -97,6 +97,11 @@ export const SEGUE_TRAINING = /workout|allenamen|palestra/i;
  */
 export function secondoTraining(h, iso) {
   if (!SEGUE_TRAINING.test(h?.name || "")) return null;
+  /* Fuori dal blocco il piano HA una risposta, ed e' «niente oggi». E'
+     diversa dal silenzio: col silenzio l'abitudine ripiega sul proprio
+     calendario e si da' per prevista, ed e' quello che faceva nei giorni
+     fra la fine di una fase e l'inizio di quella dopo. */
+  if (leggiFatto("allenamenti", "fuori-blocco", iso)) return false;
   const scelti = leggiFatto("allenamenti", "giorni-scelti", iso);
   const previsti = leggiFatto("allenamenti", "oggi-previsti", iso);
   if (typeof previsti !== "number" || !scelti) return null;
