@@ -54,6 +54,7 @@
       pallini: otto.map((h) => ({ id: h.id, nome: h.name, fatta: p50.voceFatta(h, giorno) })),
       rec: p50.chiusuraDi(giorno) as any,
       chiudibile: p50.chiudibile(giorno) as string,
+      passato: giorno < oggiISO(),
       s: p50.statistiche() as any,
       ripartito: p50.ripartenze() as number,
     };
@@ -113,11 +114,19 @@
             {d.rec.esito === "ok" ? `Giorno ${d.rec.giorno} chiuso` : `Giorno perso: si riparte dal ${d.rec.prossimo}`}
           </p>
         {:else if d.chiudibile === "si"}
-          <Pulsante variante="pieno" misura="grande" larga onclick={() => onchiudi?.()}>Chiudi il giorno</Pulsante>
+          <!-- «Chiudi il giorno» anche per ieri: dirlo esplicitamente, se
+               non e' oggi, perche' il bottone sta sotto a una carta che
+               parla al presente. -->
+          <Pulsante variante="pieno" misura="grande" larga onclick={() => onchiudi?.()}>
+            {d.passato ? "Chiudi quel giorno" : "Chiudi il giorno"}
+          </Pulsante>
+          {#if d.passato}
+            <p class="text-footnote secondario">Rimasto aperto. Si chiude ora, con le spunte che ha.</p>
+          {/if}
         {:else if d.chiudibile === "presto"}
           <p class="text-footnote secondario">Si chiude dalle {p50.DALLE_ORE}. Un giorno non chiuso non conta.</p>
         {:else}
-          <p class="text-footnote secondario">Questo giorno non è stato chiuso: non conta, e non si chiude più.</p>
+          <p class="text-footnote secondario">Questo giorno non è ancora successo.</p>
         {/if}
       </div>
     {:else}

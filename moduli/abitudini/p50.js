@@ -178,27 +178,29 @@ export const siPuoChiudere = (ora = new Date().getHours()) => ora >= DALLE_ORE;
 /**
  * Perché NON si può chiudere quel giorno: `"si"` quando si può.
  *
- *   "chiuso"    c'è già una chiusura, e una chiusura non si rifà
- *   "non-oggi"  è un altro giorno
- *   "presto"    è oggi ma non sono ancora le 21
+ *   "chiuso"   c'è già una chiusura, e una chiusura non si rifà
+ *   "futuro"   non è ancora successo
+ *   "presto"   è oggi ma non sono ancora le 21
  *
- * SI CHIUDE SOLO IL GIORNO IN CUI SEI, e questa è la regola che tiene in
- * piedi tutte le altre. Le spunte di un giorno passato restano
- * modificabili — è il resto del modulo, e va bene così per un'abitudine —
- * quindi poter chiudere ieri vorrebbe dire completarlo stamattina e
- * chiuderlo con otto su otto. Il contatore diventerebbe la misura di
- * quanto ti ricordi di tornare indietro, che è l'esatto contrario di
- * quello che deve misurare.
+ * SI CHIUDE ANCHE IERI, e prima la regola era l'opposta. Il ragionamento
+ * era buono: le spunte di un giorno passato restano modificabili, quindi
+ * poter chiudere ieri vuol dire poterlo completare stamattina e chiuderlo
+ * pieno, e il contatore diventa la misura di quanto ti ricordi di tornare
+ * indietro.
  *
- * Il prezzo è che un giorno non chiuso è perso: non fa ripartire il
- * contatore, ma nemmeno lo fa salire. Non è una svista, è l'altra faccia
- * della stessa regola — saltare la chiusura non salva, è un giorno che non
- * è mai esistito.
+ * Ma la sfida ha dentro «niente telefono a letto», e quella regola e questa
+ * si contraddicevano: rispettare l'abitudine voleva dire non poter chiudere
+ * la giornata, e l'app rispondeva «non si chiude più» — puniva per aver
+ * fatto la cosa giusta. Fra un contatore difendibile e un contatore che
+ * litiga con le sue stesse regole, vince il secondo problema.
+ *
+ * Il futuro resta chiuso: un giorno che non è successo non ha un esito.
  */
 export function chiudibile(data = oggiISO(), adesso = new Date()) {
   if (giornoChiuso(data)) return "chiuso";
-  if (data !== isoDi(adesso)) return "non-oggi";
-  if (adesso.getHours() < DALLE_ORE) return "presto";
+  const oggi = isoDi(adesso);
+  if (data > oggi) return "futuro";
+  if (data === oggi && adesso.getHours() < DALLE_ORE) return "presto";
   return "si";
 }
 
@@ -273,7 +275,45 @@ export function chiudi(data = oggiISO(), adesso = new Date()) {
     const i = s.chiusure.findIndex((c) => c.id === data);
     if (i >= 0) s.chiusure[i] = rec; else s.chiusure.push(rec);
   });
-  return rec;
+  riallineaCatena();
+  return chiusuraDi(data) || rec;
+}
+
+/**
+ * RIMETTE IN FILA I NUMERI DEI GIORNI.
+ *
+ * Da quando si può chiudere anche ieri, le chiusure possono nascere fuori
+ * ordine: chiudi oggi, poi ti accorgi che ieri era aperto e chiudi anche
+ * quello. Il numero del giorno di una chiusura dipende da quella PRIMA di
+ * lei — `prossimo` della precedente — quindi una chiusura infilata in mezzo
+ * lascia tutte quelle dopo con un numero che non torna più.
+ *
+ * Qui si ripercorre la catena dall'inizio applicando le stesse regole:
+ * fallito riparte da 1, serate sotto quota la domenica tolgono sette,
+ * altrimenti +1. Si riscrivono solo i record che cambiano davvero — una
+ * scrittura inutile è un `up` nuovo, e un `up` nuovo è una sincronizzazione
+ * che l'altro dispositivo deve digerire per niente.
+ */
+export function riallineaCatena() {
+  const ora = Date.now();
+  casella.aggiorna((s) => {
+    const vive = (s.chiusure || [])
+      .filter((c) => c && !c.del)
+      .sort((a, b) => String(a.data).localeCompare(String(b.data)));
+
+    let g = 1;
+    for (const c of vive) {
+      const prossimo = c.esito !== "ok" ? 1
+        : c.serate?.penalita ? Math.max(1, g + 1 - 7)
+        : Math.min(TOTALE, g + 1);
+      if (c.giorno !== g || c.prossimo !== prossimo) {
+        c.giorno = g;
+        c.prossimo = prossimo;
+        c.up = ora;
+      }
+      g = prossimo;
+    }
+  });
 }
 
 /* ========================================================== la revisione == */

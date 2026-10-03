@@ -59,7 +59,7 @@
   $effect(() => {
     if (resto[0] === "nuova") queueMicrotask(() => apriModifica(null));
     if (resto[0] === "serie") vista = "progressi";
-    if (resto[0] === "chiudi" && p50.chiudibile(oggiISO()) === "si") {
+    if (resto[0] === "chiudi" && p50.chiudibile(giorno) === "si") {
       queueMicrotask(() => (chiusuraAperta = true));
     }
   });
@@ -120,10 +120,11 @@
         return {
           iso: d,
           titolo: dataUmana(d),
+          /* Un giorno passato e mai chiuso resta APERTO, non «perso»: da
+             oggi si può ancora chiudere, e segnarlo come perso vorrebbe
+             dire dare per fatta una cosa che devi ancora decidere. */
           stato: d > oggi ? ("futuro" as const)
             : c ? (c.esito === "ok" ? ("pieno" as const) : ("fallito" as const))
-            // Un giorno passato e mai chiuso non è «in corso»: è perso.
-            : d < oggi ? ("vuoto" as const)
             : ("aperto" as const),
         };
       }
