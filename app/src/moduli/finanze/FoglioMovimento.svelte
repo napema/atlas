@@ -17,12 +17,13 @@
   import Pulsante from "$lib/ui/Pulsante.svelte";
   import Tastierino from "$lib/ui/Tastierino.svelte";
   import Importo from "$lib/ui/Importo.svelte";
-  import { avviso, centesimi, euro, nuovoId, oggiISO, plurale, tocco } from "$lib/core/ui";
+  import { avviso, centesimi, euro, nuovoId, oggiISO, tocco } from "$lib/core/ui";
   import {
     stato, TIPI, categoriaPerId, emojiCat, movimentiVivi, salvaMovimento, impara, normalizza,
-    SOGLIE_PREDEFINITE, metteInSospeso,
+    SOGLIE_PREDEFINITE, vociLista, statoVoce, cambiaStatoVoce, salvaVoce,
   } from "$condivisi/finanze/dati.js";
-  import { autoCategoria, settimana } from "$condivisi/finanze/calcolo.js";
+  import { autoCategoria } from "$condivisi/finanze/calcolo.js";
+  import { quotaDi } from "$condivisi/finanze/piano.js";
   import { coloreCat, testoDa, pulisciImporto } from "./comune";
   import { apri } from "./fogli.svelte";
 
@@ -39,7 +40,11 @@
      dire la stessa cosa — uno sforamento aperto dal pulsante rapido partiva
      da «Principale → niente» invece che da «ING → Principale». */
   function pocketPredefiniti(tipo: string) {
-    if (tipo === "in") return { pocket: "ing", pocketTo: null };
+    /* UN'ENTRATA ARRIVA SUL PRINCIPALE. Era ING, e per lo stipendio era
+       falso: arriva su Revolut, e i quattro travasi del giorno di paga
+       partono da lì. Con ING come destinazione il Principale non si
+       muoveva e la checklist travasava soldi che non c'erano. */
+    if (tipo === "in") return { pocket: "principale", pocketTo: null };
     if (tipo === "extra") return { pocket: "ing", pocketTo: "principale" };
     if (tipo === "giro") return { pocket: "cassa", pocketTo: "principale" };
     return { pocket: "principale", pocketTo: null };
@@ -55,7 +60,7 @@
   let nuovo = $state(true);
   let manuale = $state(false);      // la categoria l'ha scelta l'utente
   let auto = $state(false);         // la categoria l'ha proposta l'app
-  let fase = $state<"modulo" | "dormo">("modulo");
+  let fase = $state<"modulo" | "lista">("modulo");
   let inAttesa = $state<{ imp: number; ecc: boolean } | null>(null);
 
   // La bozza nasce all'apertura.
@@ -133,14 +138,23 @@
     b.cat = id; b.sub = null; auto = false; manuale = true; tocco(6);
   }
 
-  function scrivi(imp: number, ecc: boolean) {
-    salvaMovimento({ ...$state.snapshot(b), imp, ecc: b.tipo === "out" ? ecc : false });
+  function scrivi(imp: number, ecc: boolean, extra: any = {}) {
+    salvaMovimento({ ...$state.snapshot(b), ...extra, imp, ecc: b.tipo === "out" ? ecc : false });
     // Si impara solo da una scelta esplicita: memorizzare quello che ha
     // indovinato l'app la farebbe convergere sui propri errori.
     if (manuale && b.nota && b.cat) impara(b.nota, b.cat, b.sub);
     tocco(12);
     aperto = false;
     avviso(nuovo ? "Registrato." : "Aggiornato.");
+    /* IL GIORNO DI PAGA. Lo stipendio arriva tutto sul Principale e per
+       mezza giornata il conto dice duemila euro: e' il momento piu'
+       pericoloso del mese, perche' ogni spesa fatta in quelle ore sembra
+       gratis e i soldi delle bollette sono ancora li' in mezzo. La
+       checklist si apre subito, non si va a cercare. */
+    if (b.tipo === "in" && b.stip) {
+      apri({ tipo: "paga", dataStip: b.data, entrata: imp });
+      return;
+    }
     /* IL PASSO DOPO. Una spesa dalla riserva sono DUE movimenti: la
        ricarica fuori budget che porta i soldi da ING al Principale, e
        l'uscita. Uno solo non basta — e non per pignoleria contabile: i
@@ -150,50 +164,108 @@
     if (dopo) apri(dopo);
   }
 
-  /* FRIZIONE SULLE SPESE GROSSE. Sopra la soglia si passa da una domanda:
-     le uscite sopra i 50 € sono cinque in due mesi e pesano più di tutte le
-     colazioni sommate, quindi è lì che tre secondi valgono qualcosa. */
+  /* UNA DOMANDA SOLA: «Era in lista?».
+     
+     Sopra soglia, non alimentare, non legata a un ricorrente. Prima erano
+     due frizioni diverse — «ci dormo su» qui e il simulatore «posso
+     permettermelo?» altrove — e nessuna delle due teneva il conto di
+     niente: la prima metteva la spesa in un limbo che scadeva da solo, la
+     seconda dava un verdetto e poi lasciava comprare comunque.
+     
+     Adesso c'e' una lista, e la lista e' il piano: se la cosa era in lista
+     da ventiquattro ore l'hai decisa a freddo e non e' uno strappo. Se non
+     c'era, e' uno strappo, e lo si registra come tale invece di
+     dimenticarlo. */
+  const deveChiedere = $derived.by(() => {
+    if (!nuovo || b.tipo !== "out") return false;
+    if (b.pian || b.lista) return false;
+    if (b.cat === "spesa") return false;
+    const imp = centesimi(testo) || 0;
+    return imp >= ({ ...SOGLIE_PREDEFINITE, ...(stato().soglie || {}) }.fuoriPiano || 0);
+  });
+
   function salva(ecc: boolean) {
     const imp = centesimi(testo);
     if (!imp) { avviso("Manca l'importo.", { tipo: "errore" }); return; }
     if (b.tipo === "out" && !b.cat) { avviso("Manca la categoria.", { tipo: "errore" }); return; }
-    const soglia = { ...SOGLIE_PREDEFINITE, ...(stato().soglie || {}) }.spesaGrossa;
-    if (nuovo && b.tipo === "out" && imp >= soglia) { inAttesa = { imp, ecc }; fase = "dormo"; return; }
+    if (deveChiedere) { inAttesa = { imp, ecc }; fase = "lista"; return; }
     scrivi(imp, ecc);
   }
 
-  const dormo = $derived.by(() => {
-    if (!inAttesa) return null;
-    const s = settimana();
-    const sett = s.budget > 0 ? inAttesa.imp / s.budget : 0;
+  /* Le voci della lista che potrebbero essere questa spesa: sbloccate, e
+     con un prezzo che ci somiglia. Mostrare tutta la lista vorrebbe dire
+     far scegliere fra cose che non c'entrano, e la scelta sbagliata qui
+     marca «in piano» uno strappo vero. */
+  const candidate = $derived.by(() => {
+    const imp = inAttesa?.imp ?? centesimi(testo) ?? 0;
+    const adesso = Date.now();
+    return (vociLista() as any[])
+      .map((v) => ({ ...v, vista: statoVoce(v, adesso) }))
+      .filter((v) => v.vista === "attesa" || v.vista === "sbloccata")
+      .sort((a, c) => Math.abs((a.imp || 0) - imp) - Math.abs((c.imp || 0) - imp));
+  });
+
+  const quanto = $derived.by(() => {
+    const imp = inAttesa?.imp ?? 0;
+    const q = quotaDi();
     return {
-      s,
-      quanto: sett >= 0.9 ? `Sono ${sett.toFixed(1).replace(".", ",")} settimane di budget.` : `Sono il ${Math.round((inAttesa.imp / Math.max(1, s.budget)) * 100)}% del budget della settimana.`,
+      q,
+      // Quanti giorni di quota: e' il cambio che rende leggibile la cifra.
+      giorni: q.quota > 0 ? imp / q.quota : 0,
     };
   });
 
-  function ciDormoSu() {
+  /** Era in lista: la voce diventa «comprata» e la spesa resta nel piano. */
+  function daLista(v: any) {
     if (!inAttesa) return;
-    metteInSospeso({ ...$state.snapshot(b), imp: inAttesa.imp, id: nuovoId("p") });
+    cambiaStatoVoce(v.id, "comprata");
+    scrivi(inAttesa.imp, inAttesa.ecc, { lista: v.id, fuoriPiano: false });
+  }
+
+  /** Non era in lista: si registra, e si registra come strappo. */
+  function fuoriDalPiano() {
+    if (!inAttesa) return;
+    scrivi(inAttesa.imp, inAttesa.ecc, { fuoriPiano: true });
+  }
+
+  /** Nemmeno adesso: finisce in lista e si decide domani. */
+  function mettiInLista() {
+    const imp = inAttesa?.imp ?? 0;
+    salvaVoce({ id: nuovoId("w"), nome: String(b.nota || "").trim() || "Spesa", imp });
     aperto = false;
-    avviso("Messa in sospeso. La ritrovi nel Riepilogo.");
+    avviso("In lista. Sbloccata fra 24 ore.");
   }
 </script>
 
-<Foglio bind:aperto titolo={fase === "dormo" ? "Un momento" : nuovo ? "Nuovo movimento" : "Modifica"}>
-  {#if fase === "dormo" && inAttesa && dormo}
+<Foglio bind:aperto titolo={fase === "lista" ? "Era in lista?" : nuovo ? "Nuovo movimento" : "Modifica"}>
+  {#if fase === "lista" && inAttesa}
     <div class="dormo">
       <Importo centesimi={inAttesa.imp} misura={48} />
-      <p class="text-title3">{dormo.quanto}</p>
-      {#if dormo.s.resta > 0}
-        <p class="text-subheadline secondario">Dopo questa ne restano {euro(dormo.s.resta - inAttesa.imp)} per {plurale(dormo.s.giorniRimasti, "giorno", "giorni")}.</p>
-      {/if}
-      <p class="text-footnote secondario">«Ci dormo su» non annulla: la mette in sospeso. Dopo ventiquattro ore la puoi registrare; se la ignori, decade da sola dopo sette giorni.</p>
+      <p class="text-subheadline secondario cifre">
+        {quanto.giorni >= 1
+          ? `${quanto.giorni.toFixed(1).replace(".", ",")} giorni di quota`
+          : `il ${Math.round(quanto.giorni * 100)}% della quota di oggi`}
+        · quota {euro(quanto.q.quota)}/g
+      </p>
     </div>
+
+    {#if candidate.length}
+      <Sezione titolo="Dalla lista" piede="Una voce in lista da almeno ventiquattro ore è il piano, non uno strappo: la spesa resta dentro.">
+        {#each candidate as v (v.id)}
+          <button type="button" class="candidata" onclick={() => daLista(v)}>
+            <span class="c-nome">{v.nome}</span>
+            <span class="cifre">{euro(v.imp)}</span>
+            <span class="c-stato" data-stato={v.vista}>{v.vista === "sbloccata" ? "sbloccata" : "in attesa"}</span>
+          </button>
+        {/each}
+      </Sezione>
+    {/if}
+
     <div class="due">
-      <Pulsante variante="grigio" larga onclick={ciDormoSu}>Ci dormo su</Pulsante>
-      <Pulsante variante="pieno" larga onclick={() => inAttesa && scrivi(inAttesa.imp, inAttesa.ecc)}>Registra</Pulsante>
+      <Pulsante variante="grigio" larga onclick={mettiInLista}>Mettila in lista</Pulsante>
+      <Pulsante variante="pieno" larga onclick={fuoriDalPiano}>No, registra</Pulsante>
     </div>
+    <p class="text-footnote secondario nota">«No, registra» la segna fuori piano. Non è un rimprovero: è l'unica voce su cui si può fare qualcosa, e per farci qualcosa deve essere contata.</p>
     <Pulsante variante="testo" larga onclick={() => (fase = "modulo")}>Torna indietro</Pulsante>
   {:else if b.tipo}
     <div class="tipi">
@@ -270,6 +342,21 @@
       <Campo etichetta="Data" tipo="date" bind:valore={b.data} />
     </Sezione>
 
+    <!-- LO STIPENDIO È UN'ENTRATA CHE APRE UNA PROCEDURA. Marcarlo serve a
+         due cose: fa partire la checklist dei quattro travasi, e dà al ciclo
+         la data VERA — se la banca ha pagato il 24, il ciclo parte il 24. -->
+    {#if b.tipo === "in"}
+      <Sezione>
+        <button type="button" class="stip" class:acceso={Boolean(b.stip)} aria-pressed={Boolean(b.stip)}
+          onclick={() => { b.stip = !b.stip; tocco(6); }}>
+          <span>È lo stipendio</span>
+          <span class="text-footnote secondario">
+            {b.stip ? "Alla conferma si apre la checklist dei quattro travasi." : "Il ciclo parte da questa data."}
+          </span>
+        </button>
+      </Sezione>
+    {/if}
+
     <!-- Ordinaria o straordinaria è la domanda che tiene in piedi tutto il
          calcolo: si chiede al salvataggio invece di nasconderla in una
          casella che nessuno spunta. -->
@@ -311,5 +398,13 @@
   .blocco { padding: var(--space-3) var(--space-4); }
   .due { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
   .nota { padding: 0 var(--space-4); margin-top: calc(-1 * var(--space-4)); }
-  .dormo { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); padding: var(--space-4) 0; }
+  .dormo { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-2); padding: var(--space-4) 0; }
+  .candidata { position: relative; display: flex; align-items: center; gap: var(--space-3); width: 100%; padding: 11px var(--space-4); text-align: left; }
+  .candidata + .candidata::before { content: ""; position: absolute; top: 0; left: var(--space-4); right: 0; border-top: 0.5px solid var(--separator); }
+  .candidata:active { background: var(--fill-quaternary); }
+  .c-nome { flex: 1; min-width: 0; }
+  .c-stato { flex: none; padding: 2px 7px; border-radius: var(--radius-full); font-size: var(--text-caption2); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.4px; color: var(--label-secondary); background: var(--fill-tertiary); }
+  .c-stato[data-stato="sbloccata"] { color: var(--color-green); background: color-mix(in srgb, var(--color-green) 14%, transparent); }
+  .stip { display: flex; flex-direction: column; gap: 1px; width: 100%; padding: var(--space-3) var(--space-4); text-align: left; }
+  .stip.acceso { color: var(--accento); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accento) 40%, transparent); border-radius: var(--radius-xl); }
 </style>

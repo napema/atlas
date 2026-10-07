@@ -2078,3 +2078,254 @@ volta oggi.
 
 Verticale e PC identici al pixel a `main` tranne le schermate toccate.
 Sul telefono vero non provato.
+
+---
+
+## 7 ottobre 2026 — Finanze v3: un obiettivo, un numero al giorno, una lista *(chat Finanze)*
+
+Il modulo registrava bene e non faceva risparmiare niente. Tre guasti
+concreti, e nessuno dei tre era un bug:
+
+1. **Non c'era un obiettivo.** Budget e categorie dicono dove sono finiti i
+   soldi il mese scorso; non dicono se stai andando dove vuoi andare.
+2. **I saldi andavano in deriva.** L'app diceva Principale 103,15 / Cassa
+   180,09 / ING 815,66; i saldi veri erano 57,10 / 120,20 / 709,76. Quasi
+   trecento euro, accumulati un movimento dimenticato alla volta, e
+   rimetterli a posto costava un'ora con due schermi aperti — cioè una cosa
+   che si fa due volte e poi mai più.
+3. **Le analisi non si leggevano.** Nove barre, tre grafici, «come spendi»:
+   tutto vero, nulla che cambiasse una decisione.
+
+### Cosa c'è adesso in home, in quest'ordine
+
+`OBIETTIVO` · `OGGI` · `FUORI PIANO` · `IN ARRIVO` · `POCKET`. Etichette e
+numeri, una riga di testo per blocco al massimo, nessuna frase generata.
+
+- **La quota di oggi** è *spendibile a inizio giornata ÷ giorni allo
+  stipendio*. «A inizio giornata» non è un dettaglio: dividendo il saldo di
+  adesso, la quota scende a ogni spesa insieme al resto e il resto non
+  arriva mai a zero — avresti sempre qualche euro di margine, qualunque cosa
+  tu abbia fatto. È la stessa lezione del 27 agosto, applicata al numero
+  nuovo.
+- **Fuori piano** è l'unica voce su cui si può agire, perché è l'unica fatta
+  di decisioni e non di addebiti. Quattro condizioni, e servono tutte e
+  quattro: sopra soglia (30 €), non legata a un ricorrente, non spesa
+  alimentare, non uscita dalla lista d'attesa. Il paragone è il versamento
+  mensile al fondo, non una percentuale: «154% del Fondo» dice che
+  l'obiettivo si è spostato di un mese e mezzo.
+- **ING minimo previsto**: il saldo di ING da solo non dice niente, perché
+  sopra ci sono il bollo (31 dic) e l'assicurazione (15 feb). Il punto più
+  basso dei prossimi dodici mesi è l'unico numero che risponde a «posso
+  attingere»: oggi 215,76 € il 15 febbraio.
+
+### Il ciclo parte dalla data vera dello stipendio
+
+`giornoStipendio` era un numero, ed era il 21 quando lo stipendio arriva il
+23. Ma anche col 23 un numero non basta:
+
+- **il fine settimana**: il 23 gennaio 2027 è un sabato, quindi si viene
+  pagati venerdì 22. Col giorno fisso il ciclo partiva il 23 e lo stipendio
+  cadeva nel ciclo precedente;
+- **dicembre**: la tredicesima non arriva il 23 (`config.stipendiManuali`);
+- **la realtà**: se la banca paga il 24, il ciclo parte il 24. Si guarda se
+  esiste un'entrata marcata `stip` entro sei giorni dalla data teorica.
+
+Da qui `dataStipendio(anno, mese)`, `prossimoStipendio`, `ultimoStipendio`,
+`stipendiTra`. **Il flag è `stip`, non la nota**: una nota che contiene
+«stipendio» la può avere un rimborso del collega, e un ciclo che si sposta
+per una parola in un campo libero è un ciclo che si sposta a caso.
+
+### I quattro travasi del giorno di paga
+
+Fondo 156 → Fisse (calcolato) → Vita 535 in Cassa → ING il resto. Ogni
+spunta **crea** il giro: non è una lista di cose da fare su Revolut, è il
+gesto che muove i soldi.
+
+Il Fondo per primo. Messo per ultimo prende quello che resta, e quello che
+resta è la definizione di risparmio che non ha mai prodotto un risparmio —
+il vecchio budget «Risparmio» è stato tolto per la stessa ragione.
+
+Quello che mancava non era l'automatismo, era **sapere quanto**: il
+fabbisogno delle Fisse non è un numero fisso, e tenere a mente quali
+scadenze cadono prima del prossimo stipendio è esattamente la cosa che non
+si fa. Le **quote** delle non-mensili sono il pezzo che si dimentica: 150 €
+di bolletta ogni due mesi non si accantonano nel mese in cui arrivano,
+perché in quel mese ci sono anche affitto e rata.
+
+Il 23 ottobre è un'eccezione scritta a mano (`config.eccezioni`): la prima
+bolletta non è mai stata accantonata e il 1 novembre cade l'ultima rata
+AliExpress, quindi Fisse prende 1.329 e a ING restano 21. Dal 23 novembre il
+calcolo riproduce da sé la tabella a regime (1.234,97 ≈ 1.235).
+
+### La lista d'attesa al posto di «Posso permettermelo?»
+
+Il simulatore rispondeva a una domanda che si fa davanti alla cassa, cioè
+quando la risposta non cambia più niente: la decisione era presa, si cercava
+un permesso. E dava un verdetto — «puoi, ma anticipi la Cassa» — a cui la
+risposta che arrivava indietro era sempre «non capisco cosa cambia».
+
+Adesso l'ordine è invertito: si scrive, passano ventiquattro ore, si compra.
+Ed è l'**unico** modo di comprare sopra soglia senza finire in «Fuori
+piano»: la lista non è un promemoria, è il piano. Al posto del verdetto, tre
+righe e nessun aggettivo:
+
+```
+dalla settimana   → quota da 11,82 a 3,50 €/g
+da ING            → minimo previsto da 216 a 91 €
+dal fondo         → gap da 640 a 765 €
+```
+
+Lo stato `sbloccata` è **calcolato** e non scritto: scriverlo vorrebbe dire
+scrivere qualcosa che cambia da sé col passare del tempo, e servirebbe
+qualcuno che ci passi sopra a mezzanotte.
+
+### La chiusura settimanale, e la deriva
+
+Quattro passi: estratto, pagella, report, ricarica. Il passo 1 è l'unico che
+conta; gli altri tre esistono perché un rito che non restituisce niente non
+si fa due volte.
+
+`revolut.js` legge il CSV italiano e **riconcilia** invece di importare: dice
+anche cosa c'è nell'app e non c'è nell'estratto, che è il caso del movimento
+registrato due volte o mai avvenuto. Senza quella terza lista la deriva
+riparte. Due dettagli che costano un pomeriggio se non li sai:
+
+- **i due lati di un giroconto**: un travaso Cassa → Principale nell'estratto
+  è due righe (+60 su Attuale, −60 su Deposito, stesso orario). Importarle
+  entrambe aggiunge un'entrata e un'uscita che non sono mai esistite. Si
+  appaiano per orario e importo, non per descrizione — quella è diversa sui
+  due lati.
+- **l'ancora si scrive sul DISPONIBILE**, non sul saldo completato: la
+  differenza sono i movimenti in sospeso. Il monitor da 105,90 era già
+  partito dal conto ma non era «completato», quindi il Saldo dell'estratto
+  diceva 166,50 mentre spendibili ce n'erano 57,10. E la data dell'ancora è
+  **domani**, perché l'ancora vale «quanto c'era all'inizio di quel giorno»
+  e il saldo che si legge è quello di stasera.
+
+Il contatore «settimane chiuse di fila» non è gamification: è l'unica cosa
+che ha fatto sopravvivere un rito settimanale.
+
+### Cosa è stato tolto
+
+- Le barre per categoria, «Come spendi», «Sforamenti» come blocco a sé, il
+  **check quotidiano**. Il check costava trenta secondi ogni sera per
+  guardare quattro pallini, e a fine settimana nessun numero era cambiato.
+  Al suo posto la chiusura settimanale, che produce una pagella e un report.
+- **Analisi** → **Cicli**: una riga per ciclo, cinque colonne, un grafico
+  (il fondo contro la linea dei versamenti). Le categorie stanno nel
+  dettaglio di una riga, dove servono a cose fatte.
+- Il **tetto settimanale scritto a mano** in Impostazioni. Un numero scritto
+  a mano va in deriva: i budget cambiano e lui resta dov'era. Ora è Vita
+  diviso i giorni del ciclo, per sette.
+- «Correggi i saldi» come gesto abituale: resta solo dentro la chiusura.
+
+### Il blocco della configurazione
+
+Budget, soglie, obiettivo e categorie si cambiano liberamente nelle 48 ore
+dopo lo stipendio. Fuori da quella finestra serve un motivo scritto, e lo
+sblocco vale **un'ora** — uno sblocco permanente al primo strappo diventa la
+condizione normale. Il conteggio finisce nel report settimanale: un report
+che non contiene la riga «ho alzato il budget di 80 €» si può fabbricare.
+
+Bollo e assicurazione restano fuori dal blocco: sono stime che l'app non può
+sapere, e tenerle ferme vorrebbe dire proiettare ING su un numero che si sa
+falso.
+
+### Il sync, e i tre posti dove serviva una riga
+
+Terza e quarta volta che si ripete lo stesso schema del 2 settembre:
+
+- **`lista` viaggia fuori da `meta`**, come ricorrenti, previsti e pocket:
+  dentro si fonderebbe a blocchi sotto un solo `metaUp`, e basterebbe un
+  dispositivo con la lista vuota che salva qualunque altra cosa per
+  portarsela via.
+- **`chiusure`, `pagaFatta` e `sblocchi` si uniscono SEMPRE**, fuori dal
+  cancello, come `checks` e `rules`. Non sono impostazioni: sono storia. «La
+  settimana del 12 l'ho chiusa» non smette di essere vero perché l'altro
+  dispositivo non lo sa, e sotto il cancello basterebbe un salvataggio dei
+  saldi per azzerare un contatore di nove settimane. `pagaFatta` si unisce
+  **per data e per unione degli id**: due dispositivi possono aver spuntato
+  due travasi diversi, e nessuno dei due è da disfare.
+
+### La verifica, senza Node
+
+`moduli/finanze/prova.js` gira con Deno e controlla sessanta numeri — tutti
+quelli del documento di v3, §11 — in due secondi:
+
+```
+deno run --location http://localhost/ --allow-read moduli/finanze/prova.js
+```
+
+Due trucchi che lo rendono possibile: `--location` dà a Deno un
+`localStorage` vero, quindi `core/storage.js` funziona così com'è; e gli
+import sono **dinamici**, perché `core/ui.js` — la versione della app di
+prima, quella che il plugin «nucleo unico» sostituisce in build — registra
+un ascoltatore sul `document` appena viene valutata. Fuori dal browser quel
+`document` non c'è, e gli import statici si risolvono prima della prima riga
+di codice: l'unico modo di mettere il tappo prima è importare dopo.
+
+Vale per qualunque chat: **la logica condivisa si può provare in locale**, e
+costa meno di un giro di CI.
+
+### Due numeri del documento che il calendario smentisce
+
+- **Vita → Cassa il 23 ottobre: 483,23 e non 481,50.** Il ciclo del 23
+  ottobre è di 31 giorni (23 ott → 22 nov), non di 30: la quota di piano è
+  17,26 e la prima settimana ne vale 51,77. La formula è quella del
+  documento, il calendario è quello vero.
+- **«3.500 €» in home si legge «3500,00 €».** In italiano il CLDR non
+  raggruppa le migliaia a quattro cifre (`minimumGroupingDigits: 2`): 12.345
+  sì, 3500 no. Non è un difetto di `euro()`, è la regola della lingua, e i
+  browser fanno lo stesso.
+
+### L'allineamento dei dati (§10) è una migrazione, non un file
+
+`allineaV3()` in `dati.js`, marchio `config.bloccoV3`, gancio
+`canale.letturaFatta` in `contratto.js` — lo stesso schema di
+`dividiPersonale()`, e per la stessa ragione: una migrazione che scrive
+prima di aver letto si segna come fatta su un archivio vuoto, e poi i
+duecento movimenti che arrivano dal sync non li rimappa più nessuno. Il
+gancio sta in due posti, perché col sync spento `avvia()` esce subito e
+`ridisegna` non viene chiamata mai.
+
+Cerca i movimenti **per data, importo e un pezzo di nota, non per id**: gli
+id veri non li conosce nessuno da fuori. Quello che non trova lo lascia
+stare invece di indovinare.
+
+**Il monitor del 6 ottobre è il caso che ha insegnato qualcosa.** Andava
+trasformato da «uscita diretta da ING» in due movimenti (ricarica + uscita
+dal Principale). Aggiungere la coppia nuova e mettere la lapide sulla
+vecchia sembrava equivalente: non lo era. La firma `data|importo|nota` della
+nuova uscita era **identica** a quella della vecchia, quindi veniva scartata
+come doppione e la vecchia tombata — e il monitor spariva dal ciclo, con
+«Fuori piano» che diceva 3 · 134,64 invece di 4 · 240,54. Un record che
+esiste e sta nel posto sbagliato **si corregge sul posto**; si aggiunge solo
+quello che manca davvero.
+
+### Richieste a core
+
+- **Finanze → core (7 ott): la notifica della domenica sera.** Serve
+  `orari.finanze.chiusura` in `notifiche.json` (con l'interruttore in
+  Impostazioni → Notifiche) e il pezzo in `notifiche.js` dentro
+  `atlas-dati`: la domenica dalle 20:30, se in `finanze.json`
+  `config.chiusure` non ha la data di quella domenica, mandare «Chiudi la
+  settimana» con rotta `#/finanze/chiusura` — la rotta c'è già e apre il
+  foglio al passo 1. Nel frattempo la voce entra nella checklist della home
+  dalle 18, e dopo otto giorni senza chiusura l'etichetta dei Pocket va in
+  ambra: copre chi apre ATLAS, non chi se ne dimentica.
+- **Finanze → core (7 ott): la notifica del lunedì dica l'importo.** Il
+  testo è fisso, e l'importo della ricarica adesso è calcolato
+  (`ricaricaLunedi()` in `piano.js`: si porta il Principale a
+  `quota × giorni fino a domenica`). Il mittente può leggerlo da
+  `finanze.json` facendo lo stesso conto, oppure il testo resta generico e
+  l'importo lo mostra il foglio — che è quello che succede ora.
+
+### Cosa resta
+
+- La **mappa carta → pocket** è in sola lettura in Impostazioni: `*8595` =
+  ING è l'unica che serve, e un selettore per una riga sola non vale la
+  schermata. Si modifica a mano in `config.mappaCarte` se arriva la seconda.
+- Il **nuoto** non ha un ricorrente: importo e cadenza da confermare.
+- La **rata AliExpress** è la 3/3 del 1 novembre, da confermare sull'app del
+  pagamento a rate. Quella del 1 dicembre è stata tombata.
+- Sul **telefono vero** non provato.

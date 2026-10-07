@@ -84,3 +84,58 @@ sempre: provare **offline vero** (modalità aereo, non DevTools) e provare
 sull'iPhone **installato**, non in Safari.
 
 Poi aggiorna `docs/CANTIERE.md`.
+
+---
+
+## v3 (7 ottobre 2026) — come è fatto adesso
+
+`dati.js` e `calcolo.js` sono rimasti dove erano; quello che è nuovo sta in
+quattro file accanto, e la divisione non è per comodità ma per domanda:
+
+| file | a cosa risponde |
+|---|---|
+| `piano.js` | *dove sto andando* (obiettivo), *quanto posso spendere oggi* (quota), *cosa ho fatto fuori dal piano*, l'effetto di una voce in lista d'attesa, il minimo previsto di ING, la tabella dei cicli |
+| `paga.js` | i quattro travasi del giorno di paga e il fabbisogno delle Fisse |
+| `chiusura.js` | la domenica sera: applica l'estratto, pagella, report, ricarica |
+| `revolut.js` | legge il CSV e **riconcilia** (non importa: dice anche cosa c'è nell'app e non c'è nell'estratto) |
+
+`importa.js` resta per le banche che non sono Revolut e per le righe
+incollate a mano.
+
+### Le quattro cose che ti faranno perdere tempo se non le sai
+
+Oltre alle tre di sopra (centesimi, `ts`/`up`, `data`/`ts`):
+
+4. **`giornoStipendio` non basta.** La data vera la dà
+   `dataStipendio(anno, mese)`: sposta il fine settimana al venerdì prima,
+   legge `config.stipendiManuali` per dicembre, e se esiste un'entrata
+   marcata `stip` entro sei giorni vince quella. Non confrontare mai una
+   data col numero 23.
+5. **La quota si divide sul saldo di INIZIO GIORNATA.** `quotaDi()` usa
+   `deltaPocketTra(id, ancora, iso)`. Dividendo il saldo di adesso, il
+   numero scende insieme a quello che spendi e non arriva mai a zero.
+6. **`m.fuoriPiano` è un override, non il valore.** Il valore lo calcola
+   `eFuoriPiano(m)`. Leggere il campo direttamente dà `undefined` su tutti i
+   movimenti che non hai corretto a mano.
+7. **Le ancore si scrivono sul disponibile e con la data di DOMANI.** Vedi
+   `applicaEstratto()`: la differenza col saldo completato sono i movimenti
+   in sospeso, e la data di oggi farebbe sottrarre due volte le spese di
+   oggi.
+
+### Provare i conti senza Node
+
+Non serve la CI per sapere se un numero torna:
+
+```
+deno run --location http://localhost/ --allow-read moduli/finanze/prova.js
+```
+
+`prova.js` semina un archivio, fa girare la migrazione e controlla sessanta
+numeri — quelli del documento di v3 — in due secondi. Se cambi una formula,
+aggiorna lì il valore atteso **con la ragione accanto**: due dei sessanta
+non coincidono col documento e il commento spiega perché (il ciclo del 23
+ottobre è di 31 giorni; in italiano 3500 non si raggruppa).
+
+`--location` dà a Deno un `localStorage` vero. Gli import sono dinamici
+perché `core/ui.js` tocca il `document` appena viene valutato: il tappo si
+mette prima, quindi si importa dopo.

@@ -607,29 +607,105 @@ export function quadratura(mese) {
    tornavano mai.
 */
 
-export const giornoStipendio = () => Number(stato().config?.giornoStipendio) || 21;
+export const giornoStipendio = () => Number(stato().config?.giornoStipendio) || 23;
+
+/**
+ * LA DATA DELLO STIPENDIO di un mese, e non il giorno del mese.
+ *
+ * Era un numero — il 21, poi il 23 — e un numero non basta, per due
+ * ragioni che si vedono entrambe nel calendario di quest'anno:
+ *
+ *   IL FINE SETTIMANA. Il 23 gennaio 2027 e' un sabato, quindi lo
+ *   stipendio arriva venerdi 22. Con il giorno fisso il ciclo avrebbe
+ *   iniziato il 23 e il 22 sarebbe finito nel ciclo precedente: lo
+ *   stipendio contato come entrata del mese sbagliato.
+ *
+ *   DICEMBRE. La tredicesima si inserisce a mano, data e importo, e la
+ *   data non e' il 23: sta in `config.stipendiManuali`.
+ *
+ * E poi c'e' la realta': se lo stipendio e' arrivato il 24 perche' la
+ * banca ha fatto tardi, il ciclo parte il 24. Per questo si guarda se
+ * esiste un'entrata marcata «stipendio» vicino alla data teorica, e in quel
+ * caso vince quella — e' la data in cui i soldi ci sono davvero.
+ */
+export function dataStipendio(anno, mese) {
+  // Il mese puo' arrivare fuori intervallo da `spostaCiclo`: `Date` lo
+  // normalizza, e la chiave dell'eccezione manuale deve vedere il mese vero.
+  const base = new Date(anno, mese, 1);
+  const y = base.getFullYear();
+  const m = base.getMonth();
+
+  const manuale = stato().config?.stipendiManuali?.[`${y}-${String(m + 1).padStart(2, "0")}`];
+  if (manuale) return manuale;
+
+  const ultimo = new Date(y, m + 1, 0).getDate();
+  const d = new Date(y, m, Math.min(giornoStipendio(), ultimo));
+  const dow = d.getDay();
+  if (dow === 0) d.setDate(d.getDate() - 2);          // domenica → venerdi
+  else if (dow === 6) d.setDate(d.getDate() - 1);     // sabato  → venerdi
+  return stipendioVero(isoDi(d));
+}
+
+/* Quanto puo' scostarsi la data vera da quella teorica perche' valga
+   ancora come «quello stipendio». Sei giorni: oltre, e' un'altra entrata. */
+const MARGINE_STIPENDIO = 6;
+
+/**
+ * La data vera dell'entrata marcata «stipendio» vicina a `teorico`.
+ *
+ * Solo il flag `stip`, non la nota: una nota che contiene «stipendio» la
+ * puo' avere un rimborso dal collega, e un ciclo che si sposta per una
+ * parola scritta in un campo libero e' un ciclo che si sposta a caso.
+ */
+function stipendioVero(teorico) {
+  const da = piuGiorni(teorico, -MARGINE_STIPENDIO);
+  const a = piuGiorni(teorico, MARGINE_STIPENDIO);
+  const m = movimentiVivi().find((x) => x.tipo === "in" && x.stip && x.data >= da && x.data <= a);
+  return m ? m.data : teorico;
+}
 
 /** Il ciclo che contiene `iso`: `{ da, a, giorni, indice }`, estremi inclusi. */
 export function cicloDi(iso = oggiISO()) {
-  const g = giornoStipendio();
   const d = daISO(iso);
-  // Prima del giorno di stipendio si è ancora dentro il ciclo aperto il mese
-  // scorso: il 5 ottobre appartiene al ciclo di settembre.
-  const inizio = new Date(d.getFullYear(), d.getMonth(), g);
-  if (d.getDate() < g) inizio.setMonth(inizio.getMonth() - 1);
-  const fine = new Date(inizio.getFullYear(), inizio.getMonth() + 1, g - 1);
+  let da = dataStipendio(d.getFullYear(), d.getMonth());
+  // Prima dello stipendio si è ancora dentro il ciclo aperto il mese
+  // scorso: il 5 ottobre appartiene al ciclo iniziato il 23 settembre.
+  if (iso < da) da = dataStipendio(d.getFullYear(), d.getMonth() - 1);
+  const i = daISO(da);
+  const a = piuGiorni(dataStipendio(i.getFullYear(), i.getMonth() + 1), -1);
   return {
-    da: isoDi(inizio),
-    a: isoDi(fine),
-    giorni: Math.round((fine - inizio) / 86400000) + 1,
+    da, a,
+    giorni: Math.round((daISO(a) - i) / 86400000) + 1,
     // L'etichetta è il mese in cui il ciclo è INIZIATO.
-    indice: `${inizio.getFullYear()}-${String(inizio.getMonth() + 1).padStart(2, "0")}`,
+    indice: da.slice(0, 7),
   };
 }
 
 export function spostaCiclo(indice, delta) {
   const [y, m] = indice.split("-").map(Number);
-  return cicloDi(isoDi(new Date(y, m - 1 + delta, giornoStipendio())));
+  return cicloDi(dataStipendio(y, m - 1 + delta));
+}
+
+/** Il prossimo stipendio da `iso`: il giorno dopo la fine del ciclo. */
+export const prossimoStipendio = (iso = oggiISO()) => piuGiorni(cicloDi(iso).a, 1);
+
+/** Lo stipendio che ha aperto il ciclo in cui cade `iso`. */
+export const ultimoStipendio = (iso = oggiISO()) => cicloDi(iso).da;
+
+/** Le date di stipendio in `(da, a]`. L'ordine è cronologico. */
+export function stipendiTra(da, a) {
+  const fuori = [];
+  let q = prossimoStipendio(da);
+  // Il tetto e' una rete, non un limite di dominio: con un `a` lontano
+  // anni il ciclo gira comunque, e senza tetto un `dataStipendio` che
+  // smettesse di avanzare girerebbe per sempre.
+  for (let k = 0; k < 400 && q <= a; k++) {
+    fuori.push(q);
+    const p = prossimoStipendio(q);
+    if (p <= q) break;
+    q = p;
+  }
+  return fuori;
 }
 
 /** A che giorno del ciclo siamo, 1-based. */
@@ -703,13 +779,26 @@ export function saldoPocket(id) {
  * giorno», altrimenti una spesa segnata nel pomeriggio dello stesso giorno
  * in cui hai riancorato non verrebbe mai sottratta.
  */
-export function deltaPocket(id, da) {
+export const deltaPocket = (id, da) => deltaPocketTra(id, da, null);
+
+/**
+ * Come `deltaPocket`, ma con una fine: i movimenti da `da` compreso fino a
+ * `aEsclusa` esclusa.
+ *
+ * Serve a ricostruire il saldo ALL'INIZIO di un giorno, che è quello su cui
+ * si divide la quota: dividere il saldo di adesso darebbe una quota che
+ * cala ogni volta che spendi, e allora «restano 4 € oggi» diventerebbe vero
+ * per sempre — ogni spesa abbasserebbe sia il resto sia la quota, e il
+ * numero non arriverebbe mai a zero.
+ */
+export function deltaPocketTra(id, da, aEsclusa) {
   const p = (stato().pockets || []).find((x) => x.id === id);
   if (!p) return 0;
   let s = 0;
 
   for (const m of movimentiVivi()) {
     if (m.data < da) continue;
+    if (aEsclusa && m.data >= aEsclusa) continue;
 
     // Travasi e sforamenti hanno due estremi: escono da `pocket` ed entrano
     // in `pocketTo`. Sono anche gli unici che toccano un pocket esterno.
@@ -825,7 +914,7 @@ export const pocketParcheggio = () =>
     .map((p) => p.id);
 
 /** I giorni fra due date ISO, estremi compresi. */
-const giorniFra = (da, a) => Math.round((daISO(a) - daISO(da)) / 86400000) + 1;
+export const giorniFra = (da, a) => Math.round((daISO(a) - daISO(da)) / 86400000) + 1;
 
 /**
  * Una spesa È una decisione del giorno?
@@ -1396,7 +1485,7 @@ export function spesoOggi(iso = oggiISO()) {
 
 /* ---------------------------------------------------------- i ricorrenti -- */
 
-const MESI_CADENZA = { mensile: 1, bimestrale: 2, trimestrale: 3, annuale: 12 };
+const MESI_CADENZA = { mensile: 1, bimestrale: 2, trimestrale: 3, semestrale: 6, annuale: 12 };
 
 /**
  * La prossima scadenza di un ricorrente, da `iso` in avanti.

@@ -99,23 +99,78 @@ export const EMOJI_CAT = {
 };
 export const emojiCat = (id) => EMOJI_CAT[id] || "•";
 
-/* I BUDGET DI REGIME. Sommano a 2041, quanto le entrate attese: il margine
-   non allocato e' zero per scelta — quello che avanza ha gia' un nome, e si
-   chiama Accantonamenti o Risparmio.
+/* I BUDGET DI REGIME. Sommano a 1885 e non a 2041, e i 156 che mancano non
+   sono un buco: sono il versamento al Fondo, che non e' una spesa e non e'
+   una categoria. Le quattro destinazioni dello stipendio stanno in
+   `VERSAMENTI`, e questa tabella e' solo la terza — «Vita».
 
-   `cassaCats` NON e' piu' tutto. Il tetto settimanale copre solo le
-   categorie che dipendono da decisioni di giornata: metterci dentro Fisse
-   voleva dire che il tetto sforava da solo il giorno dell'affitto, ed e'
-   la ragione degli allarmi di fine settimana che arrivavano a caso. */
+   VITA E' ESATTAMENTE `CATEGORIE_CASSA`: spesa 220 + cibo 80 + cura 75 +
+   auto 65 + svago 45 + casa 30 + trasporti 20 = 535. E' la proprieta' che
+   rende vera la «quota di piano» in home — 535 / 30 giorni = 17,83 al
+   giorno — e va mantenuta: se una categoria entra nella cassa senza entrare
+   nei 535, la quota di piano smette di essere il piano.
+
+   Via «Risparmio»: adesso c'e' il Fondo, e due posti per la stessa cosa
+   vogliono dire due numeri che divergono. */
 export function profiliIniziali() {
   return {
     reg: {
       nome: "Regime",
-      b: { fisse: 1235, casa: 30, auto: 80, trasporti: 20, spesa: 220, cibo: 120, cura: 75, svago: 70, acc: 115, risp: 76 },
+      b: { fisse: 1235, casa: 30, auto: 65, trasporti: 20, spesa: 220, cibo: 80, cura: 75, svago: 45, acc: 115, risp: 0 },
       cassaCats: [...CATEGORIE_CASSA], dal: 1, al: 31,
     },
   };
 }
+
+/**
+ * Dove va lo stipendio, in centesimi. Quattro destinazioni e un ordine.
+ *
+ * `fisse` NON e' qui: si calcola ogni volta su quello che scade davvero
+ * prima del prossimo stipendio (vedi `paga.js`). Un numero fisso per le
+ * fisse e' il numero che va in deriva per primo, perche' le bollette non
+ * arrivano tutti i mesi e le rate finiscono.
+ *
+ * `ing` e' quello che resta. A regime e' 115, ed e' lo stesso 115 che il
+ * profilo chiama «acc»: e' la stessa cosa detta due volte, e qui vince
+ * questa perche' e' quella che muove i soldi.
+ */
+export const VERSAMENTI = { fondo: 15600, vita: 53500, ing: 11500 };
+
+/* LE ECCEZIONI, per data di stipendio.
+ *
+ * Il 23 ottobre non e' un mese come gli altri: la prima bolletta da 150 non
+ * e' mai stata accantonata e il 1 novembre cade l'ultima rata AliExpress.
+ * Il calcolo a regime darebbe le quote delle non-mensili, che qui
+ * sarebbero un accantonamento sopra un arretrato — e il pocket Fisse
+ * resterebbe scoperto lo stesso. Quindi per quella data i quattro numeri
+ * sono scritti, e dal 23 novembre si torna al calcolo.
+ */
+export const ECCEZIONI_STIPENDIO = {
+  "2026-10-23": { fondo: 15600, fisse: 132900, vita: 53500, ing: 2100 },
+};
+
+/**
+ * L'OBIETTIVO. Un solo traguardo per volta, dentro `config`.
+ *
+ * Gli importi sono in centesimi come tutto il resto: il documento lo
+ * descrive in euro, ma due unita' nello stesso archivio sono la trappola
+ * che questo modulo ha gia' pagato una volta.
+ *
+ * `dal` e' la data da cui si contano i versamenti programmati, e non e'
+ * decorativa: senza, «previsto a oggi» conterebbe anche gli stipendi
+ * passati, in cui al fondo non e' mai andato niente, e l'obiettivo
+ * nascerebbe gia' in ritardo di mesi.
+ */
+export const OBIETTIVO_INIZIALE = {
+  nome: "Naso",
+  target: 350000,
+  provvisorio: true,
+  data: "2027-08-01",
+  dal: "2026-10-07",
+  pocket: "fondo",
+  versamento: 15600,
+  extra: [{ id: "x-tredicesima", nome: "Tredicesima", imp: 130000, quando: "2026-12", stimato: true }],
+};
 
 export const PREDEFINITO = {
   v: 3,
@@ -123,7 +178,15 @@ export const PREDEFINITO = {
   cats: categorieIniziali(),
   profili: profiliIniziali(),
   rules: {},      // "testo normalizzato" → [cat, sub] — l'autocategorizzazione appresa
-  config: { entrate: 2100 },
+  // La lista d'attesa: l'unico modo di comprare sopra soglia senza finire
+  // in «Fuori piano». Record con `id`, `up` e lapidi come i movimenti.
+  lista: [],
+  config: {
+    entrate: 2041,
+    // IL 23, non il 21. E se cade di sabato o domenica, il giorno
+    // lavorativo prima: vedi `dataStipendio()` in calcolo.js.
+    giornoStipendio: 23,
+  },
   metaUp: 0,
   // I profili hanno un timestamp LORO, staccato da `metaUp`. Vedi
   // `scriviProfili()`. Zero di partenza: un profilo di fabbrica non deve
@@ -244,6 +307,10 @@ export const TIPI_POCKET = {
   parcheggio: { nome: "Parcheggio" },
   fisse:      { nome: "Spese fisse" },
   riserva:    { nome: "Riserva" },
+  // Il Fondo non e' una riserva: una riserva la puoi attingere e l'app te
+  // lo dice come costo. Questo no — esce dal conto di «quanto posso
+  // spendere» del tutto, e toccarlo e' un fatto che si vede sull'obiettivo.
+  obiettivo:  { nome: "Obiettivo" },
 };
 
 export function pocketIniziali() {
@@ -274,6 +341,12 @@ export function pocketIniziali() {
     // ING è `external`: vive fuori dall'app, quindi le spese non lo toccano
     // e l'ancora la si riscrive a mano guardando l'estratto conto. Lo
     // muovono SOLO i travasi espliciti verso gli altri pocket.
+    // IL FONDO. Non e' spendibile, non e' parcheggio, non e' riserva:
+    // non entra in nessun calcolo di quota, e l'unica domanda a cui
+    // risponde e' «sono in linea con l'obiettivo».
+    { id: "fondo",      nome: "Fondo naso",  tipo: "obiettivo",  saldo: 0, ancoraDa: null, external: false },
+    // ING ultimo: in home accanto al suo saldo c'e' il minimo previsto, ed
+    // e' una riga in piu' che sta bene in fondo.
     { id: "ing",        nome: "ING",         tipo: "riserva",    saldo: 0, ancoraDa: null, external: true },
   ];
 }
@@ -294,17 +367,28 @@ export function ricorrentiIniziali() {
     cadenza: "mensile", giorno, mese: null,
     stimaMin: null, stimaMax: null, attivo: true, ...extra,
   });
+  /* GLI ABBONAMENTI SONO TRE COSE, NON UNA. Erano una riga sola da 55 il
+     27, e una riga sola non si puo' disdire a pezzi: il giorno che Wellhub
+     cambia prezzo o Claude si chiude, il numero resta quello e il pocket
+     Fisse si scopre senza che niente lo dica. */
   return [
-    r("rata-auto",    "Rata prestito", 40000, "fisse", 25),
-    r("affitto",      "Affitto",       65000, "fisse", 1),
-    r("abbonamenti",  "Abbonamenti",    5500, "fisse", 27),
-    r("condominio",   "Condominio",     5000, "casa",  1),
-    r("utenze", "Gas, luce e acqua", 0, "casa", 3,
-      { tipo: "variabile", cadenza: "bimestrale", mese: 1, stimaMin: 18000, stimaMax: 35000 }),
-    r("assicurazione", "Assicurazione auto", 0, "acc", 15,
-      { cadenza: "annuale", mese: 6, tipo: "variabile", pocket: "ing", stimaMin: 40000, stimaMax: 55000 }),
-    r("bollo", "Bollo auto", 0, "acc", 31,
-      { cadenza: "annuale", mese: 12, tipo: "variabile", pocket: "ing", stimaMin: 15000, stimaMax: 22000 }),
+    r("affitto",      "Affitto",         85000, "fisse", 1),
+    r("rata-auto",    "Rata prestito",   25000, "fisse", 25),
+    r("wellhub",      "Wellhub",          3399, "fisse", 30),
+    r("claude",       "Claude",           1800, "fisse", 27),
+    r("windtre",      "WindTRE",           499, "fisse", 1),
+    r("icloud",       "iCloud+",           299, "fisse", 9),
+    // La bolletta arriva ogni due mesi e si accantona a quote: 150 ogni
+    // due stipendi fa 75 al mese, ed e' la riga «quota bollette» del budget.
+    r("utenze", "Gas, luce e acqua", 15000, "fisse", 31,
+      { cadenza: "bimestrale", da: "2026-10-31", pocket: "fisse", sub: "Abbonamenti" }),
+    // Bollo e assicurazione sono STIME, e restano modificabili anche a
+    // configurazione bloccata: sono gli unici due numeri che l'app non puo'
+    // sapere e che cambiano di anno in anno.
+    r("assicurazione", "Assicurazione auto", 50000, "acc", 15,
+      { cadenza: "semestrale", da: "2027-02-15", pocket: "ing", stima: true }),
+    r("bollo", "Bollo auto", 36000, "acc", 31,
+      { cadenza: "annuale", da: "2026-12-31", pocket: "ing", stima: true }),
   ];
 }
 
@@ -335,9 +419,19 @@ export function classeDi(cat, sub) {
 }
 
 export const SOGLIE_PREDEFINITE = {
-  ingMinimo: 90000,      // sotto, la riserva va in ambra
+  ingMinimo: 40000,      // sotto, il minimo PREVISTO di ING va in ambra
   catAvviso: 0.85,       // categoria all'85% del budget del ciclo
   spesaGrossa: 5000,     // sopra, il foglio chiede conferma
+  // Sopra questa cifra un'uscita non alimentare e non prevista e' FUORI
+  // PIANO. Non e' la stessa soglia di `spesaGrossa`: quella e' una
+  // frizione al momento di registrare, questa e' una classificazione che
+  // vale anche sui movimenti arrivati dall'estratto conto.
+  fuoriPiano: 3000,
+  // Sotto questa quota giornaliera la carta OGGI diventa rossa: non e' un
+  // budget sforato, e' una giornata in cui non ci sta niente.
+  quotaMinima: 1000,
+  // Il pavimento del minimo PREVISTO di ING nei prossimi 12 mesi.
+  ingPrevistoMin: 40000,
 };
 
 /* ------------------------------------------- da Personale a due ---------- */
@@ -454,7 +548,7 @@ export function migra() {
   const s = stato();
   const serve =
     !Array.isArray(s.pockets) || !Array.isArray(s.ricorrenti) ||
-    !s.soglie || s.config?.giornoStipendio == null || (s.v || 0) < 6;
+    !s.soglie || s.config?.giornoStipendio == null || (s.v || 0) < 7;
   // L'uscita anticipata è diventata un `if`: sotto c'è roba che deve girare
   // SEMPRE — `aggiungiContanti()` — e con il `return` non ci arrivava mai.
   if (serve) casella.aggiorna((st) => {
@@ -462,10 +556,12 @@ export function migra() {
     if (!Array.isArray(st.ricorrenti)) st.ricorrenti = ricorrentiIniziali();
     if (!st.soglie) st.soglie = { ...SOGLIE_PREDEFINITE };
     st.config = st.config || {};
-    // Lo stipendio arriva il 21, non il 1. Tutti i calcoli di "quanto manca
-    // alla fine del mese" usano il ciclo 21→20: con il mese solare i numeri
-    // non tornavano mai, ed è il motivo per cui non tornavano.
-    if (st.config.giornoStipendio == null) st.config.giornoStipendio = 21;
+    // Lo stipendio arriva il 23, non il 1. Tutti i calcoli di "quanto manca
+    // alla fine del mese" usano il ciclo 23→22: con il mese solare i numeri
+    // non tornavano mai, ed è il motivo per cui non tornavano. Il giorno
+    // esatto lo aggiusta `dataStipendio()`: se il 23 cade nel fine
+    // settimana, lo stipendio arriva il venerdi prima.
+    if (st.config.giornoStipendio == null) st.config.giornoStipendio = 23;
     /* ZERO vuol dire «calcolalo»: il tetto settimanale lo ricava
        `tettoSettimanale()` dai budget marcati cassa. Un numero scritto a
        mano va in deriva — i budget cambiano e lui resta dov'era. */
@@ -553,6 +649,19 @@ export function migra() {
     if (st.config.ricarica == null) st.config.ricarica = { giorno: 1, ora: "08:00" };
     if (!Array.isArray(st.previsti)) st.previsti = previstiIniziali();
     st.v = 6;
+
+    /* --------------------------------------------------------------- v7 --
+       Le caselle di v3: la lista d'attesa e l'obiettivo.
+
+       Solo le caselle, vuote. I DATI li mette `allineaV3()`, che gira
+       dopo la lettura del repo — qui siamo prima, e scrivere un obiettivo
+       di fabbrica prima di aver letto vorrebbe dire sovrascriverne uno
+       vero con uno a zero. Lo stesso motivo per cui la divisione delle
+       categorie non sta qui.                                             */
+    if (!Array.isArray(st.lista)) st.lista = [];
+    if (st.config.chiusure == null) st.config.chiusure = {};
+    if (st.config.sblocchi == null) st.config.sblocchi = [];
+    st.v = 7;
   });
 
   // Gli aggiustamenti chiesti il 23 agosto 2026. Stanno FUORI dal blocco dei
@@ -565,7 +674,27 @@ export function migra() {
   if (serve && !stato().config?.mig2608) casella.aggiorna(aggiustamenti2608);
 
   aggiungiContanti();
+  aggiungiFondo();
 
+}
+
+/**
+ * Il pocket del Fondo, se manca. Come `aggiungiContanti()`, e per lo stesso
+ * motivo: un pocket in piu' si aggiunge a chiunque abbia l'archivio di
+ * prima, e `up: 0` fa perdere questo zero contro qualunque saldo vero.
+ */
+function aggiungiFondo() {
+  if ((stato().pockets || []).some((p) => p.id === "fondo")) return;
+  casella.aggiorna((st) => {
+    if (!Array.isArray(st.pockets)) return;
+    if (st.pockets.some((p) => p.id === "fondo")) return;
+    // Prima di ING, per lo stesso motivo dell'elenco di fabbrica.
+    const i = st.pockets.findIndex((p) => p.id === "ing");
+    st.pockets.splice(i < 0 ? st.pockets.length : i, 0, {
+      id: "fondo", nome: "Fondo naso", tipo: "obiettivo",
+      saldo: 0, ancoraDa: null, external: false, up: 0,
+    });
+  });
 }
 
 /* =========================================================================
@@ -953,6 +1082,393 @@ export function serieCheck(oggi) {
   let n = 0;
   for (let k = checks[oggi] ? 0 : 1; k < GIORNI_CHECK; k++) {
     if (!checks[giorno(k)]) break;
+    n++;
+  }
+  return n;
+}
+
+/* =========================================================================
+   LA LISTA D'ATTESA.
+
+   Sostituisce «Posso permettermelo?», e la differenza non e' estetica. Il
+   simulatore rispondeva a una domanda che si fa davanti alla cassa, cioe'
+   nel momento in cui la risposta non cambia piu' niente: si era gia'
+   deciso, si cercava un permesso. Qui l'ordine e' invertito — prima si
+   scrive, poi passano ventiquattro ore, poi si compra — e quelle
+   ventiquattro ore sono l'unico meccanismo che ha mai fatto cambiare idea
+   a qualcuno.
+
+   E' anche l'UNICO modo di comprare sopra soglia senza finire in «Fuori
+   piano»: la lista non e' un promemoria, e' il piano.
+
+   Gli stati sono quattro, e uno dei quattro NON si scrive:
+     attesa      da meno di 24 ore
+     sbloccata   da piu' di 24 ore — CALCOLATO, vedi `statoVoce()`
+     comprata    e' diventata un movimento
+     scartata    lasciata perdere
+   «Sbloccata» calcolato e non scritto perche' scriverlo vorrebbe dire
+   scrivere qualcosa che cambia da se' col passare del tempo: servirebbe
+   qualcuno che ci passi sopra a mezzanotte, e quel qualcuno non esiste.
+   ========================================================================= */
+
+export const ATTESA_ORE = 24;
+
+export const vociLista = () => (stato().lista || []).filter((v) => v && !v.del);
+
+/** Lo stato vero, col tempo dentro. */
+export function statoVoce(v, adesso = Date.now()) {
+  if (!v) return "scartata";
+  if (v.stato && v.stato !== "attesa") return v.stato;
+  return adesso - (v.ts || 0) >= ATTESA_ORE * 3600000 ? "sbloccata" : "attesa";
+}
+
+/** Quante ore mancano allo sblocco. Zero se e' gia' sbloccata. */
+export const oreAttesa = (v, adesso = Date.now()) =>
+  Math.max(0, Math.ceil(ATTESA_ORE - (adesso - (v.ts || 0)) / 3600000));
+
+export function salvaVoce(v) {
+  const ora = Date.now();
+  casella.aggiorna((s) => {
+    s.lista = s.lista || [];
+    const i = s.lista.findIndex((x) => x.id === v.id);
+    if (i >= 0) s.lista[i] = { ...s.lista[i], ...v, up: ora };
+    else s.lista.push({ ts: ora, stato: "attesa", movId: null, ...v, up: ora });
+  });
+}
+
+/** Lapide, non rimozione: senza, l'altro dispositivo la resuscita. */
+export function eliminaVoce(id) {
+  casella.aggiorna((s) => {
+    const i = (s.lista || []).findIndex((x) => x.id === id);
+    if (i >= 0) s.lista[i] = { id, del: true, up: Date.now() };
+  });
+}
+
+export const cambiaStatoVoce = (id, nuovo, movId = null) =>
+  salvaVoce({ id, stato: nuovo, ...(movId ? { movId } : {}) });
+
+/* =========================================================================
+   IL BLOCCO DELLA CONFIGURAZIONE.
+
+   Budget, soglie, obiettivo e categorie si cambiano liberamente nelle 48
+   ore dopo lo stipendio. Fuori da quella finestra servono due gesti e un
+   motivo scritto.
+
+   Non e' disciplina per il gusto della disciplina. Un budget che si puo'
+   alzare nel momento in cui lo stai sforando non e' un budget: e' un campo
+   di testo che registra quello che hai speso. La finestra dopo lo stipendio
+   e' il momento in cui il budget si decide a freddo, coi numeri del mese
+   appena chiuso davanti e nessuna spesa in sospeso.
+
+   Lo sblocco NON e' per sempre: vale un'ora. Dopo si richiude da se',
+   perche' uno sblocco permanente al primo strappo diventa la condizione
+   normale e il blocco non esiste piu'.
+
+   Bollo e assicurazione restano fuori dal blocco: sono stime che l'app non
+   puo' sapere, e tenerle ferme vorrebbe dire proiettare ING su un numero
+   che si sa falso.
+   ========================================================================= */
+
+export const ORE_LIBERE = 48;
+const DURATA_SBLOCCO = 3600000;
+
+/**
+ * `{ bloccata, perche, fino }`. `perche` e' `"finestra"` dentro le 48 ore,
+ * `"sblocco"` quando c'e' uno sblocco attivo.
+ *
+ * `ultimoStipendio` lo passa chi chiama — lo sa `calcolo.js` — perche' qui
+ * importare `calcolo.js` chiuderebbe il giro degli import.
+ */
+export function statoConfig(ultimoStipendio, adesso = Date.now()) {
+  const sblocco = Number(stato().config?.sbloccoFino) || 0;
+  if (sblocco > adesso) return { bloccata: false, perche: "sblocco", fino: sblocco };
+  const dallo = ultimoStipendio ? new Date(`${ultimoStipendio}T00:00:00`).getTime() : 0;
+  const fino = dallo + ORE_LIBERE * 3600000;
+  if (dallo && adesso < fino) return { bloccata: false, perche: "finestra", fino };
+  return { bloccata: true, perche: null, fino: null };
+}
+
+/** Sblocca per un'ora e registra il motivo. Il motivo e' obbligatorio. */
+export function sbloccaConfig(motivo, ciclo = null) {
+  const testo = String(motivo || "").trim();
+  if (!testo) return false;
+  scriviMeta((s) => {
+    s.config.sbloccoFino = Date.now() + DURATA_SBLOCCO;
+    s.config.sblocchi = [...(s.config.sblocchi || []), { ts: Date.now(), motivo: testo, ciclo }]
+      .slice(-50);
+  });
+  return true;
+}
+
+/** Quanti sblocchi in un ciclo. Va nel report settimanale. */
+export const sblocchiDelCiclo = (ciclo) =>
+  (stato().config?.sblocchi || []).filter((x) => x.ciclo === ciclo).length;
+
+/* =========================================================================
+   ALLINEAMENTO v3 — una volta sola, dopo la lettura.
+
+   Fa tre cose, e sono tre cose diverse messe insieme solo perche' devono
+   girare nello stesso istante:
+
+   1. LA CONFIGURAZIONE. Budget di Vita, entrate 2041, giorno 23, obiettivo,
+      soglie, ricorrenti veri. Stanno in `meta`, che si fonde a blocchi:
+      cambiarli nelle costanti serve a chi installa da zero, per l'archivio
+      che esiste vanno riscritti qui e `metaUp` va alzato.
+   2. I MOVIMENTI DELL'ESTRATTO 1-7 OTTOBRE. Sei da aggiungere, quattro da
+      correggere. Li cerca per data, importo e un pezzo di nota e NON per
+      id, perche' gli id veri da qui non li conosce nessuno: quello che non
+      trova lo lascia stare invece di indovinare.
+   3. LE ANCORE DEI POCKET al 7 ottobre sera, scritte con `ancoraDa` all'8:
+      l'ancora vale «quanto c'era all'inizio di quel giorno», quindi «fine
+      del 7» e «inizio dell'8» sono lo stesso numero, e i movimenti del 7
+      non vengono sottratti due volte.
+
+   Gira una volta sola — il marchio e' `config.bloccoV3` — e DOPO la
+   lettura del repo, per la ragione di sempre: una migrazione che scrive
+   prima di aver letto si marca come fatta su un archivio vuoto, e poi i
+   duecento movimenti che arrivano dal sync non li rimappa piu' nessuno.
+   ========================================================================= */
+
+export const BLOCCO_V3 = "2026-10-07-v3";
+
+/** L'ancora dei pocket: «fine del 7 ottobre» = «inizio dell'8». */
+const ANCORA_V3 = "2026-10-08";
+const SALDI_V3 = { principale: 5710, contanti: 0, cassa: 12020, fisse: 302, fondo: 0, ing: 70976 };
+
+/* I sei movimenti dell'estratto 1-7 ottobre che nell'app non c'erano. */
+const DA_AGGIUNGERE = [
+  { id: "v3-01", data: "2026-10-01", tipo: "out", imp: 140, nota: "Ars Vivendi",
+    cat: "cibo", sub: "Bar e colazioni", pocket: "principale" },
+  { id: "v3-02", data: "2026-10-03", tipo: "out", imp: 130, nota: "Bar Self Service Il Gi",
+    cat: "cibo", sub: "Bar e colazioni", pocket: "principale" },
+  { id: "v3-03", data: "2026-10-06", tipo: "out", imp: 3336, nota: "Amazon",
+    cat: "svago", sub: "Shopping", pocket: "principale", fuoriPiano: true },
+  { id: "v3-04", data: "2026-10-06", tipo: "out", imp: 7000, nota: "Tobia Franceschetti — nuoto",
+    cat: "svago", sub: "Sport e attrezzatura", pocket: "principale", fuoriPiano: true },
+  { id: "v3-05", data: "2026-10-07", tipo: "giro", imp: 6000, nota: "Cassa → Principale",
+    cat: null, sub: null, pocket: "cassa", pocketTo: "principale" },
+  { id: "v3-06", data: "2026-10-07", tipo: "in", imp: 11, nota: "Interessi Cassa 1–7 ott",
+    cat: null, sub: null, pocket: "cassa", interessi: true },
+];
+
+/* LA RICARICA APPLE PAY CHE HA PAGATO IL MONITOR.
+
+   Il monitor comprato il 6 non e' uscito da ING: e' uscito dal Principale
+   dopo averlo ricaricato da ING. Registrarlo come uscita diretta da ING
+   lasciava ING fermo — i pocket esterni li muovono solo `giro` ed `extra` —
+   e il monitor fuori dal conto del Principale: due numeri sbagliati per un
+   movimento solo.
+
+   Qui c'e' solo la ricarica, che manca. L'uscita ESISTE GIA' e si CORREGGE
+   sul posto (vedi sotto): aggiungerne una nuova e mettere la lapide su
+   quella vecchia sembrava equivalente e non lo era — la firma
+   `data|importo|nota` e' identica, quindi la nuova veniva scartata come
+   doppione e la vecchia tombata, e il monitor spariva dal ciclo. */
+const RICARICA_MONITOR = {
+  id: "v3-07", data: "2026-10-06", tipo: "extra", imp: 10590,
+  nota: "Ricarica Apple Pay *8595", cat: null, sub: null,
+  pocket: "ing", pocketTo: "principale", pianificata: false,
+};
+
+/** Il primo movimento vivo che combacia per data, importo e un pezzo di nota. */
+function trovaMov(movs, data, imp, frammento) {
+  const f = normalizza(frammento);
+  return (movs || []).find((m) => m && !m.del && m.data === data && m.imp === imp
+    && normalizza(m.nota || "").includes(f));
+}
+
+export function allineaV3() {
+  if (stato().config?.bloccoV3 === BLOCCO_V3) return false;
+
+  const ora = Date.now();
+  casella.aggiorna((s) => {
+    s.movs = s.movs || [];
+    const firme = new Set(s.movs.filter((m) => m && !m.del)
+      .map((m) => `${m.data}|${m.imp}|${normalizza(m.nota || "")}`));
+
+    /* --- 1. la configurazione ------------------------------------------ */
+    s.profili = { ...(s.profili || {}), ...profiliIniziali() };
+    s.config = {
+      ...(s.config || {}),
+      entrate: 2041,
+      giornoStipendio: 23,
+      cassaSettimanale: 0,
+      obiettivo: s.config?.obiettivo || { ...OBIETTIVO_INIZIALE },
+      versamenti: { ...VERSAMENTI },
+      eccezioni: { ...ECCEZIONI_STIPENDIO, ...(s.config?.eccezioni || {}) },
+      chiusure: s.config?.chiusure || {},
+      sblocchi: s.config?.sblocchi || [],
+      bloccoV3: BLOCCO_V3,
+    };
+    /* Le soglie di v3 si scrivono, non si ripiegano: `{...fabbrica,
+       ...archivio}` lascerebbe `fuoriPiano` a quello che c'e' nell'archivio,
+       cioe' a niente, e un `undefined` come soglia classifica tutto come
+       fuori piano. */
+    s.soglie = {
+      ...SOGLIE_PREDEFINITE,
+      ...(s.soglie || {}),
+      ingMinimo: SOGLIE_PREDEFINITE.ingMinimo,
+      fuoriPiano: SOGLIE_PREDEFINITE.fuoriPiano,
+      quotaMinima: SOGLIE_PREDEFINITE.quotaMinima,
+      ingPrevistoMin: SOGLIE_PREDEFINITE.ingPrevistoMin,
+    };
+
+    /* I RICORRENTI: si sostituisce l'elenco, con le lapidi su quelli che
+       non esistono piu'. Lasciarli e spegnerli non basta — un ricorrente
+       spento resta nella lista delle impostazioni e si riaccende per
+       sbaglio — e togliere il record senza lapide lo farebbe resuscitare
+       dall'altro dispositivo al primo sync. */
+    const nuovi = ricorrentiIniziali();
+    const idNuovi = new Set(nuovi.map((r) => r.id));
+    const vecchi = new Map((s.ricorrenti || []).map((r) => [r.id, r]));
+    s.ricorrenti = [
+      // `pagato` e' storia dell'utente e non si riscrive.
+      ...nuovi.map((r) => ({ ...r, pagato: vecchi.get(r.id)?.pagato ?? null, up: ora })),
+      ...(s.ricorrenti || [])
+        .filter((r) => r && !r.del && !idNuovi.has(r.id))
+        .map((r) => ({ id: r.id, del: true, up: ora })),
+    ];
+
+    /* ALIEXPRESS: ne resta una, il 1 novembre, ed e' la terza. Quella del
+       1/10 era registrata «1/3» quando era la 2/3, e quella del 1/12 non
+       esiste perche' le rate sono tre e la terza cade a novembre. */
+    s.previsti = (s.previsti || []).map((x) => {
+      if (!x || x.del || !/aliexpress/i.test(String(x.nome || ""))) return x;
+      if (x.quando === "2026-11-01") {
+        return { ...x, nome: "3/3 Rata AliExpress", pocket: "fisse", up: ora };
+      }
+      if (x.quando === "2026-12-01") return { id: x.id, del: true, up: ora };
+      return x;
+    });
+    const resta3 = s.previsti.some((x) => x && !x.del && x.quando === "2026-11-01"
+      && /aliexpress/i.test(String(x.nome || "")));
+    if (!resta3) {
+      s.previsti.push({
+        id: "v3-aliexpress-3", nome: "3/3 Rata AliExpress", imp: 1861,
+        quando: "2026-11-01", pocket: "fisse", cat: "fisse",
+        nota: "Ultima delle tre. Da confermare sull'app del pagamento a rate.",
+        pagatoIl: null, up: ora,
+      });
+    }
+
+    /* --- 2. i movimenti dell'estratto ---------------------------------- */
+    for (const m of [...DA_AGGIUNGERE, RICARICA_MONITOR]) {
+      const firma = `${m.data}|${m.imp}|${normalizza(m.nota)}`;
+      if (firme.has(firma)) continue;
+      s.movs.push({ rif: null, ecc: false, pocketTo: null, ...m, ts: ora, up: ora });
+      firme.add(firma);
+    }
+
+    // Il bar del 2 ottobre: 3,51 sull'app, 3,50 sull'estratto.
+    const bar = trovaMov(s.movs, "2026-10-02", 351, "circolo");
+    if (bar) { bar.imp = 350; bar.up = ora; }
+
+    /* Il monitor: l'uscita c'e' gia', esce dal pocket sbagliato. Si
+       corregge sul posto — la ricarica che la paga l'ha aggiunta il ciclo
+       sopra — e si marca `pending`, perche' il 7 ottobre non era ancora
+       passata sull'estratto. */
+    const monitor = s.movs.find((m) => m && !m.del && m.tipo === "out"
+      && m.imp === 10590 && !String(m.id).startsWith("v3-"));
+    if (monitor) {
+      monitor.pocket = "principale";
+      monitor.cat = "svago";
+      monitor.sub = "Tech";
+      monitor.pending = true;
+      monitor.fuoriPiano = true;
+      monitor.up = ora;
+    } else {
+      s.movs.push({
+        id: "v3-08", data: "2026-10-06", tipo: "out", imp: 10590, nota: "Monitor PC",
+        cat: "svago", sub: "Tech", pocket: "principale", pocketTo: null,
+        pending: true, fuoriPiano: true, rif: null, ecc: false, ts: ora, up: ora,
+      });
+    }
+
+    // La rata del 1 ottobre era la seconda, non la prima.
+    const rata = s.movs.find((m) => m && !m.del && m.data === "2026-10-01"
+      && /aliexpress/i.test(String(m.nota || "")));
+    if (rata) { rata.nota = "2/3 Rata AliExpress"; rata.up = ora; }
+
+    // La patente droni del 29 settembre: fuori piano, e non lo diceva.
+    const droni = s.movs.find((m) => m && !m.del && /droni/i.test(String(m.nota || "")));
+    if (droni) { droni.fuoriPiano = true; droni.up = ora; }
+
+    /* --- 3. le ancore -------------------------------------------------- */
+    for (const p of s.pockets || []) {
+      if (!p || SALDI_V3[p.id] === undefined) continue;
+      p.saldo = SALDI_V3[p.id];
+      p.ancoraDa = ANCORA_V3;
+      p.up = ora;
+    }
+
+    s.metaUp = ora;
+    s.profiliUp = ora;
+  });
+
+  /* Le due voci iniziali della lista d'attesa. Fuori dal blocco di sopra
+     perche' `salvaVoce` e' la via normale e qui non serve altro: se ci sono
+     gia' (il sync le ha portate) non si rifanno. */
+  const ids = new Set(vociLista().map((v) => v.id));
+  if (!ids.has("v3-stampante")) {
+    salvaVoce({ id: "v3-stampante", nome: "Stampante Brother + toner", imp: 12475 });
+  }
+  if (!ids.has("v3-profumo")) {
+    salvaVoce({ id: "v3-profumo", nome: "Profumo Mancera", imp: 9548 });
+  }
+  return true;
+}
+
+/* ------------------------------------------------- i travasi della paga -- */
+/*
+   Quali dei quattro travasi del giorno di paga sono stati fatti.
+
+   Sta in `config.pagaFatta` come mappa `data dello stipendio → [id]`, non
+   come lista di record: non serve una lapide, perche' due dispositivi che
+   dicono «il travaso al fondo e' fatto» non hanno un conflitto da
+   risolvere. Si unisce come i check, e per lo stesso motivo — e' storia,
+   si aggiunge e non si toglie.
+*/
+
+export function segnaTravaso(dataStip, id) {
+  scriviMeta((s) => {
+    const m = { ...(s.config.pagaFatta || {}) };
+    const fatti = new Set(m[dataStip] || []);
+    fatti.add(id);
+    m[dataStip] = [...fatti];
+    // Dodici stipendi bastano: oltre e' archeologia.
+    const chiavi = Object.keys(m).sort().slice(-12);
+    s.config.pagaFatta = Object.fromEntries(chiavi.map((k) => [k, m[k]]));
+  });
+}
+
+/* ---------------------------------------- le chiusure settimanali ------- */
+/*
+   Una chiusura e' la domenica in cui hai riconciliato l'estratto conto.
+   Mappa `iso della domenica → { ts, saldoIng }`, stessa logica dei check.
+
+   Il contatore «settimane chiuse di fila» e' l'unica cosa che ha fatto
+   sopravvivere questo rito: un numero che cresce lo si difende, un
+   promemoria lo si ignora.
+*/
+
+export const chiusuraFatta = (iso) => Boolean((stato().config?.chiusure || {})[iso]);
+
+export function segnaChiusura(iso, saldoIng = null) {
+  scriviMeta((s) => {
+    const c = { ...(s.config.chiusure || {}), [iso]: { ts: Date.now(), saldoIng } };
+    const chiavi = Object.keys(c).sort().slice(-60);
+    s.config.chiusure = Object.fromEntries(chiavi.map((k) => [k, c[k]]));
+  });
+}
+
+/** Da quante domeniche di fila chiudi la settimana. */
+export function serieChiusure(domenica) {
+  const c = stato().config?.chiusure || {};
+  const giorno = (n) => new Date(new Date(`${domenica}T12:00:00`).getTime() - n * 7 * 86400000)
+    .toISOString().slice(0, 10);
+  let n = 0;
+  for (let k = c[domenica] ? 0 : 1; k < 60; k++) {
+    if (!c[giorno(k)]) break;
     n++;
   }
   return n;

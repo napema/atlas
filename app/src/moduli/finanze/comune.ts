@@ -18,10 +18,12 @@ const COLORI: Record<string, string> = {
   acc: "var(--color-mint)",
   risp: "var(--color-cyan)",
 };
+
 export const coloreCat = (id?: string | null) => COLORI[id ?? ""] ?? "var(--color-gray)";
 
 export const NOMI_POCKET: Record<string, string> = {
-  principale: "Principale", contanti: "Contanti", cassa: "Cassa", fisse: "Fisse", ing: "ING",
+  principale: "Principale", contanti: "Contanti", cassa: "Cassa", fisse: "Fisse",
+  ing: "ING", fondo: "Fondo",
 };
 export const nomePocket = (id?: string | null) => NOMI_POCKET[id ?? ""] ?? id ?? "";
 
@@ -59,16 +61,23 @@ export type Foglio =
   | { tipo: "dettaglio"; id: string }
   | { tipo: "categoria"; catId: string; mese: string }
   | { tipo: "sub"; catId: string; sub: string; mese: string }
-  | { tipo: "check" }
   | { tipo: "arrivo"; voce: any }
   | { tipo: "ricarica" }
   | { tipo: "ricaricaSett" }
   | { tipo: "saldoING" }
   | { tipo: "pocket" }
   | { tipo: "dormo"; imp: number; bozza: any; conferma: () => void }
-  | { tipo: "permetto" };
+  /* I quattro fogli di v3. «permetto» e «check» non ci sono piu': il
+     simulatore e' diventato la lista d'attesa (si decide PRIMA, non davanti
+     alla cassa) e il check quotidiano e' diventato la chiusura
+     settimanale — un rito a settimana che produce qualcosa si fa, uno al
+     giorno che non produce niente si smette. */
+  | { tipo: "lista" }
+  | { tipo: "obiettivo" }
+  | { tipo: "paga"; dataStip: string; entrata?: number | null }
+  | { tipo: "chiusura" };
 
-export const CADENZE: [string, string][] = [["mensile", "Ogni mese"], ["bimestrale", "Ogni 2 mesi"], ["trimestrale", "Ogni 3 mesi"], ["annuale", "Ogni anno"]];
+export const CADENZE: [string, string][] = [["mensile", "Ogni mese"], ["bimestrale", "Ogni 2 mesi"], ["trimestrale", "Ogni 3 mesi"], ["semestrale", "Ogni 6 mesi"], ["annuale", "Ogni anno"]];
 const MESI_LUNGHI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
 
 export function etichettaCadenza(r: any) {

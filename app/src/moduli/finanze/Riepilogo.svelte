@@ -1,440 +1,374 @@
 <!--
-  Riepilogo — una domanda sola: posso spendere oggi, e quanto.
+  Finanze — cinque blocchi, un ordine fisso, nessuna frase.
 
-  L'ordine dei blocchi non è arbitrario. Prima il numero, poi il check (il
-  gesto della sera), poi quello che sta per uscire — che è la cosa che
-  ribalta la risposta al numero: 67 € restano tanti finché non scopri che
-  dopodomani esce l'affitto. Poi dove sono i soldi, le categorie, come
-  spendi, gli sforamenti. Il tono è quello di un cruscotto: riporta, non
-  sgrida.
+  L'ordine è una gerarchia di decisioni, non un'estetica:
+
+    OBIETTIVO    dove sto andando. Sta in cima perché è la cosa che rende
+                 una spesa costosa: 105 € non sono 105 €, sono due terzi di
+                 un versamento al fondo.
+    OGGI         quanto posso spendere. È il numero che si guarda dieci
+                 volte al giorno, e deve essere UNO.
+    FUORI PIANO  cosa ho fatto fuori dal piano. Non è un rimprovero: è
+                 l'unica voce su cui si può agire, perché è l'unica fatta
+                 di decisioni e non di addebiti.
+    IN ARRIVO    cosa ribalta la risposta di «oggi».
+    POCKET       dove sono i soldi, e da quando il numero è affidabile.
+
+  Quello che c'era prima e non c'è più: nove barre per categoria, «come
+  spendi», il check di oggi, gli sforamenti come blocco a sé. Erano tutte
+  cose vere che non cambiavano niente — si guardavano una volta e poi si
+  scorreva oltre. Le categorie restano in Cicli e in Movimenti, che sono le
+  schermate fatte per guardare indietro.
+
+  Regola di scrittura: etichette e numeri. Niente testo generato, niente
+  consigli. Al massimo una riga per blocco, e quella riga è un confronto fra
+  due cifre.
 -->
 <script lang="ts">
   import Sezione from "$lib/ui/Sezione.svelte";
   import Riga from "$lib/ui/Riga.svelte";
   import Pulsante from "$lib/ui/Pulsante.svelte";
-  import Icona from "$lib/ui/Icona.svelte";
   import Importo from "$lib/ui/Importo.svelte";
+  import Icona from "$lib/ui/Icona.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
-  import { euro, plurale, dataBreve, oggiISO, avviso, daISO, maiuscola, GIORNI } from "$lib/core/ui";
+  import { euro, plurale, oggiISO, daISO, GIORNI, MESI_BREVI } from "$lib/core/ui";
+  import { stato, TIPI_POCKET } from "$condivisi/finanze/dati.js";
+  import { nomePocket } from "./comune";
+  import { cicloDi, nomeCiclo, importoEffettivo, pocketConSaldi } from "$condivisi/finanze/calcolo.js";
   import {
-    stato, profiloDi, emojiCat, CATEGORIE_CASSA, SOGLIE_PREDEFINITE, TIPI_POCKET, categoriaPerId,
-    pendenti, togliDaSospeso, salvaMovimento,
-  } from "$condivisi/finanze/dati.js";
-  import {
-    cicloDi, finoAllaRicarica, pocketConSaldi, inArrivo, comeSpendi, sforamenti, alert, scala,
-    esitoCheck, comeEvento, categorieDelCiclo, nomeCiclo,
-  } from "$condivisi/finanze/calcolo.js";
-  import { nuovoId } from "$lib/core/ui";
-  import { coloreCat, nomePocket } from "./comune";
+    quotaDi, variazioneQuota, copreFino, statoObiettivo, fuoriPianoDelCiclo,
+    ingPrevisto, inArrivoDiviso,
+  } from "$condivisi/finanze/piano.js";
+  import { allineamento } from "$condivisi/finanze/chiusura.js";
   import { apri } from "./fogli.svelte";
 
-  /** `lato`: il numero, il check, gli allarmi (la colonna sinistra sul PC). */
+  /** `lato`: obiettivo e quota — la colonna sinistra sul PC. */
   let { parte }: { parte: "lato" | "resto" } = $props();
-
 
   const d = $derived.by(() => {
     dati.versione;
     const oggi = oggiISO();
     const ciclo = cicloDi(oggi);
     const pk = pocketConSaldi();
-    const configurato = pk.some((p: any) => p.saldo);
-    const soglie = { ...SOGLIE_PREDEFINITE, ...(stato().soglie || {}) };
+    const q = quotaDi(oggi);
     return {
-      oggi, ciclo, configurato,
-      r: finoAllaRicarica(oggi),
-      scala: scala(oggi),
-      arrivo: inArrivo(30, oggi),
-      av: alert(oggi),
-      check: esitoCheck(oggi),
-      sospese: pendenti(),
-      pk, soglie,
-      totalePk: pk.reduce((t: number, p: any) => t + p.saldoVero, 0),
-      come: comeSpendi(ciclo),
-      sfor: sforamenti(ciclo),
+      oggi, ciclo, pk, q,
+      // Zero perché non è configurato non è zero perché hai finito i soldi:
+      // senza un'ancora su un pocket il conto della quota non può partire.
+      configurato: pk.some((p: any) => p.ancoraDa || p.saldo),
+      delta: variazioneQuota(oggi),
+      copre: copreFino(oggi, q.quota),
+      obi: statoObiettivo(oggi),
+      fp: fuoriPianoDelCiclo(ciclo, oggi),
+      ing: ingPrevisto(oggi),
+      arrivo: inArrivoDiviso(14, oggi),
+      all: allineamento(oggi),
+      totale: pk.reduce((t: number, p: any) => t + p.saldoVero, 0),
     };
   });
 
-  /* UNA FINESTRA SOLA, E E' IL CICLO.
-
-     C'erano due viste, «Ciclo» e «Mese solare», e la seconda era offerta
-     «per confronto». Due risposte alla stessa domanda nella stessa
-     schermata non sono una scelta: sono un dubbio, e gli allarmi — che
-     leggono sempre il ciclo — potevano contraddire quello che avevi sotto
-     gli occhi.
-
-     Il ciclo, e non per gusto. Lo stipendio arriva il 23: «quanto posso
-     ancora spendere» si misura da li' al 22, perche' e' quello il momento
-     in cui entrano soldi nuovi. E soprattutto il mese solare SPEZZA IN DUE
-     il mese delle bollette: quelle del 28-30 cadono in un mese, quelle del
-     1-9 in quello dopo, e nessuno dei due contiene un giro completo di
-     spese fisse. Il ciclo ne contiene esattamente uno di ciascuna. E' il
-     motivo per cui «Fisse» nel ciclo dice 1520 e nel mese diceva meno: non
-     e' il ciclo a gonfiare, e' il mese solare a tagliare.
-
-     Il mese solare resta in Analisi, dove serve a confrontare mesi fra
-     loro — un'altra domanda, in un'altra schermata. */
-  const categorie = $derived.by(() => {
-    dati.versione;
-    const mese = d.oggi.slice(0, 7);
-    const tutte = (categorieDelCiclo(d.ciclo) as any[]).filter((c: any) => c.budget > 0 || c.speso > 0);
-    // Solo quelle della cassa settimanale più le due che sforano di più:
-    // nove barre non si leggono, e le sei che vanno bene rendono invisibili
-    // le tre che non vanno.
-    const cassa = tutte.filter((c: any) => CATEGORIE_CASSA.includes(c.id));
-    const altre = tutte
-      .filter((c: any) => !CATEGORIE_CASSA.includes(c.id) && c.budget > 0 && c.speso > 0)
-      .sort((a: any, b: any) => b.speso / b.budget - a.speso / a.budget)
-      .slice(0, 2);
-    return {
-      voci: [...cassa, ...altre],
-      finestra: nomeCiclo(d.ciclo),
-      profilo: profiloDi(d.ciclo.indice).nome,
-      mese,
-    };
-  });
-
-  /* Due stati e basta: in linea, oppure sotto la quota che il piano
-     prevedeva. Niente rosso lampeggiante e niente numeri negativi grandi —
-     il tono è quello di un cruscotto, non di un rimprovero. */
-  const tono = $derived(d.r.livello === "finita" ? "male" : d.r.livello === "sotto" ? "avviso" : "");
-
-  /** «gio 24». Il giorno della settimana serve: «24 – 27» non si legge. */
+  /** «ven 23». Il giorno della settimana serve: «23» da solo non si colloca. */
   const gg = (iso: string) => {
     const x = daISO(iso);
     return `${GIORNI[(x.getDay() + 6) % 7].slice(0, 3)} ${x.getDate()}`;
   };
-  const ggLungo = (iso: string) => {
+  /** «23 ott». */
+  const gm = (iso: string) => {
     const x = daISO(iso);
-    return `${maiuscola(GIORNI[(x.getDay() + 6) % 7])} ${x.getDate()}`;
+    return `${x.getDate()} ${MESI_BREVI[x.getMonth()]}`;
+  };
+  /** «ven 23 ott», per le date lontane: senza il mese, «15» non dice nulla. */
+  const glm = (iso: string) => {
+    const x = daISO(iso);
+    return `${GIORNI[(x.getDay() + 6) % 7].slice(0, 3)} ${x.getDate()} ${MESI_BREVI[x.getMonth()]}`;
   };
 
   const NOTA_POCKET: Record<string, string> = {
-    principale: "spendibile · carta", contanti: "spendibile · in tasca",
-    cassa: "parcheggio · non spendere", fisse: "addebiti automatici", ing: "riserva · non toccare",
+    principale: "spendibile", contanti: "in tasca", cassa: "parcheggio",
+    fisse: "addebiti automatici", ing: "riserva", fondo: "obiettivo",
   };
-
-  function registraSospesa(x: any) {
-    const { ts, ...m } = x;
-    salvaMovimento({ ...m, id: nuovoId("m"), data: oggiISO() });
-    togliDaSospeso(x.id);
-    avviso("Registrata.");
-  }
 </script>
 
 {#if parte === "lato"}
-<!-- 1. IL NUMERO ---------------------------------------------------------->
-<Sezione titolo="Da spendere">
-  <div class="numero" data-tono={tono}>
+
+<!-- 1. L'OBIETTIVO ------------------------------------------------------- -->
+{#if d.obi}
+  <Sezione>
+    <button type="button" class="blocco obi" data-tono={d.obi.inLinea ? "" : "avviso"} onclick={() => apri({ tipo: "obiettivo" })}>
+      <span class="testa">
+        <span class="eti">{d.obi.nome.toUpperCase()} · {gm(d.obi.data)}</span>
+        <span class="eti-dx cifre">{plurale(d.obi.giorni, "giorno", "giorni")}</span>
+      </span>
+
+      <span class="obi-cifre">
+        <b class="cifre">{euro(d.obi.saldo, { tondo: true })}</b>
+        <span class="secondario cifre">/ {euro(d.obi.target, { tondo: true })}</span>
+        {#if d.obi.provvisorio}<span class="tag">stima</span>{/if}
+      </span>
+      <span class="barra"><i style:width="{Math.round(d.obi.frazione * 100)}%"></i></span>
+
+      <span class="righe text-subheadline">
+        <span>
+          {#if d.obi.inLinea}in linea{:else}indietro di <b class="cifre">{euro(-d.obi.scarto, { tondo: true })}</b>{/if}
+          <span class="secondario">· previsto a oggi {euro(d.obi.previsto, { tondo: true })}</span>
+        </span>
+        <span>
+          proiezione <b class="cifre">{euro(d.obi.proiezione, { tondo: true })}</b>
+          {#if d.obi.gap > 0}<span class="secondario">· mancano {euro(d.obi.gap, { tondo: true })}</span>{/if}
+        </span>
+        {#if d.obi.prossimo}
+          <span class="secondario">prossimo versamento {euro(d.obi.versamento, { tondo: true })} · {glm(d.obi.prossimo)}</span>
+        {/if}
+      </span>
+    </button>
+  </Sezione>
+{/if}
+
+<!-- 2. OGGI -------------------------------------------------------------- -->
+<Sezione>
+  <div class="blocco oggi" data-tono={d.q.livello}>
+    <span class="testa"><span class="eti">OGGI</span></span>
+
     {#if !d.configurato}
-      <!-- Zero perché non è configurato non è zero perché hai finito i soldi. -->
-      <span class="text-footnote secondario semibold">Questa settimana</span>
-      <span class="cifra-vuota">—</span>
-      <p class="text-subheadline secondario">I pocket non hanno ancora un saldo, quindi il conto della settimana non può partire.</p>
+      <span class="vuota cifre">—</span>
       <Pulsante variante="pieno" larga onclick={() => apri({ tipo: "pocket" })}>Imposta i saldi</Pulsante>
-      <p class="text-footnote secondario">Si copiano da Revolut e da ING una volta sola. Da lì in poi li muovono i movimenti.</p>
     {:else}
-      <!-- UN NUMERO SOLO.
+      <span class="riga-grande">
+        <Importo centesimi={d.q.quota} misura={46} tono={d.q.livello as any} />
+        <span class="delta text-subheadline cifre" data-verso={d.delta > 0 ? "su" : d.delta < 0 ? "giu" : ""}>
+          {#if d.delta !== 0}
+            <Icona nome={d.delta > 0 ? "su" : "giu"} misura={13} tratto={2.6} />
+          {/if}
+          {d.delta > 0 ? "+" : ""}{euro(d.delta)} da ieri
+        </span>
+      </span>
 
-           Qui sopra ce n'erano due — la media della settimana e quella del
-           ciclo — e nessuna delle due vinceva: davanti a una cosa da venti
-           euro non sapevi quale delle due stavi sforando. Resta la più
-           stretta, che è l'unica che non ti fa sforare senza accorgertene. -->
-      <span class="eti text-footnote semibold">Puoi spendere oggi</span>
-      <Importo centesimi={d.scala.oggi} misura={52} tono={tono as any} />
-
-      <!-- I TRE SERBATOI, in ordine di quanto costa attingerci. Sempre tutti
-           e tre, anche quando uno è a zero: è la scala che si legge, e una
-           scala a cui manca un gradino si conta col dito. -->
-      <ul class="scala">
-        {#each d.scala.gradini as g (g.id)}
-          <li>
-            <span class="g-nome text-subheadline">{g.nome}</span>
-            <span class="g-cifra cifre semibold" class:sotto={g.importo <= 0}>
-              {euro(g.importo, { tondo: true })}
-            </span>
-            <span class="g-nota text-footnote secondario">
-              {#if g.id === "settimana"}fino a {gg(g.fino)}
-              {:else if g.id === "ciclo"}stipendio tra {plurale(g.giorniAllo ?? 0, "giorno", "giorni")}
-              {:else}ING, già tolti gli impegni{/if}
-            </span>
-          </li>
-        {/each}
-      </ul>
-
-      {#if d.r.livello === "finita"}
-        <div class="due-bottoni">
-          <Pulsante variante="grigio" onclick={() => avviso("Va bene così. Lunedì si riparte.")}>Non ricaricare</Pulsante>
-          <Pulsante variante="pieno" onclick={() => apri({ tipo: "ricarica" })}>Devo ricaricare</Pulsante>
-        </div>
-      {/if}
-
-      {#if d.scala.ricarica.quando}
-        <div class="ricarica">
-          <span class="text-subheadline semibold">{ggLungo(d.scala.ricarica.quando)}</span>
-          <span class="text-subheadline secondario">
-            <b class="cifre piu">+{euro(d.scala.ricarica.importo, { tondo: true })}</b> dalla Cassa
+      <span class="righe text-subheadline">
+        <span class="secondario cifre">
+          speso oggi {euro(d.q.speso)} · restano <b class:male={d.q.resta < 0}>{euro(d.q.resta)}</b>
+        </span>
+        <span class="due">
+          <span class="cifre">
+            <b>{euro(d.q.spendibile)}</b>
+            <span class="secondario">fino a {gg(d.q.fine)} · {plurale(d.q.giorni, "giorno", "giorni")}</span>
           </span>
-        </div>
-      {/if}
+          <span class="secondario cifre">piano {euro(d.q.piano)}/g</span>
+        </span>
+        {#if d.copre}
+          <span class="secondario cifre">
+            {d.pk.find((p: any) => p.id === "principale")?.nome ?? "Principale"}
+            {euro(d.pk.filter((p: any) => p.tipo === "spendibile" && !p.external).reduce((t: number, p: any) => t + p.saldoVero, 0))}
+            · copre fino a {gg(d.copre)}
+          </span>
+        {/if}
+      </span>
     {/if}
   </div>
 </Sezione>
 
-<!-- 1bis. IL CHECK — il gesto quotidiano. Costa trenta secondi o si salta. -->
-{#if d.check.fatto}
-  <Sezione>
-    <Riga titolo="Check di oggi fatto" sottotitolo={d.check.serie > 1 ? `${plurale(d.check.serie, "giorno", "giorni")} di fila` : "Ci risentiamo domani"} freccia onclick={() => apri({ tipo: "check" })}>
-      {#snippet inizio()}<span class="spunta-ok"><Icona nome="spunta" misura={16} tratto={2.8} /></span>{/snippet}
-    </Riga>
-  </Sezione>
-{:else}
-  <button type="button" class="check lastra" data-esito={d.check.esito} onclick={() => apri({ tipo: "check" })}>
-    <span class="check-testa">
-      <span class="text-footnote semibold">Check di oggi</span>
-      {#if d.check.serie > 0}<span class="serie cifre"><Icona nome="fiamma" misura={14} tratto={2} />{d.check.serie}</span>{/if}
-    </span>
-    <span class="text-title3">{d.check.titolo}</span>
-    <span class="text-subheadline secondario">{d.check.sottotitolo}</span>
-    <!-- Quattro pallini: l'esito si legge senza aprire niente; aprire serve a sapere PERCHÉ. -->
-    <span class="punti">
-      {#each d.check.voci as v, i (i)}<span class="punto" data-esito={v.esito} title={v.titolo}></span>{/each}
-    </span>
-    <span class="azione text-subheadline semibold">Fai il check <Icona nome="freccia" misura={14} tratto={2.4} /></span>
-  </button>
-{/if}
+<!-- La lista d'attesa accanto ai due gesti: è il terzo gesto, e arriva nello
+     stesso momento — davanti a una cosa che costa. -->
+<Sezione>
+  <Riga titolo="Lista d'attesa" freccia onclick={() => apri({ tipo: "lista" })}>
+    {#snippet inizio()}<span class="ico"><Icona nome="orologio" misura={17} tratto={2.1} /></span>{/snippet}
+    {#snippet fine()}
+      {@const n = (stato().lista || []).filter((v: any) => v && !v.del && (v.stato === "attesa" || !v.stato)).length}
+      <span class="cifre secondario">{n || ""}</span>
+    {/snippet}
+  </Riga>
+</Sezione>
 
-<!-- 2. GLI ALERT -->
-{#if d.av.length}
-  <div class="alert">
-    {#each d.av as a, i (i)}
-      <p class="text-subheadline lastra" data-livello={a.livello}><span class="pallino"></span>{a.testo}</p>
-    {/each}
+{:else}
+
+<!-- 3. FUORI PIANO ------------------------------------------------------- -->
+<Sezione>
+  <div class="blocco fp" data-tono={d.fp.n ? "male" : "ok"}>
+    <span class="testa">
+      <span class="eti">FUORI PIANO · QUESTO CICLO</span>
+      <span class="eti-dx cifre">
+        {#if d.fp.n}{d.fp.n} · {euro(d.fp.totale, { tondo: true })}{:else}0{/if}
+      </span>
+    </span>
+
+    {#if !d.fp.n}
+      <span class="zero cifre">{plurale(d.fp.giorniSenza, "giorno", "giorni")} senza fuori piano</span>
+    {:else}
+      <ul class="elenco">
+        {#each d.fp.voci.slice(0, 5) as m (m.id)}
+          <li>
+            <span class="e-data cifre secondario">{gm(m.data)}</span>
+            <span class="e-nome">{m.nota || "—"}</span>
+            {#if m.daRiserva}<span class="tag">da ING</span>{/if}
+            <span class="e-cifra cifre">{euro(importoEffettivo(m))}</span>
+          </li>
+        {/each}
+        {#if d.fp.voci.length > 5}
+          <li class="piu text-footnote secondario">+{d.fp.voci.length - 5}</li>
+        {/if}
+      </ul>
+      <span class="righe text-subheadline">
+        {#if d.fp.pct != null}
+          <span class="secondario cifre">= {Math.round(d.fp.pct * 100)}% del versamento mensile al fondo</span>
+        {/if}
+        {#if d.fp.ricariche.n}
+          <span class="secondario cifre">ricariche da ING non pianificate: {d.fp.ricariche.n} · {euro(d.fp.ricariche.totale, { tondo: true })}</span>
+        {/if}
+      </span>
+    {/if}
   </div>
-{/if}
+</Sezione>
 
-{:else}
-<!-- LE IN SOSPESO: «ci dormo su» -->
-{#if d.sospese.length}
-  <Sezione titolo="Ci hai dormito su">
-    {#each d.sospese as x (x.id)}
-      {@const ore = Math.floor((Date.now() - x.ts) / 3600000)}
-      <div class="sospesa">
-        <div class="sospesa-testo">
-          <span>{x.nota || categoriaPerId(x.cat)?.nome || "Spesa"}</span>
-          <span class="text-footnote secondario">{ore >= 24 ? "Sono passate 24 ore. La vuoi ancora?" : `Ancora ${plurale(24 - ore, "ora", "ore")} di attesa`}</span>
-        </div>
-        <span class="cifre semibold">{euro(x.imp)}</span>
-        <div class="sospesa-azioni">
-          <Pulsante variante="testo" misura="piccola" onclick={() => { togliDaSospeso(x.id); avviso("Lasciata perdere."); }}>Lascia stare</Pulsante>
-          <Pulsante variante="tinto" misura="piccola" disabled={ore < 24} onclick={() => registraSospesa(x)}>Registra</Pulsante>
-        </div>
-      </div>
-    {/each}
-  </Sezione>
-{/if}
+<!-- 4. IN ARRIVO --------------------------------------------------------- -->
+<Sezione>
+  <div class="blocco">
+    <span class="testa">
+      <span class="eti">IN ARRIVO · 14 GIORNI</span>
+      {#if d.arrivo.prima.totale}<span class="eti-dx cifre">{euro(d.arrivo.prima.totale, { tondo: true })}</span>{/if}
+    </span>
 
-<!-- 3. IN ARRIVO — «posso permettermi questa cena, o fra tre giorni arriva una bolletta?» -->
-<!-- La finestra finisce con il ciclo, non a trenta giorni: quello che esce
-     dopo lo stipendio si paga con lo stipendio dopo, e messo qui gonfia il
-     «mancano» di un mese che invece torna. -->
-<Sezione titolo="In arrivo" piede={d.arrivo.voci.length
-  ? `Fino al ${dataBreve(d.ciclo.a)}, il giorno prima dello stipendio.`
-  : `Niente in scadenza entro il ${dataBreve(d.ciclo.a)}. I ricorrenti e i pagamenti previsti si configurano in Impostazioni.`}>
-  {#snippet coda()}{#if d.arrivo.voci.length}<span class="cifre secondario text-subheadline">{euro(d.arrivo.totale, { tondo: true })}</span>{/if}{/snippet}
-  {#if d.arrivo.voci.length}
-    <div class="avvolge" style:--inizio-l="38px">
-      {#each d.arrivo.voci as v (`${v.origine}:${v.id}:${v.quando}`)}
-        {@const e = comeEvento(v)}
-        <Riga onclick={() => apri({ tipo: "arrivo", voce: v })} freccia>
-          {#snippet inizio()}
-            <span class="data" class:oggi={e.oggi}><span class="data-g">{e.giornoNome}</span><span class="data-n cifre">{e.giornoData.split(" ")[0]}</span></span>
-          {/snippet}
-          <span>{e.nome}</span>
-          <span class="text-subheadline secondario">{e.dettaglio}</span>
-          {#snippet fine()}<span class="cifre semibold uscita">{e.valore}</span>{/snippet}
-        </Riga>
+    <ul class="elenco">
+      {#each d.arrivo.prima.voci as v (`${v.origine}:${v.id}:${v.quando}`)}
+        {@const cop = (d.arrivo.prima.perPocket as any)[v.pocket || "principale"]}
+        <li>
+          <span class="e-data cifre secondario">{gg(v.quando)}</span>
+          <span class="e-nome">{v.nome}</span>
+          <span class="e-nota text-footnote" class:male={cop && !cop.coperto}>
+            {nomePocket(v.pocket)}
+            · {cop && !cop.coperto ? `manca ${euro(cop.scoperto, { tondo: true })}` : "coperto"}
+          </span>
+          <span class="e-cifra cifre">{euro(v.importo)}</span>
+        </li>
       {/each}
-    </div>
-    <!-- La verifica pocket per pocket: una maxi rata sulla riserva, con le
-         sole Fisse controllate, non la vedeva nessuno. -->
-    {#each Object.entries(d.arrivo.perPocket) as [id, p] (id)}
-      {@const q = p as any}
-      <div class="verifica text-footnote" class:male={!q.coperto}>
-        <span>{q.coperto ? `Coperto da ${nomePocket(id)}` : `${nomePocket(id)} non basta`}</span>
-        <span class="cifre">{q.coperto ? `${euro(q.totale, { tondo: true })} / ${euro(q.saldo, { tondo: true })}` : `mancano ${euro(q.scoperto, { tondo: true })}`}</span>
-      </div>
-    {/each}
-  {/if}
-</Sezione>
 
-<!-- 4. DOVE SONO I SOLDI -->
-{#if d.pk.length}
-  <Sezione titolo="Dove sono i soldi">
-    {#snippet coda()}<span class="cifre secondario text-subheadline">{euro(d.totalePk, { tondo: true })}</span>{/snippet}
-    {#each d.pk as p (p.id)}
-      {@const sotto = p.id === "ing" && p.saldoVero > 0 && p.saldoVero < d.soglie.ingMinimo}
-      <!-- ING si aggiorna a mano: è l'unico saldo che l'app non può sapere. -->
-      <Riga
-        titolo={p.nome}
-        sottotitolo={sotto ? "sotto il minimo di sicurezza" : NOTA_POCKET[p.id] || (TIPI_POCKET as any)[p.tipo]?.nome || ""}
-        onclick={p.external ? () => apri({ tipo: "saldoING" }) : undefined}
-        freccia={Boolean(p.external)}
-      >
-        {#snippet fine()}<span class="cifre semibold" class:male={p.saldoVero < 0 || sotto}>{euro(p.saldoVero)}</span>{/snippet}
-      </Riga>
-    {/each}
-  </Sezione>
-{/if}
+      <!-- LA RIGA DELLA PAGA, e tutto quello che sta sotto non ha allarmi:
+           una bolletta del 9 novembre la paga lo stipendio del 23 ottobre, e
+           segnalarla scoperta oggi è un allarme su un mese che torna. -->
+      <li class="paga">
+        <span class="cifre">{gg(d.arrivo.paga)}</span>
+        <span>GIORNO DI PAGA</span>
+      </li>
 
-<!-- 5. LE CATEGORIE -->
-{#if categorie.voci.length}
-  <Sezione
-    titolo="Le categorie"
-    piede={`Da stipendio a stipendio: è la finestra su cui l'app fa ogni conto, allarmi compresi. Il mese solare taglia a metà il giro delle bollette, quindi non torna mai. Budget del profilo ${categorie.profilo}.`}
-  >
-    {#snippet coda()}<span class="text-footnote secondario">{categorie.finestra}</span>{/snippet}
-    {#each categorie.voci as c (c.id)}
-      {@const f = c.budget > 0 ? c.speso / c.budget : 0}
-      {@const oltre = c.budget > 0 && c.speso > c.budget}
-      <button type="button" class="categoria" style:--tinta={oltre ? "var(--color-red)" : f >= 0.85 ? "var(--color-orange)" : coloreCat(c.id)} onclick={() => apri({ tipo: "categoria", catId: c.id, mese: categorie.mese })}>
-        <span class="cat-alto">
-          <span class="cat-nome"><span class="emoji">{emojiCat(c.id)}</span>{c.nome}</span>
-          <span class="cifre text-subheadline" class:male={oltre}>{euro(c.speso, { tondo: true })} <span class="secondario">/ {euro(c.budget, { tondo: true })}</span></span>
-        </span>
-        <span class="barra"><i style:width="{Math.min(100, Math.round(f * 100))}%"></i></span>
-      </button>
-    {/each}
-  </Sezione>
-{/if}
-
-<!-- 6. COME SPENDI -->
-{#if d.come.totale}
-  {@const pct = Math.round(d.come.pctDiscrezionale * 100)}
-  <Sezione titolo="Come spendi" piede="Questo ciclo. Gli automatici — rate, bollette, accantonamenti — stanno a parte: non sono spese che fai, sono spese che ti fanno.">
-    <div class="come">
-      <div class="come-barra">
-        <i class="auto" style:width="{Math.round(d.come.pct.automatico * 100)}%"></i>
-        <i class="nec" style:width="{Math.round(d.come.pct.necessario * 100)}%"></i>
-        <i class="disc" style:width="{Math.round(d.come.pct.discrezionale * 100)}%"></i>
-      </div>
-      <div class="come-legenda text-footnote">
-        <span><i class="auto"></i>Automatico {euro(d.come.automatico, { tondo: true })}</span>
-        <span><i class="nec"></i>Necessario {euro(d.come.necessario, { tondo: true })}</span>
-        <span><i class="disc"></i>Discrezionale {euro(d.come.discrezionale, { tondo: true })} ({pct}%)</span>
-      </div>
-    </div>
-  </Sezione>
-{/if}
-
-<!-- 7. SFORAMENTI — sempre visibile, e soprattutto quando è a zero: uno zero
-     che si vede è quello che lo protegge. -->
-<Sezione titolo="Sforamenti">
-  <div class="sfor">
-    <span class="sfor-cifra cifre" class:male={d.sfor.n > 0} class:ok={d.sfor.n === 0}>{d.sfor.n}</span>
-    <div class="sfor-testo">
-      <span class="text-subheadline">{d.sfor.n === 0 ? "Questo ciclo · nessuna ricarica fuori dal budget." : `Questo ciclo · ${euro(d.sfor.totale, { tondo: true })} in ${plurale(d.sfor.n, "ricarica", "ricariche")}.`}</span>
-      {#if d.sfor.ultimo}
-        <span class="text-footnote secondario">Ultimo: {dataBreve(d.sfor.ultimo.data)} · {euro(d.sfor.ultimo.imp, { tondo: true })}{d.sfor.ultimo.nota ? ` — ${d.sfor.ultimo.nota}` : ""}</span>
-      {/if}
-    </div>
+      {#each d.arrivo.dopo as v (`${v.origine}:${v.id}:${v.quando}`)}
+        <li class="dopo">
+          <span class="e-data cifre secondario">{gg(v.quando)}</span>
+          <span class="e-nome secondario">{v.nome}</span>
+          <span class="e-cifra cifre secondario">{euro(v.importo)}</span>
+        </li>
+      {/each}
+    </ul>
   </div>
 </Sezione>
+
+<!-- 5. I POCKET ---------------------------------------------------------- -->
+<Sezione>
+  <div class="blocco">
+    <span class="testa">
+      <span class="eti">POCKET</span>
+      <button type="button" class="eti-dx all" data-tono={d.all.vecchio ? "avviso" : ""} onclick={() => apri({ tipo: "chiusura" })}>
+        {#if d.all.quando}allineato all'estratto: {gm(d.all.quando)}{:else}mai allineato{/if}
+      </button>
+    </span>
+
+    <ul class="elenco pocket">
+      {#each d.pk as p (p.id)}
+        <li>
+          <span class="e-nome">{p.nome}</span>
+          <span class="e-nota text-footnote secondario">{NOTA_POCKET[p.id] ?? (TIPI_POCKET as any)[p.tipo]?.nome ?? ""}</span>
+          <span class="e-cifra cifre" class:male={p.saldoVero < 0}>{euro(p.saldoVero)}</span>
+        </li>
+      {/each}
+    </ul>
+
+    <!-- ING: il saldo non dice niente da solo. Il punto più basso dei
+         prossimi dodici mesi è l'unico numero che risponde a «posso
+         attingere». -->
+    <span class="righe text-subheadline">
+      <span class="cifre" class:avviso={d.ing.sotto}>
+        <span class="secondario">ING minimo previsto</span>
+        <b>{euro(d.ing.minimo, { tondo: true })}</b>
+        <span class="secondario">· {glm(d.ing.quando)}</span>
+      </span>
+      <span class="secondario cifre">totale {euro(d.totale, { tondo: true })} · ciclo {nomeCiclo(d.ciclo)}</span>
+    </span>
+  </div>
+</Sezione>
+
 {/if}
 
 <style>
-  .numero { padding: var(--space-5) var(--space-4) var(--space-4); display: flex; flex-direction: column; gap: 6px; }
-  .eti { color: var(--label-secondary); letter-spacing: 0.7px; text-transform: uppercase; }
-  .cifra-vuota { font-family: var(--font-display); font-size: 52px; line-height: 58px; font-weight: var(--weight-bold); color: var(--label-tertiary); }
+  /* Un blocco solo per tutti e cinque: testa con due etichette, corpo,
+     righe di chiusura. La ripetizione è il punto — cinque blocchi che si
+     leggono con lo stesso movimento degli occhi. */
+  .blocco { display: flex; flex-direction: column; gap: 6px; padding: var(--space-4); width: 100%; text-align: left; }
+  .testa { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+  .eti {
+    font-size: var(--text-caption1); font-weight: var(--weight-semibold);
+    letter-spacing: 0.7px; color: var(--label-secondary);
+  }
+  .eti-dx { font-size: var(--text-footnote); color: var(--label-secondary); }
+  .all { font-size: var(--text-footnote); color: var(--label-secondary); }
+  .all[data-tono="avviso"] { color: var(--color-orange); }
 
-  /* LA SCALA. Tre righe a griglia e non tre flex: i nomi incolonnati a
-     sinistra e le cifre incolonnate a destra si confrontano con l'occhio,
-     senza rileggere l'etichetta di ognuna. La nota è la terza colonna dove
-     c'è spazio e va a capo sotto sul telefono, perché è la parte che si
-     legge una volta sola. */
-  .scala {
-    display: grid; grid-template-columns: auto 1fr; gap: 2px var(--space-3);
-    margin: var(--space-3) 0 var(--space-1);
-    padding-top: var(--space-3); border-top: 0.5px solid var(--separator);
-  }
-  .scala li { display: contents; }
-  .g-nome { color: var(--label-secondary); }
-  .g-cifra { justify-self: end; font-size: var(--text-callout); font-variant-numeric: tabular-nums; }
-  /* Un gradino a zero o sotto non è un errore da segnare in rosso: è un
-     serbatoio vuoto, e il prossimo gradino è la risposta. */
-  .g-cifra.sotto { color: var(--label-tertiary); }
-  .g-nota { grid-column: 1 / -1; margin-bottom: var(--space-2); }
-  @media (min-width: 520px) {
-    .scala { grid-template-columns: auto auto 1fr; }
-    .g-cifra { justify-self: end; }
-    .g-nota { grid-column: auto; justify-self: end; margin-bottom: 0; align-self: baseline; }
-  }
-  /* La ricarica che arriva: non è un avviso, è un fatto del calendario, e
-     sta in fondo alla scheda perché è quello che spiega perché i giorni
-     sono quattro e non ventinove. */
-  .ricarica {
-    display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3);
-    margin-top: var(--space-2); padding-top: var(--space-3); border-top: 0.5px solid var(--separator);
-  }
-  .ricarica .piu { color: var(--color-green); font-weight: var(--weight-semibold); }
-  .due-bottoni { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); margin-top: var(--space-2); }
+  .righe { display: flex; flex-direction: column; gap: 2px; }
+  .due { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+  .secondario { color: var(--label-secondary); }
   .male { color: var(--color-red); }
-  .ok { color: var(--color-green); }
+  .avviso { color: var(--color-orange); }
 
-  .spunta-ok { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--color-green); color: #fff; }
-  .check {
-    display: flex; flex-direction: column; gap: 4px; padding: var(--space-4); text-align: left;
-    /* L'anello dell'accento SOSTITUISCE quello della lastra: e' il segno
-       che questa carta si tocca. L'ombra resta quella di tutte. */
-    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accento) 40%, transparent),
-                var(--lastra-ombra);
+  /* --- obiettivo --- */
+  .obi:active { background: var(--fill-quaternary); }
+  .obi-cifre { display: flex; align-items: baseline; gap: 6px; }
+  .obi-cifre b { font-family: var(--font-display); font-size: 30px; line-height: 34px; font-weight: var(--weight-bold); }
+  .barra { height: 6px; border-radius: 3px; overflow: hidden; background: var(--fill-tertiary); margin: 4px 0 2px; }
+  .barra i { display: block; height: 100%; border-radius: inherit; background: var(--accento); }
+  .obi[data-tono="avviso"] .barra i { background: var(--color-orange); }
+  .tag {
+    padding: 1px 6px; border-radius: var(--radius-sm); font-size: var(--text-caption2);
+    font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.4px;
+    color: var(--label-secondary); background: var(--fill-tertiary);
   }
-  .check:active { opacity: 0.8; }
-  .check-testa { display: flex; justify-content: space-between; align-items: center; color: var(--accento); }
-  .serie { display: inline-flex; align-items: center; gap: 3px; color: var(--color-orange); font-weight: var(--weight-semibold); }
-  .punti { display: flex; gap: 6px; margin: var(--space-2) 0; }
-  .punto { width: 10px; height: 10px; border-radius: 50%; background: var(--fill-primary); }
-  .punto[data-esito="ok"] { background: var(--color-green); }
-  .punto[data-esito="attenzione"] { background: var(--color-orange); }
-  .punto[data-esito="male"] { background: var(--color-red); }
-  .azione { display: inline-flex; align-items: center; gap: 4px; color: var(--accento); }
 
-  .alert { display: flex; flex-direction: column; gap: var(--space-2); }
-  .alert p { display: flex; gap: var(--space-2); align-items: flex-start; padding: var(--space-3) var(--space-4); border-radius: var(--radius-xl); }
-  .pallino { flex: none; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--accento); }
-  [data-livello="critico"] .pallino { background: var(--color-red); }
-  [data-livello="warn"] .pallino { background: var(--color-orange); }
+  /* --- oggi --- */
+  .riga-grande { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+  .delta { display: inline-flex; align-items: center; gap: 3px; color: var(--label-tertiary); }
+  .delta[data-verso="su"] { color: var(--color-green); }
+  .delta[data-verso="giu"] { color: var(--color-orange); }
+  .vuota { font-family: var(--font-display); font-size: 46px; line-height: 52px; font-weight: var(--weight-bold); color: var(--label-tertiary); }
 
-  .sospesa { position: relative; display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); padding: var(--space-3) var(--space-4); }
-  .sospesa + .sospesa::before { content: ""; position: absolute; top: 0; left: var(--space-4); right: 0; border-top: 0.5px solid var(--separator); }
-  .sospesa-testo { display: flex; flex-direction: column; }
-  .sospesa-azioni { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: var(--space-2); }
+  .ico { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--fill-tertiary); color: var(--label-secondary); }
 
-  .data { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: var(--radius-md); background: var(--fill-quaternary); }
-  .data.oggi { background: color-mix(in srgb, var(--accento) 18%, transparent); color: var(--accento); }
-  .data-g { font-size: 9px; line-height: 10px; font-weight: var(--weight-semibold); text-transform: uppercase; opacity: 0.8; }
-  .data-n { font-size: var(--text-callout); line-height: 18px; font-weight: var(--weight-semibold); }
-  .uscita { color: var(--color-red); }
-  .verifica { display: flex; justify-content: space-between; padding: var(--space-3) var(--space-4); border-top: 0.5px solid var(--separator); color: var(--color-green); }
-  .verifica.male { color: var(--color-red); }
+  /* --- gli elenchi: una griglia, non tre flex.
 
-  .categoria { width: 100%; display: flex; flex-direction: column; gap: 6px; padding: 10px var(--space-4) 12px; text-align: left; }
-  .categoria:active { background: var(--fill-quaternary); }
-  .cat-alto { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
-  .cat-nome { display: inline-flex; gap: 8px; align-items: center; }
-  .barra { height: 6px; border-radius: 3px; overflow: hidden; background: var(--fill-tertiary); }
-  .barra i { display: block; height: 100%; border-radius: inherit; background: var(--tinta); }
+     Le cifre a destra incolonnate si confrontano con l'occhio; in tre flex
+     ognuna finisce dove capita e per leggere la terza bisogna rileggere la
+     prima. --- */
+  .elenco { display: grid; grid-template-columns: auto 1fr auto; gap: 2px var(--space-3); margin-top: 2px; align-items: baseline; }
+  /* `display: contents` e non `subgrid`: le celle delle righe devono stare
+     sulla griglia del genitore, e questo lo fa su tutto quello che esiste. */
+  .elenco li { display: contents; }
+  .e-data { font-size: var(--text-footnote); white-space: nowrap; }
+  .e-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .e-cifra { justify-self: end; font-variant-numeric: tabular-nums; font-weight: var(--weight-semibold); }
+  /* La nota va a capo sotto il nome: è la parte che si legge una volta. */
+  .e-nota { grid-column: 2 / 3; color: var(--label-secondary); }
+  .elenco .tag { grid-column: 2 / 3; justify-self: start; }
+  /* Queste due righe NON sono `display: contents`: hanno un bordo e un
+     margine, e una scatola che non esiste non si può bordare. */
+  .piu { display: block; grid-column: 1 / -1; }
 
-  .come { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
-  .come-barra { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; }
-  .come-barra i { display: block; height: 100%; }
-  .auto { background: var(--color-gray); }
-  .nec { background: var(--color-blue); }
-  .disc { background: var(--color-purple); }
-  .come-legenda { display: flex; flex-direction: column; gap: 4px; color: var(--label-secondary); }
-  .come-legenda span { display: inline-flex; align-items: center; gap: 6px; }
-  .come-legenda i { width: 10px; height: 10px; border-radius: 3px; }
+  .pocket { grid-template-columns: 1fr auto; }
+  .pocket .e-nota { grid-column: 1 / 2; }
 
-  .sfor { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4); }
-  .sfor-cifra { font-family: var(--font-display); font-size: 40px; line-height: 44px; font-weight: var(--weight-bold); }
-  .sfor-testo { display: flex; flex-direction: column; gap: 2px; }
+  /* La riga del giorno di paga: è un separatore, non una voce. */
+  .paga {
+    display: flex; gap: var(--space-3); grid-column: 1 / -1;
+    margin: 6px 0; padding-top: 7px; border-top: 0.5px solid var(--separator);
+    color: var(--color-green);
+    font-size: var(--text-footnote); font-weight: var(--weight-semibold); letter-spacing: 0.6px;
+  }
+  .dopo .e-nome, .dopo .e-cifra { font-weight: var(--weight-regular); }
+
+  /* --- fuori piano --- */
+  .zero { font-family: var(--font-display); font-size: var(--text-title3); font-weight: var(--weight-semibold); color: var(--color-green); }
+  .fp[data-tono="male"] .e-cifra { color: var(--color-red); }
 </style>

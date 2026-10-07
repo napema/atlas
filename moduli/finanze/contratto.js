@@ -9,11 +9,19 @@ import { oggiISO, euro, plurale, dataBreve } from "../../core/ui.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { annuncia } from "../../core/bus.js";
-import { casella, stato, movimentiVivi, migra, checkFatto, completaTravasi, dividiPersonale } from "./dati.js";
 import {
-  statistiche, budgetTotale, meseDi, importoEffettivo,
-  settimana, orizzonte, inArrivo, spesoOggi, ricorrentiDiOggi, alert, calendarioUscite, giorniADomenica, scala,
+  casella, stato, movimentiVivi, migra, completaTravasi, dividiPersonale, allineaV3,
+  chiusuraFatta, vociLista, statoVoce,
+} from "./dati.js";
+import {
+  statistiche, budgetTotale, meseDi, importoEffettivo, cicloDi,
+  inArrivo, ricorrentiDiOggi, calendarioUscite, prossimoStipendio, giorniFra,
 } from "./calcolo.js";
+import {
+  quotaDi, variazioneQuota, statoObiettivo, fuoriPianoDelCiclo, ingPrevisto, soglie,
+} from "./piano.js";
+import { pagaCompleta } from "./paga.js";
+import { allineamento, domenicaDaChiudere } from "./chiusura.js";
 
 let ridisegnaVista = () => {};
 
@@ -42,22 +50,67 @@ function prossimaUscita(iso) {
 }
 
 /**
- * Il check di oggi come voce della checklist della home, o niente.
+ * Cosa resta da fare oggi, per la checklist della home.
  *
- * Dalle 18 in poi, e solo se non è già stato fatto. Prima di quell'ora la
- * giornata non è ancora andata come andrà, e un check fatto a metà pomeriggio
- * dice di una giornata che non c'è ancora: sarebbe una spunta comprata a
- * poco, e le spunte comprate a poco svuotano di senso la serie.
+ * NON C'È PIÙ IL CHECK QUOTIDIANO, e la ragione è che non produceva
+ * niente: trenta secondi la sera per guardare quattro pallini, ogni
+ * giorno, e alla fine della settimana nessun numero era cambiato. Un rito
+ * che non restituisce nulla lo si fa per due settimane.
+ *
+ * Al suo posto due cose che restituiscono qualcosa:
+ *
+ *   LA CHIUSURA, la domenica sera. Riconcilia l'estratto conto, riancora i
+ *   saldi, produce la pagella e il report. È il rito che impedisce ai saldi
+ *   di andare in deriva — trecento euro in due mesi, l'ultima volta.
+ *
+ *   IL GIORNO DI PAGA, finché i quattro travasi non sono fatti. È l'unico
+ *   momento del mese in cui lasciare le cose a metà costa davvero: duemila
+ *   euro sul Principale sembrano tutti spendibili.
  */
-function checkDaFare(iso) {
+function restaDaFare(iso) {
+  const voci = [];
   const ora = new Date().getHours();
-  if (ora < 18 || checkFatto(iso)) return [];
-  return [{
-    chiave: "finanze:check", apre: "#/finanze",
-    nome: "Check di oggi", dentro: "Finanze", emoji: "💶", tint: "lime",
-    nomeFascia: "Sera", fascia: "sera",
-    quando: ora >= 22 ? "tardi" : "adesso",
-  }];
+
+  const paga = cicloDi(iso).da;
+  if (!pagaCompleta(paga) && iso >= paga && giorniFra(paga, iso) <= 3) {
+    voci.push({
+      chiave: "finanze:paga", apre: "#/finanze",
+      nome: "I quattro travasi", dentro: "Finanze", emoji: "💶", tint: "lime",
+      nomeFascia: "Giorno di paga", fascia: "giorno",
+      quando: "adesso",
+    });
+  }
+
+  /* La domenica dalle 18. Prima di quell'ora la settimana non è ancora
+     andata come andrà, e un estratto conto caricato alle tre del pomeriggio
+     va ricaricato la settimana dopo per gli stessi due giorni. */
+  const domenica = domenicaDaChiudere(iso);
+  const eDomenica = iso === domenica;
+  const vecchio = allineamento(iso).vecchio;
+  if ((eDomenica && ora >= 18 && !chiusuraFatta(domenica)) || vecchio) {
+    voci.push({
+      chiave: "finanze:chiusura", apre: "#/finanze/chiusura",
+      nome: "Chiudi la settimana", dentro: "Finanze", emoji: "💶", tint: "lime",
+      nomeFascia: "Sera", fascia: "sera",
+      quando: vecchio ? "tardi" : ora >= 22 ? "tardi" : "adesso",
+    });
+  }
+
+  /* Le voci della lista d'attesa che si sono sbloccate: ventiquattro ore
+     sono passate, la decisione è tornata in mano tua. Non è un promemoria
+     di comprare — è un promemoria di decidere, e la risposta può essere no. */
+  const sbloccate = vociLista().filter((v) => statoVoce(v) === "sbloccata");
+  if (sbloccate.length) {
+    voci.push({
+      chiave: "finanze:lista", apre: "#/finanze/lista",
+      nome: sbloccate.length === 1 ? `${sbloccate[0].nome}: deciso?` : `${sbloccate.length} cose in lista, sbloccate`,
+      dentro: "Finanze", emoji: "💶", tint: "lime",
+      nomeFascia: "Quando capita", fascia: "giorno",
+      quando: "adesso",
+    });
+  }
+
+  return voci;
 }
 
 /* ------------------------------------------------------------- lavagna -- */
@@ -94,6 +147,12 @@ export function avviaSync() {
         // fondono per record come i movimenti.
         ricorrenti: s.ricorrenti,
         previsti: s.previsti,
+        /* LA LISTA D'ATTESA VIAGGIA FUORI DA `meta`, come i ricorrenti e i
+           previsti, e per lo stesso motivo: dentro si fonderebbe a blocchi
+           sotto il confronto di un solo `metaUp`, e basterebbe un
+           dispositivo con la lista vuota che scrive qualunque altra cosa
+           per portarsela via. Fuori si fonde per record, con le lapidi. */
+        lista: s.lista,
         // I pocket qui fuori insieme agli altri: dentro `meta` un
         // dispositivo che non aveva mai ricevuto i saldi spediva i suoi
         // quattro zeri e li faceva vincere. Dentro c'è il denaro: è il
@@ -128,6 +187,9 @@ export function avviaSync() {
         }
         if (Array.isArray(remoto.previsti)) {
           s.previsti = potaLapidi(fondiRecord(s.previsti || [], remoto.previsti));
+        }
+        if (Array.isArray(remoto.lista)) {
+          s.lista = potaLapidi(fondiRecord(s.lista || [], remoto.lista));
         }
         // I pocket non si potano: sono quattro, fissi, e una lapide su un
         // pocket vorrebbe dire perdere un saldo.
@@ -165,6 +227,32 @@ export function avviaSync() {
         if (rm?.config?.checks) {
           s.config.checks = { ...rm.config.checks, ...(s.config.checks || {}) };
         }
+        /* Le chiusure settimanali, i travasi della paga e gli sblocchi:
+           stessa regola dei check, e la ragione e' la stessa. Non sono
+           impostazioni, sono STORIA — «la settimana del 12 l'ho chiusa» non
+           smette di essere vero perche' l'altro dispositivo non lo sa. Sotto
+           il cancello di `metaUp` basterebbe un salvataggio qualunque, anche
+           dei saldi, per cancellare un contatore di nove settimane. */
+        if (rm?.config?.chiusure) {
+          s.config.chiusure = { ...rm.config.chiusure, ...(s.config.chiusure || {}) };
+        }
+        if (rm?.config?.pagaFatta) {
+          const mio = s.config.pagaFatta || {};
+          const fuso = { ...rm.config.pagaFatta };
+          // Per data, l'UNIONE dei travasi fatti: due dispositivi possono
+          // averne spuntati due diversi, e nessuno dei due e' da disfare.
+          for (const [k, v] of Object.entries(mio)) {
+            fuso[k] = [...new Set([...(fuso[k] || []), ...v])];
+          }
+          s.config.pagaFatta = fuso;
+        }
+        if (Array.isArray(rm?.config?.sblocchi)) {
+          const visti = new Set((s.config.sblocchi || []).map((x) => `${x.ts}`));
+          s.config.sblocchi = [
+            ...(s.config.sblocchi || []),
+            ...rm.config.sblocchi.filter((x) => !visti.has(`${x.ts}`)),
+          ].sort((a, b) => a.ts - b.ts).slice(-50);
+        }
 
         /* I PROFILI HANNO UN CONFRONTO LORO, FUORI DAL CANCELLO.
 
@@ -189,7 +277,17 @@ export function avviaSync() {
           if (rm.cats?.length) s.cats = rm.cats;
           // `checks` sopravvive allo spread: l'ha appena unito la riga di
           // sopra, e qui il blocco remoto lo riporterebbe a quelli suoi.
-          if (rm.config) s.config = { ...s.config, ...rm.config, checks: s.config.checks };
+          if (rm.config) {
+            s.config = {
+              ...s.config, ...rm.config,
+              // Questi quattro li hanno appena uniti le righe di sopra: il
+              // blocco remoto li riporterebbe a quelli suoi.
+              checks: s.config.checks,
+              chiusure: s.config.chiusure,
+              pagaFatta: s.config.pagaFatta,
+              sblocchi: s.config.sblocchi,
+            };
+          }
           if (rm.soglie) s.soglie = { ...s.soglie, ...rm.soglie };
           s.metaUp = rm.up;
         }
@@ -239,7 +337,11 @@ export function avviaSync() {
      resterebbe con «Personale» per sempre. */
   function migraCategorie() {
     if (!canale.letturaFatta && canale.stato !== "off") return;
-    if (!dividiPersonale()) return;
+    /* DUE MIGRAZIONI, DUE MARCHI, UN GANCIO SOLO. `||` e non `&&`: se la
+       prima ha già girato in passato torna `false`, e con l'`&&` la seconda
+       non girerebbe mai. */
+    const fatta = dividiPersonale() || allineaV3();
+    if (!fatta) return;
     pubblicaSullaLavagna();
     ridisegnaVista();
   }
@@ -254,13 +356,17 @@ export function avviaSync() {
 /**
  * Quello che la home di ATLAS mostra di Finanze.
  *
- * Il numero è il saldo del Principale — «quanto posso spendere» — e non
- * più il totale speso nel mese: speso 1.034 € non dice se stasera posso
- * uscire a cena, restano 67 € sì.
+ * UN NUMERO SOLO, ed è la quota di oggi. La carta ne ha mostrati tre —
+ * quanto c'è nelle tasche, quanto è uscito oggi, quanto al giorno — tutti
+ * della stessa misura: a colpo d'occhio non si capiva quale fosse la
+ * risposta a «posso spendere stasera». Ed è la STESSA quota che si legge
+ * dentro Finanze, con le stesse parole: due schermate che dicono due numeri
+ * per la stessa domanda sono due app.
  *
- * `dettaglio` porta la cosa che ribalta la risposta al numero, in ordine
- * di quanto la ribalta: prima cosa esce OGGI, poi quanto è già uscito
- * oggi, poi quanti giorni mancano a lunedì.
+ * Sotto, soltanto quello che può ribaltare quel numero nel giro di poche
+ * ore: le scadenze che bruciano. Non le prossime sei — sei righe di
+ * scadenze in home sono un estratto conto, si smettono di leggere, e con
+ * loro si smette di vedere quella che conta.
  */
 export function oggi() {
   migra();
@@ -268,90 +374,102 @@ export function oggi() {
   const st = statistiche(meseDi());
   if (!st.nMovimenti && !budgetTotale(meseDi())) return null;
 
-  const s = settimana(iso);
-  const o = orizzonte(iso);
-  const sc = scala(iso);
+  const ciclo = cicloDi(iso);
+  const q = quotaDi(iso);
+  const obi = statoObiettivo(iso);
+  const fp = fuoriPianoDelCiclo(ciclo, iso);
+  const ing = ingPrevisto(iso);
+  const sg = soglie();
+  const arrivo = inArrivo(3650, iso);
   const oggiRic = ricorrentiDiOggi(iso);
-  const speso = spesoOggi(iso);
-  const av = alert(iso);
+  const delta = variazioneQuota(iso);
 
+  /* L'ALLARME È UNO SOLO, e in ordine di quanto è urgente. Tre allarmi
+     insieme non sono tre informazioni: sono un muro di testo rosso in cui
+     quello che conta sta in mezzo agli altri due. */
+  let allarme = null;
+  if (q.resta < 0) {
+    allarme = `Oggi hai speso ${euro(q.speso)}, la quota era ${euro(q.quota)}.`;
+  } else if (arrivo.scopertoTotale > 0) {
+    allarme = `Mancano ${euro(arrivo.scopertoTotale)} per coprire quello che scade prima del ${dataBreve(ciclo.a)}.`;
+  } else if (q.quota < (sg.quotaMinima || 0)) {
+    allarme = `Quota di oggi ${euro(q.quota)}: ${plurale(q.giorni, "giorno", "giorni")} con ${euro(q.spendibile)}.`;
+  } else if (ing.sotto) {
+    allarme = `ING scende a ${euro(ing.minimo, { tondo: true })} il ${dataBreve(ing.quando)}.`;
+  } else if (obi && !obi.inLinea) {
+    allarme = `${obi.nome}: indietro di ${euro(-obi.scarto, { tondo: true })}.`;
+  }
+
+  /* IL DETTAGLIO: quello che ribalta il numero, in ordine di quanto lo
+     ribalta. Un addebito che esce OGGI viene prima di tutto — è l'unica
+     cosa che può rendere falsa la quota nel giro di poche ore. */
   const pezzi = [];
   if (oggiRic.length) {
-    // Un addebito che esce oggi viene prima di tutto: è l'unica cosa che
-    // può rendere sbagliato il numero grande nel giro di poche ore.
     pezzi.push(oggiRic.length === 1
       ? `Oggi esce ${oggiRic[0].nome.toLowerCase()} · ${euro(oggiRic[0].importo, { tondo: true })}`
       : `Oggi escono ${oggiRic.length} addebiti · ${euro(oggiRic.reduce((t, r) => t + r.importo, 0), { tondo: true })}`);
   }
-  if (speso > 0) pezzi.push(`Oggi ${euro(speso, { tondo: true })}`);
-  // L'orizzonte e non la domenica: è la finestra su cui quei soldi devono
-  // davvero arrivare, e su cui si misura il ritmo che ti puoi permettere.
-  pezzi.push(o.disponibile <= 0
-    ? `le tasche sono a zero · ${plurale(o.giorni, "giorno", "giorni")} allo stipendio`
-    : `${euro(o.alGiorno, { tondo: true })} al giorno per ${plurale(o.giorni, "giorno", "giorni")}`);
+  if (q.speso > 0) pezzi.push(`speso ${euro(q.speso)}, restano ${euro(q.resta)}`);
+  else pezzi.push(`${euro(q.spendibile)} fino al ${dataBreve(q.fine)}`);
+  if (fp.n) pezzi.push(`fuori piano ${fp.n} · ${euro(fp.totale, { tondo: true })}`);
 
   return {
     titolo: "Finanze",
-    valore: euro(o.disponibile),
-    // L'etichetta la scrive il modulo, non la home: era «restano questa
-    // settimana» scritto a mano lì, e diceva una cosa falsa — quel numero
-    // è quanto hai nelle tasche spendibili, e deve bastare fino allo
-    // stipendio, non fino a domenica.
-    eti: `da far bastare fino al ${dataBreve(o.fine)}`,
+
+    /* `valore` ed `eti` sono il numero grande della carta larga. L'etichetta
+       la scrive il modulo e non la home: era «restano questa settimana»
+       scritto a mano lì, e diceva una cosa falsa. */
+    valore: euro(q.quota),
+    eti: `quota di oggi · ${plurale(q.giorni, "giorno", "giorni")} allo stipendio`,
+
+    /* I due campi della carta piccola. Li formatta il modulo e non la home
+       perché è il modulo a sapere che gli importi sono centesimi: passarli
+       grezzi vorrebbe dire insegnarlo alla home. */
+    oggiPuoi: euro(q.quota),
+    oggiFino: q.speso > 0
+      ? `speso ${euro(q.speso)} · restano ${euro(q.resta)}`
+      : `${euro(q.spendibile)} fino al ${dataBreve(q.fine)}`,
+
     dettaglio: pezzi.join(" · "),
-    // La home lo mette in una frase: «ti manca segnare le spese» non ha
-    // senso — Finanze non è una cosa da fare, è una cosa da guardare. Solo
-    // quando la settimana è finita c'è davvero qualcosa da decidere.
-    mancaTesto: s.finita ? "una decisione sui soldi" : null,
-    urgente: s.finita || av.some((a) => a.livello === "critico"),
-    avanzamento: s.frazione,
-    // Il testo per la carta larga della home, quando Finanze è la cosa
-    // più urgente: è l'alert vero, non un riassunto.
-    allarme: av[0]?.testo || null,
+    allarme,
+    urgente: q.resta < 0 || arrivo.scopertoTotale > 0 || q.quota < (sg.quotaMinima || 0),
 
-    // I tre numeri della carta in home, già formattati. Li formatta il
-    // modulo e non la home perché è il modulo a sapere che gli importi
-    // sono centesimi: passarli grezzi vorrebbe dire insegnarlo alla home.
-    spesoOggi: euro(speso, { tondo: true }),
-    alGiorno: o.disponibile <= 0 ? "—" : euro(o.alGiorno, { tondo: true }),
-    prossima: prossimaUscita(iso),
-    // Le uscite di QUESTA SETTIMANA, fino a domenica. Sono la cosa che
-    // riempie la carta di Finanze in home, ed è giusto che la riempia
-    // questa: «cosa esce prima di lunedì» è il dato che cambia la risposta
-    // a «posso spendere stasera».
-    //
-    // La settimana e non trenta giorni, perché la carta sta accanto al
-    // numero della settimana: due finestre diverse nella stessa carta
-    // fanno sembrare che i conti non tornino. I trenta giorni restano
-    // dentro Finanze, in «In arrivo», che è la schermata fatta per
-    // guardare più in là.
-    calendario: calendarioUscite(iso, 6, giorniADomenica(iso)),
+    /* La barra della carta: quanto della quota di oggi è già andato. Era
+       l'avanzamento della settimana, che su una carta che mostra un numero
+       giornaliero misurava un'altra cosa. */
+    avanzamento: q.quota > 0 ? Math.min(1, Math.max(0, q.speso / q.quota)) : 0,
 
-    /* IL NUMERO DELLA HOME, con la stessa etichetta del modulo.
-
-       La carta dava `disponibile` — quanto c'e' nelle tasche — sotto la
-       scritta «da far bastare fino al 22 ott», e accanto due riquadri
-       «Oggi» e «Al giorno». Tre numeri per tre domande diverse, tutti
-       della stessa misura: a colpo d'occhio non si capiva quale fosse la
-       risposta a «posso spendere stasera».
-
-       La risposta e' UNA, ed e' la stessa che da' «Da spendere» dentro
-       Finanze: quanto puoi spendere oggi. Le due schermate devono dire lo
-       stesso numero con le stesse parole, altrimenti sono due app. */
-    oggiPuoi: euro(sc.oggi),
-    oggiFino: `fino a ${dataBreve(sc.gradini[1].fino)}, ${plurale(sc.gradini[1].giorniAllo, "giorno", "giorni")} allo stipendio`,
-    /* SOLO QUELLO CHE BRUCIA. Sei righe di scadenze in home sono un
-       estratto conto: si smettono di leggere, e con loro si smette di
-       vedere quella che conta. `tono` lo assegna gia' `comeEvento()` —
-       rosso se il pocket non la copre, ambra se esce entro due giorni — e
-       quelle due sole sono le uscite che cambiano la risposta di stasera.
-       Il resto sta in «In arrivo», che e' la schermata fatta per quello. */
+    /* SOLO QUELLO CHE BRUCIA. `tono` lo assegna già `comeEvento()` — rosso
+       se il pocket non la copre, ambra se esce entro due giorni — e quelle
+       due sole sono le uscite che cambiano la risposta di stasera. */
     urgenti: calendarioUscite(iso, 6, 30).filter((e) => e.tono).slice(0, 2),
 
-    // Il check entra nella checklist della home solo dal pomeriggio: è un
-    // gesto di chiusura, e chiederlo alle otto del mattino vuol dire
-    // chiederlo su una giornata che non è ancora successa.
-    resta: checkDaFare(iso),
+    // La home lo mette in una frase: «ti manca segnare le spese» non ha
+    // senso — Finanze non è una cosa da fare, è una cosa da guardare. Solo
+    // quando c'è una decisione vera da prendere c'è qualcosa da dire.
+    mancaTesto: q.resta < 0 ? "una decisione sui soldi" : null,
+
+    // I numeri in piu' per chi li vuole: niente li obbliga a esserci, ma
+    // costano niente e la carta larga della home puo' crescere senza
+    // tornare qui.
+    quota: q.quota,
+    spesoOggi: euro(q.speso),
+    alGiorno: euro(q.quota),
+    variazione: delta,
+    obiettivo: obi ? {
+      nome: obi.nome,
+      saldo: euro(obi.saldo, { tondo: true }),
+      target: euro(obi.target, { tondo: true }),
+      frazione: obi.frazione,
+      inLinea: obi.inLinea,
+      gap: euro(obi.gap, { tondo: true }),
+    } : null,
+    fuoriPiano: { n: fp.n, totale: euro(fp.totale, { tondo: true }), giorniSenza: fp.giorniSenza },
+    prossima: prossimaUscita(iso),
+    prossimoStipendio: prossimoStipendio(iso),
+    calendario: calendarioUscite(iso, 6, 14),
+
+    resta: restaDaFare(iso),
 
     azione: { rotta: "#/finanze" },
   };

@@ -16,12 +16,14 @@
   import Icona from "$lib/ui/Icona.svelte";
   import Riepilogo from "./Riepilogo.svelte";
   import Movimenti from "./Movimenti.svelte";
-  import Analisi from "./Analisi.svelte";
+  import Cicli from "./Cicli.svelte";
   import FoglioMovimento from "./FoglioMovimento.svelte";
-  import FoglioPermetto from "./FoglioPermetto.svelte";
   import FoglioDettaglio from "./FoglioDettaglio.svelte";
-  import FoglioCheck from "./FoglioCheck.svelte";
   import FoglioArrivo from "./FoglioArrivo.svelte";
+  import FoglioLista from "./FoglioLista.svelte";
+  import FoglioObiettivo from "./FoglioObiettivo.svelte";
+  import FoglioPaga from "./FoglioPaga.svelte";
+  import FoglioChiusura from "./FoglioChiusura.svelte";
   import FoglioCategoria from "./FoglioCategoria.svelte";
   import FoglioSub from "./FoglioSub.svelte";
   import FoglioRicariche from "./FoglioRicariche.svelte";
@@ -37,7 +39,7 @@
 
   // Come stai GUARDANDO i dati, non un dato: niente casella, niente sync.
   // Altrimenti cambiare scheda sull'iPhone la cambierebbe sul PC.
-  let scheda = $state<"home" | "movimenti" | "analisi">("home");
+  let scheda = $state<"home" | "movimenti" | "cicli">("home");
   let mese = $state(meseDi());
   let filtro = $state("tutti");
   const FILTRI = [
@@ -49,11 +51,17 @@
 
   $effect(() => {
     const r = resto[0];
-    if (r === "movimenti" || r === "analisi") scheda = r;
+    if (r === "movimenti" || r === "cicli") scheda = r;
+    // «analisi» resta come rotta vecchia: le notifiche spedite prima di v3
+    // la portano ancora, e una notifica che apre una schermata bianca e'
+    // peggio di una notifica che non arriva.
+    if (r === "analisi") scheda = "cicli";
     if (r === "nuovo") queueMicrotask(() => apri({ tipo: "movimento", tipoMov: "out" }));
-    // La rotta della notifica del lunedì: dalla notifica alla conferma non
-    // ci deve essere una schermata in mezzo.
+    // Le rotte delle notifiche: dalla notifica al gesto non ci deve essere
+    // una schermata in mezzo.
     if (r === "ricarica") queueMicrotask(() => apri({ tipo: "ricaricaSett" }));
+    if (r === "chiusura") queueMicrotask(() => apri({ tipo: "chiusura" }));
+    if (r === "lista") queueMicrotask(() => apri({ tipo: "lista" }));
   });
   $effect(() => ascolta(EVENTI.GIORNO_CAMBIATO, () => { mese = meseDi(); }));
 
@@ -63,11 +71,11 @@
 
 {#snippet strumenti()}
   <Segmenti
-    opzioni={[{ id: "home", testo: "Riepilogo" }, { id: "movimenti", testo: "Movimenti" }, { id: "analisi", testo: "Analisi" }]}
+    opzioni={[{ id: "home", testo: "Riepilogo" }, { id: "movimenti", testo: "Movimenti" }, { id: "cicli", testo: "Cicli" }]}
     bind:valore={scheda}
     etichetta="Vista"
   />
-  {#if scheda !== "home"}
+  {#if scheda === "movimenti"}
     <!-- Il mese si sfoglia solo dove conta: il riepilogo guarda sempre oggi. -->
     <div class="mese">
       <Pulsante variante="grigio" misura="media" tondo icona="indietro" etichetta="Mese precedente" onclick={() => (mese = spostaMese(mese, -1))} />
@@ -92,7 +100,7 @@
   {:else if scheda === "movimenti"}
     <Movimenti {mese} {filtro} />
   {:else}
-    <Analisi {mese} />
+    <Cicli />
   {/if}
 </Pagina>
 
@@ -104,24 +112,29 @@
   <button type="button" class="rapida entrata" onclick={() => apri({ tipo: "movimento", tipoMov: "in" })}>
     <Icona nome="piu" misura={18} tratto={2.6} />Entrata
   </button>
-  <!-- Chiedere prima di pagare e' un gesto suo, e sta accanto agli altri
-       due perche' arriva nello stesso momento: sei davanti alla cassa. -->
-  <button type="button" class="rapida chiedi" aria-label="Posso permettermelo?" onclick={() => apri({ tipo: "permetto" })}>
-    <Icona nome="info" misura={18} tratto={2.2} />
+  <!-- LA LISTA D'ATTESA al posto del simulatore. Resta nello stesso posto
+       perche' e' il terzo gesto di tutti i giorni, ma risponde prima: si
+       scrive quando la cosa ti viene in mente, non quando sei alla cassa. -->
+  <button type="button" class="rapida chiedi" aria-label="Lista d'attesa" onclick={() => apri({ tipo: "lista" })}>
+    <Icona nome="orologio" misura={18} tratto={2.2} />
   </button>
   <button type="button" class="rapida altro" aria-label="Giroconto, rimborso, reso, ricarica" onclick={() => apri({ tipo: "movimento", tipoMov: "giro" })}>
     <Icona nome="sync" misura={18} tratto={2.2} />
   </button>
 </div>
 
-{#if f?.tipo === "permetto"}
-  <FoglioPermetto bind:aperto={fogli.aperto} />
+{#if f?.tipo === "lista"}
+  <FoglioLista bind:aperto={fogli.aperto} />
+{:else if f?.tipo === "obiettivo"}
+  <FoglioObiettivo bind:aperto={fogli.aperto} />
+{:else if f?.tipo === "paga"}
+  <FoglioPaga bind:aperto={fogli.aperto} dataStip={f.dataStip} entrata={f.entrata ?? null} />
+{:else if f?.tipo === "chiusura"}
+  <FoglioChiusura bind:aperto={fogli.aperto} />
 {:else if f?.tipo === "movimento"}
   <FoglioMovimento bind:aperto={fogli.aperto} movimento={f.movimento ?? null} preset={f.preset ?? null} dopo={f.dopo ?? null} tipoIniziale={f.tipoMov ?? f.movimento?.tipo ?? "out"} />
 {:else if f?.tipo === "dettaglio"}
   <FoglioDettaglio bind:aperto={fogli.aperto} id={f.id} />
-{:else if f?.tipo === "check"}
-  <FoglioCheck bind:aperto={fogli.aperto} />
 {:else if f?.tipo === "arrivo"}
   <FoglioArrivo bind:aperto={fogli.aperto} voce={f.voce} />
 {:else if f?.tipo === "categoria"}
