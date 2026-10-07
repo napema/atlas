@@ -337,11 +337,20 @@ export function avviaSync() {
      resterebbe con «Personale» per sempre. */
   function migraCategorie() {
     if (!canale.letturaFatta && canale.stato !== "off") return;
-    /* DUE MIGRAZIONI, DUE MARCHI, UN GANCIO SOLO. `||` e non `&&`: se la
-       prima ha già girato in passato torna `false`, e con l'`&&` la seconda
-       non girerebbe mai. */
-    const fatta = dividiPersonale() || allineaV3();
-    if (!fatta) return;
+    /* DUE MIGRAZIONI, DUE MARCHI, E DUE CHIAMATE SEPARATE.
+    
+       Era `dividiPersonale() || allineaV3()`, e il corto circuito dell'`||`
+       se l'e' mangiata: su un archivio che non aveva mai visto nessuna delle
+       due, la prima tornava `true` e la seconda non veniva nemmeno
+       chiamata. Col sync spento `ridisegna` non scatta mai, quindi non
+       c'era un secondo giro: i saldi restavano quelli sbagliati, l'obiettivo
+       non compariva e i ricorrenti erano quelli vecchi.
+    
+       Entrambe sono idempotenti e si marcano da sole: chiamarle tutte e due
+       sempre e' l'unica forma che non dipende dall'ordine. */
+    const divisa = dividiPersonale();
+    const allineata = allineaV3();
+    if (!divisa && !allineata) return;
     pubblicaSullaLavagna();
     ridisegnaVista();
   }

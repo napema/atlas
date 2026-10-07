@@ -66,7 +66,6 @@ export type Foglio =
   | { tipo: "ricaricaSett" }
   | { tipo: "saldoING" }
   | { tipo: "pocket" }
-  | { tipo: "dormo"; imp: number; bozza: any; conferma: () => void }
   /* I quattro fogli di v3. «permetto» e «check» non ci sono piu': il
      simulatore e' diventato la lista d'attesa (si decide PRIMA, non davanti
      alla cassa) e il check quotidiano e' diventato la chiusura

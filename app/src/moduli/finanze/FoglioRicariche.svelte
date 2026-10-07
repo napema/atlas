@@ -16,9 +16,10 @@
   import Segmenti from "$lib/ui/Segmenti.svelte";
   import Pulsante from "$lib/ui/Pulsante.svelte";
   import Tastierino from "$lib/ui/Tastierino.svelte";
-  import { avviso, celebra, centesimi, dataBreve, euro, nuovoId, oggiISO, plurale, tocco } from "$lib/core/ui";
-  import { stato, salvaMovimento, segnaRicarica, pocketPerId, scriviPocket } from "$condivisi/finanze/dati.js";
+  import { avviso, celebra, centesimi, dataBreve, euro, nuovoId, oggiISO, piuGiorni, plurale, tocco } from "$lib/core/ui";
+  import { salvaMovimento, segnaRicarica, pocketPerId, riancoraPocket } from "$condivisi/finanze/dati.js";
   import { saldoPocket, cicloDi, settimana, sforamenti } from "$condivisi/finanze/calcolo.js";
+  import { ricaricaLunedi } from "$condivisi/finanze/piano.js";
   import { testoDa, pulisciImporto } from "./comune";
 
   let { aperto = $bindable(false), quale }: { aperto: boolean; quale: "ricaricaSett" | "ricarica" | "saldoING" } = $props();
@@ -33,12 +34,19 @@
   $effect(() => {
     if (!aperto) return;
     const oggi = oggiISO();
-    const previsto = Number(stato().config?.cassaSettimanale) || 0;
+    /* L'IMPORTO È CALCOLATO, non letto da `config.cassaSettimanale`.
+       Quel campo adesso vale zero e significa «calcolalo»: lasciandolo lì
+       il foglio si apriva con 0,00 e bisognava scrivere l'importo a mano
+       ogni lunedì. `ricaricaLunedi()` porta il Principale a
+       `quota × giorni fino a domenica` — con un importo fisso l'ultima
+       settimana del mese era sempre quella povera. */
+    const r = ricaricaLunedi(oggi);
+    const previsto = r.importo;
     const cassa = saldoPocket("cassa");
     const daIng = cassa <= 0;
     const massimo = daIng ? saldoPocket("ing") : cassa;
     f = {
-      oggi, previsto, cassa, daIng, massimo,
+      oggi, previsto, cassa, daIng, massimo, r,
       principale: saldoPocket("principale"),
       s: settimana(oggi), sf: sforamenti(cicloDi(oggi)),
     };
@@ -76,10 +84,18 @@
     avviso(fonte === "cassa" ? "Anticipo registrato." : "Sforamento registrato.");
   }
 
+  /* SI RIANCORA, non si scrive il saldo.
+
+     `scriviPocket("ing", { saldo })` lasciava l'ancora dov'era, quindi i
+     travasi registrati DOPO quella data continuavano a sommarsi sopra il
+     numero appena copiato dall'estratto: il saldo mostrato tornava
+     sbagliato al primo giroconto, nello stesso modo in cui era sbagliato
+     prima. L'ancora va a domani, perché il numero che leggi sull'app di ING
+     è quello di stasera. */
   function salvaIng() {
-    scriviPocket("ing", { saldo: imp });
+    riancoraPocket("ing", imp, piuGiorni(f.oggi, 1));
     aperto = false;
-    avviso("Saldo aggiornato.");
+    avviso("Saldo riancorato.");
   }
 </script>
 
@@ -95,6 +111,9 @@
       {:else if f.cassa < f.previsto}
         <p class="allarme text-subheadline"><b>In Cassa ci sono solo {euro(f.cassa)}.</b> Puoi trasferire quello che c'è, oppure prendere il resto da ING — quello sì conta come sforamento.</p>
       {/if}
+      <p class="text-footnote secondario spiega cifre">
+        Quota {euro(f.r.quota)} × {plurale(f.r.giorni, "giorno", "giorni")} fino al {dataBreve(f.r.fino)} = {euro(f.r.bersaglio)}. In tasca {euro(f.r.saldo)}.
+      </p>
       <Sezione piede="Dopo: {f.daIng ? 'ING' : 'Cassa'} {euro(f.massimo - Math.min(imp, f.massimo))} · Principale {euro(f.principale + Math.min(imp, f.massimo))}">
         <Campo etichetta="Trasferisci" bind:valore={testo} modo="decimal" allinea="destra" unita="€" />
       </Sezione>
@@ -122,7 +141,7 @@
       </Pulsante>
 
     {:else}
-      <p class="text-subheadline secondario">ING è una riserva che sta fuori dall'app: il saldo non si deduce dai movimenti, si copia dall'estratto conto.</p>
+      <p class="text-subheadline secondario">ING è una riserva che sta fuori dall'app: il saldo non si deduce dai movimenti, si copia dall'estratto conto. Si riancora a stasera, e da domani i travasi ripartono da qui.</p>
       <label class="importo"><input type="text" inputmode="decimal" readonly={!matchMedia("(hover: hover) and (pointer: fine)").matches} placeholder="0,00" value={testo} oninput={(e) => (testo = pulisciImporto(e.currentTarget.value))} aria-label="Saldo" /><span>€</span></label>
       <Tastierino bind:valore={testo} />
       <Pulsante variante="pieno" larga onclick={salvaIng}>Salva</Pulsante>
