@@ -36,7 +36,7 @@
   import { nomePocket } from "./comune";
   import { cicloDi, nomeCiclo, importoEffettivo, pocketConSaldi } from "$condivisi/finanze/calcolo.js";
   import {
-    quotaDi, variazioneQuota, copreFino, statoObiettivo, fuoriPianoDelCiclo,
+    quotaDi, variazioneQuota, copreFino, statoObiettivo, passoObiettivo, fuoriPianoDelCiclo,
     ingPrevisto, inArrivoDiviso,
   } from "$condivisi/finanze/piano.js";
   import { allineamento } from "$condivisi/finanze/chiusura.js";
@@ -59,6 +59,10 @@
       delta: variazioneQuota(oggi),
       copre: copreFino(oggi, q.quota),
       obi: statoObiettivo(oggi),
+      passo: passoObiettivo(oggi),
+      // Il nome vero del pocket («Fondo naso»): è quello che leggi su
+      // Revolut e sulla riga del giorno di paga, e deve essere lo stesso.
+      nomeFondo: ((stato().pockets || []) as any[]).find((p) => p.id === (statoObiettivo(oggi)?.pocket || "fondo"))?.nome || "Fondo",
       fp: fuoriPianoDelCiclo(ciclo, oggi),
       ing: ingPrevisto(oggi),
       arrivo: inArrivoDiviso(14, oggi),
@@ -83,6 +87,12 @@
     return `${GIORNI[(x.getDay() + 6) % 7].slice(0, 3)} ${x.getDate()} ${MESI_BREVI[x.getMonth()]}`;
   };
 
+  /** «1 ago 2027»: la data dell'obiettivo è lontana, l'anno serve. */
+  const glma = (iso: string) => {
+    const x = daISO(iso);
+    return `${x.getDate()} ${MESI_BREVI[x.getMonth()]} ${x.getFullYear()}`;
+  };
+
   const NOTA_POCKET: Record<string, string> = {
     principale: "spendibile", contanti: "in tasca", cassa: "parcheggio",
     fisse: "addebiti automatici", ing: "riserva", fondo: "obiettivo",
@@ -92,35 +102,55 @@
 {#if parte === "lato"}
 
 <!-- 1. L'OBIETTIVO ------------------------------------------------------- -->
+<!-- Due tocchi diversi, e per questo due bottoni: la parte alta apre
+     l'obiettivo (cos'è, il grafico, il piano), la riga sotto è il PROSSIMO
+     PASSO — l'unica cosa che l'obiettivo ti chiede di fare. Prima c'erano
+     quattro numeri e nessuna azione, e la domanda che tornava era «ma cosa
+     ci devo fare?». -->
 {#if d.obi}
   <Sezione>
-    <button type="button" class="blocco obi premibile" data-tono={d.obi.inLinea ? "" : "avviso"} onclick={() => apri({ tipo: "obiettivo" })}>
-      <span class="testa">
-        <span class="eti">{d.obi.nome.toUpperCase()} · {gm(d.obi.data)}</span>
-        <span class="eti-dx cifre">{plurale(d.obi.giorni, "giorno", "giorni")}</span>
-      </span>
-
-      <span class="obi-cifre">
-        <b class="cifre">{euro(d.obi.saldo, { tondo: true })}</b>
-        <span class="secondario cifre">/ {euro(d.obi.target, { tondo: true })}</span>
-        {#if d.obi.provvisorio}<span class="tag">stima</span>{/if}
-      </span>
-      <span class="barra"><i style:width="{Math.round(d.obi.frazione * 100)}%"></i></span>
-
-      <span class="righe text-subheadline">
-        <span>
-          {#if d.obi.inLinea}in linea{:else}indietro di <b class="cifre">{euro(-d.obi.scarto, { tondo: true })}</b>{/if}
-          <span class="secondario">· previsto a oggi {euro(d.obi.previsto, { tondo: true })}</span>
+    <div class="blocco obi" data-tono={d.obi.inLinea ? "" : "avviso"}>
+      <button type="button" class="obi-apri" onclick={() => apri({ tipo: "obiettivo" })}>
+        <span class="testa">
+          <span class="eti">OBIETTIVO · {d.obi.nome.toUpperCase()}</span>
+          <span class="eti-dx cifre">entro {glma(d.obi.data)}</span>
         </span>
-        <span>
-          proiezione <b class="cifre">{euro(d.obi.proiezione, { tondo: true })}</b>
-          {#if d.obi.gap > 0}<span class="secondario">· mancano {euro(d.obi.gap, { tondo: true })}</span>{/if}
+
+        <span class="obi-cifre">
+          <b class="cifre">{euro(d.obi.saldo, { tondo: true })}</b>
+          <span class="secondario cifre">/ {euro(d.obi.target, { tondo: true })}</span>
+          {#if d.obi.provvisorio}<span class="tag">stima</span>{/if}
+          <span class="freccina" aria-hidden="true"><Icona nome="freccia" misura={14} tratto={2.4} /></span>
         </span>
-        {#if d.obi.prossimo}
-          <span class="secondario">prossimo versamento {euro(d.obi.versamento, { tondo: true })} · {glm(d.obi.prossimo)}</span>
-        {/if}
-      </span>
-    </button>
+        <span class="barra"><i style:width="{Math.round(d.obi.frazione * 100)}%"></i></span>
+
+        <span class="text-subheadline">
+          {#if d.obi.inLinea}<span class="ok-testo">in linea</span>{:else}<span class="avviso">indietro di <b class="cifre">{euro(-d.obi.scarto, { tondo: true })}</b></span>{/if}
+          <span class="secondario">· a questo ritmo arrivi a {euro(d.obi.proiezione, { tondo: true })}{#if d.obi.gap > 0}, mancano {euro(d.obi.gap, { tondo: true })}{/if}</span>
+        </span>
+      </button>
+
+      {#if d.passo}
+        <button type="button" class="passo" data-stato={d.passo.tipo}
+          onclick={() => d.passo?.tipo === "da-fare" ? apri({ tipo: "paga", dataStip: d.passo.dataStip }) : apri({ tipo: "obiettivo" })}>
+          <span class="passo-ico" aria-hidden="true">
+            <Icona nome={d.passo.tipo === "fatto" ? "spunta" : d.passo.tipo === "da-fare" ? "freccia" : "orologio"} misura={15} tratto={2.6} />
+          </span>
+          <span class="passo-testo">
+            {#if d.passo.tipo === "da-fare"}
+              <b>Da fare: sposta {euro(d.passo.imp, { tondo: true })} su {d.nomeFondo}</b>
+              <span class="text-footnote secondario">Su Revolut, dal Principale. Poi tocca qui e spunta «{d.nomeFondo}».</span>
+            {:else if d.passo.tipo === "fatto"}
+              <b>Versamento di questo ciclo fatto</b>
+              <span class="text-footnote secondario">{d.passo.prossimo ? `Il prossimo: ${euro(d.obi.versamento, { tondo: true })} · ${glm(d.passo.prossimo)}` : ""}</span>
+            {:else}
+              <b>Prossimo versamento: {euro(d.passo.imp, { tondo: true })}{d.passo.prossimo ? ` · ${glm(d.passo.prossimo)}` : ""}</b>
+              <span class="text-footnote secondario">Il giorno di paga: lo trovi come primo travaso. Fino ad allora non devi fare niente.</span>
+            {/if}
+          </span>
+        </button>
+      {/if}
+    </div>
   </Sezione>
 {/if}
 
@@ -273,7 +303,7 @@
       {#each d.pk as p (p.id)}
         <li>
           <span class="e-nome">{p.nome}</span>
-          <span class="e-nota text-footnote secondario">{NOTA_POCKET[p.id] ?? (TIPI_POCKET as any)[p.tipo]?.nome ?? ""}</span>
+          <span class="e-nota text-footnote secondario">{d.obi && p.id === d.obi.pocket ? `salvadanaio · ${d.obi.nome}` : NOTA_POCKET[p.id] ?? (TIPI_POCKET as any)[p.tipo]?.nome ?? ""}</span>
           <span class="e-cifra cifre" class:male={p.saldoVero < 0}>{euro(p.saldoVero)}</span>
         </li>
       {/each}
@@ -330,6 +360,22 @@
   .barra { height: 6px; border-radius: 3px; overflow: hidden; background: var(--fill-tertiary); margin: 4px 0 2px; }
   .barra i { display: block; height: 100%; border-radius: inherit; background: var(--accento); }
   .obi[data-tono="avviso"] .barra i { background: var(--color-orange); }
+  .obi { padding: 0; gap: 0; }
+  .obi-apri { display: flex; flex-direction: column; gap: 6px; width: 100%; padding: var(--space-4); text-align: left; }
+  .obi-apri:active { background: var(--fill-quaternary); }
+  .freccina { margin-left: auto; color: var(--label-tertiary); align-self: center; }
+  .ok-testo { color: var(--color-green); }
+  /* IL PROSSIMO PASSO. Separato dal resto da un filo, perché è un'altra
+     cosa: sopra si guarda, qui si fa. «Da fare» prende l'accento del modulo
+     — è un invito, non un allarme —, «fatto» il verde, l'attesa niente. */
+  .passo { display: flex; align-items: center; gap: var(--space-3); width: 100%; padding: 12px var(--space-4) 14px; text-align: left; border-top: 0.5px solid var(--separator); }
+  .passo:active { background: var(--fill-quaternary); }
+  .passo-ico { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: var(--label-secondary); background: var(--fill-tertiary); }
+  .passo-testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .passo-testo b { font-weight: var(--weight-semibold); }
+  .passo[data-stato="da-fare"] .passo-ico { color: #fff; background: var(--accento); }
+  .passo[data-stato="da-fare"] b { color: var(--accento); }
+  .passo[data-stato="fatto"] .passo-ico { color: #fff; background: var(--color-green); }
   .tag {
     padding: 1px 6px; border-radius: var(--radius-sm); font-size: var(--text-caption2);
     font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.4px;

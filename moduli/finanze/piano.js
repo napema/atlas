@@ -319,6 +319,37 @@ export function statoObiettivo(iso = oggiISO()) {
   };
 }
 
+/**
+ * IL PROSSIMO PASSO verso l'obiettivo: cosa devi fare tu, e quando.
+ *
+ * Il blocco in home diceva quattro numeri (previsto, proiezione, gap,
+ * prossimo versamento) e nessuna azione, e la domanda che tornava indietro
+ * era «ma cosa ci devo fare, ci butto io i soldi?». Sì: il fondo si muove
+ * solo quando sposti tu i soldi su Revolut e lo segni qui. Questa funzione
+ * dice quale dei tre momenti è:
+ *
+ *   da-fare    lo stipendio di questo ciclo è arrivato e il versamento
+ *              non c'è (o non tutto): è la cosa da fare adesso
+ *   fatto      versato; il prossimo è allo stipendio dopo
+ *   attesa     l'obiettivo è nato dopo lo stipendio di questo ciclo: il
+ *              primo versamento è al prossimo
+ */
+export function passoObiettivo(iso = oggiISO()) {
+  const o = statoObiettivo(iso);
+  if (!o || !o.versamento) return null;
+  const ciclo = cicloDi(iso);
+  const dal = obiettivo()?.dal || null;
+  // Come `previsto`: conta lo stipendio che apre il ciclo solo se è venuto
+  // DOPO la nascita dell'obiettivo (`stipendiTra` esclude il primo estremo).
+  const dovuto = Boolean(dal && ciclo.da > dal);
+  const versato = versatoAlFondo(ciclo);
+  if (dovuto && versato < o.versamento) {
+    return { tipo: "da-fare", imp: o.versamento - versato, dataStip: ciclo.da, versato };
+  }
+  if (dovuto) return { tipo: "fatto", imp: versato, prossimo: o.prossimo, dataStip: ciclo.da };
+  return { tipo: "attesa", imp: o.versamento, prossimo: o.prossimo };
+}
+
 /* ========================================================================
    IL MINIMO PREVISTO DI ING.
 

@@ -23,7 +23,11 @@
   import { avviso, euro, nuovoId, oggiISO, plurale, dataBreve } from "$lib/core/ui";
   import { scriviMeta, statoConfig } from "$condivisi/finanze/dati.js";
   import { ultimoStipendio } from "$condivisi/finanze/calcolo.js";
-  import { statoObiettivo, obiettivo } from "$condivisi/finanze/piano.js";
+  import { statoObiettivo, obiettivo, serieFondo, passoObiettivo } from "$condivisi/finanze/piano.js";
+  import { stato } from "$condivisi/finanze/dati.js";
+  import GraficoFondo from "./GraficoFondo.svelte";
+  import { apri } from "./fogli.svelte";
+  import { daISO, MESI_BREVI } from "$lib/core/ui";
 
   let { aperto = $bindable(false) }: { aperto: boolean } = $props();
 
@@ -35,6 +39,9 @@
       o: obiettivo(),
       s: statoObiettivo(iso),
       cfg: statoConfig(ultimoStipendio(iso)),
+      fondo: serieFondo(iso),
+      passo: passoObiettivo(iso),
+      nomeFondo: ((stato().pockets || []) as any[]).find((p) => p.id === (obiettivo()?.pocket || "fondo"))?.nome || "Fondo",
     };
   });
 
@@ -49,6 +56,21 @@
       fn(s.config.obiettivo);
     });
   };
+
+  /** «23 ott 2026». */
+  const gma = (iso: string) => { const x = daISO(iso); return `${x.getDate()} ${MESI_BREVI[x.getMonth()]} ${x.getFullYear()}`; };
+  /** Quattro tacche sotto il grafico: una per stipendio si sovrapporrebbero. */
+  const tacche = $derived.by(() => {
+    const n = d.fondo?.punti.length ?? 0;
+    return [...new Set([0, Math.round(n / 3), Math.round((2 * n) / 3), n - 1])].filter((i) => i >= 0 && i < n);
+  });
+
+  /** Un versamento fuori dal giorno di paga: un giroconto già compilato. */
+  function versaExtra() {
+    // `apri` chiude questo foglio e apre l'altro quando l'animazione è finita.
+    apri({ tipo: "movimento", tipoMov: "giro",
+      preset: { tipo: "giro", pocket: "principale", pocketTo: obiettivo()?.pocket || "fondo", nota: "Versamento al fondo" } });
+  }
 
   let nomeExtra = $state("");
   let impExtra = $state(0);
@@ -68,12 +90,44 @@
       </span>
     </div>
 
+    <!-- COME FUNZIONA. La domanda che è tornata indietro appena il fondo è
+         comparso: «ci butto io i soldi?». Sì, e queste tre righe dicono
+         quando e come — l'app non tocca la banca, registra quello che fai. -->
+    <Sezione titolo="Come funziona">
+      <ol class="come text-subheadline">
+        <li><b>È un salvadanaio a parte.</b> Il pocket «{d.nomeFondo}» (su Revolut, un salvadanaio dedicato) tiene i soldi per «{d.s.nome}». Non è spendibile e non entra nella quota del giorno.</li>
+        <li><b>Ci versi tu, a ogni stipendio.</b> Il giorno di paga sposti {euro(d.s.versamento, { tondo: true })} dal Principale al fondo su Revolut, e nel foglio «Giorno di paga» spunti la prima riga: è quella che lo registra qui.</li>
+        <li><b>Il resto lo calcola l'app.</b> Se sei in linea, quanto avrai alla data, quanto manca. Un versamento saltato si vede il giorno dopo, qui e in Analisi.</li>
+      </ol>
+      {#if d.passo?.tipo === "da-fare"}
+        <Riga titolo="Il versamento di questo ciclo manca" sottotitolo="{euro(d.passo.imp, { tondo: true })} · apri il giorno di paga e spunta il fondo" accento freccia
+          onclick={() => apri({ tipo: "paga", dataStip: d.passo!.dataStip })} />
+      {/if}
+      <Riga titolo="Versa un extra adesso" sottotitolo="Un giroconto dal Principale al fondo, fuori dal giorno di paga" accento freccia onclick={versaExtra} />
+    </Sezione>
+
+    {#if d.fondo}
+      <Sezione titolo="La strada" piede="Linea piena: quello che c'è. Tratteggio: i versamenti programmati. In alto, il traguardo.">
+        <div class="grafico">
+          <GraficoFondo punti={d.fondo.punti} target={d.fondo.target} etichette={tacche} />
+        </div>
+      </Sezione>
+    {/if}
+
     <Sezione titolo="Dove arriva" piede="Proiezione: quello che c'è più i versamenti programmati fino alla data, più gli extra previsti.">
       <Riga titolo="Versamenti rimasti" sottotitolo="{plurale(d.s.versamenti, 'stipendio', 'stipendi')} × {euro(d.s.versamento, { tondo: true })}" valore={euro(d.s.daiVersamenti, { tondo: true })} />
       <Riga titolo="Extra previsti" valore={euro(d.s.daiExtra, { tondo: true })} />
       <Riga titolo="Proiezione" valore={euro(d.s.proiezione, { tondo: true })} />
       <Riga titolo={d.s.gap > 0 ? "Mancano" : "Avanza"} valore={euro(Math.abs(d.s.target - d.s.proiezione), { tondo: true })} />
     </Sezione>
+
+    {#if d.fondo}
+      <Sezione titolo="I prossimi versamenti" piede="Quanto dovrebbe esserci nel fondo dopo ogni stipendio, se versi ogni volta.">
+        {#each d.fondo.punti.slice(1).filter((p: any) => p.quando > d.iso).slice(0, 6) as p (p.quando)}
+          <Riga titolo={gma(p.quando)} valore={euro(p.piano, { tondo: true })} />
+        {/each}
+      </Sezione>
+    {/if}
   {/if}
 
   {#if d.cfg.bloccata}
@@ -135,6 +189,11 @@
 </Foglio>
 
 <style>
+  .grafico { padding: var(--space-4); }
+  .come { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); list-style: none; counter-reset: passo; }
+  .come li { position: relative; padding-left: 30px; color: var(--label-secondary); counter-increment: passo; }
+  .come li::before { content: counter(passo); position: absolute; left: 0; top: 0; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: var(--weight-bold); color: var(--accento); background: var(--fill-tertiary); }
+  .come b { color: var(--label-primary); font-weight: var(--weight-semibold); }
   .testa { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--space-2) 0 var(--space-4); text-align: center; }
   .grande { font-family: var(--font-display); font-size: 40px; line-height: 44px; font-weight: var(--weight-bold); }
   .ok { color: var(--color-green); }

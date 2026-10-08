@@ -29,6 +29,31 @@ Chi apre una chat comincia da `git log --oneline -20` e da questo file.
 
 ## Stato
 
+### ✅ 8 ottobre — Finanze: torna l'Analisi (per ciclo), e il fondo dice cosa fare *(chat ATLAS, su richiesta diretta)*
+
+Fuori dal perimetro della chat ATLAS, ma chiesto esplicitamente: «la view
+Cicli non aiuta, il vecchio Analisi andava più o meno bene, il problema è
+che non lo controllavo» e «cosa vuol dire Naso? cosa ci devo fare, ci butto
+io i soldi?».
+
+- **Analisi al posto di Cicli.** Le domande della vecchia Analisi, ma sul
+  CICLO, sfogliabile con le frecce (indietro fino al primo ciclo con dati:
+  niente più cicli vuoti con lo zero verde). La cosa nuova è la gerarchia:
+  in cima **Da tenere d'occhio** — ritmo della Vita, fuori piano,
+  categorie, prelievi da ING, versamento al fondo — ordinati dall'esito
+  (rosso, arancio, verde), il peggiore più grande. Sotto: andamento,
+  categorie contro budget (sforate in cima), le voci fuori piano, confronto
+  allo stesso giorno del ciclo prima, numeri, ultimi cicli, ripartizione,
+  voci più care, giorni della settimana. I conti stanno in
+  `moduli/finanze/analisi.js`; `#/finanze/cicli` apre l'Analisi.
+- **Il fondo dell'obiettivo.** Il blocco in home ha ora il PROSSIMO PASSO
+  (`passoObiettivo()` in `piano.js`): «prossimo versamento 156 € · ven 23
+  ott», poi «Da fare: sposta 156 € su Fondo naso» (tocca → giorno di paga),
+  poi «fatto». Il foglio Obiettivo spiega in tre righe come funziona, ha il
+  grafico e i prossimi versamenti (spostati da Cicli) e «Versa un extra».
+- **Bug:** `FoglioCategoria` e `FoglioSub` ignoravano il ciclo da cui si
+  arrivava e mostravano sempre quello di oggi.
+
 ### ✅ 2 ottobre — Finanze non sincronizzava più: «Maximum call stack size exceeded»
 
 Non era Finanze, era il nucleo. `b64enc` in `sync.ts` (e in `core/sync.js`

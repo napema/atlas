@@ -98,6 +98,7 @@ quattro file accanto, e la divisione non è per comodità ma per domanda:
 | `paga.js` | i quattro travasi del giorno di paga e il fabbisogno delle Fisse |
 | `chiusura.js` | la domenica sera: applica l'estratto, pagella, report, ricarica |
 | `revolut.js` | legge il CSV e **riconcilia** (non importa: dice anche cosa c'è nell'app e non c'è nell'estratto) |
+| `analisi.js` | *cosa tenere d'occhio in questo ciclo* (i segnali, dal peggiore), e tutti i conti della schermata Analisi, un ciclo per volta |
 
 `importa.js` resta per le banche che non sono Revolut e per le righe
 incollate a mano.

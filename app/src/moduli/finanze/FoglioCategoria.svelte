@@ -19,6 +19,7 @@
   import { categoriaPerId, profiloDi } from "$condivisi/finanze/dati.js";
   import { statisticheDelCiclo, categoriaSuSeiCicli, cicloDi, nomeCiclo } from "$condivisi/finanze/calcolo.js";
   import { oggiISO } from "$lib/core/ui";
+  import { cicloPerIndice } from "$condivisi/finanze/analisi.js";
   import { coloreCat } from "./comune";
   import { apri } from "./fogli.svelte";
 
@@ -28,7 +29,9 @@
     dati.versione;
     const c = categoriaPerId(catId);
     if (!c) return null;
-    const ciclo = cicloDi(oggiISO());
+    // Il ciclo da cui arrivi: l'Analisi si sfoglia all'indietro, e un
+    // foglio che mostrava sempre quello di oggi contraddiceva la riga toccata.
+    const ciclo = cicloPerIndice(mese);
     const st = statisticheDelCiclo(ciclo);
     const x = st.perCat[catId] || { tot: 0, movs: [], sub: {} };
     const budget = Math.round((profiloDi().b[catId] || 0) * 100);
@@ -44,7 +47,7 @@
 <Foglio bind:aperto titolo={d?.c.nome ?? ""}>
   {#if d}
     <div class="tre">
-      <div><span class="text-footnote secondario">Questo ciclo</span><b class="cifre">{euro(d.x.tot)}</b></div>
+      <div><span class="text-footnote secondario">{d.ciclo.da <= oggiISO() && oggiISO() <= d.ciclo.a ? "Questo ciclo" : nomeCiclo(d.ciclo)}</span><b class="cifre">{euro(d.x.tot)}</b></div>
       <div><span class="text-footnote secondario">Pocket</span><b class="cifre">{d.budget ? euro(d.budget, { tondo: true }) : "—"}</b></div>
       <div><span class="text-footnote secondario">Scontrino medio</span><b class="cifre">{d.x.movs.length ? euro(d.medio) : "—"}</b></div>
     </div>

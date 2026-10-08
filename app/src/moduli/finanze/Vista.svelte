@@ -16,7 +16,7 @@
   import Icona from "$lib/ui/Icona.svelte";
   import Riepilogo from "./Riepilogo.svelte";
   import Movimenti from "./Movimenti.svelte";
-  import Cicli from "./Cicli.svelte";
+  import Analisi from "./Analisi.svelte";
   import FoglioMovimento from "./FoglioMovimento.svelte";
   import FoglioDettaglio from "./FoglioDettaglio.svelte";
   import FoglioArrivo from "./FoglioArrivo.svelte";
@@ -31,7 +31,8 @@
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
   import { maiuscola } from "$lib/core/ui";
-  import { meseDi, spostaMese, nomeMese } from "$condivisi/finanze/calcolo.js";
+  import { meseDi, spostaMese, nomeMese, cicloDi, spostaCiclo, nomeCiclo } from "$condivisi/finanze/calcolo.js";
+  import { primoCiclo } from "$condivisi/finanze/analisi.js";
   import { migra } from "$condivisi/finanze/dati.js";
   import { fogli, apri } from "./fogli.svelte";
 
@@ -39,8 +40,10 @@
 
   // Come stai GUARDANDO i dati, non un dato: niente casella, niente sync.
   // Altrimenti cambiare scheda sull'iPhone la cambierebbe sul PC.
-  let scheda = $state<"home" | "movimenti" | "cicli">("home");
+  let scheda = $state<"home" | "movimenti" | "analisi">("home");
   let mese = $state(meseDi());
+  // Il ciclo che l'Analisi sta guardando, per indice («2026-09»).
+  let ciclo = $state(cicloDi().indice);
   let filtro = $state("tutti");
   const FILTRI = [
     { id: "tutti", testo: "Tutti" }, { id: "out", testo: "Uscite" }, { id: "ecc", testo: "Straordinari" },
@@ -51,11 +54,10 @@
 
   $effect(() => {
     const r = resto[0];
-    if (r === "movimenti" || r === "cicli") scheda = r;
-    // «analisi» resta come rotta vecchia: le notifiche spedite prima di v3
-    // la portano ancora, e una notifica che apre una schermata bianca e'
-    // peggio di una notifica che non arriva.
-    if (r === "analisi") scheda = "cicli";
+    if (r === "movimenti" || r === "analisi") scheda = r;
+    // «cicli» è la rotta di v3, che l'Analisi ha sostituito: un link
+    // vecchio deve aprire la schermata che c'è, non una bianca.
+    if (r === "cicli") scheda = "analisi";
     if (r === "nuovo") queueMicrotask(() => apri({ tipo: "movimento", tipoMov: "out" }));
     // Le rotte delle notifiche: dalla notifica al gesto non ci deve essere
     // una schermata in mezzo.
@@ -63,15 +65,18 @@
     if (r === "chiusura") queueMicrotask(() => apri({ tipo: "chiusura" }));
     if (r === "lista") queueMicrotask(() => apri({ tipo: "lista" }));
   });
-  $effect(() => ascolta(EVENTI.GIORNO_CAMBIATO, () => { mese = meseDi(); }));
+  $effect(() => ascolta(EVENTI.GIORNO_CAMBIATO, () => { mese = meseDi(); ciclo = cicloDi().indice; }));
 
   const corrente = $derived.by(() => { dati.versione; return meseDi(); });
+  const cicloOra = $derived.by(() => { dati.versione; return cicloDi().indice; });
+  const cicloPrimo = $derived.by(() => { dati.versione; return primoCiclo().indice; });
+  const cicloVisto = $derived.by(() => { dati.versione; return spostaCiclo(ciclo, 0); });
   const f = $derived(fogli.corrente);
 </script>
 
 {#snippet strumenti()}
   <Segmenti
-    opzioni={[{ id: "home", testo: "Riepilogo" }, { id: "movimenti", testo: "Movimenti" }, { id: "cicli", testo: "Cicli" }]}
+    opzioni={[{ id: "home", testo: "Riepilogo" }, { id: "movimenti", testo: "Movimenti" }, { id: "analisi", testo: "Analisi" }]}
     bind:valore={scheda}
     etichetta="Vista"
   />
@@ -83,14 +88,26 @@
       <Pulsante variante="grigio" misura="media" tondo icona="freccia" etichetta="Mese successivo" disabled={mese >= corrente} onclick={() => (mese = spostaMese(mese, 1))} />
     </div>
   {/if}
+  {#if scheda === "analisi"}
+    <!-- Si sfoglia per CICLO, da stipendio a stipendio: è la finestra di
+         tutta l'app, e indietro ci si ferma al primo ciclo con dei dati. -->
+    <div class="mese">
+      <Pulsante variante="grigio" misura="media" tondo icona="indietro" etichetta="Ciclo precedente" disabled={ciclo <= cicloPrimo} onclick={() => (ciclo = spostaCiclo(ciclo, -1).indice)} />
+      <button type="button" class="mese-nome text-headline" title="Torna al ciclo in corso" onclick={() => (ciclo = cicloOra)}>
+        {nomeCiclo(cicloVisto)}{#if ciclo === cicloOra}<span class="in-corso">&nbsp;· in corso</span>{/if}
+      </button>
+      <Pulsante variante="grigio" misura="media" tondo icona="freccia" etichetta="Ciclo successivo" disabled={ciclo >= cicloOra} onclick={() => (ciclo = spostaCiclo(ciclo, 1).indice)} />
+    </div>
+  {/if}
   {#if scheda === "movimenti"}
     <div class="filtri"><Pillole opzioni={FILTRI} scelte={[filtro]} oncambio={(v) => (filtro = v[0])} etichetta="Filtro" /></div>
   {/if}
 {/snippet}
 
 {#snippet riepilogo()}<Riepilogo parte="lato" />{/snippet}
+{#snippet analisiLato()}<Analisi indice={ciclo} parte="lato" />{/snippet}
 
-<Pagina titolo="Finanze" {strumenti} laterale={scheda === "home" ? riepilogo : undefined}>
+<Pagina titolo="Finanze" {strumenti} laterale={scheda === "home" ? riepilogo : scheda === "analisi" ? analisiLato : undefined}>
   {#snippet azioni()}
     <Pulsante variante="vetro" misura="media" tondo icona="portafoglio" etichetta="Saldi dei pocket" onclick={() => apri({ tipo: "pocket" })} />
   {/snippet}
@@ -100,7 +117,7 @@
   {:else if scheda === "movimenti"}
     <Movimenti {mese} {filtro} />
   {:else}
-    <Cicli />
+    <Analisi indice={ciclo} parte="resto" />
   {/if}
 </Pagina>
 
@@ -150,6 +167,7 @@
 <style>
   .mese { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); max-width: 420px; width: 100%; }
   .mese-nome { flex: 1; text-align: center; }
+  .in-corso { color: var(--accento); font-weight: var(--weight-regular); }
   .filtri { overflow-x: auto; scrollbar-width: none; max-width: 100%; }
   .filtri :global(.pillole) { flex-wrap: nowrap; }
   .filtri :global(button) { flex: none; }

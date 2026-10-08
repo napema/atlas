@@ -6,6 +6,7 @@
   domanda, ed e' il modo di non fidarsi piu' di nessuno dei due.
 -->
 <script lang="ts">
+  import { cicloPerIndice } from "$condivisi/finanze/analisi.js";
   import Foglio from "$lib/ui/Foglio.svelte";
   import Sezione from "$lib/ui/Sezione.svelte";
   import RigaMovimento from "./RigaMovimento.svelte";
@@ -18,7 +19,9 @@
 
   const d = $derived.by(() => {
     dati.versione;
-    const ciclo = cicloDi(oggiISO());
+    // Il ciclo da cui arrivi: l'Analisi si sfoglia all'indietro, e un
+    // foglio che mostrava sempre quello di oggi contraddiceva la riga toccata.
+    const ciclo = cicloPerIndice(mese);
     const tutti = movimentiSottocategoria(catId, sub) as any[];
     const dentro = (m: any) => m.data >= ciclo.da && m.data <= ciclo.a;
     const delMese = tutti.filter(dentro);
