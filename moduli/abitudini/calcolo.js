@@ -370,6 +370,59 @@ export function partiDiOggi(iso = oggiISO()) {
   return out;
 }
 
+/* ---------------------------------------------------- la giornata intera */
+/*
+   TUTTO quello che oggi c'e', spuntato o no, in ordine di giornata.
+
+   `restaOggi` dice cosa MANCA, ed e' la domanda giusta per una checklist:
+   le cose fatte spariscono e quello che resta sale in cima. Ma una lista
+   della giornata e' un'altra cosa — serve a vedere la forma del giorno, non
+   solo il debito — e una lista in cui le cose fatte non ci sono mai state
+   non dice che sei a meta': dice che hai ancora tre cose da fare, cioe' la
+   stessa frase di stamattina.
+
+   Le due funzioni restano separate di proposito. Un flag `conFatte` su
+   `restaOggi` avrebbe voluto dire che chi la chiama deve ricordarsi di
+   passarlo giusto, e l'ordinamento e' diverso: li' prima i ritardi, qui
+   l'ora del giorno.
+*/
+
+export function giornataOggi(iso = oggiISO(), ora = new Date().getHours()) {
+  const out = [];
+  for (const h of abitudiniVive()) {
+    if (!ePrevista(h, iso)) continue;
+    const parti = partiDi(h);
+
+    if (!parti.length) {
+      out.push({
+        chiave: h.id, habitId: h.id, parteId: null,
+        nome: h.name, emoji: h.emoji, tint: h.tint,
+        fascia: null, nomeFascia: "", quando: "adesso", ordine: 5,
+        // Saltata e' chiusa quanto fatta, ma non e' la stessa cosa e la
+        // lista lo deve dire: una spunta grigia, non verde.
+        fatta: eFatta(h.id, iso), saltata: eSaltata(h.id, iso),
+      });
+      continue;
+    }
+
+    for (const p of parti) {
+      const f = p.fascia || "qualsiasi";
+      out.push({
+        chiave: `${h.id}#${p.id}`, habitId: h.id, parteId: p.id,
+        nome: p.nome, dentro: h.name, emoji: h.emoji, tint: h.tint,
+        fascia: f, nomeFascia: FASCE[f]?.nome || "",
+        quando: statoFascia(f, ora),
+        ordine: FASCE[f]?.ordine || 5,
+        da: FASCE[f]?.da ?? 0,
+        fatta: parteFatta(h.id, p.id, iso), saltata: false,
+      });
+    }
+  }
+  // L'ordine e' quello del GIORNO, non dell'urgenza: una lista della
+  // giornata che mette in cima i ritardi non e' piu' una giornata.
+  return out.sort((a, b) => (a.ordine - b.ordine) || a.nome.localeCompare(b.nome));
+}
+
 /* ------------------------------------------------------- cosa resta oggi */
 /*
    La lista piatta di quello che manca: le abitudini semplici e le PARTI di

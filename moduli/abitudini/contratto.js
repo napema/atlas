@@ -18,7 +18,7 @@ import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { ascolta, EVENTI } from "../../core/bus.js";
 import { casella, stato, abitudiniVive, eFatta, alterna, alternaParte, semina, fasciaAdesso, FASCE } from "./dati.js";
-import { progressoGiorno, mancantiOggi, serie, promemoriaAdesso, restaOggi } from "./calcolo.js";
+import { progressoGiorno, mancantiOggi, serie, promemoriaAdesso, restaOggi, giornataOggi } from "./calcolo.js";
 import * as p50 from "./p50.js";
 
 let ridisegnaVista = () => {};
@@ -341,6 +341,10 @@ export function oggi() {
     // La checklist unica della home: abitudini semplici e parti, mescolate
     // e ordinate per momento della giornata.
     resta: restaOggi(giornoCorrente()),
+    /* LA GIORNATA INTERA, spuntate comprese. La home ne fa la lista del
+       giorno: `resta` risponde a «cosa manca», questa a «com'e' fatto
+       oggi», e sono due domande diverse. */
+    giornata: giornataOggi(giornoCorrente()),
     // `frazione` è già questo conto: due copie della stessa regola sono due
     // posti da cui può scappare.
     avanzamento: p.frazione,

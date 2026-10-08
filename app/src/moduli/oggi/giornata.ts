@@ -25,6 +25,18 @@ export interface VoceResta {
   modulo: string;
 }
 
+/** Una voce della GIORNATA: come `VoceResta`, ma sa anche se è già fatta. */
+export interface VoceGiorno extends VoceResta {
+  fatta?: boolean;
+  saltata?: boolean;
+  /** «18:30». Solo chi un orario ce l'ha davvero — oggi gli allenamenti. */
+  ora?: string;
+  durata?: number;
+  /** L'ora da cui comincia la sua fascia, per metterla in ordine di giornata. */
+  da?: number;
+  ordine?: number;
+}
+
 export interface Scheda { voce: VoceModulo; contratto: Contratto; dati: SchedaOggi | null }
 
 /** L'ora da cui «dopo» non esiste più: quello che resta è tutto di adesso. */
@@ -68,7 +80,37 @@ export function quadro(schede: Scheda[], ora = new Date().getHours()) {
        Mobilità ci mette la durata. Leggerlo come momento produceva
        «niente altro fino a 14 min». */
     prossimaFascia: (resta.find((v) => v.fascia)?.fascia as string | undefined) ?? null,
+
+    /* LA GIORNATA: tutto quello che oggi c'e', spuntato o no.
+
+       `resta` risponde a «cosa manca» ed e' la domanda giusta per una
+       checklist — le cose fatte spariscono. Questa risponde a «com'e' fatto
+       oggi», e sono due domande diverse: una lista in cui le cose fatte non
+       ci sono mai state non dice che sei a meta' giornata, dice che hai
+       ancora tre cose da fare, cioe' la stessa frase di stamattina.
+
+       L'ordine e' quello dell'OROLOGIO: chi ha un'ora vera la usa, chi ha
+       solo una fascia usa l'ora in cui quella fascia comincia. Mescolare i
+       due e' l'unico modo di avere una giornata sola invece di due liste. */
+    giornata: giorno(conDati),
   };
+}
+
+const ORA_FASCIA: Record<string, number> = {
+  mattina: 7, pomeriggio: 13, preWorkout: 17, sera: 20, qualsiasi: 23,
+};
+
+function giorno(conDati: Scheda[]): VoceGiorno[] {
+  const voci: VoceGiorno[] = [];
+  for (const s of conDati) {
+    for (const v of ((s.dati as any).giornata || []) as VoceGiorno[]) {
+      voci.push({ ...v, modulo: s.voce.id });
+    }
+  }
+  const quando = (v: VoceGiorno) =>
+    v.ora ? Number(v.ora.slice(0, 2)) * 60 + Number(v.ora.slice(3, 5))
+      : (ORA_FASCIA[v.fascia ?? "qualsiasi"] ?? 23) * 60;
+  return voci.sort((a, b) => quando(a) - quando(b) || a.nome.localeCompare(b.nome));
 }
 
 export type Quadro = ReturnType<typeof quadro>;

@@ -40,7 +40,7 @@
   import { dati } from "$lib/core/reattivo.svelte";
   import { statoSync } from "$lib/core/statoSync.svelte";
   import { tinta } from "$lib/core/tinte";
-  import { tocco, dataUmana, maiuscola } from "$lib/core/ui";
+  import { tocco, dataUmana, maiuscola, plurale } from "$lib/core/ui";
   import { quadro, saluto, costanza, fraseSerie, type Scheda, type VoceResta } from "./giornata";
 
   let { resto = [] }: { resto?: string[] } = $props();
@@ -162,6 +162,90 @@
 
   const nomeSfida = $derived(voceDi("abitudini")?.nome ?? "Project 50");
 
+  /* ===================================================================
+     ADESSO, E BASTA.
+
+     La prima cosa della schermata e' una sola: quella che tocca ORA, con
+     il gesto per farla. Non un elenco — un elenco in cima e' una lista di
+     debiti, e si legge come un rimprovero prima ancora di avere il caffe'
+     in mano.
+
+     Se c'e' un allenamento con un'ora, vince lui: e' l'unica cosa della
+     giornata che ha un appuntamento, e saperlo quindici minuti prima e'
+     esattamente il momento in cui serve.
+     =================================================================== */
+  const adesso = $derived.by(() => {
+    const conOra = q.giornata.find((v: any) => v.ora && !v.fatta) as any;
+    if (conOra?.ora) {
+      const m = Number(conOra.ora.slice(0, 2)) * 60 + Number(conOra.ora.slice(3, 5));
+      const fra = m - (ora.getHours() * 60 + ora.getMinutes());
+      // Entro tre ore e' «adesso»: prima non lo e', e dirlo alle otto di
+      // mattina per le sei di sera e' solo un modo di non farti stare
+      // tranquillo.
+      if (fra > -90 && fra < 180) {
+        return {
+          ...conOra,
+          occhiello: fra <= 0 ? "ADESSO" : fra < 60 ? `TRA ${fra} MIN` : `ALLE ${conOra.ora}`,
+          sotto: [conOra.ora, conOra.dentro].filter(Boolean).join(" · "),
+        };
+      }
+    }
+    const v = q.prio[0];
+    if (!v) return null;
+    return {
+      ...v,
+      occhiello: v.quando === "tardi" ? "IN RITARDO" : "ADESSO",
+      sotto: [v.dentro, v.nomeFascia].filter(Boolean).join(" · "),
+    };
+  });
+
+  const voceDel = (id: string) => voceDi(id);
+
+  /* La giornata, con il posto in cui sei adesso. `corrente` e' la prima
+     non fatta: tutto quello che viene prima e' passato, il resto e' da
+     venire. Una lista in cui niente e' «adesso» non e' una giornata. */
+  const giorno = $derived.by(() => {
+    const voci = q.giornata as any[];
+    const i = voci.findIndex((v) => !v.fatta && !v.saltata);
+    const corrente = i < 0 ? voci.length - 1 : i;
+
+    /* UNA FINESTRA, NON L'ELENCO. Diciotto voci su un telefono sono un muro:
+       si smette di vederle e si comincia a vederne una sola, lunga. La
+       giornata serve a dire DOVE SEI, e per dirlo bastano due cose fatte
+       dietro e quattro davanti — il resto e' contesto che si puo' aprire.
+
+       Due dietro e non zero: senza niente di fatto sopra, la prima riga
+       sembra l'inizio della giornata anche alle nove di sera. */
+    const DIETRO = 2, AVANTI = 5;
+    const da = Math.max(0, corrente - DIETRO);
+    const a = Math.min(voci.length, corrente + AVANTI);
+    const finestra = voci.length <= DIETRO + AVANTI + 1 ? voci : voci.slice(da, a);
+
+    return {
+      voci: finestra,
+      // L'indice del «adesso» dentro la finestra, non dentro l'elenco.
+      corrente: finestra.indexOf(voci[corrente]),
+      prima: voci.length <= DIETRO + AVANTI + 1 ? 0 : da,
+      dopo: voci.length <= DIETRO + AVANTI + 1 ? 0 : voci.length - a,
+      fatte: voci.filter((v) => v.fatta).length,
+      totale: voci.length,
+      restano: voci.filter((v) => !v.fatta && !v.saltata).length,
+    };
+  });
+
+  /* Mobilita' ha un gesto, non solo una schermata: se la sessione di oggi
+     e' ancora da fare, la sua carta porta il bottone che la apre. La rotta
+     la da' il modulo nella sua voce, la home non se la inventa. */
+  const mobilitaApre = $derived(
+    (q.resta.find((v) => v.modulo === "mobilita" && v.apre)?.apre as string | undefined) ?? null,
+  );
+
+  /** Le carte dei moduli: il numero che ognuno dice di oggi. */
+  const carta = (id: string) => {
+    const x = schede.find((s) => s.voce.id === id);
+    return x?.dati ? { voce: x.voce, d: x.dati } : null;
+  };
+
   const dataLunga = $derived(maiuscola(ora.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })));
 
   function tocca(v: VoceResta) {
@@ -187,70 +271,6 @@
 
 <!-- ============================================================ CARTE -->
 
-{#snippet cartaAdesso()}
-  <!-- ADESSO: l'unica carta su cui si tocca per FARE invece che per andare. -->
-  <Sezione titolo="Adesso">
-    {#snippet coda()}
-      {#if q.inRitardo.length}
-        <span class="conta ritardo-conta cifre">{q.inRitardo.length} in ritardo</span>
-      {:else if q.prio.length}
-        <span class="conta cifre">{q.prio.length}</span>
-      {/if}
-    {/snippet}
-    {#if !q.resta.length}
-      <!-- Niente da fare: una riga, non una carta vuota. -->
-      <div class="calmo">
-        <span class="segno ok"><Icona nome="fatto" misura={20} tratto={2} /></span>
-        <p>{q.conDati.length ? "Niente. Hai spuntato tutto quello che c'era oggi." : "Sto leggendo i moduli…"}</p>
-      </div>
-    {:else if aPosto}
-      <!-- La fascia è chiusa. Questa è l'unica carta della home che non
-           chiede niente, e deve sembrarlo: il segno è grande, il respiro
-           è largo, e non c'è un elenco sotto da cui farsi riprendere. -->
-      <div class="apposto">
-        <span class="bollo"><Icona nome="fatto" misura={30} tratto={2.2} /></span>
-        <p class="text-title3">A posto {perQuando}.</p>
-        {#if finoA}
-          <p class="text-subheadline secondario">Niente altro fino a {finoA.toLowerCase()}.</p>
-        {/if}
-      </div>
-    {:else}
-      {#each mostrate as v (v.chiave)}
-        <div animate:flip={{ duration: 280 }} out:slide={{ duration: 220 }} class="voce avvolge" style:--tinta={tinta(v.tint)}>
-          <Riga onclick={() => tocca(v)} freccia={Boolean(v.apre)}>
-            {#snippet inizio()}
-              {#if v.apre}
-                <span class="apri"><Icona nome="play" misura={14} tratto={2.4} /></span>
-              {:else}
-                <Spunta finta misura={26} />
-              {/if}
-            {/snippet}
-            <span class="voce-nome">
-              {#if v.emoji}<span class="emoji">{v.emoji}</span>{/if}
-              {v.nome}
-            </span>
-            {#if v.dentro}<span class="text-subheadline secondario">{v.dentro}</span>{/if}
-            {#snippet fine()}
-              {#if v.quando === "tardi" && !tuttiTardi}
-                <!-- Quando SONO TUTTE in ritardo la scritta non distingue
-                     niente: cinque etichette rosse in colonna sono rumore, e
-                     il rosso smette di voler dire qualcosa. In quel caso lo
-                     dice una volta la testata, e qui resta il momento. -->
-                <span class="text-subheadline ritardo">in ritardo</span>
-              {:else if v.nomeFascia}
-                <span class="text-subheadline secondario">{v.nomeFascia}</span>
-              {/if}
-            {/snippet}
-          </Riga>
-        </div>
-      {/each}
-      {#if nascoste > 0}
-        <Riga titolo="Altre {nascoste} in {nomeSfida}" href="#/abitudini" freccia accento />
-      {/if}
-    {/if}
-  </Sezione>
-{/snippet}
-
 {#snippet cartaSfida()}
   {#if sfida?.spenta}
     <!-- NON COMINCIATA. La carta più grande sotto «Adesso» non può essere
@@ -258,8 +278,9 @@
          vero e non serve a niente. Qui c'è il numero della sfida e il modo
          di cominciarla, e la costanza resta sotto come contorno. -->
     <div style:--accento={voceDi("abitudini")?.accento}>
-      <Sezione titolo={nomeSfida}>
+      <Sezione>
         <div class="invito">
+          {@render testa(voceDi("abitudini"), sfida.rotta)}
           <div class="capo">
             <span class="cifra cifre">{sfida.totale}</span>
             <span class="su text-title3 secondario">giorni</span>
@@ -278,9 +299,9 @@
     <!-- PROJECT 50. La misura è il GIORNO: la barra è dei cinquanta giorni,
          i pallini sono le otto di oggi. Da chiudere, il bordo si accende. -->
     <div style:--accento={voceDi("abitudini")?.accento}>
-      <Sezione titolo={nomeSfida}>
-        {#snippet coda()}<a href="#/abitudini">Apri</a>{/snippet}
+      <Sezione>
         <div class="sfida" class:urgente={sfida.urgente} class:chiusa={sfida.chiuso}>
+          {@render testa(voceDi("abitudini"), "#/abitudini")}
           <div class="capo">
             <span class="text-footnote">Giorno</span>
             <span class="cifra cifre">{sfida.giorno}</span>
@@ -319,8 +340,9 @@
     <!-- COSTANZA, senza nemmeno le voci della sfida: con la sfida accesa il contatore di
          Project 50 È la serie, e due numeri per la stessa domanda fanno
          chiedere in che cosa differiscono. -->
-    <Sezione titolo="Costanza">
+    <Sezione>
       <div class="costanza">
+        <span class="g-titolo text-subheadline semibold">Costanza</span>
         <div class="serie">
           <span class="cifra cifre" class:magra={c.serie > 0 && c.pieni === 0}>{c.serie}</span>
           <span class="text-subheadline secondario">{c.serie === 1 ? "giorno di fila" : "giorni di fila"}</span>
@@ -335,17 +357,114 @@
   {/if}
 {/snippet}
 
+<!-- LA TESTATA DI UNA CARTA, uguale per tutte: pastiglia del colore del
+     modulo, nome, e il chevron che dice «qui dentro c'e' una schermata».
+     Era `Sezione titolo`, cioe' un testo grigio: due carte accanto si
+     distinguevano solo leggendole. Il colore si riconosce da lontano, il
+     nome lo conferma. -->
+{#snippet testa(voce: any, rotta: string | null = null)}
+  <a class="t-modulo" href={rotta ?? `#/${voce.id}`} style:--colore={voce.accento}>
+    <span class="t-icona"><Icona nome={voce.icona} misura={16} tratto={2.1} /></span>
+    <span class="t-nome text-subheadline semibold">{voce.nome}</span>
+    <span class="t-freccia"><Icona nome="freccia" misura={15} tratto={2.4} /></span>
+  </a>
+{/snippet}
+
+{#snippet strisciaAdesso()}
+  {#if adesso}
+    <div class="adesso lastra" style:--colore={voceDel(adesso.modulo)?.accento ?? "var(--color-blue)"}>
+      <span class="a-icona">
+        {#if adesso.emoji}<span class="emoji">{adesso.emoji}</span>
+        {:else}<Icona nome={voceDel(adesso.modulo)?.icona ?? "oggi"} misura={20} tratto={2} />{/if}
+      </span>
+      <span class="a-testo">
+        <span class="a-occhiello text-caption2">{adesso.occhiello}</span>
+        <span class="a-nome text-title3">{adesso.nome}</span>
+        {#if adesso.sotto}<span class="text-subheadline secondario">{adesso.sotto}</span>{/if}
+      </span>
+      <span class="a-azioni">
+        {#if adesso.apre}
+          <Pulsante variante="pieno" misura="media" href={adesso.apre}>Avvia</Pulsante>
+        {:else}
+          <Pulsante variante="pieno" misura="media" onclick={() => tocca(adesso as any)}>Fatto</Pulsante>
+        {/if}
+        <Pulsante variante="vetro" misura="media" href={`#/${adesso.modulo}`}>Apri</Pulsante>
+      </span>
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet cartaGiornata()}
+  {#if giorno.voci.length}
+    <Sezione>
+      <div class="blocco">
+        <div class="g-testa">
+          <span class="g-titolo text-subheadline semibold">Giornata</span>
+          <span class="text-footnote secondario cifre">
+            {giorno.restano ? plurale(giorno.restano, "rimasto", "rimasti") : "tutto fatto"}
+          </span>
+        </div>
+        {#if giorno.prima}
+          <span class="g-altre text-footnote secondario cifre">↑ {giorno.prima} prima</span>
+        {/if}
+        <ol class="g-lista">
+          {#each giorno.voci as v, i (v.chiave)}
+            <li class="g-voce" class:fatta={v.fatta} class:saltata={v.saltata} class:ora={i === giorno.corrente}
+                style:--tinta={tinta(v.tint)}>
+              <span class="g-ora cifre text-footnote">{v.ora ?? ""}</span>
+              <button type="button" class="g-segno" aria-label={v.fatta ? "Fatta" : "Segna fatta"}
+                onclick={() => !v.ora && tocca(v as any)}>
+                {#if v.fatta || v.saltata}<Icona nome="spunta" misura={13} tratto={3} />{/if}
+              </button>
+              <span class="g-nome">{v.nome}</span>
+              {#if v.dentro}<span class="g-dentro text-footnote secondario">{v.dentro}</span>{/if}
+            </li>
+          {/each}
+        </ol>
+        {#if giorno.dopo}
+          <a class="g-altre g-link text-footnote cifre" href="#/abitudini">↓ altre {giorno.dopo}</a>
+        {/if}
+      </div>
+    </Sezione>
+  {/if}
+{/snippet}
+
+<!-- LA CARTA DI UN MODULO: testata, il numero che quel modulo dice di oggi,
+     una riga di dettaglio. Una forma sola per tutti — e' quello che rende
+     la griglia leggibile a colpo d'occhio invece che sei carte diverse. -->
+{#snippet cartaModulo(id: string, azione: string | null = null)}
+  {@const c2 = carta(id)}
+  {#if c2}
+    {@const v = String(c2.d.valore ?? "—")}
+    <div style:--accento={c2.voce.accento}>
+      <Sezione>
+        <div class="blocco modulo">
+          {@render testa(c2.voce, c2.d.azione?.rotta ?? null)}
+          <span class="m-cifra cifre" class:lungo={v.length > 14} class:fatto={c2.d.fatto === true}>{v}</span>
+          {#if c2.d.dettaglio}<span class="text-subheadline secondario">{c2.d.dettaglio}</span>{/if}
+          {#if typeof c2.d.avanzamento === "number" && c2.d.avanzamento > 0}
+            <span class="m-barra"><i style:width="{Math.round(Math.min(1, c2.d.avanzamento) * 100)}%"></i></span>
+          {/if}
+          {#if azione}
+            <Pulsante variante="tinto" misura="media" larga href={azione}>Inizia ora</Pulsante>
+          {/if}
+        </div>
+      </Sezione>
+    </div>
+  {/if}
+{/snippet}
+
 {#snippet cartaFinanze()}
   {#if f}
     <!-- FINANZE: le tre domande che si fanno davanti a una cena fuori. -->
     <div style:--accento={voceDi("finanze")?.accento}>
-      <Sezione titolo="Finanze">
-        {#snippet coda()}<a href="#/finanze">Apri</a>{/snippet}
+      <Sezione>
         <!-- UN NUMERO, con la stessa etichetta che usa il modulo. Erano
              tre — il disponibile grande, «Oggi» e «Al giorno» in due
              riquadri — tutti della stessa misura: a colpo d'occhio non si
              capiva quale rispondesse a «posso spendere stasera». -->
         <div class="soldi">
+          {@render testa(voceDi("finanze"), "#/finanze")}
           <span class="eti-oggi text-footnote semibold">Puoi spendere oggi</span>
           <span class="cifra cifre">{f.oggiPuoi ?? f.valore ?? "—"}</span>
           <span class="text-subheadline secondario">{f.oggiFino ?? f.eti ?? ""}</span>
@@ -424,40 +543,39 @@
        avanza e' in fondo alla pila piu' corta, dove finisce la pagina — ed
        e' spazio, non un buco. Era il disegno di partenza; l'avevo
        sostituito con la griglia e il buco e' arrivato con lei. -->
+  <!-- LA STRISCIA DI ADESSO, a tutta larghezza e sopra ogni cosa.
+
+       «Adesso» era una carta dentro la griglia, con dentro un elenco: a
+       pari dignita' con Finanze e Pasti, e un elenco in cima e' una lista
+       di debiti che si legge come un rimprovero. Qui e' UNA cosa — quella
+       che tocca ora — col gesto per farla accanto. Quello che resta della
+       giornata sta nella sua carta, piu' in basso, dove si guarda e non si
+       subisce. -->
+  {@render strisciaAdesso()}
+
+  <!-- TRE PILE, non una griglia.
+
+       Una griglia condivide le righe: la seconda riga aspetta la carta piu'
+       alta della prima, e sotto quella corta resta il buco. Tre pile che non
+       sanno niente l'una dell'altra non hanno righe in comune, quindi non
+       hanno buchi: l'unico spazio che avanza e' in fondo alla pila piu'
+       corta, dove la pagina finisce comunque.
+
+       La prima e' piu' larga perche' porta le due carte che si LEGGONO —
+       i soldi e la giornata — e le altre due portano quelle che si
+       GUARDANO. -->
   <div class="bento">
-    <div class="pila">
-      <div class="tessera grande">{@render cartaAdesso()}</div>
-      <div class="tessera media">{@render cartaFinanze()}</div>
+    <div class="pila larga">
+      <div class="tessera p-finanze">{@render cartaFinanze()}</div>
+      <div class="tessera p-giornata">{@render cartaGiornata()}</div>
     </div>
     <div class="pila">
-      <div class="tessera alta">{@render cartaSfida()}</div>
-    <div class="tessera moduli">
-      <Sezione titolo="Moduli" nuda>
-        <div class="striscia">
-      {#each tessere as x (x.voce.id)}
-        <!-- In 179 punti non ci sta un menu. Il primo pezzo e quanti altri
-             ne restano: si legge da lontano e resta vero. -->
-        {@const pezzi = String(x.dati?.valore ?? "—").split(/\s*\+\s*/).filter(Boolean)}
-        {@const v = pezzi[0] ?? "—"}
-        {@const altri = pezzi.length - 1}
-        <a class="quadrata lastra premibile" class:fatta={x.dati?.fatto === true}
-           href={x.dati?.azione?.rotta || `#/${x.voce.id}`}
-           style:--colore={x.voce.accento}>
-          <span class="q-alto">
-            <span class="q-icona"><Icona nome={x.voce.icona} misura={19} tratto={2} /></span>
-            {#if x.dati?.fatto === true}
-              <span class="q-fatto" title="Fatto"><Icona nome="spunta" misura={13} tratto={2.8} /></span>
-            {/if}
-          </span>
-          <span class="q-basso">
-            <span class="q-nome text-footnote semibold">{x.voce.nome}</span>
-            <span class="q-valore cifre" class:lungo={v.length > 11}>{v}{#if altri > 0}<span class="q-altri">&nbsp;+{altri}</span>{/if}</span>
-          </span>
-        </a>
-      {/each}
-      </div>
-    </Sezione>
+      <div class="tessera p-sfida">{@render cartaSfida()}</div>
+      <div class="tessera p-mobilita">{@render cartaModulo("mobilita", mobilitaApre)}</div>
     </div>
+    <div class="pila">
+      <div class="tessera p-training">{@render cartaModulo("allenamenti")}</div>
+      <div class="tessera p-pasti">{@render cartaModulo("pasti")}</div>
     </div>
   </div>
 </Pagina>
@@ -470,134 +588,165 @@
   .pallino[data-stato="err"] { background: var(--color-red); }
   @keyframes pulsa { 50% { opacity: 0.35; } }
 
-
-  /* LE PILE. Ogni colonna è una pila che non sa niente delle altre: niente
-     righe condivise, quindi niente buchi FRA le carte — le colonne possono
-     finire ad altezze diverse solo in fondo. `minmax(0, …)` e non `1fr`:
-     una colonna `1fr` non scende sotto la larghezza del suo contenuto, e il
-     nome lungo di una cena la allargava oltre lo schermo. */
-  /* Sul telefono una colonna: un bento a due tessere su 390 punti sarebbe
-     due francobolli. La gerarchia lì la fa l'ordine, che è già quello. */
-  /* Sul telefono le pile spariscono (`display: contents`) e le quattro
-     carte tornano figlie dirette, in colonna: l'ordine lo rimette `order`,
-     perche' nel DOM adesso stanno appaiate due a due. */
-  .bento { display: flex; flex-direction: column; gap: var(--space-5); }
-  .pila { display: contents; }
-  .grande { order: 1; }
-  .alta   { order: 2; }
-  .media  { order: 3; }
-  .moduli { order: 4; }
-  .tessera { min-width: 0; display: flex; flex-direction: column; }
-
-  /* LE CARTE NON SI STIRANO. Avevo fatto il contrario — la carta tirata
-     fino in fondo alla tessera — per non lasciare buchi nella griglia. Era
-     la cura sbagliata: una carta corta accanto a una lunga diventava una
-     carta CON DENTRO un vuoto di duecento punti, bordo compreso, e un
-     vuoto dentro una cornice si legge come una cosa rotta. Un vuoto fuori
-     dalle cornici è solo spazio.
-
-     E si portava dietro un guasto peggiore: i quadrati dei moduli sono
-     elementi di griglia, e da elementi stirati l'`aspect-ratio` perde —
-     avevano smesso di essere quadrati. */
-  .tessera > :global(*) { min-height: 0; }
-
-  .invito { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
-  .invito .capo { display: flex; align-items: baseline; gap: var(--space-2); }
-  .invito .cifra { font-size: 56px; line-height: 1; font-weight: var(--weight-bold); letter-spacing: -0.03em; color: var(--accento); }
-  .contorno { padding: 0 var(--space-4) var(--space-4); }
-
   .saluto {
     font-family: var(--font-display); font-weight: var(--weight-bold);
     font-size: clamp(38px, 7vw, 64px); line-height: 1.04; letter-spacing: -0.03em;
     overflow-wrap: anywhere;
   }
 
-  /* I QUADRATI. Colore del modulo, icona, e il numero che quel modulo dice
-     di oggi — non un elenco di nomi ma uno stato per tessera. Il fondo è
-     tinto piano: acceso pieno, sei tessere diventerebbero sei cartelloni e
-     le carte grandi sparirebbero sotto. */
-  /* LA FASCIA È UNA GRIGLIA, non un flex che si allarga.
+  /* ============================================================ ADESSO ==
+     La striscia. Una riga sola, a tutta larghezza, con il gesto a destra:
+     e' l'unica cosa della schermata su cui si tocca per FARE invece che per
+     andare, e deve sembrarlo prima di essere letta.
 
-     Con `flex: 1 1 170px` e l'a capo, l'ultima tessera di una riga cresceva
-     a riempire tutto lo spazio rimasto: su iPhone le prime due stavano
-     affiancate e la terza diventava un rettangolo largo quanto lo schermo.
-     Con `auto-fill` le celle restano tutte della stessa misura e quella
-     dispari occupa la sua, lasciando il posto vuoto dov'è. */
-  .striscia {
-    display: grid; gap: var(--space-3);
-    /* 140 e non 150: in una fascia da 628 punti — meta' riga su 1440 — con
-       la soglia a 150 ci stavano tre quadrati e il quarto andava a capo da
-       solo, con due celle vuote a fianco. Il `min(…, 100%)` serve al
-       telefono, dove una colonna piu' stretta del minimo sborderebbe. */
-    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+     Sul telefono le azioni scendono sotto e si allargano: due bottoni da
+     trentaquattro punti stretti nell'angolo destro di 390 sono due bersagli
+     che si sbagliano. */
+  .adesso {
+    display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-3) var(--space-4);
+    align-items: center; padding: var(--space-4);
+    --lastra-velo: linear-gradient(100deg,
+      color-mix(in srgb, var(--colore) 14%, transparent), transparent 58%);
+  }
+  .a-icona {
+    display: grid; place-items: center; width: 44px; height: 44px; flex: none;
+    border-radius: var(--radius-lg); font-size: 20px;
+    background: color-mix(in srgb, var(--colore) 20%, transparent);
+    color: var(--colore);
+    box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--colore) 35%, transparent);
+  }
+  .a-testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .a-occhiello {
+    color: var(--colore); font-weight: var(--weight-bold);
+    letter-spacing: 0.8px; text-transform: uppercase;
+  }
+  .a-nome { overflow-wrap: anywhere; }
+  .a-azioni { display: flex; gap: var(--space-2); flex: none; }
+  @media (max-width: 560px) {
+    .adesso { grid-template-columns: auto 1fr; }
+    .a-azioni { grid-column: 1 / -1; }
+    .a-azioni :global(.pulsante) { flex: 1; }
   }
 
-  /* LA TESSERA. È una `.lastra` come tutte le altre carte della app: il
-     fondo, l'anello, la luce e l'ombra li prende da lì e non se li inventa.
-     L'unica cosa sua è il VELO — l'alone del colore del modulo che sale dal
-     basso — e passa da `--lastra-velo`, che la ricetta prevede apposta.
+  /* ======================================================= LE CARTE =====
+     TRE PILE, non una griglia. Una griglia condivide le righe: la seconda
+     riga aspetta la carta piu' alta della prima, e sotto quella corta resta
+     il buco — su 1750 punti erano settanta di vuoto. Tre pile che non sanno
+     niente l'una dell'altra non hanno righe in comune, quindi non hanno
+     buchi fra le carte.
 
-     Il velo è al 14 per cento e non al 26 di prima: quattro tessere accese
-     pieno erano quattro cartelloni, e con sei moduli sarebbe un circo. Il
-     colore saturo sta in un posto solo, il bollo dell'icona, che è grande
-     38 punti su 179 — abbastanza da dire di che modulo si tratta, troppo
-     poco da gridare.
+     Sul telefono le pile spariscono (`display: contents`) e le carte
+     tornano figlie dirette, in colonna. L'ordine lo rimette `order`, perche'
+     nel DOM adesso stanno appaiate tre a tre. */
+  .bento { display: flex; flex-direction: column; gap: var(--space-5); }
+  .pila { display: contents; }
+  .tessera { min-width: 0; display: flex; flex-direction: column; }
+  /* UNA CARTA CHE NON C'E' NON OCCUPA SPAZIO. Lo snippet di un modulo
+     senza dati non disegna niente, ma il suo contenitore resta — e in una
+     pila con `gap` un contenitore vuoto e' un buco alto quanto il passo. */
+  .tessera:empty { display: none; }
+  .tessera > :global(*) { min-height: 0; }
 
-     NIENTE VERDE QUI DENTRO. Il verde vuol dire «fatto» in tutta ATLAS, ma
-     scritto dentro una tessera tinta di rosa diventa una macchia che non si
-     può guardare. Il «fatto» lo dice una spunta in alto a destra, che è
-     dove si guarda, e il numero resta del colore del testo. */
-  .quadrata {
-    --lastra-velo: radial-gradient(130% 100% at 50% 135%,
-      color-mix(in srgb, var(--colore) 14%, transparent), transparent 72%);
-    position: relative; overflow: hidden;
-    aspect-ratio: 1 / 1; min-height: 0;
-    display: flex; flex-direction: column; justify-content: space-between;
-    padding: var(--space-4);
-    border-radius: var(--radius-xxl);
-    color: inherit;
-    transition: transform var(--duration-fast) var(--ease-spring);
-  }
-  /* `.premibile` fa gia' la deformazione: qui resta solo la scala piu'
-     marcata, perche' una tessera e' grande e a 0,975 non si sente. */
-  .quadrata:active { transform: scale(0.97); }
+  .p-giornata { order: 1; }
+  .p-finanze  { order: 2; }
+  .p-sfida    { order: 3; }
+  .p-training { order: 4; }
+  .p-mobilita { order: 5; }
+  .p-pasti    { order: 6; }
 
-  .q-alto { display: flex; align-items: flex-start; justify-content: space-between; }
-  .q-icona {
-    display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
-    background: var(--colore); color: #fff;
-    box-shadow: 0 2px 10px color-mix(in srgb, var(--colore) 45%, transparent);
-  }
-  .q-fatto {
-    display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
-    background: color-mix(in srgb, #fff 16%, transparent); color: var(--label-primary);
-  }
-
-  .q-basso { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-  .q-nome { color: var(--label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .q-valore {
-    font-family: var(--font-display); font-size: 27px; line-height: 1.05;
-    font-weight: var(--weight-bold); letter-spacing: -0.02em;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .q-altri { color: var(--label-tertiary); font-weight: var(--weight-semibold); }
-  .q-valore.lungo {
-    font-size: 15px; line-height: 1.25; letter-spacing: 0; white-space: normal;
-    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical;
-  }
-
-  @media (min-width: 700px) {
-    .bento {
-      display: grid;
-      /* La pila di sinistra tiene «Adesso», che e' l'unica carta su cui si
-         TOCCA: le sue righe hanno bisogno di larghezza, le altre no. */
-      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-      gap: var(--space-6);
-      align-items: start;
-    }
+  @media (min-width: 760px) {
+    .bento { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
     .pila { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
-    .grande, .alta, .media, .moduli { order: 0; }
+    .tessera { order: 0; }
   }
+  @media (min-width: 1200px) {
+    /* La prima colonna e' piu' larga perche' porta le due carte che si
+       LEGGONO — i soldi e la giornata — mentre le altre quattro si
+       guardano. */
+    .bento { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); }
+  }
+
+  /* La forma comune di una carta di modulo. Il `blocco` e' l'interno di una
+     lastra: il padding lo mette lui, cosi' `Sezione` resta nuda e tutte le
+     carte cominciano alla stessa quota. */
+  .blocco { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); }
+  .modulo { gap: 2px; }
+  .modulo .m-cifra { margin-top: 2px; }
+
+  /* LA TESTATA. Pastiglia del colore del modulo, nome, chevron. Era un
+     titolo grigio: due carte accanto si distinguevano solo leggendole. Il
+     colore si riconosce da lontano, il nome lo conferma. */
+  .t-modulo {
+    display: flex; align-items: center; gap: var(--space-2);
+    margin: -2px 0 var(--space-1);
+  }
+  .t-icona {
+    display: grid; place-items: center; width: 28px; height: 28px; flex: none;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--colore) 20%, transparent);
+    color: var(--colore);
+    box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--colore) 32%, transparent);
+  }
+  .t-nome { flex: 1; min-width: 0; color: var(--colore); }
+  .t-freccia { color: var(--label-tertiary); display: flex; }
+  .t-modulo:active { opacity: 0.6; }
+
+  .m-cifra {
+    font-family: var(--font-display); font-size: 40px; line-height: 1.05;
+    font-weight: var(--weight-bold); letter-spacing: -0.03em;
+    overflow-wrap: anywhere;
+  }
+  .m-cifra.fatto { color: var(--color-green); }
+  /* Sopra i quattordici caratteri non e' piu' una cifra: e' una frase, e a
+     quaranta punti riempie la carta da sola. Torna al corpo del testo e va a
+     capo, con un tetto di tre righe. */
+  .m-cifra.lungo {
+    font-family: var(--font-family); font-size: var(--text-callout); line-height: 1.3;
+    font-weight: var(--weight-semibold); letter-spacing: 0;
+    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .m-barra { height: 5px; border-radius: var(--radius-full); background: var(--fill-tertiary); overflow: hidden; margin-top: var(--space-1); }
+  .m-barra i { display: block; height: 100%; border-radius: inherit; background: var(--accento); transition: width var(--duration-slow) var(--ease-default); }
+
+  /* ====================================================== LA GIORNATA ===
+     La forma del giorno, non il debito. Le cose fatte restano, con la loro
+     spunta: una lista in cui le fatte non ci sono mai state non dice che sei
+     a meta' giornata — dice che hai ancora tre cose da fare, cioe' la stessa
+     frase di stamattina.
+
+     Una griglia a tre colonne: l'ora, il segno, il nome. Le ore incolonnate
+     si leggono come un orario; in tre flex ognuna finirebbe dove capita. */
+  .g-testa { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+  .g-titolo { color: var(--label-secondary); }
+  .g-lista { display: grid; grid-template-columns: auto auto 1fr; gap: 0 var(--space-3); align-items: center; margin-top: 2px; }
+  .g-voce { display: contents; }
+  .g-ora { color: var(--label-tertiary); font-variant-numeric: tabular-nums; min-width: 34px; padding: 7px 0; }
+  .g-segno {
+    display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px var(--label-quaternary); color: transparent;
+  }
+  .g-nome { padding: 7px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .g-dentro { grid-column: 3; margin-top: -6px; padding-bottom: 5px; }
+  .g-altre { display: block; padding: 2px 0 0 37px; }
+  .g-link { color: var(--accento); }
+
+  .g-voce.fatta .g-segno { background: var(--color-green); box-shadow: none; color: #fff; }
+  .g-voce.fatta .g-nome { color: var(--label-tertiary); text-decoration: line-through; text-decoration-color: var(--label-quaternary); }
+  .g-voce.saltata .g-segno { background: var(--fill-primary); box-shadow: none; color: var(--label-secondary); }
+  .g-voce.saltata .g-nome { color: var(--label-tertiary); }
+  /* DOVE SEI ADESSO. Non un fondo pieno su tutta la riga — in una griglia
+     a celle separate si vedrebbero tre rettangoli — ma il segno acceso del
+     colore della voce e il nome in grassetto. */
+  .g-voce.ora .g-segno { box-shadow: inset 0 0 0 2px var(--tinta, var(--accento)); }
+  .g-voce.ora .g-nome { font-weight: var(--weight-semibold); }
+  .g-voce.ora .g-ora { color: var(--tinta, var(--accento)); font-weight: var(--weight-semibold); }
+
+  /* ====================================================== PROJECT 50 ==== */
+  .invito { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
+  .invito .capo { display: flex; align-items: baseline; gap: var(--space-2); }
+  .invito .cifra { font-size: 56px; line-height: 1; font-weight: var(--weight-bold); letter-spacing: -0.03em; color: var(--accento); }
+  .contorno { padding: 0 var(--space-4) var(--space-4); }
 
   .sfida { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
   .sfida .capo { display: flex; align-items: baseline; gap: var(--space-2); }
@@ -610,91 +759,38 @@
   .pallini { display: flex; gap: 5px; }
   .pallini li { width: 11px; height: 11px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--label-tertiary); }
   .pallini li.fatta { background: var(--color-green); box-shadow: none; }
-  /* Da chiudere: il bordo della lastra si accende. Il numero resta nero —
-     è il conto dei giorni, non un allarme. */
   .urgente { box-shadow: inset 0 0 0 1.5px var(--color-orange); border-radius: var(--radius-xxxl); }
 
-  .ritardo-conta { background: color-mix(in srgb, var(--color-orange) 18%, transparent); color: var(--color-orange); padding: 0 10px; }
-  .conta {
-    display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 8px;
-    border-radius: var(--radius-full); background: var(--fill-tertiary);
-    color: var(--label-primary); font-size: var(--text-subheadline); font-weight: var(--weight-semibold);
-  }
+  /* ======================================================== COSTANZA ==== */
+  .costanza { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
+  .serie { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+  .serie .cifra { font-family: var(--font-display); font-size: 44px; line-height: 1; font-weight: var(--weight-bold); color: var(--accento); }
+  .serie .cifra.magra { color: var(--label-secondary); }
+  .rapporto { margin-left: auto; }
 
-  .calmo { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); }
-
-  /* A POSTO. In colonna e centrata, non una riga con un'icona a sinistra:
-     una riga sembra la prima voce di un elenco che non c'è, e l'occhio
-     resta a cercare le altre. Qui non c'è niente da cercare, e la carta lo
-     deve dire con la forma prima che con le parole. Il respiro è voluto:
-     e' l'unica carta della home che non chiede niente. */
-  .apposto {
-    display: flex; flex-direction: column; align-items: center; text-align: center;
-    gap: var(--space-2); padding: var(--space-8) var(--space-5);
-  }
-  .bollo {
-    display: grid; place-items: center; width: 60px; height: 60px; border-radius: 50%;
-    margin-bottom: var(--space-1);
-    color: var(--color-green);
-    background: color-mix(in srgb, var(--color-green) 14%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-green) 26%, transparent);
-    /* Una volta sola, all'apertura. Un'animazione che si ripete diventa un
-       tic; una che parte quando arrivi è un applauso breve. */
-    animation: bollo-entra 0.44s var(--ease-spring) both;
-  }
-  @keyframes bollo-entra {
-    from { transform: scale(0.72); opacity: 0; }
-    to   { transform: scale(1);    opacity: 1; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .bollo { animation: none; }
-  }
-  .segno {
-    flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
-    color: var(--color-orange); background: color-mix(in srgb, var(--color-orange) 16%, transparent);
-  }
-  .segno.ok { color: var(--color-green); background: color-mix(in srgb, var(--color-green) 16%, transparent); }
-
-  .voce { display: block; }
-  .voce-nome { display: inline-flex; align-items: center; gap: 6px; }
-  .apri {
-    display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
-    background: var(--tinta); color: #fff; padding-left: 2px;
-  }
-  .ritardo { color: var(--color-red); font-weight: var(--weight-medium); }
-
-  .soldi { padding: var(--space-4) var(--space-4) var(--space-3); display: flex; flex-direction: column; gap: 2px; }
+  /* ========================================================= FINANZE ==== */
+  .soldi { display: flex; flex-direction: column; gap: 2px; padding: var(--space-4); }
   .eti-oggi { color: var(--label-secondary); letter-spacing: 0.7px; text-transform: uppercase; }
-  /* Rosso solo quando il pocket non la copre, ambra entro due giorni: e' il
-     tono che `comeEvento()` assegna gia', e qui si limita a farsi vedere. */
+  .soldi .cifra {
+    font-family: var(--font-display); font-size: 46px; line-height: 1.05;
+    font-weight: var(--weight-bold); letter-spacing: -0.03em;
+  }
+  .data { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: var(--radius-md); background: var(--fill-quaternary); }
+  .data.oggi { background: color-mix(in srgb, var(--accento) 18%, transparent); color: var(--accento); }
+  .data[data-tono="male"] { background: color-mix(in srgb, var(--color-red) 18%, transparent); color: var(--color-red); }
+  .data[data-tono="avviso"] { background: color-mix(in srgb, var(--color-orange) 18%, transparent); color: var(--color-orange); }
+  .data-g { font-size: 9px; line-height: 10px; font-weight: var(--weight-semibold); text-transform: uppercase; opacity: 0.8; }
+  .data-n { font-size: var(--text-callout); line-height: 18px; font-weight: var(--weight-semibold); }
+  .importo { font-weight: var(--weight-semibold); }
   .importo[data-tono="male"] { color: var(--color-red); }
   .importo[data-tono="avviso"] { color: var(--color-orange); }
 
-  .data {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    width: 38px; height: 38px; border-radius: var(--radius-md);
-    background: var(--fill-quaternary);
-  }
-  .data.oggi { background: color-mix(in srgb, var(--accento) 18%, transparent); color: var(--accento); }
-  .data-g { font-size: 9px; line-height: 10px; font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.3px; opacity: 0.8; }
-  .data-n { font-size: var(--text-callout); line-height: 18px; font-weight: var(--weight-semibold); }
-  .importo { font-weight: var(--weight-medium); }
-  /* Un'uscita è rossa, sempre: il colore dice la direzione dei soldi. */
-  .importo { color: var(--color-red); }
-
   .allarme {
-    display: flex; align-items: flex-start; gap: var(--space-2);
-    padding: var(--space-3) var(--space-4) var(--space-4);
-    border-top: 0.5px solid var(--separator);
+    display: flex; gap: var(--space-2); align-items: flex-start;
+    padding: var(--space-3) var(--space-4); border-top: 0.5px solid var(--separator);
     color: var(--label-secondary);
   }
-  .punto { flex: none; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--color-orange); }
+  .allarme .punto { flex: none; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--color-orange); }
 
-  .costanza { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
-  .serie { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
-  .serie .cifra { font-family: var(--font-display); font-size: 40px; line-height: 44px; font-weight: var(--weight-bold); color: var(--color-orange); }
-  .serie .cifra.magra { color: var(--label-primary); }
-  .rapporto { margin-left: auto; }
-  .rapporto b { color: var(--label-primary); font-weight: var(--weight-semibold); }
-
+  .avvolge { display: contents; }
 </style>

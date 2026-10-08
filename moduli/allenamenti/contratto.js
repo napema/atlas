@@ -8,7 +8,7 @@
 import { avviso, plurale } from "../../core/ui.js";
 import { apriCanale, fondiRecord, potaLapidi, svegliaWorkflow } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
-import { agenda, casella, stato, settimanaDi, pianoDi, slotDi, fatto, giornoSlot, resetBlocco } from "./dati.js";
+import { agenda, casella, stato, settimanaDi, pianoDi, slotDi, fatto, giornoSlot, resetBlocco, oraDi, durataDi } from "./dati.js";
 import {
   progressoSettimana, restaSettimana, giorniRimasti, passoSettimana, kmFatti, km,
 } from "./calcolo.js";
@@ -31,6 +31,31 @@ export function quandoCambia(fn) { ridisegnaVista = fn || (() => {}); }
  * `aperti` insieme a `slot` perché «2» da solo non dice niente — due su sei
  * a inizio settimana e due su sei di sabato sono settimane diverse.
  */
+/**
+ * Gli allenamenti di OGGI per la lista della giornata della home.
+ *
+ * Sono gli unici con un'ORA vera: il piano lascia i giorni liberi, ma
+ * quando uno slot un giorno ce l'ha ha anche un orario — quello che finisce
+ * in calendario. E' il motivo per cui questa lista esiste: senza, la
+ * giornata della home sarebbe fatta solo di fasce.
+ */
+function giornataDiOggi(iso) {
+  const n = settimanaDi(iso);
+  if (!n) return [];
+  return slotDi(n)
+    .filter((s) => giornoSlot(s.id) === iso)
+    .map((s) => ({
+      chiave: `allenamenti:${s.id}`,
+      nome: s.nome,
+      dentro: s.genere === "corsa" ? "Corsa" : s.genere === "palestra" ? "Palestra" : "",
+      ora: oraDi(s),
+      durata: durataDi(s),
+      fatta: fatto(s.id),
+      apre: "#/allenamenti",
+      tint: "red",
+    }));
+}
+
 export function pubblicaSullaLavagna() {
   const oggi = giornoCorrente();
   const n = settimanaDi(oggi);
@@ -207,6 +232,10 @@ export function oggi() {
     // Urgente quando gli slot aperti sono più dei giorni che restano: non
     // è pessimismo, è aritmetica, ed è l'unico momento in cui dirlo serve.
     urgente: ritmo === "indietro" || ritmo === "persa",
+    /* Gli allenamenti di oggi per la lista della giornata: sono gli unici
+       con un'ora vera, e senza di loro quella lista sarebbe fatta solo di
+       fasce. */
+    giornata: giornataDiOggi(iso),
     azione: { rotta: "#/allenamenti" },
   };
 }

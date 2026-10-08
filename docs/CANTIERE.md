@@ -2525,3 +2525,94 @@ cose — la resa di `backdrop-filter` su WebKit e il costo in batteria di sei
 superfici filtrate in una schermata. Se sgrana o scalda, la via d'uscita è
 già scritta e costa una riga: `--vetro-sfoca: 0` su `:root` riporta tutto al
 vetro dipinto senza toccare nient'altro.
+
+---
+
+## 8 ottobre 2026, sera — la home: una cosa adesso, la giornata, sei carte *(chat ATLAS)*
+
+La home era quattro carte in due pile: «Adesso» con dentro un elenco,
+Project 50, Finanze, e una fascia di quadratini per gli altri moduli. Il
+rifacimento viene da un mockup, e le tre idee che porta sono tutte
+correzioni di qualcosa che non funzionava.
+
+### «Adesso» non è una carta, è una striscia
+
+Era una carta nella griglia, a pari dignità con Finanze e Pasti, e dentro
+aveva un ELENCO. Un elenco in cima alla prima schermata del mattino è una
+lista di debiti: si legge come un rimprovero prima di aver preso il caffè.
+
+Ora è una striscia a tutta larghezza con UNA cosa — quella che tocca ora —
+e il gesto per farla accanto. Quello che resta della giornata è sceso nella
+sua carta, dove si guarda invece di subirlo.
+
+Se c'è un allenamento con un'ora vince lui, ma solo **entro tre ore**: è
+l'unica cosa della giornata che ha un appuntamento, e dirlo alle otto di
+mattina per le sei di sera è solo un modo di non farti stare tranquillo.
+
+### La Giornata: la forma del giorno, non il debito
+
+Carta nuova. `resta` risponde a «cosa manca» ed è la domanda giusta per una
+checklist — le cose fatte spariscono e il resto sale in cima. Ma una lista
+in cui le cose fatte non ci sono mai state non dice che sei a metà giornata:
+dice che hai ancora tre cose da fare, cioè la stessa frase di stamattina.
+
+Serviva un canale nuovo, e l'ho aggiunto al contratto: **`giornata` in
+`oggi()`** — tutto quello che oggi c'è, spuntato o no. Lo riempiono due
+moduli:
+
+- **Abitudini** (`giornataOggi()` in `calcolo.js`), che possiede quasi tutta
+  la giornata. Separata da `restaOggi` di proposito: un flag `conFatte`
+  avrebbe voluto dire ricordarsi di passarlo giusto, e l'ordinamento è
+  diverso — lì prima i ritardi, qui l'ora del giorno.
+- **Allenamenti**, che è l'unico con un'ORA vera: quando uno slot ha un
+  giorno ha anche un orario, quello che finisce in calendario. Senza di lui
+  la giornata sarebbe fatta solo di fasce.
+
+La home le mette in fila per orologio: chi ha un'ora la usa, chi ha solo una
+fascia usa l'ora in cui quella fascia comincia. È l'unico modo di avere una
+giornata sola invece di due liste.
+
+**Una finestra, non l'elenco.** Diciotto voci su un telefono sono un muro:
+si smette di vederle e si comincia a vedere una cosa sola, lunga. Due fatte
+dietro, quella di adesso, cinque davanti, e due righe che dicono quante ce
+ne sono fuori. Due dietro e non zero: senza niente di fatto sopra, la prima
+riga sembra l'inizio della giornata anche alle nove di sera.
+
+### Una testata sola per tutte le carte
+
+Pastiglia del colore del modulo, nome, chevron. Era `Sezione titolo`, cioè
+un testo grigio: due carte accanto si distinguevano solo leggendole. Il
+colore si riconosce da lontano, il nome lo conferma — ed è quello che rende
+leggibile a colpo d'occhio una griglia di sei carte invece di sei schede
+diverse.
+
+I quadratini dei moduli sono spariti: erano un collegamento travestito da
+stato, e adesso ogni modulo ha la sua carta col numero che dice di oggi.
+
+**Il valore non è sempre un numero.** Pasti dice «Macinato di manzo + Riso
+basmati + Insalata condita»: a quaranta punti sono quattro righe di display
+verde che coprono la carta. Sopra i quattordici caratteri torna al corpo del
+testo, con un tetto di tre righe.
+
+### Tre pile, ancora
+
+Stessa ragione di prima: una griglia condivide le righe, la seconda riga
+aspetta la carta più alta della prima, e sotto quella corta resta il buco.
+Tre pile non hanno righe in comune. La prima è più larga perché porta le due
+carte che si LEGGONO — i soldi e la giornata — e le altre due quelle che si
+guardano.
+
+`.tessera:empty { display: none }`: lo snippet di un modulo senza dati non
+disegna niente, ma il contenitore resta, e in una pila con `gap` un
+contenitore vuoto è un buco alto quanto il passo.
+
+### Fuori perimetro
+
+Ho toccato `moduli/abitudini/` e `moduli/allenamenti/` per aggiungere
+`giornata` a `oggi()` e `giornataOggi()` a `calcolo.js`. Sono aggiunte, non
+modifiche: `resta`, `oggi()` e tutto il resto sono dove erano. Chi riprende
+quelle chat lo sappia.
+
+**Manca**: Pasti e Mobilità non riempiono `giornata`, quindi i pasti e la
+sessione serale non compaiono nella lista del giorno. Due funzioni come
+quella di Abitudini e ci sono.
