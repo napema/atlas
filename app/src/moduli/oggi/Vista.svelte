@@ -34,14 +34,13 @@
   import Spunta from "$lib/ui/Spunta.svelte";
   import Pulsante from "$lib/ui/Pulsante.svelte";
   import Icona from "$lib/ui/Icona.svelte";
-  import Settimana from "$lib/ui/Settimana.svelte";
   import { MODULI_DATI, voceDi } from "$lib/core/registro";
   import { contratti } from "$lib/core/contratti.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { statoSync } from "$lib/core/statoSync.svelte";
   import { tinta } from "$lib/core/tinte";
-  import { tocco, dataUmana, maiuscola, plurale } from "$lib/core/ui";
-  import { quadro, saluto, costanza, fraseSerie, type Scheda, type VoceResta } from "./giornata";
+  import { tocco, maiuscola, plurale } from "$lib/core/ui";
+  import { quadro, saluto, type Scheda, type VoceResta } from "./giornata";
 
   let { resto = [] }: { resto?: string[] } = $props();
 
@@ -80,7 +79,6 @@
   });
 
   const q = $derived.by(() => { dati.versione; return quadro(schede); });
-  const c = $derived.by(() => { dati.versione; return costanza(); });
   const ora = $derived.by(() => { dati.versione; return new Date(); });
 
   /* «ADESSO» MOSTRA ADESSO, E NIENT'ALTRO.
@@ -139,29 +137,6 @@
   const tuttiTardi = $derived(mostrate.length > 1 && mostrate.every((v) => v.quando === "tardi"));
   const nascoste = $derived(q.resta.length - mostrate.length);
   const f = $derived(q.finanze);
-  /* PROJECT 50 ha una card sua, distinta da Abitudini: la riga del modulo
-     dice quante ne hai spuntate oggi, questa dice a che GIORNO sei. Sono
-     due unità di misura diverse, e in una frazione sola non si leggevano
-     più né l'una né l'altra.
-
-     La home non conosce Abitudini (regola 12): prende `sfida` da qualunque
-     scheda la porti, e se non la porta nessuno la card non esiste. */
-  const sfida = $derived(q.sfida);
-
-  /* LE TESSERE PICCOLE. Le avevo tolte perché ripetevano la barra delle
-     schede, e non era sbagliato: ripetono la navigazione. Ma toglierle ha
-     tolto anche l'unica cosa che dava colore e respiro al bento — tre
-     lastre grigie grandi e nient'altro — e soprattutto ha tolto Pasti e
-     Mobilità dalla schermata che dovrebbe dire come va la giornata.
-
-     Tornano come quadrati: l'accento del modulo, l'icona, e il NUMERO che
-     quel modulo dice di oggi. È la differenza fra un collegamento e uno
-     stato: la barra ti porta lì, questa ti dice se serve andarci. */
-  const tessere = $derived(schede.filter((x) =>
-    x.voce.id !== "finanze" && !(sfida && !sfida.spenta && x.voce.id === "abitudini")));
-
-  const nomeSfida = $derived(voceDi("abitudini")?.nome ?? "Project 50");
-
   /* ===================================================================
      ADESSO, E BASTA.
 
@@ -259,113 +234,20 @@
     tocco(12);
   }
 
-  const giorniCostanza = $derived(c.giorni.map((g) => ({
-    iso: g.giorno,
-    stato: g.stato === "ignoto" ? ("riposo" as const) : g.stato,
-    titolo: `${dataUmana(g.giorno)} · ` + (
-      g.stato === "ignoto" ? "nessun dato"
-      : g.stato === "riposo" ? "niente in programma"
-      : `${g.spuntate} su ${g.attese}`),
-  })));
 </script>
 
 <!-- ============================================================ CARTE -->
-
-{#snippet cartaSfida()}
-  {#if sfida?.spenta}
-    <!-- NON COMINCIATA. La carta più grande sotto «Adesso» non può essere
-         un contatore a zero con sotto «giorni senza spuntare niente»: è
-         vero e non serve a niente. Qui c'è il numero della sfida e il modo
-         di cominciarla, e la costanza resta sotto come contorno. -->
-    <div style:--accento={voceDi("abitudini")?.accento}>
-      <Sezione>
-        <div class="invito">
-          {@render testa(voceDi("abitudini"), sfida.rotta)}
-          <div class="capo">
-            <span class="cifra cifre">{sfida.totale}</span>
-            <span class="su text-title3 secondario">giorni</span>
-          </div>
-          <p class="text-subheadline secondario">
-            {sfida.quante} voci non negoziabili. Una sola saltata e si riparte dal giorno uno.
-          </p>
-          <Pulsante variante="pieno" misura="media" larga href={sfida.rotta}>Comincia</Pulsante>
-        </div>
-        <div class="contorno">
-          <Settimana giorni={giorniCostanza} oggi={c.oggi} />
-        </div>
-      </Sezione>
-    </div>
-  {:else if sfida}
-    <!-- PROJECT 50. La misura è il GIORNO: la barra è dei cinquanta giorni,
-         i pallini sono le otto di oggi. Da chiudere, il bordo si accende. -->
-    <div style:--accento={voceDi("abitudini")?.accento}>
-      <Sezione>
-        <div class="sfida" class:urgente={sfida.urgente} class:chiusa={sfida.chiuso}>
-          {@render testa(voceDi("abitudini"), "#/abitudini")}
-          <div class="capo">
-            <span class="text-footnote">Giorno</span>
-            <span class="cifra cifre">{sfida.giorno}</span>
-            <span class="su text-title3 cifre secondario">/ {sfida.totale}</span>
-          </div>
-          <div class="asta" role="img" aria-label="{sfida.giorno - 1} giorni su {sfida.totale}">
-            <i style:width="{Math.round(Math.max(0, Math.min(1, (sfida.giorno - 1) / sfida.totale)) * 100)}%"></i>
-          </div>
-          {#if sfida.chiuso}
-            <p class="riga text-subheadline">
-              <Icona nome={sfida.esito === "ok" ? "spunta" : "chiudi"} misura={15} tratto={2.4} />
-              {sfida.esito === "ok" ? "Giorno chiuso." : `Giorno perso: da domani riparti dal ${sfida.prossimo}.`}
-            </p>
-          {:else}
-            <div class="riga">
-              <ol class="pallini" aria-label="Le otto di oggi">
-                {#each sfida.pallini ?? [] as p, i (i)}<li class:fatta={p.fatta} title={p.nome}></li>{/each}
-              </ol>
-              <span class="text-subheadline secondario">
-                {sfida.completo ? "tutte fatte"
-                  : sfida.nomiMancate.length === 1 ? `manca ${sfida.nomiMancate[0].toLowerCase()}`
-                  : `mancano ${sfida.nomiMancate.length}`}
-              </span>
-            </div>
-            <!-- Il bottone solo quando si può davvero chiudere: prima delle
-                 21, nessun bersaglio che si tocca per scoprire che non è
-                 ancora il momento. -->
-            {#if sfida.daChiudere}
-              <Pulsante variante="pieno" misura="media" larga href={sfida.rotta}>Chiudi il giorno</Pulsante>
-            {/if}
-          {/if}
-        </div>
-      </Sezione>
-    </div>
-  {:else}
-    <!-- COSTANZA, senza nemmeno le voci della sfida: con la sfida accesa il contatore di
-         Project 50 È la serie, e due numeri per la stessa domanda fanno
-         chiedere in che cosa differiscono. -->
-    <Sezione>
-      <div class="costanza">
-        <span class="g-titolo text-subheadline semibold">Costanza</span>
-        <div class="serie">
-          <span class="cifra cifre" class:magra={c.serie > 0 && c.pieni === 0}>{c.serie}</span>
-          <span class="text-subheadline secondario">{c.serie === 1 ? "giorno di fila" : "giorni di fila"}</span>
-          {#if c.attese > 0}
-            <span class="rapporto text-footnote secondario"><b class="cifre">{c.spuntate}/{c.attese}</b> spunte in 7 giorni</span>
-          {/if}
-        </div>
-        <Settimana giorni={giorniCostanza} oggi={c.oggi} />
-        <p class="text-subheadline secondario">{fraseSerie(c.serie, c.pieni, c.vuotiDiFila)}</p>
-      </div>
-    </Sezione>
-  {/if}
-{/snippet}
 
 <!-- LA TESTATA DI UNA CARTA, uguale per tutte: pastiglia del colore del
      modulo, nome, e il chevron che dice «qui dentro c'e' una schermata».
      Era `Sezione titolo`, cioe' un testo grigio: due carte accanto si
      distinguevano solo leggendole. Il colore si riconosce da lontano, il
      nome lo conferma. -->
-{#snippet testa(voce: any, rotta: string | null = null)}
+{#snippet testa(voce: any, rotta: string | null = null, fatto = false)}
   <a class="t-modulo" href={rotta ?? `#/${voce.id}`} style:--colore={voce.accento}>
     <span class="t-icona"><Icona nome={voce.icona} misura={16} tratto={2.1} /></span>
     <span class="t-nome text-subheadline semibold">{voce.nome}</span>
+    {#if fatto}<span class="t-fatto" title="Fatto"><Icona nome="spunta" misura={12} tratto={3} /></span>{/if}
     <span class="t-freccia"><Icona nome="freccia" misura={15} tratto={2.4} /></span>
   </a>
 {/snippet}
@@ -382,13 +264,23 @@
         <span class="a-nome text-title3">{adesso.nome}</span>
         {#if adesso.sotto}<span class="text-subheadline secondario">{adesso.sotto}</span>{/if}
       </span>
+      <!-- UN VERBO CHE CORRISPONDE ALLA COSA.
+
+           Era «Avvia» per tutto, perche' tutto quello che ha un `apre` si
+           apriva allo stesso modo: su una cena diceva «Avvia», che non vuol
+           dire niente. Una sessione si avvia, un'abitudine si spunta, un
+           pasto si guarda — e dove il verbo e' «guarda» il secondo bottone
+           non serve, perche' farebbe la stessa cosa del primo. -->
       <span class="a-azioni">
-        {#if adesso.apre}
-          <Pulsante variante="pieno" misura="media" href={adesso.apre}>Avvia</Pulsante>
-        {:else}
+        {#if adesso.habitId}
           <Pulsante variante="pieno" misura="media" onclick={() => tocca(adesso as any)}>Fatto</Pulsante>
+          <Pulsante variante="vetro" misura="media" href={`#/${adesso.modulo}`}>Apri</Pulsante>
+        {:else if adesso.apre?.includes("/inizia")}
+          <Pulsante variante="pieno" misura="media" href={adesso.apre}>Avvia</Pulsante>
+          <Pulsante variante="vetro" misura="media" href={`#/${adesso.modulo}`}>Apri</Pulsante>
+        {:else}
+          <Pulsante variante="pieno" misura="media" href={adesso.apre ?? `#/${adesso.modulo}`}>Apri</Pulsante>
         {/if}
-        <Pulsante variante="vetro" misura="media" href={`#/${adesso.modulo}`}>Apri</Pulsante>
       </span>
     </div>
   {/if}
@@ -409,8 +301,7 @@
         {/if}
         <ol class="g-lista">
           {#each giorno.voci as v, i (v.chiave)}
-            <li class="g-voce" class:fatta={v.fatta} class:saltata={v.saltata} class:ora={i === giorno.corrente}
-                style:--tinta={tinta(v.tint)}>
+            <li class="g-voce" class:fatta={v.fatta} class:saltata={v.saltata} class:ora={i === giorno.corrente}>
               <span class="g-ora cifre text-footnote">{v.ora ?? ""}</span>
               <button type="button" class="g-segno" aria-label={v.fatta ? "Fatta" : "Segna fatta"}
                 onclick={() => !v.ora && tocca(v as any)}>
@@ -439,11 +330,11 @@
     <div style:--accento={c2.voce.accento}>
       <Sezione>
         <div class="blocco modulo">
-          {@render testa(c2.voce, c2.d.azione?.rotta ?? null)}
-          <span class="m-cifra cifre" class:lungo={v.length > 14} class:fatto={c2.d.fatto === true}>{v}</span>
+          {@render testa(c2.voce, c2.d.azione?.rotta ?? null, c2.d.fatto === true)}
+          <span class="m-cifra cifre" class:lungo={v.length > 14}>{v}</span>
           {#if c2.d.dettaglio}<span class="text-subheadline secondario">{c2.d.dettaglio}</span>{/if}
           {#if typeof c2.d.avanzamento === "number" && c2.d.avanzamento > 0}
-            <span class="m-barra"><i style:width="{Math.round(Math.min(1, c2.d.avanzamento) * 100)}%"></i></span>
+            <span class="m-barra" class:piena={c2.d.fatto === true}><i style:width="{Math.round(Math.min(1, c2.d.avanzamento) * 100)}%"></i></span>
           {/if}
           {#if azione}
             <Pulsante variante="tinto" misura="media" larga href={azione}>Inizia ora</Pulsante>
@@ -570,11 +461,10 @@
       <div class="tessera p-giornata">{@render cartaGiornata()}</div>
     </div>
     <div class="pila">
-      <div class="tessera p-sfida">{@render cartaSfida()}</div>
+      <div class="tessera p-training">{@render cartaModulo("allenamenti")}</div>
       <div class="tessera p-mobilita">{@render cartaModulo("mobilita", mobilitaApre)}</div>
     </div>
     <div class="pila">
-      <div class="tessera p-training">{@render cartaModulo("allenamenti")}</div>
       <div class="tessera p-pasti">{@render cartaModulo("pasti")}</div>
     </div>
   </div>
@@ -605,8 +495,10 @@
   .adesso {
     display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-3) var(--space-4);
     align-items: center; padding: var(--space-4);
-    --lastra-velo: linear-gradient(100deg,
-      color-mix(in srgb, var(--colore) 14%, transparent), transparent 58%);
+    /* NIENTE ALONE COLORATO SOTTO. Il velo c'era, al 14 per cento, e
+       sommato alla pastiglia e all'occhiello faceva tre volte lo stesso
+       colore sulla stessa striscia. Resta l'occhiello, che e' la parola che
+       dice di quale modulo si tratta. */
   }
   .a-icona {
     display: grid; place-items: center; width: 44px; height: 44px; flex: none;
@@ -649,10 +541,9 @@
 
   .p-giornata { order: 1; }
   .p-finanze  { order: 2; }
-  .p-sfida    { order: 3; }
-  .p-training { order: 4; }
-  .p-mobilita { order: 5; }
-  .p-pasti    { order: 6; }
+  .p-training { order: 3; }
+  .p-mobilita { order: 4; }
+  .p-pasti    { order: 5; }
 
   @media (min-width: 760px) {
     .bento { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
@@ -687,16 +578,35 @@
     color: var(--colore);
     box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--colore) 32%, transparent);
   }
-  .t-nome { flex: 1; min-width: 0; color: var(--colore); }
+  .t-nome { flex: 1; min-width: 0; color: var(--label-primary); }
   .t-freccia { color: var(--label-tertiary); display: flex; }
+  /* La spunta del «fatto»: piccola, verde, nella testata. Il verde vuol dire
+     «fatto» in tutta ATLAS, e qui lo dice su ventidue punti invece che su
+     quaranta di cifra. */
+  .t-fatto {
+    display: grid; place-items: center; width: 20px; height: 20px; flex: none;
+    border-radius: 50%; background: var(--color-green); color: #fff;
+  }
   .t-modulo:active { opacity: 0.6; }
 
   .m-cifra {
     font-family: var(--font-display); font-size: 40px; line-height: 1.05;
     font-weight: var(--weight-bold); letter-spacing: -0.03em;
     overflow-wrap: anywhere;
+    /* IL NUMERO NON È COLORATO.
+
+       Era verde quando il modulo si dichiarava «fatto», e accanto aveva la
+       barra della tinta del modulo: su Pasti faceva pastiglia rossa, nome
+       rosso, numero verde e barra rossa — quattro colori in una carta da
+       cento punti. Sei carte così sono un arlecchino, e il colore smette di
+       voler dire qualcosa proprio mentre ce n'è di più.
+
+       La regola, ed è quella di iOS: UNA carta, UN colore. La tinta del
+       modulo sta sulla pastiglia dell'icona e sulla barra — che sono la
+       stessa cosa, l'identità — e il testo resta del colore del testo. Il
+       «fatto» lo dice una spunta nella testata, dove si guarda, e non
+       ridipingendo quaranta punti di cifra. */
   }
-  .m-cifra.fatto { color: var(--color-green); }
   /* Sopra i quattordici caratteri non e' piu' una cifra: e' una frase, e a
      quaranta punti riempie la carta da sola. Torna al corpo del testo e va a
      capo, con un tetto di tre righe. */
@@ -708,6 +618,9 @@
   }
   .m-barra { height: 5px; border-radius: var(--radius-full); background: var(--fill-tertiary); overflow: hidden; margin-top: var(--space-1); }
   .m-barra i { display: block; height: 100%; border-radius: inherit; background: var(--accento); transition: width var(--duration-slow) var(--ease-default); }
+  /* Piena vuol dire «ci sei»: verde, che in ATLAS vuol dire quello. Il
+     colore del modulo serve a dire DI CHI e' la barra, non come va. */
+  .m-barra.piena i { background: var(--color-green); }
 
   /* ====================================================== LA GIORNATA ===
      La forma del giorno, non il debito. Le cose fatte restano, con la loro
@@ -731,42 +644,30 @@
   .g-altre { display: block; padding: 2px 0 0 37px; }
   .g-link { color: var(--accento); }
 
-  .g-voce.fatta .g-segno { background: var(--color-green); box-shadow: none; color: #fff; }
+  /* VERDE TINTO, NON VERDE PIENO.
+
+     Quattro dischi verdi saturi in colonna sono la cosa piu' accesa della
+     schermata, e sono la parte della giornata che e' gia' passata: il
+     contrario di quello che l'occhio dovrebbe cercare. Il verde resta —
+     in ATLAS vuol dire «fatto» — ma come velo, non come bandiera. */
+  .g-voce.fatta .g-segno {
+    background: color-mix(in srgb, var(--color-green) 20%, transparent);
+    box-shadow: none; color: var(--color-green);
+  }
   .g-voce.fatta .g-nome { color: var(--label-tertiary); text-decoration: line-through; text-decoration-color: var(--label-quaternary); }
   .g-voce.saltata .g-segno { background: var(--fill-primary); box-shadow: none; color: var(--label-secondary); }
   .g-voce.saltata .g-nome { color: var(--label-tertiary); }
   /* DOVE SEI ADESSO. Non un fondo pieno su tutta la riga — in una griglia
      a celle separate si vedrebbero tre rettangoli — ma il segno acceso del
      colore della voce e il nome in grassetto. */
-  .g-voce.ora .g-segno { box-shadow: inset 0 0 0 2px var(--tinta, var(--accento)); }
+  /* DOVE SEI ADESSO: l'accento della PAGINA, non la tinta della voce.
+
+     Con la tinta della voce, la cena faceva un cerchio e un orario rossi:
+     sembrava un allarme invece di «sei qui». Il «sei qui» e' sempre la
+     stessa cosa, quindi e' sempre lo stesso colore. */
+  .g-voce.ora .g-segno { box-shadow: inset 0 0 0 2px var(--accento); }
   .g-voce.ora .g-nome { font-weight: var(--weight-semibold); }
-  .g-voce.ora .g-ora { color: var(--tinta, var(--accento)); font-weight: var(--weight-semibold); }
-
-  /* ====================================================== PROJECT 50 ==== */
-  .invito { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
-  .invito .capo { display: flex; align-items: baseline; gap: var(--space-2); }
-  .invito .cifra { font-size: 56px; line-height: 1; font-weight: var(--weight-bold); letter-spacing: -0.03em; color: var(--accento); }
-  .contorno { padding: 0 var(--space-4) var(--space-4); }
-
-  .sfida { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
-  .sfida .capo { display: flex; align-items: baseline; gap: var(--space-2); }
-  .sfida .cifra { font-family: var(--font-display); font-size: 44px; line-height: 1; font-weight: var(--weight-bold); }
-  .sfida .capo .text-footnote { color: var(--accento); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.6px; align-self: center; }
-  .asta { height: 4px; border-radius: var(--radius-full); background: var(--fill-tertiary); overflow: hidden; }
-  .asta i { display: block; height: 100%; background: var(--accento); border-radius: inherit; transition: width var(--duration-slow) var(--ease-default); }
-  .sfida .riga { display: flex; align-items: center; gap: var(--space-3); margin: 0; }
-  .chiusa .riga { color: var(--color-green); gap: 6px; }
-  .pallini { display: flex; gap: 5px; }
-  .pallini li { width: 11px; height: 11px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--label-tertiary); }
-  .pallini li.fatta { background: var(--color-green); box-shadow: none; }
-  .urgente { box-shadow: inset 0 0 0 1.5px var(--color-orange); border-radius: var(--radius-xxxl); }
-
-  /* ======================================================== COSTANZA ==== */
-  .costanza { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
-  .serie { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
-  .serie .cifra { font-family: var(--font-display); font-size: 44px; line-height: 1; font-weight: var(--weight-bold); color: var(--accento); }
-  .serie .cifra.magra { color: var(--label-secondary); }
-  .rapporto { margin-left: auto; }
+  .g-voce.ora .g-ora { color: var(--accento); font-weight: var(--weight-semibold); }
 
   /* ========================================================= FINANZE ==== */
   .soldi { display: flex; flex-direction: column; gap: 2px; padding: var(--space-4); }

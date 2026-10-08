@@ -82,6 +82,17 @@ export interface VoceModulo {
   /** La sua pagina in Impostazioni. La disegna il modulo, non Impostazioni:
       così Impostazioni non importa nessun modulo (CLAUDE.md, regola 12). */
   impostazioni?: () => Promise<{ default: Component<any> }>;
+  /** IN PAUSA: resta nel registro ma non esiste per la app.
+   *
+   *  Non si cancella un modulo togliendo la sua riga da qui: sparirebbero
+   *  anche la rotta — e un segnalibro o una notifica vecchia aprirebbero il
+   *  vuoto — e il ricordo di com'era configurato. Un modulo in pausa non
+   *  compare nella barra, non ha una carta in home, non viene interrogato
+   *  per `oggi()` e non apre il suo canale di sync. La sua SCHERMATA resta
+   *  raggiungibile dalla rotta, e i suoi dati restano nel repo dove sono.
+   *
+   *  Per riaccenderlo si toglie questa riga, e torna tutto. */
+  pausa?: boolean;
 }
 
 export const MODULI: VoceModulo[] = [
@@ -120,6 +131,12 @@ export const MODULI: VoceModulo[] = [
        delle rotte delle notifiche, e nessuno di questi deve cambiare per un
        nome sulla barra. */
     id: "abitudini", nome: "Project 50", icona: "abitudini", accento: "var(--color-indigo)",
+    /* IN PAUSA dall'8 ottobre 2026. La sfida chiedeva otto spunte al giorno
+       e ricominciava da capo a ogni dimenticanza: una cosa che o la fai
+       intera o ti dice tutti i giorni che hai sbagliato. I dati restano in
+       `abitudini.json`, il codice resta qui, la rotta `#/abitudini`
+       funziona ancora. Si riaccende togliendo `pausa`. */
+    pausa: true,
     vista: () => import("../../moduli/abitudini/Vista.svelte"),
     contratto: () => import("$condivisi/abitudini/contratto.js"),
     impostazioni: () => import("../../moduli/abitudini/Impostazioni.svelte"),
@@ -169,7 +186,7 @@ export const MODULI_IN_BARRA: VoceBarra[] = (() => {
   const visti = new Set<string>();
   const voci: VoceBarra[] = [];
   for (const m of MODULI) {
-    if (m.id === "impostazioni") continue;
+    if (m.id === "impostazioni" || m.pausa) continue;
     const g = m.gruppo ? GRUPPI.find((x) => x.id === m.gruppo) : undefined;
     if (!g) { voci.push({ id: m.id, nome: m.nome, icona: m.icona, rotte: [m.id] }); continue; }
     if (visti.has(g.id)) continue;
@@ -179,8 +196,15 @@ export const MODULI_IN_BARRA: VoceBarra[] = (() => {
   return voci;
 })();
 
-/** I moduli con dati propri: quelli che hanno un contratto. */
-export const MODULI_DATI = MODULI.filter((m) => m.contratto);
+/** I moduli con dati propri: quelli che hanno un contratto e sono accesi.
+
+    Un modulo in pausa non viene interrogato: niente carta in home, niente
+    voci nella giornata, niente canale di sync aperto. Il suo file nel repo
+    dati resta dov'è — in pausa vuol dire spento, non cancellato. */
+export const MODULI_DATI = MODULI.filter((m) => m.contratto && !m.pausa);
+
+/** Quelli in pausa, per chi deve dirlo: Impostazioni. */
+export const MODULI_IN_PAUSA = MODULI.filter((m) => m.pausa);
 
 const contratti = new Map<string, Contratto>();
 

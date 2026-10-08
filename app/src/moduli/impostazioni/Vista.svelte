@@ -12,7 +12,7 @@
   import Riga from "$lib/ui/Riga.svelte";
   import Icona from "$lib/ui/Icona.svelte";
   import Generali from "./Generali.svelte";
-  import { MODULI_DATI, voceDi } from "$lib/core/registro";
+  import { MODULI_DATI, MODULI_IN_PAUSA, voceDi } from "$lib/core/registro";
   import { vaiA } from "$lib/core/router.svelte";
   import { statoSync } from "$lib/core/statoSync.svelte";
 
@@ -81,6 +81,19 @@
       {/each}
     </Sezione>
 
+    <!-- I MODULI IN PAUSA. Una riga sola, spenta, e la sua schermata si
+         apre ancora: «in pausa» vuol dire spento, non cancellato, e senza
+         una porta per tornarci la differenza non esisterebbe. -->
+    {#if MODULI_IN_PAUSA.length}
+      <Sezione titolo="In pausa" piede="Non compaiono nella barra né in Oggi, e non vengono sincronizzati. I dati restano dove sono: si riaccendono quando serve.">
+        {#each MODULI_IN_PAUSA as m (m.id)}
+          <Riga titolo={m.nome} sottotitolo="in pausa" href="#/{m.id}" freccia>
+            {#snippet inizio()}<span class="tessera spenta"><Icona nome={m.icona} misura={18} tratto={2} /></span>{/snippet}
+          </Riga>
+        {/each}
+      </Sezione>
+    {/if}
+
     <Sezione piede="ATLAS · un'app sola al posto di tre.">
       <Riga titolo="Diagnostica" href="#/impostazioni/diagnostica" freccia>
         {#snippet inizio()}<span class="tessera" style:--colore="var(--color-gray)"><Icona nome="grafico" misura={18} tratto={2} /></span>{/snippet}
@@ -91,5 +104,6 @@
 
 <style>
   .tessera { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--colore); color: #fff; }
+  .tessera.spenta { background: var(--fill-tertiary); color: var(--label-tertiary); }
   .modulo { display: contents; }
 </style>

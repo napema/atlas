@@ -151,9 +151,17 @@
      ricalcolata a ogni fotogramma di scorrimento, per niente.) */
   .barra::before {
     content: ""; position: absolute; inset: 0; z-index: -1;
-    background: var(--vetro-velo);
-    -webkit-backdrop-filter: blur(24px) saturate(var(--vetro-croma));
-    backdrop-filter: blur(24px) saturate(var(--vetro-croma));
+    /* PIÙ COPRENTE DEL VETRO DELLE CARTE, e non per gusto.
+
+       Una carta ha dietro la scena, che è un gradiente: sfocarla al
+       cinquanta per cento basta e avanza. Questa barra ha dietro IL TESTO
+       CHE ESISTE PER COPRIRE, e un titolo di quaranta punti si legge
+       attraverso mezzo velo anche sfocato — scorrendo si vedevano due testi
+       uno sull'altro. Ottantadue per cento e trenta di sfocatura: resta
+       vetro, e copre. */
+    background: var(--vetro-barra);
+    -webkit-backdrop-filter: blur(30px) saturate(var(--vetro-croma));
+    backdrop-filter: blur(30px) saturate(var(--vetro-croma));
     border-bottom: 0.5px solid var(--separator);
     opacity: 0;
     transition: opacity var(--duration-fast) var(--ease-default);

@@ -2616,3 +2616,81 @@ quelle chat lo sappia.
 **Manca**: Pasti e Mobilità non riempiono `giornata`, quindi i pasti e la
 sessione serale non compaiono nella lista del giorno. Due funzioni come
 quella di Abitudini e ci sono.
+
+---
+
+## 8 ottobre 2026, tarda sera — Project 50 in pausa, e un colore per carta *(chat ATLAS)*
+
+### La pausa è un campo, non una cancellazione
+
+`pausa: true` su una voce di `registro.ts`. Il modulo non compare nella
+barra, non ha carta in Oggi, non viene interrogato per `oggi()` e non apre
+il suo canale di sync. La sua **rotta resta viva** (`#/abitudini` apre
+ancora la schermata) e i suoi dati restano in `abitudini.json`.
+
+Non si toglie la riga dal registro: sparirebbe anche la rotta — e un
+segnalibro o una notifica vecchia aprirebbero il vuoto — insieme al ricordo
+di com'era configurato. In Impostazioni c'è una sezione «In pausa» con una
+riga spenta: senza una porta per tornarci, «in pausa» e «cancellato»
+sarebbero la stessa cosa.
+
+Si riaccende togliendo quella riga.
+
+### La giornata adesso ha un orologio
+
+Con Project 50 spento la lista del giorno sarebbe rimasta quasi vuota: la
+riempiva Abitudini. Hanno preso il suo posto i due moduli che un orario ce
+l'hanno davvero:
+
+- **Pasti** — le cinque fasce hanno già `ora` in `dati.js`. «Fatta» qui vuol
+  dire «passata», ed è la dottrina del modulo: l'assunzione è che hai
+  mangiato quello che c'era nel piano, e l'archivio contiene solo gli
+  scostamenti. Chiedere una spunta per ogni pasto sarebbe l'app che lui ha
+  detto che non userebbe.
+- **Mobilità** — una voce sola, con l'ora della sera (`notifiche.principale`,
+  21:00). È una cosa che si fa dopo cena, e nella lista deve stare lì — non
+  in cima, fra le cose del mattino, dove per dodici ore si impara a
+  scavalcarla.
+
+Con Allenamenti, che già la riempiva, la giornata è ora una vera sequenza:
+08:00 colazione · 10:30 spuntino · 13:00 pranzo · 17:00 merenda · 18:30
+allenamento · 20:30 cena · 21:00 mobilità.
+
+### Un colore per carta
+
+Il guasto, in una carta sola da cento punti: pastiglia rossa, nome rosso,
+numero verde, barra rossa. Sei carte così sono un arlecchino, e il colore
+smette di voler dire qualcosa proprio mentre ce n'è di più.
+
+La regola, che è quella di iOS: **la tinta del modulo è l'IDENTITÀ e sta
+sulla pastiglia dell'icona; il testo resta del colore del testo; il verde e
+il rosso vogliono dire «fatto» e «sforato» e nient'altro.**
+
+In pratica:
+
+- il **nome** del modulo torna `--label-primary` (era la sua tinta);
+- il **numero** non si colora più: il «fatto» lo dice una spunta da venti
+  punti nella testata, non quaranta punti di cifra ridipinti;
+- la **barra** porta la tinta del modulo — dice di chi è — e diventa verde
+  solo quando è piena, che è l'unico momento in cui il colore dice *come va*
+  e non *di chi è*;
+- la **striscia di Adesso** perde l'alone colorato di fondo: sommato alla
+  pastiglia e all'occhiello faceva tre volte lo stesso colore;
+- nella **giornata**, le spunte fatte passano da disco verde pieno a velo
+  verde al 20% — quattro dischi saturi in colonna erano la cosa più accesa
+  della schermata, ed erano la parte già passata;
+- e il **«sei qui»** prende l'accento della PAGINA, non la tinta della voce:
+  con la tinta, la cena faceva cerchio e orario rossi, cioè un allarme.
+
+### Due cose minori trovate per strada
+
+- **«Avvia» su una cena** non vuol dire niente. Il verbo adesso segue la
+  cosa: una sessione si avvia, un'abitudine si spunta, un pasto si apre — e
+  dove il verbo è «apri» il secondo bottone sparisce, perché farebbe la
+  stessa cosa del primo.
+- **La barra della navigazione non copriva.** Ha dietro il testo che esiste
+  per coprire, e un titolo di quaranta punti si legge attraverso mezzo velo
+  anche sfocato. Token suo, `--vetro-barra`, all'82% con trenta di
+  sfocatura: resta vetro, e copre. (Scritto, non calcolato con `color-mix`:
+  due percentuali che superano il cento vengono normalizzate, e 100+55
+  usciva 0,69 invece di 0,82.)

@@ -84,6 +84,25 @@ export function avviaSync() {
 /* ------------------------------------------------ la scheda per la home -- */
 
 /** Sincrona e senza effetti collaterali. */
+/**
+ * La sessione di oggi per la lista della giornata della home.
+ *
+ * Una voce sola, e con l'ORA della sera: la sessione e' una cosa che si fa
+ * dopo cena, e nella lista del giorno deve stare li' — non in cima, fra le
+ * cose del mattino, dove per dodici ore si impara a scavalcarla.
+ */
+function giornataDiOggi(giorno, fatta, nome, minuti) {
+  return [{
+    chiave: "mobilita:sessione",
+    nome: nome || "Sessione",
+    dentro: minuti ? `Mobilità · ${minuti} min` : "Mobilità",
+    ora: (getState().programma?.notifiche?.principale) || "21:00",
+    fatta: Boolean(fatta),
+    apre: fatta ? "#/mobilita" : "#/mobilita/inizia",
+    tint: "ciano",
+  }];
+}
+
 export function oggi() {
   const s = getState();
   const sessioni = sessioniVive();
@@ -105,6 +124,8 @@ export function oggi() {
       urgente: false,
       avanzamento: 1,
       serie: n,
+      giornata: giornataDiOggi(giorno, true, TIPI_SESSIONE[fatta.tipo]?.nome,
+        Math.round((fatta.durataSec || 0) / 60)),
       azione: { rotta: "#/mobilita" },
     };
   }
@@ -144,6 +165,7 @@ export function oggi() {
       quando: ora < 18 ? "presto" : ora < 22 ? "adesso" : "tardi",
     }],
     serie: n,
+    giornata: giornataDiOggi(giorno, false, TIPI_SESSIONE[tipo]?.nome, minuti),
     // Urgente di sera: è l'ora in cui la sessione salta davvero.
     urgente: new Date().getHours() >= 21,
     avanzamento: 0,
