@@ -5,19 +5,62 @@
 -->
 <script lang="ts">
   import Foglio from "$lib/ui/Foglio.svelte";
+  import Sezione from "$lib/ui/Sezione.svelte";
+  import Riga from "$lib/ui/Riga.svelte";
   import Segmenti from "$lib/ui/Segmenti.svelte";
   import Pulsante from "$lib/ui/Pulsante.svelte";
   import Icona from "$lib/ui/Icona.svelte";
-  import { plurale, avviso } from "$lib/core/ui";
-  import { salvaCorse, salvaSettimana } from "$condivisi/allenamenti/dati.js";
+  import { dati } from "$lib/core/reattivo.svelte";
+  import { plurale, avviso, dataUmana } from "$lib/core/ui";
+  import { salvaCorse, salvaSettimana, daAbbinare, abbina, slotDi, fatto, settimanaDi } from "$condivisi/allenamenti/dati.js";
   import { corseDaCSV, allenamentiDaCSV, ESEMPIO_ALLENAMENTI } from "$condivisi/allenamenti/importa.js";
+  import { km, mmss, descriviPezzi } from "$condivisi/allenamenti/calcolo.js";
   import { leggiFile } from "./comune";
 
   let { aperto = $bindable(false), quale = "corse" }: { aperto: boolean; quale?: "corse" | "allenamenti" } = $props();
 
   let scelta = $state<"corse" | "allenamenti">("corse");
   let testo = $state("");
+
+  /* LE GIORNATE DA ABBINARE: TUTTE, non solo quelle appena importate.
+
+     Era filtrato sulle date dell'ultimo import, e sembrava giusto — poi ci
+     si accorge che chi ha importato ieri e se ne ricorda oggi dovrebbe
+     reimportare lo stesso file solo per rivedere la proposta. Una giornata
+     con delle corse che non stanno su nessuno slot e' da sistemare sempre,
+     e aprire questo foglio e' esattamente il momento in cui te ne occupi. */
+  const proposte = $derived.by(() => {
+    dati.versione;
+    return daAbbinare() as any[];
+  });
+
   $effect(() => { if (aperto) { scelta = quale; testo = ""; } });
+
+  /* LO SLOT PROPOSTO SI PUO' CAMBIARE, e serve: la proposta sceglie per
+     distanza — 6 km somigliano piu' ai 7 della soglia che ai 7,6 degli
+     intervalli — ma tre ripetute in pista sono intervalli, e questo il
+     chilometraggio non lo sa. Chi ha corso si'. */
+  let scelti = $state<Record<string, string>>({});
+
+  const slotPossibili = (data: string) => {
+    const n = settimanaDi(data);
+    if (!n) return [];
+    return (slotDi(n) as any[]).filter((x) => !x.bonus && x.genere === "corsa" && !fatto(x.id));
+  };
+
+  function collega(p: any) {
+    const id = scelti[p.data];
+    const slot = id ? slotPossibili(p.data).find((x) => x.id === id) ?? p.slot : p.slot;
+    abbina({
+      data: p.data, seduta: p.seduta, slot,
+      /* Il nome resta quello dello slot quando la seduta e' una sola corsa;
+         quando sono pezzi diventa quello che e', perche' «Facile» su tre
+         ripetute a ritmo gara e' un'etichetta che mente. */
+      nome: p.seduta.pezzi.length > 1 ? "Ripetute" : slot.nome,
+      testo: p.seduta.pezzi.length > 1 ? descriviPezzi(p.seduta.pezzi) : "",
+    });
+    avviso(`${slot.nome}: fatto, ${km(p.seduta.km)}.`);
+  }
 
   const PROMPT_FITNESS =
     "Dammi il lavoro in CSV con queste colonne, senza altro testo intorno:\n" +
@@ -46,6 +89,14 @@
       const { corse, scartate, motivo, daGiri } = corseDaCSV(testo) as any;
       if (!corse.length) { avviso(motivo || "Non ho trovato corse.", { tipo: "errore" }); return; }
       const { nuove, aggiornate } = salvaCorse(corse);
+      /* IL FOGLIO NON SI CHIUDE PIU' SE C'E' QUALCOSA DA ABBINARE: la
+         proposta nasce proprio adesso, e chiuderla sopra sarebbe un
+         suggerimento che non si e' visto. */
+      testo = "";
+      if (daAbbinare().length) {
+        avviso(`${nuove} nuove, ${aggiornate} già c'erano. Guarda sotto: ci sono giornate da sistemare.`, { durata: 4200 });
+        return;
+      }
       aperto = false;
       /* IL FILE DEI GIRI NON HA LA DATA — non e' il parser che non la trova,
          Garmin non la scrive proprio: sta nella pagina da cui hai premuto
@@ -92,9 +143,44 @@
   <Pulsante variante="pieno" larga disabled={!testo.trim()} onclick={importa}>
     {scelta === "corse" ? "Importa le corse" : "Importa gli allenamenti"}
   </Pulsante>
+
+  <!-- L'ABBINAMENTO. L'import portava i chilometri e lasciava lo slot
+       aperto: la settimana diceva «sei allenamenti da fare» a uno che ne
+       aveva appena finito uno. Qui si chiude il giro — e si PROPONE, non si
+       fa: un CSV che riscrive il piano da solo toglie la fiducia nei dati
+       piu' in fretta di qualunque bug. -->
+  {#if scelta === "corse" && proposte.length}
+    <Sezione titolo="Da sistemare"
+      piede="Collegare una giornata la mette su quell'allenamento, ne scrive il contenuto vero e la spunta. Se erano più corse — le ripetute in pista sono tre attività separate sull'orologio — diventano i pezzi di una seduta sola. L'allenamento proposto è quello più vicino di chilometri: cambialo se non è quello.">
+      {#each proposte as p (p.data)}
+        <div class="proposta">
+          <div class="p-testo">
+            <span>{dataUmana(p.data)}</span>
+            <span class="text-footnote secondario cifre">
+              {p.seduta.quante > 1 ? `${plurale(p.seduta.quante, "corsa", "corse")} · ` : ""}{km(p.seduta.km)}{p.seduta.secondi ? ` · ${mmss(p.seduta.secondi)}` : ""}
+            </span>
+          </div>
+          <select class="quale" aria-label="Su quale allenamento mettere il {p.data}" bind:value={
+            () => scelti[p.data] ?? p.slot.id,
+            (v) => (scelti = { ...scelti, [p.data]: v })
+          }>
+            {#each slotPossibili(p.data) as x (x.id)}
+              <option value={x.id}>{x.nome} · {km(x.km)}</option>
+            {/each}
+          </select>
+          <Pulsante variante="tinto" misura="piccola" onclick={() => collega(p)}>Collega</Pulsante>
+        </div>
+      {/each}
+    </Sezione>
+  {/if}
 </Foglio>
 
 <style>
+  .proposta { position: relative; display: grid; grid-template-columns: 1fr auto; gap: var(--space-2) var(--space-3); align-items: center; padding: 10px var(--space-4); }
+  .proposta + .proposta::before { content: ""; position: absolute; top: 0; left: var(--space-4); right: 0; border-top: 0.5px solid var(--separator); }
+  .p-testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  /* 17px: sotto, iOS zooma al focus e non torna indietro. */
+  .quale { grid-column: 1 / 2; font-size: 17px; padding: 5px 8px; border-radius: var(--radius-sm); background: var(--fill-tertiary); color: var(--accento); border: 0; max-width: 100%; }
   textarea {
     width: 100%; min-height: 160px; padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-xl); background: var(--lastra-dentro);

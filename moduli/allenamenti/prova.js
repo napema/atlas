@@ -25,10 +25,11 @@ globalThis.document ??= {
 const {
   casella, slotDi, cambiaSlot, ripristinaSlot, alternaSlot, scegliGiorno,
   salvaCorse, corseVive, recordSlot, durataDi, idSlot, INIZIO,
+  sedutaDelGiorno,
 } = await import("./dati.js");
 const {
   kmPrevisti, kmFatti, andamento, tettoLunga, proiezione, equivalente5k,
-  progressoSettimana, gambeIl, mmss,
+  progressoSettimana, gambeIl, mmss, descriviPezzi, distanza,
 } = await import("./calcolo.js");
 
 let rotti = 0;
@@ -119,6 +120,83 @@ eq("il giorno scelto resta", recordSlot(FACILE).giorno, SABATO);
 /* La corsa dell'OROLOGIO resta: ripristinare lo slot vuol dire «il piano
    diceva un'altra cosa», non «quella corsa non l'ho fatta». */
 eq("la corsa misurata resta", kmFatti(1), 10.14);
+
+/* =========================================================================
+   LE RIPETUTE IN PISTA.
+
+   3 km, 2 km, 1 km a ritmo gara, coi recuperi in mezzo. L'orologio le
+   registra come TRE attivita' separate, quindi nell'elenco diventano tre
+   corse: sono tre PEZZI di un allenamento solo, e trattarle come tre sedute
+   sbaglia due numeri — il tetto della lunga vede 3 km invece di 6, e la
+   proiezione, guardando la media coi recuperi dentro, direbbe che sei molto
+   piu' lento di quello che sei.
+   ========================================================================= */
+
+console.log("\n--- ripetute in pista, scritte a mano ---");
+casella.scrivi({ v: 1, slot: [], corse: [], settimane: [], bonus: [], config: { inizio: INIZIO }, configUp: 0 });
+const INTERVALLI = idSlot(1, "intervalli");
+const GIOVEDI = "2026-10-08";
+scegliGiorno(INTERVALLI, GIOVEDI);
+cambiaSlot(INTERVALLI, {
+  nome: "Ripetute in pista", genere: "corsa", data: GIOVEDI,
+  giri: [
+    { km: 3, secondi: 12 * 60 + 6 },
+    { km: 2, secondi: 7 * 60 + 58 },
+    { km: 1, secondi: 3 * 60 + 52 },
+  ],
+});
+const rip = slotDi(1).find((x) => x.id === INTERVALLI);
+eq("i pezzi restano tre", rip.giri.length, 3);
+eq("i km si sommano", rip.km, 6);
+eq("una corsa sola per quel giorno", corseVive().length, 1);
+eq("e porta i pezzi dentro", corseVive()[0].giri.length, 3);
+eq("km della settimana", kmFatti(1), 6);
+eq("tetto della lunga sul totale", tettoLunga(GIOVEDI), 6.6);
+
+/* LA PROIEZIONE GUARDA IL PEZZO, non la media coi recuperi dentro. */
+const pr2 = proiezione("2026-10-09");
+eq("il miglior candidato e' un pezzo", pr2.da.pezzo, true);
+eq("ed e' il 3 km", pr2.da.km, 3);
+
+console.log("\n--- il testo dei pezzi ---");
+eq("come si legge", descriviPezzi(rip.giri),
+  "3 km in 12:06 (4:02/km) · 2 km in 7:58 (3:59/km) · 1 km in 3:52 (3:52/km)");
+eq("metri sotto il chilometro", distanza(0.8), "800 m");
+
+/* =========================================================================
+   LE TRE CORSE CHE CI SONO GIA'.
+
+   Il caso vero: hai importato da Garmin e ti ritrovi tre corse di oggi.
+   «Prendi le corse di oggi» le fonde in una e le attacca allo slot, e i
+   chilometri NON si contano due volte.
+   ========================================================================= */
+
+console.log("\n--- tre corse importate, poi unite allo slot ---");
+casella.scrivi({ v: 1, slot: [], corse: [], settimane: [], bonus: [], config: { inizio: INIZIO }, configUp: 0 });
+salvaCorse([
+  { data: GIOVEDI, km: 3, secondi: 12 * 60 + 6, titolo: "Corsa" },
+  { data: GIOVEDI, km: 2, secondi: 7 * 60 + 58, titolo: "Corsa" },
+  { data: GIOVEDI, km: 1, secondi: 3 * 60 + 52, titolo: "Corsa" },
+]);
+eq("tre corse in archivio", corseVive().length, 3);
+eq("km della settimana", kmFatti(1), 6);
+eq("ma il tetto vede solo la piu' lunga", tettoLunga(GIOVEDI), 3.3);
+
+const vista = sedutaDelGiorno(GIOVEDI);
+eq("la seduta del giorno le raccoglie", vista.quante, 3);
+eq("e fa sei chilometri", vista.km, 6);
+
+scegliGiorno(INTERVALLI, GIOVEDI);
+cambiaSlot(INTERVALLI, {
+  nome: "Ripetute in pista", genere: "corsa", data: GIOVEDI,
+  giri: vista.pezzi, unisci: true,
+});
+eq("adesso e' una corsa sola", corseVive().length, 1);
+eq("coi tre pezzi dentro", corseVive()[0].giri.length, 3);
+eq("legata allo slot", corseVive()[0].slot, INTERVALLI);
+eq("i km NON sono raddoppiati", kmFatti(1), 6);
+eq("e il tetto vede la seduta intera", tettoLunga(GIOVEDI), 6.6);
+eq("lo slot dice sei", slotDi(1).find((x) => x.id === INTERVALLI).km, 6);
 
 console.log(rotti ? `\n${rotti} numeri non tornano.\n` : "\nTutto torna.\n");
 if (rotti) Deno.exit(1);

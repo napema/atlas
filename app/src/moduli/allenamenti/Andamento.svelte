@@ -13,7 +13,7 @@
   import { dati } from "$lib/core/reattivo.svelte";
   import { dataBreve, avviso } from "$lib/core/ui";
   import { OBIETTIVO, corseVive, eliminaCorsa, salvaCorse } from "$condivisi/allenamenti/dati.js";
-  import { andamento, proiezione, kmTotali, mmss, passo, km, equivalente5k } from "$condivisi/allenamenti/calcolo.js";
+  import { andamento, proiezione, kmTotali, mmss, passo, km, equivalente5k, descriviPezzi } from "$condivisi/allenamenti/calcolo.js";
   import { fase } from "./comune";
 
   const d = $derived.by(() => {
@@ -29,7 +29,15 @@
          diventano confrontabili, ed e' l'unico modo per vedere se ti stai
          avvicinando invece di rileggere una seduta gia' vista. */
       corse: (corseVive() as any[]).slice(-12).reverse()
-        .map((c) => ({ ...c, eq: equivalente5k(c) as number | null })),
+        .map((c) => ({
+          ...c,
+          eq: equivalente5k(c) as number | null,
+          /* SPEZZATA: piu' di un pezzo, cioe' ripetute. Il suo passo medio
+             e' il passo del LAVORO — i recuperi non sono nel tempo — quindi
+             va detto, o si legge come il passo di una corsa continua che
+             nessuno ha fatto. */
+          spezzata: ((c.giri || []) as any[]).length > 1,
+        })),
       totale: kmTotali(),
     };
   });
@@ -85,9 +93,17 @@
   {#each d.corse as c (c.id)}
     <Riga
       titolo={c.titolo || c.nome || "Corsa"}
-      sottotitolo="{dataBreve(c.data)} · {c.secondi && c.km ? passo(c.secondi / c.km) : '—'} · {km(c.km)}{c.manuale ? ' · a mano' : ''}"
+      sottotitolo="{dataBreve(c.data)} · {c.secondi && c.km ? passo(c.secondi / c.km) : '—'}{c.spezzata ? ' sui pezzi' : ''} · {km(c.km)}{c.manuale ? ' · a mano' : ''}"
       onclick={() => togli(c)}
     >
+      {#if c.spezzata}
+        <!-- I PEZZI, per esteso. Una riga che dice «6 km a 3:59» e basta
+             nasconde proprio la cosa che quella seduta e': tre ripetute a
+             ritmo gara. E l'equivalente sui 5 km li' a destra viene dal
+             pezzo migliore, non dal totale — senza vedere i pezzi non si
+             capirebbe da dove esce. -->
+        <span class="pezzi text-caption1 secondario cifre">{descriviPezzi(c.giri)}</span>
+      {/if}
       {#snippet fine()}
         {#if c.eq}
           <span class="eq" class:dentro={c.eq <= OBIETTIVO.secondi}>
@@ -103,6 +119,7 @@
 </Sezione>
 
 <style>
+  .pezzi { display: block; margin-top: 2px; }
   /* L'equivalente e' verde solo quando E' sotto il muro. Non «quasi»: una
      previsione che si colora a meta' strada e' quella su cui poi decidi di
      alzare il ritmo. */

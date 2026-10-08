@@ -125,3 +125,41 @@ secondi e senza Node:
 ```
 deno run --location http://localhost/ --allow-read moduli/allenamenti/prova.js
 ```
+
+### I pezzi, e l'abbinamento (8 ottobre 2026, sera)
+
+**Una seduta può avere più pezzi.** 3 km, 2 km, 1 km a ritmo gara non sono
+«6 km»: sono tre ripetute. Il campo è `giri[]`, lo **stesso** che il file dei
+giri di Garmin porta già con sé — un 5×1000 fatto in pista e un 5×1000 letto
+dall'orologio sono la stessa cosa, e due campi vorrebbero dire due strade da
+tenere allineate nel grafico del passo, nei totali e nel sync.
+
+**Una seduta spezzata non è una corsa continua, e il suo totale non si usa
+per il passo.** È la trappola peggiore di tutto questo lavoro: sommare solo i
+tempi dei pezzi dà «6 km in 23:56», cioè 3:59/km — più veloce di qualunque
+singola ripetuta, perché i recuperi non sono nel tempo. Riegel su quel numero
+diceva 19:35 sui 5 km, il muro già sfondato, a uno che le ripetute le aveva
+corse a 4:02. Quindi:
+
+- `proiezione()` **scarta l'aggregato** di una corsa con più di un pezzo e
+  guarda i singoli pezzi ≥ 3 km;
+- `equivalente5k()` di una spezzata usa il **pezzo migliore**;
+- i **chilometri** del totale restano veri e contano nel volume e nel tetto.
+
+**Tre attività dello stesso giorno sono una seduta.** In pista l'orologio
+registra ogni ripetuta a sé, quindi nell'elenco diventano tre corse: il tetto
+della lunga vedeva 3 km invece di 6. `sedutaDelGiorno(iso)` le raccoglie,
+`unisciCorse(iso)` le fonde in una coi pezzi dentro (lapidi sulle altre, mai
+rimozioni).
+
+**L'abbinamento** (`daAbbinare`, `slotPerGiorno`, `abbina`) chiude il giro che
+l'import lasciava aperto: i chilometri entravano, ma lo slot restava da
+spuntare a mano. Ora l'import **propone** — giorno, seduta, slot più vicino di
+chilometri, con un selettore per cambiarlo — e collegare mette il giorno sullo
+slot, ne riscrive il contenuto e lo spunta. Propone e non fa: un CSV che
+riscrive il piano da solo toglie la fiducia nei dati più in fretta di
+qualunque bug.
+
+Lo slot proposto si sceglie per distanza, e per le ripetute sbaglia quasi
+sempre: 6 km somigliano più ai 7 della soglia che ai 7,6 degli intervalli. Il
+selettore non è un extra, è il pezzo che rende usabile l'euristica.

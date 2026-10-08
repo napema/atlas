@@ -393,6 +393,7 @@ function conScostamento(slot) {
     ...(r.genere ? { genere: r.genere } : {}),
     ...(r.testo ? { testo: r.testo, lift: null, accessori: [] } : {}),
     ...(r.km != null ? { km: r.km } : {}),
+    ...(r.giri?.length ? { giri: r.giri } : {}),
     cambiato: true,
     aMano: Boolean(r.cambiato),
   };
@@ -685,23 +686,108 @@ export function salvaAllenamenti(voci) {
    marcato `manuale`, legato allo slot.
    ========================================================================= */
 
+/** Due decimali: la precisione con cui i km arrivano davvero. */
+const dec = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
+/**
+ * I pezzi di una seduta: ripetute, frazioni, giri.
+ *
+ * E' lo STESSO campo `giri` che il file di Garmin porta gia' con se', e non
+ * per risparmiare una chiave: un 5×1000 fatto in pista e un 5×1000 letto
+ * dall'orologio sono la stessa cosa, e due campi diversi vorrebbero dire due
+ * strade da tenere allineate nel grafico del passo, nei totali e nel sync.
+ */
+export const pulisciPezzi = (giri) =>
+  (Array.isArray(giri) ? giri : [])
+    .map((g) => ({
+      km: dec(g?.km),
+      secondi: Math.max(0, Math.round(Number(g?.secondi) || 0)),
+      ...(Number(g?.fc) ? { fc: Math.round(Number(g.fc)) } : {}),
+    }))
+    .filter((g) => g.km > 0);
+
+export const sommaPezzi = (pezzi) => ({
+  km: dec((pezzi || []).reduce((t, g) => t + (g.km || 0), 0)),
+  secondi: (pezzi || []).reduce((t, g) => t + (g.secondi || 0), 0),
+});
+
+/* --------------------------------------------- le corse di un giorno ---- */
+
+/** Le corse vive di un giorno. */
+export const corseDelGiorno = (iso) => corseVive().filter((c) => c.data === iso);
+
+/**
+ * Le corse di un giorno viste come UNA seduta.
+ *
+ * E' il caso delle ripetute in pista: l'orologio le registra come tre
+ * attivita' separate — 3 km, 2 km, 1 km — e nell'elenco diventano tre
+ * corse. Sono tre PEZZI di un allenamento solo, e trattarle come tre sedute
+ * sbaglia due numeri: il tetto della lunga guarda la corsa piu' lunga del
+ * mese e vede 3 km invece di 6, e la schermata dice «tre corse» a chi e'
+ * andato in pista una volta.
+ *
+ * Una corsa che ha gia' i suoi giri porta quelli; una senza vale come un
+ * pezzo unico.
+ */
+export function sedutaDelGiorno(iso) {
+  const corse = corseDelGiorno(iso);
+  if (!corse.length) return null;
+  const pezzi = [];
+  for (const c of corse) {
+    if (Array.isArray(c.giri) && c.giri.length) pezzi.push(...pulisciPezzi(c.giri));
+    else pezzi.push(...pulisciPezzi([{ km: c.km, secondi: c.secondi, fc: c.fc }]));
+  }
+  return { data: iso, corse, pezzi, ...sommaPezzi(pezzi), quante: corse.length };
+}
+
+/**
+ * Fonde le corse di un giorno in una sola, coi pezzi dentro.
+ *
+ * Le altre prendono la LAPIDE, non spariscono: una rimozione secca torna
+ * indietro dall'altro dispositivo al primo sync, e tornerebbero indietro
+ * proprio i chilometri che qui stiamo contando una volta sola.
+ */
+export function unisciCorse(iso, { slot = null, titolo = "" } = {}) {
+  const s = sedutaDelGiorno(iso);
+  if (!s) return null;
+  for (const c of s.corse) eliminaCorsa(c.id);
+  salvaCorse([{
+    data: iso, km: s.km, secondi: s.secondi, giri: s.pezzi,
+    titolo: titolo || s.corse.find((c) => c.titolo)?.titolo || "Corsa",
+    ...(slot ? { slot } : {}),
+  }]);
+  return s;
+}
+
 /**
  * Sostituisce il contenuto di uno slot con quello che hai fatto davvero.
  *
  * `data` e' il giorno a cui attribuire la corsa: il giorno scelto per lo
  * slot, o oggi. Serve perche' l'andamento somma per settimana, e una corsa
  * di sabato messa a lunedi' sposta i km nella settimana sbagliata.
+ *
+ * `giri` sono i pezzi; quando ci sono, km e tempo si sommano da li' e non si
+ * chiedono due volte. `unisci` dice che quei pezzi vengono dalle corse gia'
+ * registrate di quel giorno: allora non se ne crea una a mano, si fondono
+ * quelle — altrimenti i chilometri si conterebbero due volte.
  */
-export function cambiaSlot(id, { nome, testo, genere, km, secondi, durata, data } = {}) {
+export function cambiaSlot(id, { nome, testo, genere, km, secondi, durata, data, giri, unisci = false } = {}) {
   const ora = Date.now();
+  const pezzi = pulisciPezzi(giri);
+  const tot = pezzi.length ? sommaPezzi(pezzi) : { km: dec(km), secondi: Math.round(Number(secondi) || 0) };
+  km = tot.km;
+  secondi = tot.secondi;
+
   casella.aggiorna((s) => {
     const i = trova(s.slot, id);
     const prima = i >= 0 ? s.slot[i] : { id, fatta: false };
     const rec = { ...prima, id, up: ora, cambiato: ora };
     const n = String(nome || "").trim();
     if (n) rec.nome = n; else delete rec.nome;
-    rec.testo = String(testo || "").trim();
+    rec.testo = String(testo || "").trim()
+      || (pezzi.length ? `${pezzi.length} pezzi · ${tot.km} km` : "");
     if (genere) rec.genere = genere; else delete rec.genere;
+    if (pezzi.length) rec.giri = pezzi; else delete rec.giri;
     rec.km = Number(km) > 0 ? Math.round(Number(km) * 100) / 100 : 0;
     /* LA DURATA SI DEDUCE DAL TEMPO, e si deduce QUI.
        Stava nella vista, e il risultato era che chiamare `cambiaSlot` da
@@ -717,11 +803,24 @@ export function cambiaSlot(id, { nome, testo, genere, km, secondi, durata, data 
     if (i >= 0) s.slot[i] = rec; else s.slot.push(rec);
   });
 
+  const quando = data || giornoSlot(id) || oggiISO();
+
+  if (unisci) {
+    /* I PEZZI VENGONO DALLE CORSE GIA' REGISTRATE. Si fondono quelle e si
+       legano allo slot: creare una corsa a mano accanto raddoppierebbe i
+       chilometri di quel giorno, che e' esattamente il guasto che questo
+       modulo esiste per non avere. */
+    corsaDiSlot(id, { km: 0 });
+    unisciCorse(quando, { slot: id, titolo: String(nome || "").trim() });
+    return;
+  }
+
   corsaDiSlot(id, {
     km: Number(km) || 0,
     secondi: Number(secondi) || 0,
-    data: data || giornoSlot(id) || oggiISO(),
+    data: quando,
     nome: String(nome || "").trim(),
+    giri: pezzi,
   });
 }
 
@@ -729,13 +828,17 @@ export function cambiaSlot(id, { nome, testo, genere, km, secondi, durata, data 
  * La corsa a mano legata a uno slot: una sola, e si rifa' da zero a ogni
  * cambio. Senza i km sparisce — hai cambiato idea e hai messo una palestra.
  */
-function corsaDiSlot(id, { km, secondi, data, nome }) {
+function corsaDiSlot(id, { km, secondi, data, nome, giri }) {
   const vecchia = (stato().corse || []).find((c) => c && !c.del && c.manuale && c.slot === id);
   if (vecchia) eliminaCorsa(vecchia.id);
   if (!(km > 0) || !data) return;
   salvaCorse([{
     data, km: Math.round(km * 100) / 100, secondi: Math.max(0, Math.round(secondi) || 0),
     nome: nome || "Allenamento cambiato",
+    // I pezzi viaggiano con la corsa: sono quello che il grafico del passo
+    // disegna, e scriverli solo sullo slot vorrebbe dire averli in un posto
+    // che il grafico non guarda.
+    ...(giri && giri.length ? { giri } : {}),
     // I due marchi che contano: `manuale` dice che e' una STIMA e che
     // l'orologio ha la precedenza, `slot` dice da dove viene cosi' che
     // cambiarla o ripristinarla la trovi senza cercarla per data.
@@ -757,6 +860,7 @@ export function ripristinaSlot(id) {
     delete rec.nome;
     delete rec.genere;
     delete rec.durata;
+    delete rec.giri;
     delete rec.cambiato;
     s.slot[i] = rec;
   });
@@ -835,4 +939,103 @@ export function scriviConfig(patch) {
     // quattro guasti di sync che ATLAS ha già avuto.
     s.configUp = Date.now();
   });
+}
+
+/* =========================================================================
+   L'ABBINAMENTO: le corse importate vanno sugli slot.
+
+   Fino a ieri l'import faceva meta' lavoro. I chilometri entravano
+   nell'andamento, ma lo slot del piano restava li' aperto: la settimana
+   diceva «6 allenamenti da fare» a uno che ne aveva appena finito uno, e la
+   seduta andava spuntata a mano, e se quello che avevi fatto non era quello
+   scritto bisognava anche riscriverlo.
+
+   Qui l'import propone: «giovedi 8, tre corse, 6 km → Intervalli».
+
+   PROPONE, non fa. Un CSV che riscrive il piano da solo e' la cosa che
+   toglie la fiducia nei dati piu' in fretta di qualunque bug: basta un
+   export sbagliato e ti ritrovi tre settimane spuntate senza capire
+   perche'. Si vede cosa succede, e si conferma.
+   ========================================================================= */
+
+/**
+ * A quale slot appartiene la giornata `iso`.
+ *
+ * In ordine, e l'ordine e' una gerarchia di certezze:
+ *   1. lo slot a cui hai GIA' dato quel giorno — l'hai detto tu;
+ *   2. fra quelli aperti del genere giusto, quello piu' vicino di
+ *      chilometri — se hai corso 8,2 km e la lunga ne prevede 8,2, e' lei;
+ *   3. niente, e allora la proposta non si fa.
+ *
+ * Il genere si indovina dal fatto che una corsa e' una corsa: le palestre
+ * non arrivano da questo import.
+ */
+export function slotPerGiorno(iso, { km = 0, genere = "corsa" } = {}) {
+  const n = settimanaDi(iso);
+  if (!n) return null;
+  const slot = slotDi(n).filter((s) => !s.bonus);
+
+  const suo = slot.find((s) => giornoSlot(s.id) === iso);
+  if (suo) return suo;
+
+  const aperti = slot.filter((s) => s.genere === genere && !fatto(s.id) && !giornoSlot(s.id));
+  if (!aperti.length) return null;
+  if (!km) return aperti[0];
+
+  let meglio = null;
+  for (const s of aperti) {
+    const scarto = Math.abs((s.km || 0) - km);
+    if (!meglio || scarto < meglio.scarto) meglio = { s, scarto };
+  }
+  return meglio.s;
+}
+
+/**
+ * Le giornate da abbinare: una riga per giorno con corse non ancora legate
+ * a uno slot.
+ *
+ * `giorni` limita alle date toccate dall'ultimo import; senza, guarda tutto
+ * il blocco — che e' quello che serve a chi ha importato ieri e se ne
+ * accorge oggi.
+ */
+export function daAbbinare(giorni = null) {
+  const viste = new Set();
+  const fuori = [];
+  for (const c of corseVive()) {
+    if (giorni && !giorni.includes(c.data)) continue;
+    if (viste.has(c.data)) continue;
+    viste.add(c.data);
+    if (!settimanaDi(c.data)) continue;              // fuori dal blocco
+    const s = sedutaDelGiorno(c.data);
+    if (!s) continue;
+    // Gia' legata a uno slot: non c'e' niente da proporre.
+    if (s.corse.some((x) => x.slot)) continue;
+    const slot = slotPerGiorno(c.data, { km: s.km });
+    if (!slot) continue;
+    fuori.push({ data: c.data, seduta: s, slot });
+  }
+  return fuori.sort((a, b) => a.data.localeCompare(b.data));
+}
+
+/**
+ * Esegue un abbinamento: il giorno diventa quello slot.
+ *
+ * Tre cose insieme, e sono tre cose che prima si facevano a mano o non si
+ * facevano: il giorno finisce sullo slot, il contenuto dello slot diventa
+ * quello che hai fatto davvero, e la seduta si spunta. `testo` lo scrive
+ * chi chiama, perche' il formato dei pezzi vive in `calcolo.js`.
+ */
+export function abbina({ data, seduta, slot, nome = "", testo = "" }) {
+  if (!slot || !seduta) return false;
+  scegliGiorno(slot.id, data);
+  cambiaSlot(slot.id, {
+    nome: nome || slot.nome,
+    testo,
+    genere: "corsa",
+    giri: seduta.pezzi,
+    data,
+    unisci: true,
+  });
+  if (!fatto(slot.id)) alternaSlot(slot.id, data);
+  return true;
 }

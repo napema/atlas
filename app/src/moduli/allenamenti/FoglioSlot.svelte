@@ -24,13 +24,13 @@
   import Corpo from "./Corpo.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { quandoCorto } from "./comune";
-  import { avviso, tocco, piuGiorni, plurale, dataUmana } from "$lib/core/ui";
+  import { avviso, tocco, piuGiorni, plurale, dataUmana, oggiISO } from "$lib/core/ui";
   import { slide } from "svelte/transition";
   import {
     slotDi, fatto, giornoSlot, alternaSlot, scegliGiorno, inizioSettimana, fineSettimana, recordSlot, ripristinaSlot, togliBonus,
-    oraDi, scegliOra, oraPredefinita, cambiaSlot, UPPER_B, durataDi,
+    oraDi, scegliOra, oraPredefinita, cambiaSlot, UPPER_B, durataDi, sedutaDelGiorno,
   } from "$condivisi/allenamenti/dati.js";
-  import { km, passo } from "$condivisi/allenamenti/calcolo.js";
+  import { km, passo, mmss, distanza, descriviPezzi } from "$condivisi/allenamenti/calcolo.js";
   import { leggiRiga, gruppiSeduta, serieTotali } from "$condivisi/allenamenti/muscoli.js";
   import { leggiAllenamento, descrivi } from "$condivisi/allenamenti/passi.js";
   import { fileAllenamento, scarica } from "$condivisi/allenamenti/fit.js";
@@ -105,11 +105,78 @@
   let cNome = $state("");
   let cTesto = $state("");
   let cGenere = $state<"corsa" | "palestra" | "altro">("altro");
-  let cKm = $state("");
-  let cTempo = $state("");
   let cDurata = $state("");
+  /* I PEZZI. Una riga sola e' una corsa normale; tre righe sono le ripetute
+     in pista. Non ci sono due modi di inserire una corsa, ce n'e' uno — e
+     la riga in piu' si aggiunge solo quando serve. */
+  let pezzi = $state<{ dist: string; tempo: string }[]>([{ dist: "", tempo: "" }]);
+  /* `unisci` dice che quei pezzi vengono dalle corse GIA' registrate di quel
+     giorno: al salvataggio si fondono quelle invece di crearne una a mano,
+     o i chilometri si conterebbero due volte. */
+  let unisci = $state(false);
 
   $effect(() => { if (!aperto) cambio = false; });
+
+  /* ------------------------------------------------ i conti dei pezzi ---
+     «3000» sono metri, «3» sono chilometri. La soglia e' ottanta: sotto non
+     esiste una ripetuta in chilometri, sopra non esiste una corsa in metri.
+     Il valore normalizzato si mostra sotto il campo, cosi' non c'e' niente
+     da indovinare. */
+  function aKm(t: string) {
+    const n = Number(String(t || "").replace(",", ".").trim());
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    return n >= 80 ? Math.round(n) / 1000 : Math.round(n * 1000) / 1000;
+  }
+  /** «48:30», «1:02:10», «52» (minuti) → secondi. Zero se non si capisce. */
+  function aSecondi(t: string) {
+    const grezzo = String(t || "").trim();
+    if (!grezzo) return 0;
+    const parti = grezzo.split(":").map((x) => Number(x.replace(",", ".")));
+    if (!parti.length || parti.some((x) => !Number.isFinite(x))) return 0;
+    if (parti.length === 1) return Math.round(parti[0] * 60);
+    if (parti.length === 2) return Math.round(parti[0] * 60 + parti[1]);
+    return Math.round(parti[0] * 3600 + parti[1] * 60 + parti[2]);
+  }
+  const numero = (t: string) => Number(String(t || "").replace(",", ".")) || 0;
+
+  const letti = $derived(pezzi.map((p) => {
+    const k = aKm(p.dist);
+    const s = aSecondi(p.tempo);
+    return { km: k, secondi: s, passo: k > 0 && s > 0 ? s / k : 0 };
+  }));
+  const totale = $derived({
+    km: Math.round(letti.reduce((t, p) => t + p.km, 0) * 100) / 100,
+    secondi: letti.reduce((t, p) => t + p.secondi, 0),
+  });
+
+  /* IL PASSO SI PUO' SCRIVERE AL POSTO DEL TEMPO, e sulla pista e' il modo
+     in cui lo sai: «3 km a ritmo gara» sono 4:24/km, non 13:12. Scrivendolo
+     li', il tempo si calcola — e viceversa. */
+  function passoScritto(i: number, testo: string) {
+    const sec = aSecondi(testo);
+    const k = aKm(pezzi[i].dist);
+    if (!sec || !k) return;
+    pezzi[i].tempo = mmss(sec * k);
+  }
+
+  /** Le corse gia' registrate nel giorno dello slot: i pezzi sono li'. */
+  const corseDelDi = $derived.by(() => {
+    dati.versione;
+    return sedutaDelGiorno(giorno || oggiISO());
+  });
+
+  function prendiLeCorse() {
+    const s2 = corseDelDi;
+    if (!s2) return;
+    pezzi = s2.pezzi.map((g: any) => ({
+      dist: g.km < 1 ? String(Math.round(g.km * 1000)) : String(g.km).replace(".", ","),
+      tempo: g.secondi ? mmss(g.secondi) : "",
+    }));
+    unisci = true;
+    cGenere = "corsa";
+    if (!cNome.trim()) cNome = s2.corse.find((c: any) => c.titolo && c.titolo !== "Corsa")?.titolo || "";
+    tocco(8);
+  }
 
   /** Le altre sedute della settimana, piu' la Upper B: le scorciatoie. */
   const alternative = $derived.by(() => {
@@ -132,53 +199,61 @@
     if (!s) return;
     const r = recordSlot(s.id);
     cambio = true;
+    unisci = false;
     // Se l'avevi gia' cambiato, si riparte da quello che avevi scritto.
     cNome = r?.nome || "";
     cTesto = r?.cambiato ? (r.testo || "") : "";
     cGenere = (r?.genere || s.genere) as any;
-    cKm = r?.cambiato && r.km ? String(r.km).replace(".", ",") : "";
-    cTempo = "";
     cDurata = r?.durata ? String(r.durata) : "";
+    const giri = r?.cambiato ? (r.giri as any[] | undefined) : undefined;
+    pezzi = giri?.length
+      ? giri.map((g) => ({
+          dist: g.km < 1 ? String(Math.round(g.km * 1000)) : String(g.km).replace(".", ","),
+          tempo: g.secondi ? mmss(g.secondi) : "",
+        }))
+      : [{ dist: r?.cambiato && r.km ? String(r.km).replace(".", ",") : "", tempo: "" }];
   }
 
   function scorciatoia(a: any) {
     cNome = a.nome;
     cTesto = a.corpo;
     cGenere = a.genere;
-    cKm = a.km ? String(a.km).replace(".", ",") : "";
+    pezzi = [{ dist: a.km ? String(a.km).replace(".", ",") : "", tempo: "" }];
+    unisci = false;
   }
-
-  /** «48:30», «1:02:10», «52» (minuti) → secondi. Zero se non si capisce. */
-  function aSecondi(t: string) {
-    const parti = String(t || "").trim().split(":").map((x) => Number(x.replace(",", ".")));
-    if (!parti.length || parti.some((x) => !Number.isFinite(x))) return 0;
-    if (parti.length === 1) return Math.round(parti[0] * 60);          // solo minuti
-    if (parti.length === 2) return Math.round(parti[0] * 60 + parti[1]);
-    return Math.round(parti[0] * 3600 + parti[1] * 60 + parti[2]);
-  }
-  const numero = (t: string) => Number(String(t || "").replace(",", ".")) || 0;
 
   const cValido = $derived(Boolean(cNome.trim() || cTesto.trim()));
 
   function salvaCambio() {
     if (!s || !cValido) return;
-    const secondi = cGenere === "corsa" ? aSecondi(cTempo) : 0;
+    const giri = cGenere === "corsa" ? letti.filter((p) => p.km > 0) : [];
+    /* IL TESTO LO SCRIVONO I PEZZI quando ci sono. Chiedere di descrivere a
+       parole una cosa che hai appena misurato in tre righe e' chiedere due
+       volte lo stesso dato — e la seconda volta viene scritta peggio. */
+    const testo = cTesto.trim() || (giri.length > 1 ? descriviPezzi(giri) : "");
     cambiaSlot(s.id, {
       nome: cNome.trim() || undefined,
-      testo: cTesto.trim(),
+      testo,
       genere: cGenere,
-      km: cGenere === "corsa" ? numero(cKm) : 0,
-      secondi,
-      // Solo quella scritta a mano: dal tempo della corsa la deduce
+      giri,
+      // Solo la durata scritta a mano: dal tempo della corsa la deduce
       // `cambiaSlot`, che e' il posto in cui la sa chiunque la chiami.
       durata: numero(cDurata),
       data: giorno || undefined,
+      unisci: unisci && giri.length > 0,
     });
+    /* E SI SPUNTA. Il pannello chiede «cosa hai fatto davvero», al passato:
+       chi lo compila ha gia' fatto quella seduta, e lasciargli poi premere
+       «Segna come fatto» sarebbe chiedere due volte la stessa cosa — con il
+       rischio, molto concreto, che la seconda se la dimentichi e la
+       settimana resti aperta su un allenamento finito. */
+    const spuntato = f;
+    if (!spuntato) alternaSlot(s.id, giorno || undefined);
     cambio = false;
     tocco(14);
-    avviso(cGenere === "corsa" && numero(cKm) > 0
-      ? `Cambiato. ${km(numero(cKm))} nei conti della settimana.`
-      : "Cambiato.");
+    avviso(totale.km > 0
+      ? `${spuntato ? "Cambiato" : "Fatto"}. ${km(totale.km)} nei conti della settimana.`
+      : spuntato ? "Cambiato." : "Fatto.");
   }
 
   /** Lo spostamento in attesa di conferma: `null` quando non c'e' niente da chiedere. */
@@ -386,7 +461,7 @@
       </Pulsante>
     {:else}
       <Sezione titolo="Cosa hai fatto davvero"
-        piede="Resta questo slot — la spunta e il giorno non si perdono. Cambiano il nome, il contenuto, i km e i conti della settimana.">
+        piede="Resta questo slot — il giorno non si perde — e si spunta da sé: lo stai compilando al passato. Cambiano il nome, il contenuto, i km e i conti della settimana.">
         <div class="blocco">
           <Pillole
             opzioni={alternative}
@@ -413,25 +488,63 @@
         </div>
 
         {#if cGenere === "corsa"}
-          <!-- I KM E IL TEMPO SONO IL PUNTO. Senza, il cambio resta
-               un'etichetta: l'andamento, il tetto della lunga e la
-               proiezione sui 5 km leggono le corse, e una corsa senza
-               numeri non e' una corsa per loro. -->
-          <div class="coppia">
-            <label class="mini">
-              <span class="text-footnote secondario">Km</span>
-              <input class="campo cifre" type="text" inputmode="decimal" bind:value={cKm} placeholder="10" aria-label="Chilometri" />
-            </label>
-            <label class="mini">
-              <span class="text-footnote secondario">Tempo</span>
-              <input class="campo cifre" type="text" inputmode="numeric" bind:value={cTempo} placeholder="52:30" aria-label="Tempo" />
-            </label>
+          <!-- I PEZZI SONO IL PUNTO. Senza numeri il cambio resta
+               un'etichetta: andamento, tetto della lunga e proiezione sui 5
+               km leggono le corse, e una corsa senza numeri per loro non e'
+               una corsa. Con i pezzi, una seduta di ripetute smette di
+               essere «6 km a 5:30» e torna a essere quello che era. -->
+          {#if corseDelDi && !unisci}
+            <!-- LE CORSE DI QUEL GIORNO CI SONO GIA'. In pista l'orologio
+                 registra ogni ripetuta come un'attivita' a se': tre pezzi,
+                 tre corse nell'elenco. Prenderle e' un tocco, e cosi' non
+                 si riscrivono a mano numeri che l'orologio ha gia'. -->
+            <Riga titolo="Prendi le corse di {giorno ? quandoCorto(giorno) : 'oggi'}"
+              sottotitolo="{plurale(corseDelDi.quante, 'corsa', 'corse')} · {km(corseDelDi.km)}{corseDelDi.secondi ? ` · ${mmss(corseDelDi.secondi)}` : ''}"
+              accento onclick={prendiLeCorse} />
+          {/if}
+
+          <div class="pezzi">
+            <!-- Le intestazioni UNA VOLTA SOLA, in cima alla colonna. Su
+                 ogni riga erano tre parole ripetute tre volte, e con tre
+                 ripetute diventano nove: la colonna di numeri, che e' la
+                 cosa da leggere, spariva in mezzo alle etichette. -->
+            <div class="pezzo intestazioni text-caption1 secondario" aria-hidden="true">
+              <span></span><span>Distanza</span><span>Tempo</span><span>Passo</span><span></span>
+            </div>
+            {#each pezzi as p, i (i)}
+              {@const metri = letti[i].km > 0 && aKm(p.dist) !== Number(String(p.dist).replace(",", "."))}
+              <div class="pezzo">
+                <span class="indice cifre">{i + 1}</span>
+                <input class="campo cifre" type="text" inputmode="decimal" bind:value={p.dist} placeholder="3000" aria-label="Distanza del pezzo {i + 1}" />
+                <input class="campo cifre" type="text" inputmode="numeric" bind:value={p.tempo} placeholder="12:06" aria-label="Tempo del pezzo {i + 1}" />
+                <input
+                  class="campo cifre" type="text" inputmode="numeric"
+                  value={letti[i].passo ? mmss(letti[i].passo) : ""}
+                  placeholder="4:02"
+                  aria-label="Passo del pezzo {i + 1}"
+                  onchange={(e) => passoScritto(i, e.currentTarget.value)}
+                />
+                {#if pezzi.length > 1}
+                  <button type="button" class="via" aria-label="Togli il pezzo {i + 1}" onclick={() => { pezzi = pezzi.filter((_, k) => k !== i); unisci = false; }}>×</button>
+                {:else}
+                  <span class="via vuota"></span>
+                {/if}
+                <!-- La conferma solo quando serve davvero: hai scritto
+                     «3000» e l'app ha letto 3 km. Se hai scritto «3» non
+                     c'e' niente da confermare. -->
+                {#if metri}<span class="letto text-caption1 secondario cifre">= {distanza(letti[i].km)}</span>{/if}
+              </div>
+            {/each}
+            <button type="button" class="aggiungi text-subheadline" onclick={() => { pezzi = [...pezzi, { dist: "", tempo: "" }]; unisci = false; }}>
+              + Aggiungi un pezzo
+            </button>
           </div>
+
           <Riga>
             <span class="text-footnote secondario">
-              {aSecondi(cTempo) > 0 && numero(cKm) > 0
-                ? `Passo ${passo(aSecondi(cTempo) / numero(cKm))}. Entra nell'andamento, nel tetto della lunga e nella proiezione.`
-                : "Il tempo si scrive «52:30» o «1:02:10». Senza, restano solo i km."}
+              {totale.km > 0
+                ? `${pezzi.length > 1 ? `${plurale(letti.filter((p) => p.km > 0).length, "pezzo", "pezzi")} · ` : ""}${km(totale.km)}${totale.secondi ? ` in ${mmss(totale.secondi)}` : ""}${totale.secondi ? ` · media ${passo(totale.secondi / totale.km)}` : ""}. Entra nell'andamento, nel tetto della lunga e nella proiezione.`
+                : "«3000» sono metri, «3» sono chilometri. Il tempo si scrive «12:06»; il passo puoi scriverlo al posto suo."}
             </span>
           </Riga>
         {:else}
@@ -545,9 +658,20 @@
     border-radius: var(--radius-sm); padding: 5px 9px; color: var(--accento); max-width: 190px;
   }
   .campo.corto { max-width: 90px; }
-  .coppia { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-top: 0.5px solid var(--separator); }
-  .mini { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-  .mini .campo { max-width: none; width: 100%; text-align: left; }
+  .pezzi { display: flex; flex-direction: column; padding: var(--space-3) var(--space-4) var(--space-2); border-top: 0.5px solid var(--separator); gap: var(--space-2); }
+  /* Una riga per pezzo: numero, tre campi, la croce. Il valore normalizzato
+     va sotto, a tutta riga: e' la conferma che «3000» l'ha letto come 3 km,
+     e sta dove non ruba larghezza ai campi. */
+  .pezzo { display: grid; grid-template-columns: 18px 1fr 1fr 1fr 24px; gap: 4px 6px; align-items: center; }
+  .pezzo.intestazioni { margin-bottom: -2px; }
+  .indice { font-size: var(--text-caption1); color: var(--label-tertiary); }
+  .letto { grid-column: 2 / -1; }
+  .via { width: 24px; height: 30px; color: var(--label-tertiary); font-size: 18px; line-height: 1; }
+  .via.vuota { visibility: hidden; }
+  .aggiungi { align-self: flex-start; padding: 6px 0; color: var(--accento); font-weight: var(--weight-semibold); }
+  /* I campi dei pezzi stanno nella griglia, non in una colonnina loro: le
+     etichette adesso sono in cima una volta sola. */
+  .pezzo .campo { max-width: none; width: 100%; text-align: left; }
   .riga-testo { display: flex; flex-direction: column; gap: 3px; padding: var(--space-3) var(--space-4); border-top: 0.5px solid var(--separator); }
   .riga-testo textarea {
     font-size: 17px; font-family: inherit; width: 100%; outline: none; resize: vertical;

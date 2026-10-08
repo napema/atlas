@@ -23,6 +23,28 @@ export const passo = (secPerKm) => `${mmss(secPerKm)}/km`;
 /** Km con una cifra, alla italiana. */
 export const km = (n) => `${(Math.round((n || 0) * 10) / 10).toString().replace(".", ",")} km`;
 
+/** Una distanza come la diresti: «800 m», «3 km», «8,2 km». */
+export const distanza = (n) => ((n || 0) < 1
+  ? `${Math.round((n || 0) * 1000)} m`
+  : `${(Math.round((n || 0) * 100) / 100).toString().replace(".", ",")} km`);
+
+/**
+ * I pezzi di una seduta, in una riga.
+ *
+ *     3 km in 12:06 (4:02/km) · 2 km in 7:58 (3:59/km) · 1 km in 3:52
+ *
+ * Sta qui e non nella vista perche' lo scrivono in due — il foglio dello
+ * slot quando li inserisci a mano e l'import quando li trova nel file — e
+ * devono dire le stesse parole. Il giorno che una delle due comincia a
+ * scrivere «3000m» dove l'altra scrive «3 km» sono due app.
+ */
+export const descriviPezzi = (pezzi) => (pezzi || [])
+  .filter((g) => g && g.km > 0)
+  .map((g) => (g.secondi > 0
+    ? `${distanza(g.km)} in ${mmss(g.secondi)} (${passo(g.secondi / g.km)})`
+    : distanza(g.km)))
+  .join(" · ");
+
 /* --------------------------------------------------------- la settimana -- */
 
 /** Quanti slot sono chiusi, e quanti sono in tutto. */
@@ -119,7 +141,41 @@ export const kmTotali = () => dec(corseVive().reduce((t, c) => t + (c.km || 0), 
  */
 export function proiezione(oggi = oggiISO()) {
   const da = piuGiorni(oggi, -42);
-  const buone = corseVive().filter((c) => c.data >= da && (c.km || 0) >= 3 && (c.secondi || 0) > 0);
+  const recenti = corseVive().filter((c) => c.data >= da);
+
+  /* I CANDIDATI SONO DUE COSE: le corse intere e i singoli PEZZI.
+
+     Una seduta di ripetute — 3 km, 2 km, 1 km a ritmo gara — come corsa
+     intera ha dentro i recuperi, quindi la sua media al km e' lenta e non
+     dice niente sulla forma. Il pezzo da 3 km a 4:02 dice tutto, ed e' il
+     miglior predittore che esista a disposizione: Riegel su una ripetuta
+     lunga e' il modo standard di stimare una gara corta.
+
+     Il filtro a 3 km resta su tutti e due: sotto quella distanza
+     l'esponente di Riegel smette di reggere e il numero diventa bellissimo
+     e falso. */
+  const buone = [];
+  for (const c of recenti) {
+    /* UNA SEDUTA SPEZZATA NON E' UNA CORSA CONTINUA, e il suo totale non si
+       puo' usare.
+
+       3 km + 2 km + 1 km a ritmo gara fanno 6 km in 23:56 di LAVORO, ma in
+       mezzo ci sono i recuperi: sommare solo i tempi dei pezzi e chiamarlo
+       un 6 km da' 3:59/km, cioe' un passo piu' veloce di qualunque singola
+       ripetuta. Riegel su quel numero direbbe 19:35 sui 5 km — il muro gia'
+       sfondato, da uno che le ripetute le ha corse a 4:02.
+
+       E' il genere di cifra che poi guida le decisioni sbagliate. Del
+       totale restano i CHILOMETRI, che sono veri e contano nel volume e nel
+       tetto; il passo lo dicono i pezzi, uno per uno. */
+    const spezzata = (c.giri || []).length > 1;
+    if (!spezzata && (c.km || 0) >= 3 && (c.secondi || 0) > 0) buone.push({ ...c });
+    for (const g of c.giri || []) {
+      if ((g.km || 0) >= 3 && (g.secondi || 0) > 0) {
+        buone.push({ ...g, data: c.data, titolo: c.titolo, pezzo: true });
+      }
+    }
+  }
   if (!buone.length) return null;
 
   let migliore = null;
@@ -152,7 +208,20 @@ export function proiezione(oggi = oggiISO()) {
  * bellissimo e falso.
  */
 export function equivalente5k(c) {
-  if (!c || !(c.km >= 2) || !(c.secondi > 0)) return null;
+  if (!c) return null;
+  /* Di una seduta spezzata vale il PEZZO MIGLIORE, non il totale: vedi
+     `proiezione()`. Il totale avrebbe il passo del lavoro senza i recuperi,
+     che e' un passo che nessuno ha corso per quella distanza. */
+  if ((c.giri || []).length > 1) {
+    let meglio = null;
+    for (const g of c.giri) {
+      if (!(g.km >= 2) || !(g.secondi > 0)) continue;
+      const v = g.secondi * Math.pow(OBIETTIVO.metri / 1000 / g.km, 1.06);
+      if (meglio === null || v < meglio) meglio = v;
+    }
+    return meglio;
+  }
+  if (!(c.km >= 2) || !(c.secondi > 0)) return null;
   return c.secondi * Math.pow(OBIETTIVO.metri / 1000 / c.km, 1.06);
 }
 
