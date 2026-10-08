@@ -379,12 +379,22 @@ export function slotDi(n) {
  */
 function conScostamento(slot) {
   const r = recordSlot(slot.id);
-  if (!r || (!r.testo && r.km == null)) return slot;
+  if (!r || (!r.testo && r.km == null && !r.nome && !r.genere)) return slot;
   return {
     ...slot,
+    /* IL NOME CAMBIA, L'ID NO. Il nome e' quello che leggi sulla riga —
+       «Calcetto», «Lunga col gruppo» — l'id resta `s02-facile` perche' da
+       lui dipendono la spunta che hai gia' dato e il giorno che hai
+       scelto. Cambiarlo vorrebbe dire perdere tutte e due. */
+    ...(r.nome ? { nome: r.nome } : {}),
+    /* E CAMBIA IL GENERE. Una corsa fatta in palestra non e' una corsa: se
+       restasse `corsa` conterebbe nei «0/4 corse» della settimana e nei km
+       previsti, cioe' direbbe che quei chilometri sono ancora da fare. */
+    ...(r.genere ? { genere: r.genere } : {}),
     ...(r.testo ? { testo: r.testo, lift: null, accessori: [] } : {}),
     ...(r.km != null ? { km: r.km } : {}),
     cambiato: true,
+    aMano: Boolean(r.cambiato),
   };
 }
 
@@ -648,14 +658,106 @@ export function salvaAllenamenti(voci) {
   return scritti;
 }
 
+/* =========================================================================
+   HO FATTO UN'ALTRA COSA.
+
+   Il piano e' scritto per un mondo in cui decidi tu. Nella settimana vera
+   decidono anche gli altri: si va a correre col gruppo e la facile diventa
+   una lunga, la palestra e' piena e la Lower diventa una Upper, il martedi'
+   c'e' il calcetto. Finche' l'app sapeva solo dire «fatto / non fatto»,
+   quelle sedute finivano in uno dei due modi sbagliati: spuntate come se
+   avessi fatto quello che c'era scritto — e allora i km e i conti mentono —
+   oppure lasciate aperte, e allora la settimana sembra persa quando invece
+   ti sei allenato.
+
+   Lo scostamento c'era gia', ma solo in entrata dall'import. Questo e' lo
+   stesso meccanismo aperto a mano, e non e' un caso: usa lo STESSO campo
+   nello STESSO record della spunta. Un secondo posto dove scrivere «cosa ho
+   fatto davvero» vorrebbe dire due chiavi da tenere allineate nel sync per
+   la stessa casella, e la prima volta che si disallineano hai uno slot
+   spuntato che mostra il lavoro di un altro.
+
+   SE E' UNA CORSA, DIVENTA ANCHE UNA CORSA. Non basta scriverlo sullo slot:
+   l'andamento, il tetto della lunga e la proiezione sui 5 km leggono
+   `corse[]`, cioe' quello che e' arrivato dall'orologio. Una corsa fatta e
+   scritta a mano che non finisse li' sarebbe invisibile proprio alle tre
+   domande per cui questo modulo esiste. Quindi ne nasce un record di corsa,
+   marcato `manuale`, legato allo slot.
+   ========================================================================= */
+
+/**
+ * Sostituisce il contenuto di uno slot con quello che hai fatto davvero.
+ *
+ * `data` e' il giorno a cui attribuire la corsa: il giorno scelto per lo
+ * slot, o oggi. Serve perche' l'andamento somma per settimana, e una corsa
+ * di sabato messa a lunedi' sposta i km nella settimana sbagliata.
+ */
+export function cambiaSlot(id, { nome, testo, genere, km, secondi, durata, data } = {}) {
+  const ora = Date.now();
+  casella.aggiorna((s) => {
+    const i = trova(s.slot, id);
+    const prima = i >= 0 ? s.slot[i] : { id, fatta: false };
+    const rec = { ...prima, id, up: ora, cambiato: ora };
+    const n = String(nome || "").trim();
+    if (n) rec.nome = n; else delete rec.nome;
+    rec.testo = String(testo || "").trim();
+    if (genere) rec.genere = genere; else delete rec.genere;
+    rec.km = Number(km) > 0 ? Math.round(Number(km) * 100) / 100 : 0;
+    /* LA DURATA SI DEDUCE DAL TEMPO, e si deduce QUI.
+       Stava nella vista, e il risultato era che chiamare `cambiaSlot` da
+       qualunque altra parte — l'import, una prova — lasciava la durata al
+       valore predefinito: in calendario una corsa da 52 minuti occupava
+       l'ora di sempre. Il dato lo sa: se hai scritto un tempo, quella e' la
+       durata. */
+    const dedotta = Number(durata) > 0
+      ? Number(durata)
+      : (Number(secondi) > 0 ? Math.round(Number(secondi) / 60) : 0);
+    if (dedotta > 0) rec.durata = dedotta; else delete rec.durata;
+    delete rec.del;
+    if (i >= 0) s.slot[i] = rec; else s.slot.push(rec);
+  });
+
+  corsaDiSlot(id, {
+    km: Number(km) || 0,
+    secondi: Number(secondi) || 0,
+    data: data || giornoSlot(id) || oggiISO(),
+    nome: String(nome || "").trim(),
+  });
+}
+
+/**
+ * La corsa a mano legata a uno slot: una sola, e si rifa' da zero a ogni
+ * cambio. Senza i km sparisce — hai cambiato idea e hai messo una palestra.
+ */
+function corsaDiSlot(id, { km, secondi, data, nome }) {
+  const vecchia = (stato().corse || []).find((c) => c && !c.del && c.manuale && c.slot === id);
+  if (vecchia) eliminaCorsa(vecchia.id);
+  if (!(km > 0) || !data) return;
+  salvaCorse([{
+    data, km: Math.round(km * 100) / 100, secondi: Math.max(0, Math.round(secondi) || 0),
+    nome: nome || "Allenamento cambiato",
+    // I due marchi che contano: `manuale` dice che e' una STIMA e che
+    // l'orologio ha la precedenza, `slot` dice da dove viene cosi' che
+    // cambiarla o ripristinarla la trovi senza cercarla per data.
+    manuale: true, slot: id,
+  }]);
+}
+
 /** Toglie lo scostamento e rimette il piano, senza toccare la spunta. */
 export function ripristinaSlot(id) {
+  // Prima la corsa: dopo la scrittura sullo slot il legame c'e' ancora, ma
+  // togliere il record e lasciare la corsa vorrebbe dire km senza padre.
+  corsaDiSlot(id, { km: 0 });
   casella.aggiorna((s) => {
     const i = trova(s.slot, id);
     if (i < 0) return;
     const rec = { ...s.slot[i], up: Date.now() };
     delete rec.testo;
     delete rec.km;
+    delete rec.nome;
+    delete rec.genere;
+    delete rec.durata;
+    delete rec.cambiato;
     s.slot[i] = rec;
   });
 }
@@ -673,17 +775,46 @@ export function ripristinaSlot(id) {
  */
 export const idCorsa = (data, metri) => `c-${data}-${Math.round(metri)}`;
 
+/**
+ * Scrive le corse. L'id viene da data + metri, quindi la stessa corsa
+ * reimportata si fonde invece di affiancarsi.
+ *
+ * E LA MISURA SCACCIA LA STIMA. Una corsa scritta a mano («10 km col
+ * gruppo») e la stessa corsa che arriva dall'orologio tre giorni dopo
+ * (10,14 km) hanno metri diversi, quindi id diversi, quindi sarebbero DUE
+ * record e venti chilometri dove ce n'erano dieci. E' esattamente il guasto
+ * che l'id deterministico esisteva per impedire, da una porta che prima non
+ * c'era.
+ *
+ * Regola: quando arriva una corsa NON manuale, le stime a mano dello stesso
+ * giorno se ne vanno — con la lapide, o l'altro dispositivo le resuscita — e
+ * il legame con lo slot passa alla corsa vera. Il cronometro ha misurato, la
+ * mano aveva stimato.
+ */
 export function salvaCorse(elenco) {
-  let nuove = 0, aggiornate = 0;
+  let nuove = 0, aggiornate = 0, sostituite = 0;
   casella.aggiorna((s) => {
     for (const c of elenco) {
       const id = idCorsa(c.data, (c.km || 0) * 1000);
+      let legame = c.slot || null;
+
+      if (!c.manuale) {
+        for (let k = 0; k < s.corse.length; k++) {
+          const x = s.corse[k];
+          if (!x || x.del || !x.manuale || x.data !== c.data || x.id === id) continue;
+          legame = legame || x.slot || null;
+          s.corse[k] = { id: x.id, del: true, up: Date.now() };
+          sostituite++;
+        }
+      }
+
+      const rec = { ...c, ...(legame ? { slot: legame } : {}), id, up: Date.now() };
       const i = trova(s.corse, id);
-      if (i >= 0) { s.corse[i] = { ...s.corse[i], ...c, id, up: Date.now(), del: undefined }; aggiornate++; }
-      else { s.corse.push({ ...c, id, up: Date.now() }); nuove++; }
+      if (i >= 0) { s.corse[i] = { ...s.corse[i], ...rec, del: undefined }; aggiornate++; }
+      else { s.corse.push(rec); nuove++; }
     }
   });
-  return { nuove, aggiornate };
+  return { nuove, aggiornate, sostituite };
 }
 
 export function eliminaCorsa(id) {

@@ -226,7 +226,11 @@
                 {#if s.titoloVero}<span class="etichetta slot text-caption2">{s.nome}</span>{/if}
                 {#if s.stella}<span class="stella" title="Seduta chiave"><Icona nome="bersaglio" misura={14} tratto={2.2} /></span>{/if}
                 {#if s.bonus}<span class="etichetta bonus text-caption2">bonus</span>{/if}
-                {#if s.cambiato}<span class="etichetta text-caption2">importato</span>{/if}
+                <!-- «importato» non vale piu' per tutti: lo scostamento
+                     adesso arriva anche da «Ho fatto un altro allenamento»,
+                     e chiamarlo importato manderebbe a cercare un CSV che
+                     non c'e' mai stato. -->
+                {#if s.cambiato}<span class="etichetta text-caption2">{s.aMano ? "cambiato" : "importato"}</span>{/if}
                 {#if s.quando}<span class="quando text-caption1">{s.quando} · {s.ora}</span>{/if}
               </span>
               <span class="text-subheadline secondario testo">{s.lift ? s.lift : s.testo}</span>

@@ -43,9 +43,22 @@ export function progressoSettimana(n) {
   };
 }
 
-/** I km che il piano prevede in una settimana: la somma dei tre slot di corsa. */
+/* DUE DECIMALI, che e' la precisione con cui i km arrivano davvero: Garmin
+   da' 10,14 e il piano da' 8,2.
+
+   Si arrotonda perche' sommare 7,6 + 7 + 4,8 + 8,2 in virgola mobile da'
+   27,599999999999998, e quel numero non resta nascosto: finisce nei
+   confronti col tetto del +10% e, il giorno che qualcuno lo stampa senza
+   passare da `km()`, sullo schermo.
+
+   A un decimo no: taglierebbe la misura dell'orologio per far tornare una
+   somma del piano. Chi mostra arrotonda — `km()` lo fa gia' — chi somma
+   tiene quello che c'era. */
+const dec = (n) => Math.round((n || 0) * 100) / 100;
+
+/** I km che il piano prevede in una settimana: la somma degli slot di corsa. */
 export const kmPrevisti = (n) =>
-  slotDi(n).filter((s) => s.genere === "corsa").reduce((t, s) => t + (s.km || 0), 0);
+  dec(slotDi(n).filter((s) => s.genere === "corsa").reduce((t, s) => t + (s.km || 0), 0));
 
 /** Le corse davvero registrate dentro la settimana n. */
 export const corseDi = (n) => {
@@ -53,7 +66,7 @@ export const corseDi = (n) => {
   return corseVive().filter((c) => c.data >= da && c.data <= a);
 };
 
-export const kmFatti = (n) => corseDi(n).reduce((t, c) => t + (c.km || 0), 0);
+export const kmFatti = (n) => dec(corseDi(n).reduce((t, c) => t + (c.km || 0), 0));
 
 /* ----------------------------------------------------------- andamento -- */
 
@@ -87,7 +100,7 @@ export function andamento(fino = settimanaCorrente()) {
   return righe;
 }
 
-export const kmTotali = () => corseVive().reduce((t, c) => t + (c.km || 0), 0);
+export const kmTotali = () => dec(corseVive().reduce((t, c) => t + (c.km || 0), 0));
 
 /* --------------------------------------------------------- la proiezione -- */
 
@@ -199,10 +212,25 @@ export const giornoTest = () => fineSettimana(SETTIMANE);
    oggi si può fare.
 */
 
-/** Hai fatto stacchi o squat in quel giorno? Vale su tutto il blocco. */
+/* Le parole che vogliono dire «gambe». Serve perche' uno slot cambiato
+   porta il testo di quello che hai fatto davvero, non quello del piano. */
+const PAROLE_GAMBE = /squat|stacc|affond|leg press|bulgarian|pressa|lunge/i;
+
+/**
+ * Hai fatto stacchi o squat in quel giorno? Vale su tutto il blocco.
+ *
+ * SE LO SLOT E' STATO CAMBIATO VALE QUELLO CHE HAI FATTO, non quello che
+ * c'era scritto. L'id resta `s02-lower` anche dopo — ci sono appese la
+ * spunta e il giorno — quindi guardare solo l'id direbbe «ieri gambe» a chi
+ * ieri e' andato a nuoto, e la regola che protegge le sedute dure
+ * bloccherebbe l'allenamento di oggi per niente.
+ */
 export const gambeIl = (iso) =>
-  (stato().slot || []).some((r) => r && !r.del && r.fatta && r.giorno === iso
-    && /-(lower|total)$/.test(r.id));
+  (stato().slot || []).some((r) => {
+    if (!r || r.del || !r.fatta || r.giorno !== iso) return false;
+    if (r.testo) return PAROLE_GAMBE.test(r.testo);
+    return /-(lower|total)$/.test(r.id);
+  });
 
 /**
  * Una riga di consiglio, o `null`.

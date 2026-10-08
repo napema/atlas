@@ -78,11 +78,14 @@
   </div>
 </Sezione>
 
-<Sezione titolo="Corse importate" piede={d.corse.length ? "Tocca una corsa per toglierla." : "Nessuna. Senza corse non c'è né andamento né previsione: importa l'export di Garmin."}>
+<!-- «Corse», non «Corse importate»: da quando uno slot si puo' cambiare a
+     mano, qui dentro ce ne sono anche di scritte da te, e chiamarle
+     importate manderebbe a cercare un CSV che non c'e' mai stato. -->
+<Sezione titolo="Corse" piede={d.corse.length ? "Tocca una corsa per toglierla. Quelle «a mano» sono stime: appena importi la stessa giornata da Garmin, la misura prende il loro posto." : "Nessuna. Senza corse non c'è né andamento né previsione: importa l'export di Garmin, o scrivi a mano quello che hai fatto dallo slot."}>
   {#each d.corse as c (c.id)}
     <Riga
-      titolo={c.titolo || "Corsa"}
-      sottotitolo="{dataBreve(c.data)} · {c.secondi && c.km ? passo(c.secondi / c.km) : '—'} · {km(c.km)}"
+      titolo={c.titolo || c.nome || "Corsa"}
+      sottotitolo="{dataBreve(c.data)} · {c.secondi && c.km ? passo(c.secondi / c.km) : '—'} · {km(c.km)}{c.manuale ? ' · a mano' : ''}"
       onclick={() => togli(c)}
     >
       {#snippet fine()}

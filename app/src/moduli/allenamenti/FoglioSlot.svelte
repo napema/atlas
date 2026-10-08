@@ -28,9 +28,9 @@
   import { slide } from "svelte/transition";
   import {
     slotDi, fatto, giornoSlot, alternaSlot, scegliGiorno, inizioSettimana, fineSettimana, recordSlot, ripristinaSlot, togliBonus,
-    oraDi, scegliOra, oraPredefinita,
+    oraDi, scegliOra, oraPredefinita, cambiaSlot, UPPER_B, durataDi,
   } from "$condivisi/allenamenti/dati.js";
-  import { km } from "$condivisi/allenamenti/calcolo.js";
+  import { km, passo } from "$condivisi/allenamenti/calcolo.js";
   import { leggiRiga, gruppiSeduta, serieTotali } from "$condivisi/allenamenti/muscoli.js";
   import { leggiAllenamento, descrivi } from "$condivisi/allenamenti/passi.js";
   import { fileAllenamento, scarica } from "$condivisi/allenamenti/fit.js";
@@ -88,6 +88,98 @@
     }
     return fuori;
   });
+
+  /* ===================================================================
+     HO FATTO ALTRO.
+
+     Il pannello si apre dentro il foglio, non sopra: due fogli impilati su
+     un telefono non si leggono, ed e' lo stesso motivo per cui la conferma
+     del conflitto sta in linea.
+
+     Le SCORCIATOIE sono le altre sedute della fase. Il caso vero non e'
+     «ho inventato un allenamento»: e' «siamo andati a fare la lunga invece
+     degli intervalli», e quello deve costare due tocchi. Il testo libero
+     resta per il calcetto.
+     =================================================================== */
+  let cambio = $state(false);
+  let cNome = $state("");
+  let cTesto = $state("");
+  let cGenere = $state<"corsa" | "palestra" | "altro">("altro");
+  let cKm = $state("");
+  let cTempo = $state("");
+  let cDurata = $state("");
+
+  $effect(() => { if (!aperto) cambio = false; });
+
+  /** Le altre sedute della settimana, piu' la Upper B: le scorciatoie. */
+  const alternative = $derived.by(() => {
+    dati.versione;
+    if (!s) return [];
+    const altre = (slotDi(s.sett) as any[])
+      .filter((x) => x.id !== s.id && !x.bonus)
+      .map((x) => ({
+        id: x.id, testo: x.nome, nome: x.nome, genere: x.genere,
+        corpo: (x.lift ? [x.lift, ...(x.accessori || [])].join(" · ") : x.testo) || "",
+        km: x.km || 0,
+      }));
+    return [
+      ...altre,
+      { id: "upperB", testo: UPPER_B.nome, nome: UPPER_B.nome, genere: "palestra", corpo: UPPER_B.testo, km: 0 },
+    ];
+  });
+
+  function preparaCambio() {
+    if (!s) return;
+    const r = recordSlot(s.id);
+    cambio = true;
+    // Se l'avevi gia' cambiato, si riparte da quello che avevi scritto.
+    cNome = r?.nome || "";
+    cTesto = r?.cambiato ? (r.testo || "") : "";
+    cGenere = (r?.genere || s.genere) as any;
+    cKm = r?.cambiato && r.km ? String(r.km).replace(".", ",") : "";
+    cTempo = "";
+    cDurata = r?.durata ? String(r.durata) : "";
+  }
+
+  function scorciatoia(a: any) {
+    cNome = a.nome;
+    cTesto = a.corpo;
+    cGenere = a.genere;
+    cKm = a.km ? String(a.km).replace(".", ",") : "";
+  }
+
+  /** «48:30», «1:02:10», «52» (minuti) → secondi. Zero se non si capisce. */
+  function aSecondi(t: string) {
+    const parti = String(t || "").trim().split(":").map((x) => Number(x.replace(",", ".")));
+    if (!parti.length || parti.some((x) => !Number.isFinite(x))) return 0;
+    if (parti.length === 1) return Math.round(parti[0] * 60);          // solo minuti
+    if (parti.length === 2) return Math.round(parti[0] * 60 + parti[1]);
+    return Math.round(parti[0] * 3600 + parti[1] * 60 + parti[2]);
+  }
+  const numero = (t: string) => Number(String(t || "").replace(",", ".")) || 0;
+
+  const cValido = $derived(Boolean(cNome.trim() || cTesto.trim()));
+
+  function salvaCambio() {
+    if (!s || !cValido) return;
+    const secondi = cGenere === "corsa" ? aSecondi(cTempo) : 0;
+    cambiaSlot(s.id, {
+      nome: cNome.trim() || undefined,
+      testo: cTesto.trim(),
+      genere: cGenere,
+      km: cGenere === "corsa" ? numero(cKm) : 0,
+      secondi,
+      // Solo quella scritta a mano: dal tempo della corsa la deduce
+      // `cambiaSlot`, che e' il posto in cui la sa chiunque la chiami.
+      durata: numero(cDurata),
+      data: giorno || undefined,
+    });
+    cambio = false;
+    tocco(14);
+    avviso(cGenere === "corsa" && numero(cKm) > 0
+      ? `Cambiato. ${km(numero(cKm))} nei conti della settimana.`
+      : "Cambiato.");
+  }
 
   /** Lo spostamento in attesa di conferma: `null` quando non c'e' niente da chiedere. */
   let conflitto = $state<{ giorno: string; chi: string[] } | null>(null);
@@ -285,6 +377,83 @@
       {f ? "Riapri lo slot" : "Segna come fatto"}
     </Pulsante>
 
+    <!-- HO FATTO ALTRO. Sta subito sotto la spunta perche' e' li' che
+         serve: apri lo slot per segnarlo fatto e ti accorgi che quello che
+         hai fatto non era questo. -->
+    {#if !cambio}
+      <Pulsante variante="testo" larga onclick={preparaCambio}>
+        {s.cambiato && s.aMano ? "Cambia di nuovo" : "Ho fatto un altro allenamento"}
+      </Pulsante>
+    {:else}
+      <Sezione titolo="Cosa hai fatto davvero"
+        piede="Resta questo slot — la spunta e il giorno non si perdono. Cambiano il nome, il contenuto, i km e i conti della settimana.">
+        <div class="blocco">
+          <Pillole
+            opzioni={alternative}
+            scelte={[]}
+            controllato
+            oncambio={(v) => { const a = alternative.find((x: any) => x.id === v[0]); if (a) scorciatoia(a); }}
+            etichetta="Al posto di questo ho fatto"
+          />
+        </div>
+
+        <Riga titolo="Nome">
+          {#snippet fine()}
+            <input class="campo" type="text" bind:value={cNome} placeholder={s.nome} aria-label="Nome dell'allenamento" />
+          {/snippet}
+        </Riga>
+
+        <div class="blocco">
+          <Pillole
+            opzioni={[{ id: "corsa", testo: "Corsa" }, { id: "palestra", testo: "Palestra" }, { id: "altro", testo: "Altro" }]}
+            scelte={[cGenere]}
+            oncambio={(v) => (cGenere = v[0] as any)}
+            etichetta="Genere"
+          />
+        </div>
+
+        {#if cGenere === "corsa"}
+          <!-- I KM E IL TEMPO SONO IL PUNTO. Senza, il cambio resta
+               un'etichetta: l'andamento, il tetto della lunga e la
+               proiezione sui 5 km leggono le corse, e una corsa senza
+               numeri non e' una corsa per loro. -->
+          <div class="coppia">
+            <label class="mini">
+              <span class="text-footnote secondario">Km</span>
+              <input class="campo cifre" type="text" inputmode="decimal" bind:value={cKm} placeholder="10" aria-label="Chilometri" />
+            </label>
+            <label class="mini">
+              <span class="text-footnote secondario">Tempo</span>
+              <input class="campo cifre" type="text" inputmode="numeric" bind:value={cTempo} placeholder="52:30" aria-label="Tempo" />
+            </label>
+          </div>
+          <Riga>
+            <span class="text-footnote secondario">
+              {aSecondi(cTempo) > 0 && numero(cKm) > 0
+                ? `Passo ${passo(aSecondi(cTempo) / numero(cKm))}. Entra nell'andamento, nel tetto della lunga e nella proiezione.`
+                : "Il tempo si scrive «52:30» o «1:02:10». Senza, restano solo i km."}
+            </span>
+          </Riga>
+        {:else}
+          <Riga titolo="Durata">
+            {#snippet fine()}
+              <input class="campo cifre corto" type="text" inputmode="numeric" bind:value={cDurata} placeholder={String(durataDi(s))} aria-label="Durata in minuti" />
+            {/snippet}
+          </Riga>
+        {/if}
+
+        <label class="riga-testo">
+          <span class="text-footnote secondario">Cosa</span>
+          <textarea bind:value={cTesto} rows="3" placeholder="Gli esercizi separati da ·, oppure due parole" aria-label="Contenuto dell'allenamento"></textarea>
+        </label>
+      </Sezione>
+
+      <div class="due">
+        <Pulsante variante="grigio" larga onclick={() => (cambio = false)}>Annulla</Pulsante>
+        <Pulsante variante="pieno" larga disabled={!cValido} onclick={salvaCambio}>Salva</Pulsante>
+      </div>
+    {/if}
+
     <Sezione titolo="Quando" piede={s.genere === "palestra"
       ? "La palestra la mattina è chiusa: l'ora predefinita è del pomeriggio. Qui la cambi solo per questo allenamento."
       : "Facoltativo. Il piano lascia i giorni liberi: se lo scegli, la home e i consigli ne tengono conto."}>
@@ -348,10 +517,13 @@
       </Sezione>
     {/if}
 
-    {#if coperto}
+    {#if coperto && !cambio}
       <Pulsante variante="testo" larga onclick={() => { if (s) { ripristinaSlot(s.id); avviso("Rimesso il piano."); } }}>
         Rimetti il piano originale
       </Pulsante>
+      <p class="text-footnote secondario spiega">
+        Torna la seduta scritta nel piano. La spunta e il giorno restano{s.aMano ? ", e la corsa a mano sparisce dai conti" : ""}.
+      </p>
     {/if}
 
     {#if s?.bonus}
@@ -366,6 +538,22 @@
 </Foglio>
 
 <style>
+  /* I campi del cambio. 17px ovunque: sotto, iOS zooma al focus e non
+     torna indietro (CLAUDE.md, regola 9). */
+  .campo {
+    font-size: 17px; text-align: right; outline: none; background: var(--fill-tertiary);
+    border-radius: var(--radius-sm); padding: 5px 9px; color: var(--accento); max-width: 190px;
+  }
+  .campo.corto { max-width: 90px; }
+  .coppia { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-top: 0.5px solid var(--separator); }
+  .mini { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .mini .campo { max-width: none; width: 100%; text-align: left; }
+  .riga-testo { display: flex; flex-direction: column; gap: 3px; padding: var(--space-3) var(--space-4); border-top: 0.5px solid var(--separator); }
+  .riga-testo textarea {
+    font-size: 17px; font-family: inherit; width: 100%; outline: none; resize: vertical;
+    background: var(--fill-tertiary); border-radius: var(--radius-sm); padding: 7px 9px;
+  }
+
   .eroe {
     display: flex; align-items: center; gap: var(--space-4);
     padding: var(--space-4) var(--space-5);

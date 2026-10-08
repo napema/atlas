@@ -81,3 +81,47 @@ peggio di uno che dice «corri».
   pigramente e **solo dentro questo modulo** (regola 8 alla radice).
 - **Un secondo blocco**: oggi `PIANO` è uno solo. Quando ne servirà un altro,
   diventa un elenco di blocchi con l'inizio in `config`.
+
+---
+
+## «Ho fatto un altro allenamento» (8 ottobre 2026)
+
+Il piano è scritto per un mondo in cui decidi tu. Nella settimana vera
+decidono anche gli altri: si va a correre col gruppo e la facile diventa una
+lunga, la palestra è piena e la Lower diventa una Upper, il martedì c'è il
+calcetto. Finché l'app sapeva dire solo «fatto / non fatto», quelle sedute
+finivano in uno dei due modi sbagliati — spuntate come se avessi fatto
+quello che c'era scritto, e allora i km mentono, oppure lasciate aperte, e
+allora la settimana sembra persa quando invece ti sei allenato.
+
+`cambiaSlot(id, { nome, testo, genere, km, secondi, durata, data })` riusa
+**lo stesso scostamento dell'import**, nello stesso record della spunta.
+Nessun secondo posto dove scrivere «cosa ho fatto davvero».
+
+**Se è una corsa, diventa anche una corsa.** Non basta scriverlo sullo slot:
+andamento, tetto della lunga e proiezione sui 5 km leggono `corse[]`. Quindi
+`cambiaSlot` ne crea un record marcato `manuale: true` e legato allo slot.
+`ripristinaSlot` lo toglie.
+
+**La misura scaccia la stima.** Una corsa a mano da 10 km e la stessa corsa
+dall'orologio da 10,14 hanno id diversi — `idCorsa` viene da data+metri — e
+senza una regola sarebbero venti chilometri dove ce n'erano dieci. Quando
+`salvaCorse` riceve una corsa NON manuale, le stime a mano dello stesso
+giorno prendono la lapide e il legame con lo slot passa alla corsa vera.
+
+Due cose che cambiano di conseguenza, e sono facili da dimenticare:
+
+- **Il genere cambia con lo slot.** Una corsa fatta in palestra smette di
+  contare nei «0/4 corse» e nei km previsti. Se restasse `corsa` direbbe che
+  quei chilometri sono ancora da fare.
+- **`gambeIl()` guarda il TESTO, non l'id.** L'id resta `s01-lower` anche
+  dopo il cambio — ci sono appese la spunta e il giorno — quindi guardare
+  solo l'id direbbe «ieri gambe» a chi è stato a nuoto, e bloccherebbe la
+  seduta dura di oggi per niente.
+
+`moduli/allenamenti/prova.js` controlla tutto questo con Deno, in due
+secondi e senza Node:
+
+```
+deno run --location http://localhost/ --allow-read moduli/allenamenti/prova.js
+```
