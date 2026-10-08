@@ -38,7 +38,15 @@
              nessuno ha fatto. */
           spezzata: ((c.giri || []) as any[]).length > 1,
         })),
-      totale: kmTotali(),
+      /* IL TOTALE DEL BLOCCO, non di sempre.
+      
+         Era `kmTotali()` — tutti i chilometri mai registrati — scritto in
+         coda a un grafico che mostra le settimane di QUESTO blocco: 51 km
+         sopra una colonna che ne dice 6, e i due numeri non c'entrano
+         niente l'uno con l'altro. La coda di una sezione riassume quello
+         che la sezione mostra, o e' un numero che non si sa da dove venga. */
+      totale: righe.reduce((t, r) => t + (r.fatti || 0), 0),
+      sempre: kmTotali(),
     };
   });
 
@@ -65,8 +73,9 @@
   </div>
 </Sezione>
 
-<Sezione titolo="Chilometri per settimana">
-  {#snippet coda()}<span class="text-footnote secondario cifre">{km(d.totale)}</span>{/snippet}
+<Sezione titolo="Chilometri per settimana"
+  piede="Barra chiara: il piano. Barra piena: quello che hai corso davvero.{d.sempre > d.totale ? ` In tutto, da quando registri: ${km(d.sempre)}.` : ''}">
+  {#snippet coda()}<span class="text-footnote secondario cifre">{km(d.totale)} nel blocco</span>{/snippet}
   <div class="barre">
     {#each d.righe as r (r.n)}
       <div class="barra" class:ora={r.corrente} style:--fase={fase(r.fase).colore} title={r.sopraIlTetto ? `Oltre il +10%: il tetto era ${km(r.tetto)}` : undefined}>
