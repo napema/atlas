@@ -27,7 +27,7 @@
 </script>
 
 <nav class="barra-schede" aria-label="Schede" style:--n={voci.length}>
-  <div class="capsula">
+  <div class="capsula vetro">
     {#if scelta >= 0}
       <span class="pastiglia" style:--i={scelta} aria-hidden="true"></span>
     {/if}
@@ -58,20 +58,25 @@
     position: relative; pointer-events: auto;
     display: grid; grid-template-columns: repeat(var(--n), 1fr);
     width: 100%; max-width: 440px; height: 62px; padding: 4px;
+    /* Il materiale lo mette `.vetro` (app.css): corpo sfocato, anello in
+       tre pezzi, speculare, ombra. Qui resta solo la forma. */
     border-radius: var(--radius-full);
-    background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(6px) saturate(1.8);
-    backdrop-filter: blur(6px) saturate(1.8);
-    box-shadow: inset 0 0 0 0.5px var(--glass-rim), var(--glass-shadow);
-    isolation: isolate;
   }
   .pastiglia {
     position: absolute; z-index: -1; top: 4px; bottom: 4px; left: 4px;
     width: calc((100% - 8px) / var(--n));
     transform: translateX(calc(100% * var(--i)));
     border-radius: var(--radius-full);
-    background: var(--fill-tertiary);
-    transition: transform var(--duration-normal) var(--ease-spring);
+    /* GRIGIA, NON TINTA. Provata con la tinta della scheda: l'arancio di
+       Finanze al venti per cento sopra un vetro scuro non e' arancione, e'
+       fango — e lo stesso vale per il rosso e per l'indaco. Il colore della
+       scheda si legge dove ha sempre vissuto, sull'icona e sull'etichetta;
+       la pastiglia e' una lastrina chiara appoggiata sulla barra, con il
+       suo anello, e basta quello a dire «sei qui». */
+    background: var(--fill-secondary);
+    box-shadow: inset 0 0 0 0.5px var(--vetro-rim-su);
+    transition: transform var(--duration-normal) var(--ease-spring),
+      background-color var(--duration-normal) var(--ease-default);
   }
   .scheda {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;

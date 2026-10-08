@@ -440,7 +440,7 @@
         {@const pezzi = String(x.dati?.valore ?? "—").split(/\s*\+\s*/).filter(Boolean)}
         {@const v = pezzi[0] ?? "—"}
         {@const altri = pezzi.length - 1}
-        <a class="quadrata lastra" class:fatta={x.dati?.fatto === true}
+        <a class="quadrata lastra premibile" class:fatta={x.dati?.fatto === true}
            href={x.dati?.azione?.rotta || `#/${x.voce.id}`}
            style:--colore={x.voce.accento}>
           <span class="q-alto">
@@ -558,6 +558,8 @@
     color: inherit;
     transition: transform var(--duration-fast) var(--ease-spring);
   }
+  /* `.premibile` fa gia' la deformazione: qui resta solo la scala piu'
+     marcata, perche' una tessera e' grande e a 0,975 non si sente. */
   .quadrata:active { transform: scale(0.97); }
 
   .q-alto { display: flex; align-items: flex-start; justify-content: space-between; }

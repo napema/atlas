@@ -94,7 +94,7 @@
 <!-- 1. L'OBIETTIVO ------------------------------------------------------- -->
 {#if d.obi}
   <Sezione>
-    <button type="button" class="blocco obi" data-tono={d.obi.inLinea ? "" : "avviso"} onclick={() => apri({ tipo: "obiettivo" })}>
+    <button type="button" class="blocco obi premibile" data-tono={d.obi.inLinea ? "" : "avviso"} onclick={() => apri({ tipo: "obiettivo" })}>
       <span class="testa">
         <span class="eti">{d.obi.nome.toUpperCase()} · {gm(d.obi.data)}</span>
         <span class="eti-dx cifre">{plurale(d.obi.giorni, "giorno", "giorni")}</span>
@@ -310,13 +310,21 @@
   .all[data-tono="avviso"] { color: var(--color-orange); }
 
   .righe { display: flex; flex-direction: column; gap: 2px; }
-  .due { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+  /* A 375 punti «177,30 € fino a gio 22 · 15 giorni» e «piano 17,83 €/g»
+     non ci stanno sulla stessa riga: il primo andava a capo in mezzo, e
+     «giorni» restava da solo sotto. Il primo non va a capo mai; quando non
+     ci sta, e' il secondo a scendere, intero e allineato a destra. */
+  .due { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+  .due > :first-child { white-space: nowrap; }
+  .due > :last-child { margin-left: auto; }
   .secondario { color: var(--label-secondary); }
   .male { color: var(--color-red); }
   .avviso { color: var(--color-orange); }
 
   /* --- obiettivo --- */
-  .obi:active { background: var(--fill-quaternary); }
+  /* La pressione la fa `.premibile` (app.css): la lastra cede di un
+     filo e la luce si alza. Un `background` sull'elemento non si vedrebbe
+     — il materiale gli sta davanti. */
   .obi-cifre { display: flex; align-items: baseline; gap: 6px; }
   .obi-cifre b { font-family: var(--font-display); font-size: 30px; line-height: 34px; font-weight: var(--weight-bold); }
   .barra { height: 6px; border-radius: 3px; overflow: hidden; background: var(--fill-tertiary); margin: 4px 0 2px; }

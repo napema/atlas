@@ -151,24 +151,40 @@
      ricalcolata a ogni fotogramma di scorrimento, per niente.) */
   .barra::before {
     content: ""; position: absolute; inset: 0; z-index: -1;
-    background: var(--glass-bg);
+    background: var(--vetro-velo);
+    -webkit-backdrop-filter: blur(24px) saturate(var(--vetro-croma));
+    backdrop-filter: blur(24px) saturate(var(--vetro-croma));
     border-bottom: 0.5px solid var(--separator);
     opacity: 0;
     transition: opacity var(--duration-fast) var(--ease-default);
   }
   .barra.compatta::before {
     opacity: 1;
-    /* Il vetro da solo non copriva: scorrendo, il titolo piccolo finiva
-       sopra la cifra della carta sotto e si leggevano due testi uno
-       sull'altro. Nemmeno al 94 per cento bastava — una cifra bianca
-       grande si vedeva lo stesso — quindi qui e' opaca, con la sua
-       riga sottile sotto, come la barra di iOS quando il titolo si
-       stringe. Il vetro di ATLAS sta nelle carte e nella barra delle
-       schede, dove dietro c'e' davvero qualcosa; qui dietro c'e' solo il
-       testo che questa barra esiste per coprire, e la sfocatura su iOS
-       costava anche la nitidezza dell'ingranaggio. */
-    background: var(--bg-grouped-primary);
   }
+
+  /* IL VELO PROGRESSIVO SOTTO LA BARRA.
+
+     La barra copre i primi 44 punti; il problema e' il punto in cui
+     finisce, dove prima il contenuto spuntava di netto da sotto una riga
+     sottile. Qui sotto la barra c'e' una fascia di 20 punti in cui la
+     sfocatura sfuma a zero: e' il `GlassScrollEdges` dei kit nativi, e in
+     CSS e' un velo mascherato con un gradiente.
+
+     La maschera e' su DUE assi di nulla: solo verticale. E la fascia e'
+     corta — 20 punti — perche' una sfumatura lunga su un testo che scorre
+     si legge come una macchia che lo segue. */
+  .barra::after {
+    content: ""; position: absolute; z-index: -1;
+    left: 0; right: 0; top: 100%; height: 20px;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    -webkit-mask-image: linear-gradient(180deg, #000, transparent);
+    mask-image: linear-gradient(180deg, #000, transparent);
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-default);
+    pointer-events: none;
+  }
+  .barra.compatta::after { opacity: 1; }
 
   .barra-riga {
     height: var(--navbar-height);
@@ -213,14 +229,13 @@
      quando il titolo grande è scorso via, che è l'unico momento in cui lì
      hanno di nuovo un titolo accanto. */
   .azioni-titolo { display: flex; flex: none; align-items: center; gap: var(--space-2); }
-  /* Niente vetro qui: sotto c'è il fondo della pagina, non c'è niente da
-     sfocare — e su iPhone `backdrop-filter` ricampiona il contenuto del
-     bottone, cioè sgrana l'icona che sta dentro. */
-  .azioni-titolo :global(.vetro) {
-    -webkit-backdrop-filter: none; backdrop-filter: none;
-    background: var(--fill-tertiary);
-    box-shadow: none;
-  }
+  /* IL VETRO QUI ADESSO SI VEDE, e prima no.
+
+     Era spento, con due ragioni buone: sotto c'era il fondo pieno della
+     pagina (niente da sfocare) e su iPhone il filtro ricampionava il
+     contenuto del bottone, sgranando l'icona dentro. Sono cadute entrambe:
+     sotto c'e' la scena, e il filtro sta su uno pseudo-elemento dietro
+     l'icona invece che sul bottone. */
   .barra:not(.compatta) .azioni-barra { visibility: hidden; }
   /* Sul telefono: una colonna, nell'ordine strumenti → riepilogo → resto. */
   .contenuto, .strumenti, .laterale, .principale { display: flex; flex-direction: column; gap: var(--space-6); }

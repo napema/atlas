@@ -158,18 +158,41 @@
        prendono la ricetta comune senza sapere di essere in un foglio. */
     --bg-grouped-primary: var(--foglio-fondo);
     --bg-grouped-secondary: var(--foglio-lastra);
-    /* L'ombra della lastra e' tarata per staccare dal nero della pagina.
-       Qui il fondo e' gia' grigio e i due piani sono vicini: la stessa
-       ombra farebbe una pozza scura attorno a ogni riquadro. */
+    /* DENTRO UN FOGLIO IL VETRO CAMBIA MESTIERE.
+
+       Fuori, una lastra sta sopra la scena e la sfoca: e' quello che la fa
+       sembrare vetro. Dentro un foglio, sotto non c'e' la scena — c'e' il
+       fondo del foglio, che e' un colore pieno — quindi non c'e' niente da
+       sfocare e il filtro costerebbe un passaggio di compositing per
+       niente. Qui il velo diventa un velo CHIARO sopra quel fondo: lo
+       stesso gradino di prima, senza filtro.
+
+       E l'ombra si abbassa: quella di fuori e' tarata per staccare dal
+       quasi-nero della scena, e qui i due piani sono vicini — farebbe una
+       pozza scura attorno a ogni riquadro. */
+    --vetro-velo: var(--foglio-lastra);
+    --vetro-sfoca: 0px;
+    --vetro-croma: 1;
+    --vetro-lum: 1;
+    --vetro-ombra: 0 1px 2px rgba(0, 0, 0, 0.22);
     --lastra-ombra: 0 1px 2px rgba(0, 0, 0, 0.22);
 
     position: fixed; inset: auto 0 0 0;
     width: 100%; max-width: 640px; max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 10px);
     margin: 0 auto; padding: 0; border: 0;
-    background: var(--foglio-fondo);
+    /* IL FOGLIO E' L'UNICA SUPERFICIE CHE HA DAVVERO LA PAGINA DIETRO:
+       sotto ci sono il contenuto e la scena, oscurati dal velo. Quindi qui
+       il vetro si vede, ed e' il posto in cui si vede meglio di tutti.
+       Non usa `.vetro` perche' un <dialog> nel top layer non puo' avere
+       pseudo-elementi dietro di se' — gli manca la scena da cui staccarsi —
+       e il filtro va messo sull'elemento. Il contenuto non ne soffre: il
+       foglio e' un contenitore, il testo sta nelle carte dentro. */
+    background: color-mix(in srgb, var(--foglio-fondo) 86%, transparent);
+    -webkit-backdrop-filter: blur(30px) saturate(1.6);
+    backdrop-filter: blur(30px) saturate(1.6);
     color: var(--label-primary);
     border-radius: var(--radius-glass) var(--radius-glass) 0 0;
-    box-shadow: var(--shadow-sheet);
+    box-shadow: inset 0 0.5px 0 var(--vetro-rim-su), var(--shadow-sheet);
     overflow: hidden;
     transform: translateY(var(--spinta, 0px));
     /* Solo `transform`. Con `display`/`overlay` in `allow-discrete` il

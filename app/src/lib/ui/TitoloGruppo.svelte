@@ -48,7 +48,7 @@
 
   {#if aperto}
     <button type="button" class="velo" aria-label="Chiudi" onclick={() => (aperto = false)} transition:fade={{ duration: 150 }}></button>
-    <div class="menu" role="menu" transition:scale={{ start: 0.9, duration: 180, opacity: 0 }}>
+    <div class="menu vetro" role="menu" transition:scale={{ start: 0.9, duration: 180, opacity: 0 }}>
       {#each membri as m (m.id)}
         <button type="button" role="menuitemradio" aria-checked={m.id === id} class="voce" onclick={() => scegli(m.id)}>
           <span class="tessera" style:--colore={m.accento}><Icona nome={m.icona} misura={17} tratto={2} /></span>
@@ -76,10 +76,6 @@
     position: absolute; z-index: 41; top: calc(100% + 6px); left: 0;
     min-width: 240px; padding: 6px;
     border-radius: var(--radius-xxl);
-    background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(6px) saturate(1.8);
-    backdrop-filter: blur(6px) saturate(1.8);
-    box-shadow: inset 0 0 0 0.5px var(--glass-rim), var(--glass-shadow);
     transform-origin: top left;
   }
   .voce {

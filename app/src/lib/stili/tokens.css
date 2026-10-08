@@ -1,30 +1,51 @@
 /* =========================================================================
-   ATLAS — token di iOS 27.
+   ATLAS — i token.
 
-   Fonte: seunghan91/ios27-design-system (MIT).
+   Tre strati, e vanno letti in quest'ordine:
 
-   I NOMI vengono dal pacchetto Svelte del repo (`packages/svelte/tokens.css`)
-   e sono il vocabolario di sistema: `--label-primary`, `--bg-grouped-*`,
-   `--fill-*`, `--separator`. Chi conosce UIKit li legge senza dizionario.
+     1. I COLORI DI SISTEMA. Nomi e valori di iOS 27, misurati
+        (`seunghan91/ios27-design-system`, MIT). `--label-primary`,
+        `--fill-*`, `--separator`, le tinte degli accenti. Chi conosce UIKit
+        li legge senza dizionario, e il colore di un significato — verde
+        «fatto», rosso «male» — sta qui e solo qui.
 
-   I VALORI vengono invece dai JSON MISURATI dello stesso repo
-   (`packages/tokens/src/*.json`), non dal CSS del pacchetto. Il pacchetto è
-   rimasto indietro: nello scuro dà ancora il blu #0a84ff e il separatore
-   rgba(84,84,88,.65) di iOS 18, mentre il kit 27.0.2 misurato dà #0091ff e
-   rgba(255,255,255,.17). Dove i due non coincidono vince la misura.
+     2. LA SCENA. Il fondo della app: non un colore, un luogo. È lo strato
+        nuovo, e senza di lui il terzo non esisterebbe.
+
+     3. IL MATERIALE. Il vetro: corpo, anello, luce, speculare, ombra.
+
+   PERCHÉ LA SCENA VIENE PRIMA DEL VETRO.
+
+   Il vetro non è un colore: è un modo di lasciar passare quello che ha
+   dietro. Su una pagina NERA PIENA non ha niente da lasciar passare, e
+   qualunque ricetta tu gli dia resta un rettangolo grigio — per questo
+   fino a ieri le carte di ATLAS avevano il vetro DIPINTO, e la decisione
+   era giusta: un `backdrop-filter` sopra il nulla costa un filtro a
+   schermo intero per non mostrare nulla.
+
+   Quindi la prima cosa che serviva non era una ricetta migliore: era
+   qualcosa dietro. La scena è quel qualcosa — due pozze di luce molto
+   tenui, una della tinta del modulo in cui sei, su un fondo che non è più
+   nero assoluto. Costa tre gradienti fissi, non si anima, e da lì in poi
+   il vetro è vetro davvero: sfoca, satura, rifrange ai bordi, e cambia
+   atmosfera quando passi da Finanze a Training.
+
+   È anche il marchio. iOS dà i mattoni e le regole, non un'identità: una
+   app di carte grigie su nero è la schermata Impostazioni di chiunque.
+   L'atmosfera che si sposta col modulo è la cosa che ATLAS ha e le altre
+   no, e non costa una riga di contenuto.
 
    Il tema lo sceglie `data-tema` su <html>: "auto" segue il telefono,
-   "scuro" e "chiaro" lo forzano. Il nome è quello di sempre di ATLAS, così
-   la preferenza salvata sul dispositivo vale anche qui.
+   "scuro" e "chiaro" lo forzano.
    ========================================================================= */
 
-/* ---------------------------------------------------------------- scuro -- */
+/* ======================================================= SCURO ========== */
 
 :root,
 :root[data-tema="scuro"] {
   color-scheme: dark;
 
-  /* colori di sistema — accents, valori dark del kit 27.0.2 */
+  /* ---------------------------------------------- 1. colori di sistema -- */
   --color-red:    #ff4245;
   --color-orange: #ff9230;
   --color-yellow: #ffd600;
@@ -45,84 +66,134 @@
   --label-tertiary:   rgba(235, 235, 245, 0.30);
   --label-quaternary: rgba(235, 235, 245, 0.16);
 
-  /* fondi raggruppati: la pagina è nera, i gruppi salgono.
-
-     #1c1c1e era il grigio di iOS 18 ed è giusto come VALORE, ma steso piatto
-     su una carta grande contro il nero fa un rettangolo spento — «sa di cosa
-     scrausa», ed è vero. Due correzioni, nessuna delle quali esce dalla
-     gamma di Apple: il grigio sale di un punto sul blu (#1c1c20 invece di
-     #1c1c1e), che è quel filo di freddo che lo separa dal marroncino; e
-     soprattutto la carta smette di essere un colore e diventa un
-     MATERIALE — vedi `--lastra-*` più sotto. */
-  --bg-grouped-primary:   #000000;
-  --bg-grouped-secondary: #1c1c20;
-  --bg-grouped-tertiary:  #2c2c31;
-  --bg-elevated:          #2c2c31;   /* fogli e menu, sopra un gruppo */
-
   /* riempimenti: veli grigi che prendono il colore di ciò che hanno sotto */
   --fill-primary:    rgba(120, 120, 128, 0.36);
   --fill-secondary:  rgba(120, 120, 128, 0.32);
   --fill-tertiary:   rgba(118, 118, 128, 0.24);
   --fill-quaternary: rgba(118, 118, 128, 0.18);
 
-  --separator:        rgba(255, 255, 255, 0.17);
-  --separator-opaque: #38383a;
+  --separator:        rgba(255, 255, 255, 0.14);
+  --separator-opaque: #35353a;
 
-  /* LIQUID GLASS «regular», dalla ricetta web misurata del repo.
-     Sfocatura 6px e NON 20 o 40: il nativo misurato è sigma 5,4pt e
-     `blur()` prende il raggio come sigma (5,4 / 0,9). Le riproduzioni web
-     sbagliano di un fattore quattro. `saturate(1.8)` perché il materiale
-     alza la croma di ciò che ha sotto: senza viene fuori una patina.
-     Il bordo è un anello grigio CHIARO, non una riga scura. */
-  --glass-bg:       rgba(26, 26, 26, 0.70);
-  --glass-rim:      rgba(166, 166, 166, 0.45);
-  --glass-shadow:   0 8px 48px rgba(0, 0, 0, 0.45);
-  --shadow-sheet:   0 -8px 48px rgba(0, 0, 0, 0.5);
+  /* --------------------------------------------------------- 2. scena -- */
+  /*
+     NON È NERO. `#08080c` invece di `#000000`, ed è la differenza fra una
+     app di carte grigie e una app di vetro: su nero assoluto il vetro non
+     ha niente da rifrangere e l'anello di mezzo pixel è l'unica cosa che
+     stacca la carta dal fondo.
 
-  /* LA LASTRA — la ricetta UNICA di ogni carta di ATLAS.
+     Un filo di blu dentro il nero (08 08 0c, non 0a 0a 0a) perché il grigio
+     neutro su un OLED vira al verde, e tutte le tinte di accento di iOS
+     sono fredde: su un fondo neutro il rosso e l'arancio sembrano sporchi.
+  */
+  --scena-fondo: #08080c;
 
-     Il vetro vero (`backdrop-filter`) vive solo dove dietro scorre davvero
-     qualcosa: la barra delle schede, il toast, le testate appiccicate. Su
-     una carta appoggiata al fondo pieno della pagina non c'è niente da
-     sfocare, e su iPhone quel filtro ricampiona il CONTENUTO dell'elemento —
-     sgrana l'icona e il numero dentro la carta. Quindi qui il vetro è
-     DIPINTO, ed è sempre lo stesso: un fondo, una luce che cade dall'alto,
-     un anello chiaro di mezzo pixel, un'ombra.
+  /* LE DUE POZZE DI LUCE.
 
-     Attenzione all'ombra: qui la pagina è NERA, e un'ombra nera su nero non
-     stacca niente. A separare la carta dal fondo è l'anello. L'ombra serve
-     dentro un foglio, dove il fondo è grigio, e sul tema chiaro, dove fa
-     tutto il lavoro — e sta qui perché la ricetta è una sola.
+     `--scena-forza` e' una PERCENTUALE, non un colore, e la miscela con
+     l'accento la fa `.scena` in app.css. Non e' pignoleria: `color-mix()`
+     dentro una custom property si risolve dove la property e' DEFINITA. Qui
+     siamo su `:root`, dove `--accento` non esiste ancora — lo mette il
+     guscio, piu' in basso — quindi vincerebbe sempre il ripiego blu e la
+     scena resterebbe blu in ogni modulo. (Trovato guardando lo schermo:
+     Finanze e' arancione e la pozza era azzurra.)
 
-     È questa ricetta a rendere coerente la app: o una superficie è una
-     lastra e le ha tutte e quattro, o non è una lastra. Nessuna carta si
-     inventa un fondo suo. */
-  --lastra-fondo:  var(--bg-grouped-secondary);
-  --lastra-luce:   rgba(255, 255, 255, 0.05);
-  --lastra-rim:    rgba(255, 255, 255, 0.08);
-  --lastra-ombra:  0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.3);
-  /* I riquadri DENTRO una lastra: un gradino sopra, senza anello (due
-     anelli concentrici a mezzo pixel fanno moiré sul retina).
+     Tredici per cento. Sopra il venti diventa una gelatina colorata —
+     «sembra un circo» — e sotto il dieci, spalmato su mille pixel di
+     gradiente, non si vede affatto. */
+  --scena-forza:   13%;
+  --scena-pozza-2: rgba(86, 116, 190, 0.09);
+  /* L'orizzonte: la riga chiara in cima, dove in un'app nativa la luce
+     entra dalla status bar. */
+  --scena-orizzonte: rgba(255, 255, 255, 0.045);
+  /* La grana. Un velo all'1,8%: senza, due gradienti larghi su un OLED
+     fanno fasce visibili (banding), e le fasce si notano molto più della
+     grana. */
+  --scena-grana: 0.018;
 
-     È `--fill-quaternary` e non un valore nuovo: quello È il ruolo che iOS
-     dà a questo velo, e mezza app lo usava già così. Due token diversi per
-     lo stesso mestiere sono esattamente l'incoerenza che stiamo togliendo;
-     l'alias serve solo a dire, dove si legge, che quella cosa è dentro una
-     lastra. */
+  /* ------------------------------------------------------ 3. materiale -- */
+  /*
+     IL CORPO. Il velo è scuro e TRASPARENTE: è lui che rende il vetro un
+     vetro e non una lastra di plastica. 0.52 è il punto in cui sotto si
+     intravede la scena e sopra il testo bianco resta a contrasto pieno.
+
+     La sfocatura è 20px e non 6. Il 6 veniva dalla misura del nativo (sigma
+     5,4pt) e sul nativo è giusto, perché lì dietro c'è una foto o una
+     lista: il dettaglio da sciogliere è fitto. Qui dietro c'è un gradiente
+     larghissimo, e sfocare di 6px un gradiente non si vede affatto. Serve
+     un raggio dell'ordine della pozza di luce, non del pixel.
+
+     `saturate` oltre 1 perché il materiale ALZA la croma di ciò che ha
+     sotto — è la cosa che distingue il vetro di Apple da una patina grigia.
+  */
+  --vetro-velo:        rgba(20, 21, 28, 0.52);
+  --vetro-velo-chiaro: rgba(22, 23, 30, 0.42);   /* material «clear» */
+  --vetro-sfoca:       20px;
+  --vetro-sfoca-bordo: 44px;
+  --vetro-croma:       1.9;
+  --vetro-lum:         1;
+
+  /* L'ANELLO, in tre pezzi, e sono tre cose diverse.
+
+     `su`  la hairline chiara sul bordo ALTO: è la luce che si posa sullo
+           spessore del vetro. È quella che fa sembrare la lastra spessa.
+     `giu` la hairline scura sul bordo BASSO: l'ombra propria dello
+           spessore. Senza, la carta galleggia senza peso.
+     `rim` l'anello intero, debolissimo, che chiude la forma.
+
+     Un anello solo, uniforme, è il bordo di un rettangolo. Tre sono un
+     oggetto illuminato dall'alto, che è l'unica cosa che l'occhio legge
+     come «vetro». */
+  --vetro-rim-su:  rgba(255, 255, 255, 0.26);
+  --vetro-rim:     rgba(255, 255, 255, 0.07);
+  --vetro-rim-giu: rgba(0, 0, 0, 0.22);
+
+  /* La luce che scende dall'alto e il punto speculare nell'angolo: il vetro
+     vero concentra la luce dove la superficie curva, cioè sugli spigoli
+     arrotondati. */
+  --vetro-luce:      rgba(255, 255, 255, 0.055);
+  --vetro-specular:  rgba(255, 255, 255, 0.10);
+
+  /* L'ombra. Su questo fondo quasi nero un'ombra nera fa poco: stacca
+     l'anello. Resta perché dentro un foglio il fondo è più chiaro, e lì
+     lavora. */
+  --vetro-ombra: 0 1px 2px rgba(0, 0, 0, 0.45), 0 12px 36px rgba(0, 0, 0, 0.28);
+
+  /* --------------------------------------- compatibilità coi vecchi nomi */
+  /* Mezza app scrive ancora `--glass-bg` e `--lastra-fondo`. Restano, e
+     puntano al materiale nuovo: così una carta che non è stata toccata non
+     diventa l'unica carta diversa. */
+  --bg-grouped-primary:   var(--scena-fondo);
+  --bg-grouped-secondary: #16171e;
+  --bg-grouped-tertiary:  #22232c;
+  --bg-elevated:          #22232c;
+
+  --glass-bg:     var(--vetro-velo-chiaro);
+  --glass-rim:    var(--vetro-rim-su);
+  --glass-shadow: var(--vetro-ombra);
+  --shadow-sheet: 0 -8px 48px rgba(0, 0, 0, 0.5);
+
+  --lastra-fondo:  var(--vetro-velo);
+  --lastra-luce:   var(--vetro-luce);
+  --lastra-rim:    var(--vetro-rim);
+  --lastra-ombra:  var(--vetro-ombra);
   --lastra-dentro: var(--fill-quaternary);
 
   /* il cursore del controllo a segmenti e la manopola dell'interruttore */
-  --thumb:          #636366;
-  --thumb-shadow:   0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
-  --dim:            rgba(0, 0, 0, 0.48);   /* il velo dietro un foglio */
-  /* Un foglio sale di un gradino: il suo fondo è il grigio dei gruppi e i
-     suoi gruppi salgono ancora. Nero su nero, dentro un foglio, non si legge. */
-  --foglio-fondo:   #1c1c20;
-  --foglio-lastra:  #2c2c31;
+  --thumb:        #6a6a70;
+  --thumb-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 0, 0, 0.2);
+  --dim:          rgba(0, 0, 0, 0.5);   /* il velo dietro un foglio */
+  /* Un foglio sale di un gradino: il suo fondo è più chiaro della scena, e
+     i suoi gruppi salgono ancora. */
+  --foglio-fondo:  #15161d;
+  --foglio-lastra: rgba(255, 255, 255, 0.055);
 }
 
-/* --------------------------------------------------------------- chiaro --
-   Misurato, non invertito: la pagina è grigia e i gruppi bianchi. */
+/* ======================================================= CHIARO ========= */
+/* Misurato, non invertito. E la pagina NON è il grigio piatto #f2f2f7: il
+   vetro chiaro su grigio piatto è un rettangolo bianco su un rettangolo
+   grigio. Anche qui c'è una scena, con le pozze più tenui — nel chiaro il
+   contrasto disponibile è meno e una pozza al 9% diventa una macchia. */
 
 :root[data-tema="chiaro"] {
   color-scheme: light;
@@ -146,39 +217,67 @@
   --label-tertiary:   rgba(60, 60, 67, 0.30);
   --label-quaternary: rgba(60, 60, 67, 0.18);
 
-  --bg-grouped-primary:   #f2f2f7;
-  --bg-grouped-secondary: #ffffff;
-  --bg-grouped-tertiary:  #f2f2f7;
-  --bg-elevated:          #ffffff;
-
   --fill-primary:    rgba(120, 120, 128, 0.20);
   --fill-secondary:  rgba(120, 120, 128, 0.16);
   --fill-tertiary:   rgba(118, 118, 128, 0.12);
   --fill-quaternary: rgba(116, 116, 128, 0.08);
 
-  --separator:        rgba(0, 0, 0, 0.12);
+  --separator:        rgba(0, 0, 0, 0.10);
   --separator-opaque: #c6c6c8;
 
-  --glass-bg:     rgba(255, 255, 255, 0.70);
-  --glass-rim:    rgba(219, 219, 219, 0.90);
-  --glass-shadow: 0 8px 48px rgba(0, 0, 0, 0.25);
-  --shadow-sheet: 0 -8px 48px rgba(0, 0, 0, 0.18);
+  --scena-fondo:     #eceef4;
+  --scena-forza:     16%;
+  --scena-pozza-2:   rgba(255, 255, 255, 0.5);
+  --scena-orizzonte: rgba(255, 255, 255, 0.55);
+  --scena-grana:     0.012;
 
-  /* Nel chiaro la carta è bianca su grigio: la luce che cade dall'alto non
-     si vedrebbe, e il lavoro lo fanno l'anello e l'ombra. */
-  --lastra-fondo:  var(--bg-grouped-secondary);
-  --lastra-luce:   rgba(255, 255, 255, 0);
-  --lastra-rim:    rgba(0, 0, 0, 0.055);
-  --lastra-ombra:  0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
+  /* Nel chiaro il velo è BIANCO e più coprente: sotto il vetro chiaro passa
+     il grigio della scena, e un velo troppo trasparente lascia il testo
+     nero su un fondo che varia — il contrasto cambia a seconda di dove sta
+     la carta. 0.66 è il punto in cui la scena si intravede e il testo resta
+     leggibile su tutta la superficie. */
+  --vetro-velo:        rgba(255, 255, 255, 0.78);
+  --vetro-velo-chiaro: rgba(255, 255, 255, 0.66);
+  --vetro-sfoca:       20px;
+  --vetro-sfoca-bordo: 44px;
+  --vetro-croma:       1.6;
+  --vetro-lum:         1.04;
+
+  --vetro-rim-su:  rgba(255, 255, 255, 0.9);
+  --vetro-rim:     rgba(0, 0, 0, 0.055);
+  --vetro-rim-giu: rgba(0, 0, 0, 0.055);
+
+  --vetro-luce:     rgba(255, 255, 255, 0.5);
+  --vetro-specular: rgba(255, 255, 255, 0.65);
+
+  --vetro-ombra: 0 1px 2px rgba(16, 20, 40, 0.06), 0 10px 30px rgba(16, 20, 40, 0.08);
+
+  --bg-grouped-primary:   var(--scena-fondo);
+  --bg-grouped-secondary: #ffffff;
+  --bg-grouped-tertiary:  #f4f5f9;
+  --bg-elevated:          #ffffff;
+
+  --glass-bg:     var(--vetro-velo-chiaro);
+  --glass-rim:    var(--vetro-rim-su);
+  --glass-shadow: var(--vetro-ombra);
+  --shadow-sheet: 0 -8px 48px rgba(16, 20, 40, 0.14);
+
+  --lastra-fondo:  var(--vetro-velo);
+  --lastra-luce:   var(--vetro-luce);
+  --lastra-rim:    var(--vetro-rim);
+  --lastra-ombra:  var(--vetro-ombra);
   --lastra-dentro: var(--fill-quaternary);
 
   --thumb:        #ffffff;
   --thumb-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
-  --dim:          rgba(0, 0, 0, 0.2);
-  --foglio-fondo:  #f2f2f7;
-  --foglio-lastra: #ffffff;
+  --dim:          rgba(16, 20, 40, 0.22);
+  --foglio-fondo:  #eceef4;
+  --foglio-lastra: rgba(255, 255, 255, 0.72);
 }
 
+/* Il chiaro di sistema, quando il tema è "auto". Le stesse righe: un
+   `@media` non può ereditare da un selettore di attributo, e una `@import`
+   di un terzo file per non ripeterle costerebbe un giro di rete in più. */
 @media (prefers-color-scheme: light) {
   :root:not([data-tema="scuro"]):not([data-tema="chiaro"]) {
     color-scheme: light;
@@ -187,23 +286,67 @@
     --color-indigo: #6155f5; --color-purple: #cb30e0; --color-pink: #ff2d55; --color-brown: #ac7f5e;
     --label-primary: #000000; --label-secondary: rgba(60, 60, 67, 0.60);
     --label-tertiary: rgba(60, 60, 67, 0.30); --label-quaternary: rgba(60, 60, 67, 0.18);
-    --bg-grouped-primary: #f2f2f7; --bg-grouped-secondary: #ffffff;
-    --bg-grouped-tertiary: #f2f2f7; --bg-elevated: #ffffff;
     --fill-primary: rgba(120, 120, 128, 0.20); --fill-secondary: rgba(120, 120, 128, 0.16);
     --fill-tertiary: rgba(118, 118, 128, 0.12); --fill-quaternary: rgba(116, 116, 128, 0.08);
-    --separator: rgba(0, 0, 0, 0.12); --separator-opaque: #c6c6c8;
-    --glass-bg: rgba(255, 255, 255, 0.70); --glass-rim: rgba(219, 219, 219, 0.90);
-    --glass-shadow: 0 8px 48px rgba(0, 0, 0, 0.25); --shadow-sheet: 0 -8px 48px rgba(0, 0, 0, 0.18);
-    --lastra-fondo: var(--bg-grouped-secondary); --lastra-luce: rgba(255, 255, 255, 0);
-    --lastra-rim: rgba(0, 0, 0, 0.055);
-    --lastra-ombra: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
+    --separator: rgba(0, 0, 0, 0.10); --separator-opaque: #c6c6c8;
+
+    --scena-fondo: #eceef4;
+    --scena-forza: 16%;
+    --scena-pozza-2: rgba(255, 255, 255, 0.5);
+    --scena-orizzonte: rgba(255, 255, 255, 0.55);
+    --scena-grana: 0.012;
+
+    --vetro-velo: rgba(255, 255, 255, 0.78); --vetro-velo-chiaro: rgba(255, 255, 255, 0.66);
+    --vetro-croma: 1.6; --vetro-lum: 1.04;
+    --vetro-rim-su: rgba(255, 255, 255, 0.9); --vetro-rim: rgba(0, 0, 0, 0.055);
+    --vetro-rim-giu: rgba(0, 0, 0, 0.055);
+    --vetro-luce: rgba(255, 255, 255, 0.5); --vetro-specular: rgba(255, 255, 255, 0.65);
+    --vetro-ombra: 0 1px 2px rgba(16, 20, 40, 0.06), 0 10px 30px rgba(16, 20, 40, 0.08);
+
+    --bg-grouped-primary: var(--scena-fondo); --bg-grouped-secondary: #ffffff;
+    --bg-grouped-tertiary: #f4f5f9; --bg-elevated: #ffffff;
+    --glass-bg: var(--vetro-velo-chiaro); --glass-rim: var(--vetro-rim-su);
+    --glass-shadow: var(--vetro-ombra); --shadow-sheet: 0 -8px 48px rgba(16, 20, 40, 0.14);
+    --lastra-fondo: var(--vetro-velo); --lastra-luce: var(--vetro-luce);
+    --lastra-rim: var(--vetro-rim); --lastra-ombra: var(--vetro-ombra);
     --lastra-dentro: var(--fill-quaternary);
-    --thumb: #ffffff; --dim: rgba(0, 0, 0, 0.2);
-    --foglio-fondo: #f2f2f7; --foglio-lastra: #ffffff;
+    --thumb: #ffffff; --dim: rgba(16, 20, 40, 0.22);
+    --foglio-fondo: #eceef4; --foglio-lastra: rgba(255, 255, 255, 0.72);
   }
 }
 
-/* ------------------------------------------------------ tipografia e misure */
+/* ============================================ TRASPARENZA RIDOTTA ======= */
+/*
+   Chi chiede «Riduci trasparenza» nelle Impostazioni di iOS non chiede un
+   effetto più leggero: chiede di NON averlo. Qui il vetro torna dipinto —
+   un fondo pieno, l'anello, l'ombra — ed è la stessa ricetta che ATLAS
+   aveva fino a ieri, che funzionava: non è un ripiego, è la versione opaca.
+
+   Vale anche per chi non ha `backdrop-filter`: vedi `@supports` in app.css.
+*/
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --vetro-sfoca: 0px;
+    --vetro-sfoca-bordo: 0px;
+    --vetro-croma: 1;
+    --vetro-lum: 1;
+    --scena-forza: 0%;
+    --scena-pozza-2: transparent;
+    --scena-grana: 0;
+  }
+  :root, :root[data-tema="scuro"] {
+    --vetro-velo: #16171e;
+    --vetro-velo-chiaro: #22232c;
+  }
+  :root[data-tema="chiaro"] { --vetro-velo: #ffffff; --vetro-velo-chiaro: #ffffff; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-tema="scuro"]):not([data-tema="chiaro"]) {
+      --vetro-velo: #ffffff; --vetro-velo-chiaro: #ffffff;
+    }
+  }
+}
+
+/* ============================================ tipografia e misure ======= */
 
 :root {
   /* «Apple Color Emoji» prima (c'è già su iPhone e Mac, e non costa niente),
@@ -216,9 +359,16 @@
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace, "Apple Color Emoji", "ATLAS Emoji";
   --font-emoji: "Apple Color Emoji", "ATLAS Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 
-  /* Gli undici stili, con corpo · interlinea · crenatura misurati. */
-  --text-large-title: 34px; --lh-large-title: 41px; --ls-large-title: 0.4px;
-  --text-title1: 28px;      --lh-title1: 34px;      --ls-title1: 0.38px;
+  /* Gli undici stili, con corpo · interlinea · crenatura misurati.
+
+     IL TITOLO GRANDE È L'UNICO RITOCCATO: crenatura −0,6 invece di +0,4.
+     iOS apre i titoli grandi perché stanno su un fondo piatto e devono
+     respirare; su vetro, con una pozza di luce dietro, un titolo aperto si
+     sfilaccia. Stretto diventa un blocco, e un blocco su vetro si legge
+     come un'etichetta incisa. È la sola firma tipografica di ATLAS, e
+     costa un valore. */
+  --text-large-title: 34px; --lh-large-title: 40px; --ls-large-title: -0.6px;
+  --text-title1: 28px;      --lh-title1: 34px;      --ls-title1: -0.4px;
   --text-title2: 22px;      --lh-title2: 28px;      --ls-title2: -0.26px;
   --text-title3: 20px;      --lh-title3: 25px;      --ls-title3: -0.45px;
   --text-headline: 17px;    --lh-headline: 22px;    --ls-headline: -0.43px;
@@ -238,10 +388,7 @@
   --space-12: 48px; --space-16: 64px;
   /* contentMargin.iphone è 16. Il max() è l'iPhone in ORIZZONTALE: con
      `viewport-fit=cover` la pagina arriva sotto la Dynamic Island, e questo
-     margine era l'unica cosa che poteva tenerla fuori — non lo faceva. Il
-     più grande dei due lati, su tutti e due: iOS in orizzontale li dà
-     uguali, e il contenuto resta centrato. In verticale gli inset laterali
-     valgono zero e il margine torna 16. */
+     margine era l'unica cosa che poteva tenerla fuori — non lo faceva. */
   --content-inset: max(16px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
   --readable-width: 672px;    /* contentMargin.readableWidth */
 
@@ -261,6 +408,10 @@
   --ease-default: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-out: cubic-bezier(0, 0, 0.6, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* La curva «fluida» del vetro: parte lenta, molla corta. È quella che fa
+     sembrare la pressione su una superficie elastica invece che su un
+     bottone. */
+  --ease-fluido: cubic-bezier(0.2, 0.9, 0.2, 1.08);
 }
 
 @media (prefers-reduced-motion: reduce) {

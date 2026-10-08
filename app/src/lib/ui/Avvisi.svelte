@@ -31,7 +31,7 @@
     {#if avvisi.corrente}
       {@const a = avvisi.corrente}
       <div
-        class="bolla text-subheadline"
+        class="bolla vetro text-subheadline"
         class:errore={a.tipo === "errore"}
         in:fly={{ y: -24, duration: 320, easing: cubicOut }}
         out:fly={{ y: -24, duration: 220 }}
@@ -49,7 +49,7 @@
 
 {#key celebrazione.corrente?.id}
   {#if celebrazione.corrente}
-    <div class="festa" aria-hidden="true" in:scale={{ start: 0.8, duration: 260, easing: cubicOut }} out:scale={{ start: 0.9, duration: 200, opacity: 0 }}>
+    <div class="festa vetro" aria-hidden="true" in:scale={{ start: 0.8, duration: 260, easing: cubicOut }} out:scale={{ start: 0.9, duration: 200, opacity: 0 }}>
       <svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M18 33.5 28 43.5 46 22" class="tratto" />
       </svg>
@@ -71,10 +71,6 @@
     min-width: 160px; max-width: 240px; padding: var(--space-6) var(--space-5) var(--space-5);
     display: flex; flex-direction: column; align-items: center; gap: var(--space-2); text-align: center;
     border-radius: var(--radius-xxxl);
-    background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(6px) saturate(1.8);
-    backdrop-filter: blur(6px) saturate(1.8);
-    box-shadow: inset 0 0 0 0.5px var(--glass-rim), var(--glass-shadow);
     color: var(--label-primary); pointer-events: none;
   }
   .festa svg { color: var(--color-green); }
@@ -92,10 +88,6 @@
     display: flex; align-items: center; gap: var(--space-3);
     max-width: 420px; min-height: 44px; padding: 10px 18px;
     border-radius: var(--radius-full);
-    background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(6px) saturate(1.8);
-    backdrop-filter: blur(6px) saturate(1.8);
-    box-shadow: inset 0 0 0 0.5px var(--glass-rim), var(--glass-shadow);
     font-weight: var(--weight-medium);
   }
   .errore .testo { color: var(--color-red); }

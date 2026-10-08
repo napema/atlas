@@ -115,22 +115,22 @@
              gradino bisogna contare con il dito. -->
         <ul class="effetto">
           <li>
-            <span class="e-eti text-subheadline secondario">dalla settimana</span>
+            <span class="e-eti text-subheadline secondario">quota del giorno</span>
             <span class="e-val cifre">
-              quota da {euro(e.settimana.da)} a <b class:male={e.settimana.a <= 0}>{euro(e.settimana.a)}</b>/g
+              da {euro(e.settimana.da)} a <b class:male={e.settimana.a <= 0}>{euro(e.settimana.a)}</b>
             </span>
           </li>
           <li>
-            <span class="e-eti text-subheadline secondario">da ING</span>
+            <span class="e-eti text-subheadline secondario">minimo di ING</span>
             <span class="e-val cifre">
-              minimo previsto da {euro(e.ing.da, { tondo: true })} a <b>{euro(e.ing.a, { tondo: true })}</b>
+              da {euro(e.ing.da, { tondo: true })} a <b>{euro(e.ing.a, { tondo: true })}</b>
             </span>
           </li>
           {#if e.fondo}
             <li>
-              <span class="e-eti text-subheadline secondario">dal fondo</span>
+              <span class="e-eti text-subheadline secondario">gap dell'obiettivo</span>
               <span class="e-val cifre">
-                gap da {euro(e.fondo.da, { tondo: true })} a <b>{euro(e.fondo.a, { tondo: true })}</b>
+                da {euro(e.fondo.da, { tondo: true })} a <b>{euro(e.fondo.a, { tondo: true })}</b>
               </span>
             </li>
           {/if}
@@ -181,8 +181,8 @@
 
 <style>
   .voce { display: flex; flex-direction: column; gap: 6px; padding: var(--space-4); }
-  .alto { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
-  .nome { flex: 1; min-width: 0; }
+  .alto { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 2px var(--space-2); }
+  .nome { grid-column: 1 / -1; }
   .prezzo { font-size: var(--text-title3); font-weight: var(--weight-semibold); }
   .stato {
     padding: 2px 7px; border-radius: var(--radius-full);

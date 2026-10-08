@@ -97,14 +97,21 @@
   .testo  { background: none; color: var(--colore); padding-inline: var(--space-2); font-weight: var(--weight-regular); }
   .testo.tondo { padding: 0; }
 
-  /* Liquid Glass «regular», la ricetta misurata: sfocatura 6, saturazione
-     1,8, anello chiaro, ombra ampia e morbida. */
+  /* IL MATERIALE sta in `app.css`, e il nome della variante e' lo stesso
+     della classe globale: un bottone `variante="vetro"` porta `class="vetro"`
+     e prende la ricetta da la'. Qui resta solo quello che e' suo — colore
+     del testo, peso — e un'ombra piu' corta: un bottone di 44 punti con
+     l'ombra di una carta sembra staccato dallo schermo.
+
+     Sul TONDO l'anello torna uniforme. Su un cerchio «il bordo alto» e «il
+     bordo basso» sono lo stesso arco, quindi le due hairline in tre pezzi
+     si annullano a vicenda e il bottone resta senza contorno. */
   .vetro {
-    background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(6px) saturate(1.8);
-    backdrop-filter: blur(6px) saturate(1.8);
-    box-shadow: inset 0 0 0 0.5px var(--glass-rim), 0 4px 24px rgba(0, 0, 0, 0.14);
     color: var(--label-primary);
     font-weight: var(--weight-medium);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  }
+  .vetro.tondo::after {
+    box-shadow: inset 0 0 0 0.5px var(--vetro-rim-su);
   }
 </style>

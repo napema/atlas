@@ -1,15 +1,20 @@
 /* =========================================================================
-   ATLAS — lo stile globale. Il meno possibile.
+   ATLAS — lo stile globale. Il meno possibile, più il materiale.
 
    Nella app di prima c'erano sei fogli globali da centinaia di righe, e ogni
-   classe di ogni modulo poteva pestarne un'altra: `.vuoto` di una lista e
-   `.vuoto` di una casella si sono scontrati davvero, e un <button> senza
-   azzeramento ha mostrato il grigio del browser su due schermate diverse.
+   classe di ogni modulo poteva pestarne un'altra. Qui lo stile di un
+   componente sta DENTRO il componente, e Svelte lo circoscrive da sé.
 
-   Qui lo stile di un componente sta DENTRO il componente, e Svelte lo
-   circoscrive da sé: nessuna classe può uscire dal file dove è scritta.
-   Questo foglio contiene solo ciò che vale davvero per tutta la app: i
-   font, l'azzeramento, il fondo, e gli undici stili tipografici.
+   Questo foglio contiene solo ciò che vale per tutta la app: i font,
+   l'azzeramento, gli undici stili tipografici, LA SCENA e IL MATERIALE.
+
+   Scena e materiale stanno qui, globali, e non in un componente, per la
+   ragione per cui `.lastra` stava già qui: non è la sezione l'unica a
+   disegnare superfici — lo fanno i riquadri della home, i fogli, la barra
+   delle schede, i toast, i menu. Finché ognuno scriveva la sua ricetta, la
+   app era un insieme di rettangoli tutti leggermente diversi. Una ricetta
+   sola, globale: chi vuole del vetro lo chiede, e il giorno che la ricetta
+   cambia, cambia ovunque insieme.
    ========================================================================= */
 
 @import "./tokens.css";
@@ -32,10 +37,6 @@
   src: url("../../../../assets/fonts/sf-pro-display-bold.woff2") format("woff2"); }
 
 /* LE EMOJI DI APPLE ANCHE DOVE APPLE NON C'È.
-   Su iPhone le emoji le disegna il sistema e sono quelle giuste. Su Windows
-   le disegna Segoe UI Emoji: le stesse cose, un altro alfabeto — la stessa
-   abitudine con due facce a seconda di dove la guardi.
-
    Il font pesa 44 MB, quindi due accorgimenti. Si chiama «ATLAS Emoji» e
    non «Apple Color Emoji»: così sta DOPO il font di sistema nella pila, e
    su iPhone e Mac non viene scaricato mai. E ha un `unicode-range` stretto
@@ -49,18 +50,15 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html {
-  background: var(--bg-grouped-primary);
+  background: var(--scena-fondo);
   -webkit-text-size-adjust: 100%;
   /* LA PAGINA SCORRE SOLO IN VERTICALE, come un'app iOS. Tre righe, e
      servono tutte e tre:
 
-     `touch-action: pan-y` — il gesto orizzontale non muove la pagina. Era
-     `pan-x pan-y`, cioè il permesso esplicito di trascinarla di lato. I
+     `touch-action: pan-y` — il gesto orizzontale non muove la pagina. I
      contenitori che scorrono in orizzontale per conto loro (le settimane di
      Training, i filtri di Finanze) continuano a farlo: il browser guarda il
-     `touch-action` solo fino al primo contenitore che scorre, e per loro
-     quel contenitore sono loro stessi. Il pizzico resta chiuso come prima
-     (e su Safari lo chiude anche main.ts).
+     `touch-action` solo fino al primo contenitore che scorre.
 
      `overflow-x: hidden` — se un giorno una riga esce dallo schermo, viene
      tagliata invece di allargare la pagina. Sta su <html>, che lo passa
@@ -80,7 +78,11 @@ body {
   line-height: var(--lh-body);
   letter-spacing: var(--ls-body);
   color: var(--label-primary);
-  background: var(--bg-grouped-primary);
+  /* Il fondo lo dipinge la SCENA, non il body: `background: transparent`
+     qui è ciò che permette al vetro di avere qualcosa dietro. Il colore
+     resta su <html> perché è lui che il browser usa per l'overscroll e per
+     la barra di stato. */
+  background: transparent;
   -webkit-font-smoothing: antialiased;
   font-synthesis: none;
   -webkit-tap-highlight-color: transparent;
@@ -106,7 +108,203 @@ img, svg { display: block; }
 :focus-visible { outline: 2px solid var(--accento, var(--color-blue)); outline-offset: 2px; border-radius: var(--radius-sm); }
 ::selection { background: color-mix(in srgb, var(--accento, var(--color-blue)) 30%, transparent); }
 
-/* -------------------------------------------- i undici stili tipografici --
+/* =========================================================================
+   LA SCENA — il fondo della app.
+
+   Fissa, dietro tutto, e non scorre. Due pozze di luce molto tenui e una
+   grana. La prima pozza è della tinta del modulo (`--accento`, che il
+   guscio imposta): passando da Finanze a Training l'atmosfera si sposta
+   dall'arancio al rosso, e lo si nota con la coda dell'occhio senza che
+   nessuna etichetta lo dica.
+
+   PERCHÉ ESISTE: il vetro non è un colore, è un modo di lasciar passare
+   quello che ha dietro. Su nero pieno non ha niente da lasciar passare e
+   resta un rettangolo grigio — e per questo fino a ieri il vetro di ATLAS
+   era dipinto. La scena è la cosa che rende possibile il vetro vero.
+
+   `position: fixed` e non `background-attachment: fixed`: su iOS il secondo
+   è rotto da anni (salta a scatti durante lo scorrimento elastico). Fissa e
+   senza `will-change`: è un gradiente statico, il compositore la disegna una
+   volta e la riusa.
+
+   La grana è un SVG inline in una `data:` URL, non un PNG: pesa 180 byte,
+   non è una richiesta di rete, e non è un file che si può dimenticare in
+   `public/`. Serve contro le FASCE — due gradienti larghi su un OLED fanno
+   banding visibile, e le fasce si notano molto più della grana.
+   ========================================================================= */
+
+.scena {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+  background:
+    /* La pozza del modulo: la miscela si fa QUI perche' qui `--accento`
+       esiste (lo mette il guscio). Vedi il commento in tokens.css. */
+    radial-gradient(120vmax 85vmax at 88% -12%,
+      color-mix(in srgb, var(--accento, var(--color-blue)) var(--scena-forza), transparent),
+      transparent 58%),
+    radial-gradient(100vmax 70vmax at 2% 106%, var(--scena-pozza-2), transparent 56%),
+    linear-gradient(180deg, var(--scena-orizzonte), transparent 16%),
+    var(--scena-fondo);
+  /* La tinta cambia con il modulo: la si fa scivolare, non saltare. Mezzo
+     secondo è il tempo in cui la dissolvenza d'ingresso della schermata
+     finisce, quindi le due cose sembrano un movimento solo. */
+  transition: background var(--duration-slow) var(--ease-default);
+}
+.scena::after {
+  content: ""; position: absolute; inset: 0;
+  opacity: var(--scena-grana);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* =========================================================================
+   IL MATERIALE — una ricetta, tre pezzi, due classi.
+
+   `.lastra`  la superficie POSATA: le carte, i gruppi, i riquadri. Sta
+              dentro la pagina e scorre con lei.
+   `.vetro`   la superficie che GALLEGGIA: la barra delle schede, i toast,
+              i menu, i bottoni tondi sopra il contenuto. Più sfocata e
+              meno coprente, perché dietro ci passa davvero del contenuto.
+
+   I TRE PEZZI, e sono tre strati distinti perché fanno tre lavori:
+
+     ::before   IL CORPO. Qui e SOLO qui sta `backdrop-filter`.
+     ::after    L'ANELLO, LA LUCE, LO SPECULARE. Niente filtro: solo
+                gradienti e `box-shadow` interni.
+     elemento   il CONTENUTO. Nessun filtro lo tocca.
+
+   PERCHÉ IL FILTRO STA SU UNO STRATO SUO. Su iPhone `backdrop-filter`
+   messo sull'elemento che contiene il testo ricampiona anche il contenuto
+   dell'elemento: l'icona e la cifra dentro la carta si vedevano sgranate.
+   È il guasto per cui il vetro di ATLAS era stato dipinto. Spostato su un
+   pseudo-elemento dietro, il filtro guarda solo quello che c'è SOTTO la
+   carta — che è l'unica cosa che deve guardare — e il testo sopra resta
+   nitido. Non è un accorgimento: è la condizione per cui questo materiale
+   può esistere.
+
+   `isolation: isolate` più `z-index` negativi: i due strati finiscono in
+   fondo allo stacking context DELLA LASTRA, quindi dietro il contenuto ma
+   davanti alla scena. Senza `isolation` un `z-index: -1` scivolerebbe
+   dietro il fondo di un antenato qualunque e scomparirebbe — è lo stesso
+   schema che la barra delle schede usa già per la sua pastiglia.
+   ========================================================================= */
+
+.lastra, .vetro {
+  position: relative;
+  isolation: isolate;
+  /* L'elemento NON ha fondo: il fondo è il corpo, ed è dietro. Se lo avesse,
+     coprirebbe i due strati. */
+  background: none;
+}
+
+.lastra::before, .vetro::before {
+  content: ""; position: absolute; inset: 0; z-index: -2;
+  border-radius: inherit;
+  background:
+    /* `--lastra-velo` è l'unico strato che una superficie può aggiungere:
+       serve alle tessere della home e alle carte di Training, che portano
+       un alone della tinta del modulo. Passa da qui e non da un
+       `background` scritto a mano, così anche la carta colorata resta la
+       stessa lastra di tutte le altre. */
+    var(--lastra-velo, linear-gradient(transparent, transparent)),
+    var(--vetro-velo);
+  -webkit-backdrop-filter: blur(var(--vetro-sfoca)) saturate(var(--vetro-croma)) brightness(var(--vetro-lum));
+  backdrop-filter: blur(var(--vetro-sfoca)) saturate(var(--vetro-croma)) brightness(var(--vetro-lum));
+}
+
+.lastra::after, .vetro::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    /* Lo SPECULARE: il vetro vero concentra la luce dove la superficie
+       curva, cioè sullo spigolo arrotondato in alto a sinistra. È il
+       dettaglio che fa la differenza fra «sfocato» e «di vetro». */
+    radial-gradient(140% 100% at 6% -14%, var(--vetro-specular), transparent 46%),
+    /* LA LUCE che scende dall'alto, corta: oltre il 40% diventa una patina. */
+    linear-gradient(180deg, var(--vetro-luce), transparent 40%);
+  /* L'ANELLO in tre pezzi: la hairline chiara sopra (la luce sullo
+     spessore), quella scura sotto (l'ombra propria dello spessore), e
+     l'anello intero debolissimo che chiude la forma. Un anello uniforme è
+     il bordo di un rettangolo; tre sono un oggetto illuminato dall'alto. */
+  box-shadow:
+    inset 0 0.5px 0 0 var(--vetro-rim-su),
+    inset 0 -0.5px 0 0 var(--vetro-rim-giu),
+    inset 0 0 0 0.5px var(--vetro-rim);
+}
+
+.lastra {
+  border-radius: var(--radius-xxxl);
+  box-shadow: var(--vetro-ombra);
+}
+
+/* IL VETRO CHE GALLEGGIA. Più sfocato e meno coprente della lastra: sotto
+   gli passa il contenuto che scorre, e lì il vetro ha un mestiere vero —
+   far capire che la barra è SOPRA la pagina e non dentro. */
+.vetro {
+  border-radius: var(--radius-full);
+  box-shadow: var(--vetro-ombra);
+}
+.vetro::before {
+  background: var(--lastra-velo, linear-gradient(transparent, transparent)), var(--vetro-velo-chiaro);
+  -webkit-backdrop-filter: blur(var(--vetro-sfoca-bordo)) saturate(var(--vetro-croma)) brightness(var(--vetro-lum));
+  backdrop-filter: blur(var(--vetro-sfoca-bordo)) saturate(var(--vetro-croma)) brightness(var(--vetro-lum));
+}
+
+/* I riquadri DENTRO una lastra: un gradino sopra, senza anello (due anelli
+   concentrici a mezzo pixel fanno moiré sul retina) e senza filtro — un
+   `backdrop-filter` dentro un altro non ha niente di nuovo da sfocare e
+   costa un secondo passaggio di compositing per nulla. */
+.dentro {
+  background: var(--lastra-dentro);
+  border-radius: var(--radius-lg);
+}
+
+/* INTERATTIVO. La pressione su una superficie di vetro non è un
+   abbassamento di opacità: è una deformazione. Scala appena e la luce si
+   alza, come quando premi su una membrana. Chi tocca una `.lastra` o un
+   `.vetro` che si tocca aggiunge questa classe. */
+.premibile {
+  transition: transform var(--duration-fast) var(--ease-fluido);
+}
+.premibile:active { transform: scale(0.975); }
+.premibile:active::after { background-color: var(--vetro-luce); }
+
+/* IL VELO PROGRESSIVO ai bordi di una zona che scorre: la sfocatura cresce
+   verso il bordo invece di tagliare di netto. È il `GlassScrollEdges` dei
+   kit nativi, in due righe: un velo mascherato con un gradiente.
+
+   Si usa su un contenitore con `position: relative`, aggiungendo
+   `--velo-alto` o `--velo-basso`. */
+.velo-bordi { position: relative; }
+.velo-bordi::before, .velo-bordi::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 28px;
+  pointer-events: none; z-index: 2;
+}
+.velo-bordi::before {
+  top: 0;
+  background: linear-gradient(180deg, var(--scena-fondo), transparent);
+  opacity: var(--velo-alto, 0);
+  transition: opacity var(--duration-fast) var(--ease-default);
+}
+.velo-bordi::after {
+  bottom: 0;
+  background: linear-gradient(0deg, var(--scena-fondo), transparent);
+  opacity: var(--velo-basso, 0);
+  transition: opacity var(--duration-fast) var(--ease-default);
+}
+
+/* SENZA `backdrop-filter` il vetro torna DIPINTO.
+
+   Non è un ripiego triste: è la ricetta che ATLAS aveva fino a ieri e che
+   funzionava — un fondo pieno, la luce dall'alto, l'anello, l'ombra. Qui
+   cambia solo che il velo diventa opaco, perché un velo trasparente senza
+   sfocatura mostra la scena nitida sotto il testo. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lastra::before { background: var(--lastra-velo, linear-gradient(transparent, transparent)), var(--bg-grouped-secondary); }
+  .vetro::before { background: var(--lastra-velo, linear-gradient(transparent, transparent)), var(--bg-grouped-tertiary); }
+}
+
+/* -------------------------------------------- gli undici stili tipografici --
    Stessi nomi del pacchetto del repo, così un componente dice `text-footnote`
    e si legge come si leggerebbe in UIKit. */
 .text-large-title { font-family: var(--font-display); font-size: var(--text-large-title); line-height: var(--lh-large-title); letter-spacing: var(--ls-large-title); font-weight: var(--weight-bold); }
@@ -131,33 +329,3 @@ img, svg { display: block; }
 .avviso { color: var(--color-orange); }
 
 .solo-lettori { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-
-/* ------------------------------------------------------------- la lastra --
-   LA superficie di ATLAS. Una carta è questa o non è una carta.
-
-   Sta qui e non dentro `Sezione.svelte` perché non è solo la sezione a
-   disegnare carte: lo fanno anche i riquadri della home, i fogli, le
-   testate dei moduli. Prima ognuno scriveva il suo `background:
-   var(--bg-grouped-secondary)` e il risultato era una app di rettangoli
-   piatti tutti leggermente diversi. Una classe sola, globale: chi vuole una
-   lastra la chiede, e se domani la ricetta cambia, cambia ovunque insieme.
-
-   `--lastra-velo` è l'unico strato che una lastra può aggiungere sopra il
-   suo fondo: serve alle tessere della home, che portano un alone del colore
-   del modulo. Passa da lì e non da un `background` scritto a mano, così
-   anche la tessera colorata resta la stessa lastra di tutte le altre.
-
-   `.dentro` è il gradino successivo: un riquadro DENTRO una lastra. Non ha
-   anello — due anelli concentrici a mezzo pixel fanno moiré. */
-.lastra {
-  background:
-    var(--lastra-velo, linear-gradient(transparent, transparent)),
-    linear-gradient(180deg, var(--lastra-luce), transparent 45%),
-    var(--lastra-fondo);
-  box-shadow: inset 0 0 0 0.5px var(--lastra-rim), var(--lastra-ombra);
-  border-radius: var(--radius-xxxl);
-}
-.dentro {
-  background: var(--lastra-dentro);
-  border-radius: var(--radius-lg);
-}

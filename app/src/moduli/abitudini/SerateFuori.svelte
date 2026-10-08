@@ -82,7 +82,10 @@
   }
   /* Quota raggiunta: il bordo si tinge, perché da quel momento una serata in
      più è la cosa che ti costa sette giorni. */
-  .serate.piena { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-orange) 60%, transparent), var(--lastra-ombra); }
+  /* L'ANELLO D'ALLARME VA SULLO STRATO DELL'ANELLO, non sull'elemento:
+     un `box-shadow: inset` scritto qui verrebbe coperto dal materiale, che
+     adesso sta su due pseudo-elementi dietro il contenuto. */
+  .serate.piena::after { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-orange) 60%, transparent); }
   .serate.incassata, .serate.incassata.piena { padding: 0; background: none; box-shadow: none; border-radius: 0; }
 
   .testi { display: flex; flex-direction: column; min-width: 0; }

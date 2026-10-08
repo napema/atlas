@@ -57,6 +57,13 @@
 </script>
 
 <div class="guscio" style:--accento={voce.accento}>
+  <!-- LA SCENA. Dietro tutto, fissa, e la sua tinta e' quella del modulo in
+       cui sei: passando da Finanze a Training l'atmosfera si sposta
+       dall'arancio al rosso. Non e' decorazione — e' la condizione perche'
+       il vetro sia vetro: su nero pieno non ha niente da rifrangere. La
+       ricetta sta in `app.css`, qui c'e' solo il posto. -->
+  <div class="scena" aria-hidden="true"></div>
+
   {#if Schermata}
     {#key router.id}
       <div class="schermata" in:fade={{ duration: 160 }}>
@@ -77,6 +84,12 @@
 
 <style>
   .guscio { min-height: 100dvh; }
+  /* `z-index: -1` e NON uno stacking context su `.guscio`: il fondo della
+     radice e' dipinto sul canvas, cioe' sotto a tutto compreso lo z-index
+     negativo, quindi la scena ci sta in mezzo senza che nessun altro debba
+     essere spostato. Fosse a `z-index: 0` coprirebbe il contenuto in
+     flusso, che non e' posizionato. */
+  .guscio :global(.scena) { z-index: -1; }
   .guasto {
     min-height: 80dvh; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: var(--space-2); padding: var(--space-6); text-align: center;

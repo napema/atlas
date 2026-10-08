@@ -2329,3 +2329,174 @@ quello che manca davvero.
 - La **rata AliExpress** è la 3/3 del 1 novembre, da confermare sull'app del
   pagamento a rate. Quella del 1 dicembre è stata tombata.
 - Sul **telefono vero** non provato.
+
+---
+
+## 8 ottobre 2026 — la scena e il vetro vero *(chat ATLAS, perimetro `app/`)*
+
+### Glass-HQ/liquid-glass: perché non è stato importato
+
+La richiesta era di importare `@glass-sdk/liquid-glass` «ovunque». Letto il
+README del pacchetto, non si può, e le ragioni non sono di gusto:
+
+- **WebGPU obbligatorio.** «Rendering requires HTTPS or localhost and an
+  available WebGPU adapter.» E gli autori stessi scrivono «Safari has known
+  rendering issues» — Safari è esattamente il motore su cui ATLAS gira, da
+  installata, su un iPhone.
+- **Niente backdrop arbitrario.** Fra le limitazioni: *not supported:
+  arbitrary page-backdrop sampling*. Le superfici devono stare dentro una
+  `GlassScene` con livelli di contenuto espliciti e **limitati**. «Ovunque»
+  in ATLAS vuol dire ogni carta sopra una pagina che scorre: è il caso che
+  la libreria dichiara di non coprire.
+- **`maxSurfaces` 16, tetto 64.** La sola schermata Oggi ne supera sedici.
+- **Niente antenati ruotati o trasformati.** I fogli salgono con
+  `translateY`, la barra delle schede e i gesti rapidi con `translate`, la
+  pastiglia della scheda scelta scorre con `transform`. Si romperebbero tutti.
+- **React 19** per i componenti (c'è un'API `createGlassScene` vanilla, e
+  quella si sarebbe potuta usare), e **versione 0.0.1**, con la parità fra i
+  motori dichiarata non ancora stabilita.
+- E la regola 8: niente dipendenze esterne a runtime. Un renderer WGSL non
+  è una libreria che sta in un modulo solo caricato pigramente se lo si usa
+  nel guscio.
+
+Quello che si poteva prendere, ed è stato preso, è il **modello**: materiali
+`clear`/`regular`, scena e livelli di contenuto espliciti, anello e
+speculare, velo progressivo ai bordi, pressione fluida. Non il motore.
+
+### La cosa che mancava non era una ricetta migliore: era qualcosa dietro
+
+Il vetro di ATLAS era **dipinto**, e la decisione era giusta: su una pagina
+nera piena `backdrop-filter` costa un filtro a schermo intero per non
+mostrare niente, e su iPhone — messo sull'elemento che contiene il testo —
+ricampionava anche il contenuto, sgranando icone e cifre dentro la carta.
+
+Quindi prima della ricetta è arrivata **la scena**: un fondo fisso, dietro
+tutto, con due pozze di luce molto tenui. La prima è della tinta del modulo
+in cui sei (`--accento`, che il guscio imposta): passando da Finanze a
+Training l'atmosfera si sposta dall'arancio al rosso. Da lì in poi il vetro
+ha qualcosa da rifrangere e può essere vetro davvero.
+
+È anche il marchio. iOS dà i mattoni e le regole, non un'identità: una app
+di carte grigie su nero è la schermata Impostazioni di chiunque.
+
+Il fondo non è più `#000000` ma `#08080c` — un filo di blu dentro il nero,
+perché il grigio neutro su un OLED vira al verde e tutte le tinte di accento
+di iOS sono fredde.
+
+### Il materiale: tre strati, e il filtro non sta mai sul contenuto
+
+```
+::before   IL CORPO — qui e SOLO qui sta `backdrop-filter`
+::after    L'ANELLO, LA LUCE, LO SPECULARE — solo gradienti e box-shadow
+elemento   il CONTENUTO — nessun filtro lo tocca
+```
+
+È questa divisione che smonta il guasto di iPhone: il filtro guarda solo
+quello che c'è SOTTO la carta, che è l'unica cosa che deve guardare, e il
+testo sopra resta nitido. Non è un accorgimento, è la condizione per cui
+questo materiale può esistere.
+
+Due classi globali, `.lastra` (la superficie posata) e `.vetro` (quella che
+galleggia), più `.dentro` e `.premibile`. **La ricetta era ripetuta
+inline in cinque posti** — barra delle schede, toast, festa, menu dei
+gruppi, bottone vetro — con gli stessi quattro valori copiati a mano. Adesso
+è una.
+
+Tre dettagli che fanno la differenza fra «sfocato» e «di vetro»:
+
+- **L'anello in tre pezzi**: hairline chiara sopra (la luce sullo spessore),
+  scura sotto (l'ombra propria dello spessore), anello intero debolissimo a
+  chiudere. Un anello uniforme è il bordo di un rettangolo; tre sono un
+  oggetto illuminato dall'alto.
+- **Lo speculare nell'angolo**: il vetro vero concentra la luce dove la
+  superficie curva, cioè sullo spigolo arrotondato.
+- **La sfocatura è 20px, non 6.** Il 6 veniva dalla misura del nativo (sigma
+  5,4pt) e sul nativo è giusto, perché lì dietro c'è una foto o una lista: il
+  dettaglio da sciogliere è fitto. Qui dietro c'è un gradiente larghissimo, e
+  sfocare di 6px un gradiente non si vede affatto. Serve un raggio
+  dell'ordine della pozza di luce, non del pixel.
+
+### Le tre trappole trovate guardando lo schermo, non il codice
+
+1. **`color-mix()` dentro una custom property si risolve dove la property è
+   DEFINITA.** `--scena-pozza: color-mix(…, var(--accento), …)` su `:root`
+   prendeva sempre il ripiego blu, perché `--accento` lo mette il guscio più
+   in basso. Finanze è arancione e la scena era azzurra. Adesso il token è
+   una percentuale e la miscela si fa in `.scena`, che l'accento ce l'ha.
+2. **Una lastra non ha più un fondo suo.** `background` e `box-shadow:
+   inset` scritti sull'ELEMENTO non si vedono più: li copre il materiale,
+   che sta su due pseudo-elementi dietro il contenuto. Ne erano rimasti due
+   — l'anello d'allarme di «Serate fuori» e il `:active` della carta
+   obiettivo — e sono stati spostati sugli pseudo-elementi e su `.premibile`.
+3. **Sul vetro un grigio pieno fa una macchia, e una tinta fa fango.** La
+   pastiglia della scheda scelta era stata provata con il colore del modulo:
+   l'arancio di Finanze al venti per cento sopra un vetro scuro non è
+   arancione. Il colore resta dove ha sempre vissuto, sull'icona e
+   sull'etichetta.
+
+### Dove il vetro si è acceso, e dove no
+
+- **Acceso**: carte, barra delle schede, toast, menu dei gruppi, bottoni
+  tondi sulla linea del titolo (erano spenti con due ragioni buone, cadute
+  entrambe), barra compatta della navigazione, fogli.
+- **Spento apposta**: dentro un foglio. Lì sotto non c'è la scena ma il
+  fondo del foglio, che è un colore pieno: non c'è niente da sfocare e il
+  filtro costerebbe un passaggio di compositing per niente. `--vetro-sfoca:
+  0` dentro `.foglio`, e il velo diventa un velo chiaro sopra quel fondo.
+
+Il conto delle superfici filtrate resta basso quasi per caso, ed è una
+proprietà da non perdere: `.lastra` sta sul GRUPPO, non sulla riga. Una
+lista di venti righe è una superficie, non venti.
+
+### Il velo progressivo sotto la barra
+
+La barra copre i primi 44 punti; il problema era il punto in cui finisce,
+dove il contenuto spuntava di netto da sotto una riga sottile. Adesso c'è
+una fascia di 20 punti in cui la sfocatura sfuma a zero, con una maschera a
+gradiente. È il `GlassScrollEdges` dei kit nativi, in sei righe di CSS.
+
+### Trasparenza ridotta
+
+Chi chiede «Riduci trasparenza» su iOS non chiede un effetto più leggero:
+chiede di non averlo. `@media (prefers-reduced-transparency: reduce)` riporta
+il vetro **dipinto**, che è la ricetta che ATLAS aveva fino a ieri e che
+funzionava. Stessa cosa sotto `@supports not (backdrop-filter: …)`.
+
+### La firma tipografica
+
+Un valore solo: la crenatura del titolo grande passa da +0,4 a **−0,6**. iOS
+apre i titoli grandi perché stanno su un fondo piatto e devono respirare; su
+vetro, con una pozza di luce dietro, un titolo aperto si sfilaccia. Stretto
+diventa un blocco, e un blocco su vetro si legge come un'etichetta incisa.
+
+Effetto collaterale utile e verificato: «Buongiorno, Ema» su iPhone occupava
+298 punti nei 283 disponibili e andava a capo. Adesso ne occupa 274.
+
+### Come è stato verificato
+
+`svelte-check found 0 errors and 0 warnings`, e **in locale**: Deno sa
+installare le dipendenze di `app/package.json` e far girare `svelte-check`
+senza Node. L'unico intoppo è `svelte.config.js`, che importa
+`@sveltejs/vite-plugin-svelte` con uno specificatore nudo che Deno rifiuta:
+basta spostarlo per la durata del controllo.
+
+```
+cd app
+mv svelte.config.js svelte.config.js.off
+deno run -A --node-modules-dir=auto npm:svelte-check@4.7.6 --tsconfig ./tsconfig.json
+mv svelte.config.js.off svelte.config.js
+```
+
+E `deno run -A --node-modules-dir=auto npm:vite@8.3.0` fa girare il server di
+sviluppo: **le schermate si possono guardare prima di pubblicare**, che è
+come sono venute fuori tutte e tre le trappole qui sopra. Vale per ogni chat.
+
+Provato: Oggi, Finanze (Riepilogo, Cicli, lista d'attesa), Training,
+Impostazioni; chiaro e scuro; telefono e PC; barra compatta scorrendo; un
+foglio aperto sopra la pagina.
+
+**Non provato: l'iPhone vero.** Ed è l'unico posto che conta davvero per due
+cose — la resa di `backdrop-filter` su WebKit e il costo in batteria di sei
+superfici filtrate in una schermata. Se sgrana o scalda, la via d'uscita è
+già scritta e costa una riga: `--vetro-sfoca: 0` su `:root` riporta tutto al
+vetro dipinto senza toccare nient'altro.
