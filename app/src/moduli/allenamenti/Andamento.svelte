@@ -56,7 +56,7 @@
         <span class="cifra cifre">{mmss(d.pr.secondi)}</span>
         <span class="text-subheadline secondario cifre">{passo(d.pr.passo)}</span>
       </div>
-      <p class="text-subheadline">{d.pr.dentro ? `Sei dentro il muro di ${mmss(OBIETTIVO.secondi)}.` : `Mancano ${mmss(d.pr.scarto)} al sub-20.`}</p>
+      <p class="text-subheadline">{d.pr.dentro ? `Sei dentro il muro di ${mmss(OBIETTIVO.secondi)}.` : `Mancano ${mmss(d.pr.scarto)} a ${mmss(OBIETTIVO.secondi)}.`}</p>
       <p class="text-footnote secondario">Da {km(d.pr.da.km)} in {mmss(d.pr.da.secondi)} del {dataBreve(d.pr.da.data)}, portati sui 5 km con la formula di Riegel.</p>
     {:else}
       <span class="cifra">—</span>
@@ -91,13 +91,21 @@
      importate manderebbe a cercare un CSV che non c'e' mai stato. -->
 <Sezione titolo="Corse" piede={d.corse.length ? "Tocca una corsa per toglierla. Quelle «a mano» sono stime: appena importi la stessa giornata da Garmin, la misura prende il loro posto." : "Nessuna. Senza corse non c'è né andamento né previsione: importa l'export di Garmin, o scrivi a mano quello che hai fatto dallo slot."}>
   {#each d.corse as c (c.id)}
-    <Riga
-      titolo={c.titolo || c.nome || "Corsa"}
-      sottotitolo="{dataBreve(c.data)} · {c.secondi && c.km ? passo(c.secondi / c.km) : '—'}{c.spezzata ? ' sui pezzi' : ''} · {km(c.km)}{c.manuale ? ' · a mano' : ''}"
-      onclick={() => togli(c)}
-    >
+    <!-- IL CORPO DELLA RIGA LO DISEGNA QUESTO FILE, non `titolo` e
+         `sottotitolo`.
+    
+         `Riga` rende `children` INVECE di titolo e sottotitolo, e basta che
+         lo snippet esista — anche con dentro un `{#if}` falso — perche' li
+         sostituisca. Mettendo i pezzi li' dentro come aggiunta, ogni riga
+         dell'elenco ha perso nome e data: dodici righe vuote con un numero
+         a destra. Se servono tre righe si scrivono tutte e tre. -->
+    <Riga onclick={() => togli(c)}>
+      <span class="nome">{c.titolo || c.nome || "Corsa"}</span>
+      <span class="text-subheadline secondario">
+        {dataBreve(c.data)} · {c.secondi && c.km ? passo(c.secondi / c.km) : "—"}{c.spezzata ? " sui pezzi" : ""} · {km(c.km)}{c.manuale ? " · a mano" : ""}
+      </span>
       {#if c.spezzata}
-        <!-- I PEZZI, per esteso. Una riga che dice «6 km a 3:59» e basta
+        <!-- I PEZZI, per esteso. Una riga che dice «6 km a 4:30» e basta
              nasconde proprio la cosa che quella seduta e': tre ripetute a
              ritmo gara. E l'equivalente sui 5 km li' a destra viene dal
              pezzo migliore, non dal totale — senza vedere i pezzi non si
@@ -119,6 +127,7 @@
 </Sezione>
 
 <style>
+  .nome { font-weight: var(--weight-regular); }
   .pezzi { display: block; margin-top: 2px; }
   /* L'equivalente e' verde solo quando E' sotto il muro. Non «quasi»: una
      previsione che si colora a meta' strada e' quella su cui poi decidi di

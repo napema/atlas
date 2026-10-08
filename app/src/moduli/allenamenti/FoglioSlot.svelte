@@ -28,7 +28,7 @@
   import { slide } from "svelte/transition";
   import {
     slotDi, fatto, giornoSlot, alternaSlot, scegliGiorno, inizioSettimana, fineSettimana, recordSlot, ripristinaSlot, togliBonus,
-    oraDi, scegliOra, oraPredefinita, cambiaSlot, UPPER_B, durataDi, sedutaDelGiorno,
+    oraDi, scegliOra, oraPredefinita, cambiaSlot, UPPER_B, durataDi, sedutaDelGiorno, OBIETTIVO,
   } from "$condivisi/allenamenti/dati.js";
   import { km, passo, mmss, distanza, descriviPezzi } from "$condivisi/allenamenti/calcolo.js";
   import { leggiRiga, gruppiSeduta, serieTotali } from "$condivisi/allenamenti/muscoli.js";
@@ -344,7 +344,7 @@
   async function copiaGarmin() {
     if (!s || !letto) return;
     try {
-      const j = allenamentoJSON(`${s.nome} · S${s.sett}`, letto.passi, "Da ATLAS — blocco 5 km sub-20");
+      const j = allenamentoJSON(`${s.nome} · S${s.sett}`, letto.passi, `Da ATLAS — ${OBIETTIVO.nome}`);
       await navigator.clipboard.writeText(JSON.stringify(j));
       avviso("Copiato. Apri Connect → Allenamenti e tocca il segnalibro.");
     } catch (e: any) {
@@ -368,7 +368,7 @@
     try {
       const { mancanti } = await hevy.creaRoutine({
         titolo: `${s.nome} · Settimana ${s.sett}`,
-        note: "Da ATLAS — blocco 5 km sub-20",
+        note: `Da ATLAS — ${OBIETTIVO.nome}`,
         /* LE STESSE RIGHE CHE VEDI SOPRA. Qui c'era `[lift, ...accessori]`,
            che un allenamento importato non ha: gli esercizi stanno nel testo
            separati da «·». A Hevy arrivava una lista vuota e l'errore diceva

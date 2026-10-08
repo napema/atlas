@@ -127,7 +127,7 @@ export const kmTotali = () => dec(corseVive().reduce((t, c) => t + (c.km || 0), 
 /* --------------------------------------------------------- la proiezione -- */
 
 /**
- * Dov'è il sub-20 rispetto a oggi.
+ * Dov'è l'obiettivo rispetto a oggi.
  *
  * La formula è quella di Riegel — T₂ = T₁ × (D₂/D₁)^1.06 — che è il modo
  * standard di portare una prestazione su un'altra distanza. Si applica alla

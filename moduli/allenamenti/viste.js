@@ -482,7 +482,7 @@ function schedaProiezione(pr) {
     ]),
     el("p", { class: "nota", testo: pr.dentro
       ? `Sei dentro il muro di ${mmss(OBIETTIVO.secondi)}.`
-      : `Mancano ${mmss(pr.scarto)} al sub-20.` }),
+      : `Mancano ${mmss(pr.scarto)} a ${mmss(OBIETTIVO.secondi)}.` }),
     el("p", { class: "nota", testo:
       `Da ${km(pr.da.km)} in ${mmss(pr.da.secondi)} del ${dataBreve(pr.da.data)}, portati sui 5 km con la formula di Riegel.` }),
   ]);
