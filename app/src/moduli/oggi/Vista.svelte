@@ -456,16 +456,32 @@
        i soldi e la giornata — e le altre due portano quelle che si
        GUARDANO. -->
   <div class="bento">
-    <div class="pila larga">
-      <div class="tessera p-finanze">{@render cartaFinanze()}</div>
+    <!-- A SINISTRA LA GIORNATA, e da sola.
+
+         E' la colonna che si legge: il profilo del giorno, dall'alto in
+         basso. Tutto il resto sta a destra, ed e' roba che si GUARDA — un
+         numero per carta, con la sua tinta sulla pastiglia.
+
+         Prima la giornata stava sotto Finanze nella stessa pila, e la
+         colonna di sinistra era alta il doppio delle altre due: a destra
+         restava mezza schermata vuota. Con la giornata da sola le tre
+         colonne finiscono vicine, e soprattutto la gerarchia si vede —
+         «cos'e' oggi» a sinistra, «come vanno le cose» a destra. -->
+    <div class="pila stretta">
       <div class="tessera p-giornata">{@render cartaGiornata()}</div>
+    </div>
+    <!-- Tre colonne, tre cose diverse: la GIORNATA, quello che CONSUMI
+         (soldi e cibo), il CORPO — che e' anche il gruppo che quei due
+         moduli hanno gia' nella barra. Non e' solo equilibrio di altezze:
+         e' il motivo per cui si capisce dove guardare senza leggere i
+         titoli. E le tre colonne finiscono vicine, che e' l'altra meta'. -->
+    <div class="pila">
+      <div class="tessera p-finanze">{@render cartaFinanze()}</div>
+      <div class="tessera p-pasti">{@render cartaModulo("pasti")}</div>
     </div>
     <div class="pila">
       <div class="tessera p-training">{@render cartaModulo("allenamenti")}</div>
       <div class="tessera p-mobilita">{@render cartaModulo("mobilita", mobilitaApre)}</div>
-    </div>
-    <div class="pila">
-      <div class="tessera p-pasti">{@render cartaModulo("pasti")}</div>
     </div>
   </div>
 </Pagina>
@@ -545,32 +561,63 @@
   .p-mobilita { order: 4; }
   .p-pasti    { order: 5; }
 
+  /* DUE COLONNE da 760: la giornata a sinistra, tutto il resto a destra. */
   @media (min-width: 760px) {
-    .bento { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+    .bento {
+      display: grid;
+      grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+      gap: var(--space-6);
+      align-items: start;
+    }
     .pila { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
     .tessera { order: 0; }
+    /* Con due sole colonne le due pile di destra si fondono in una: tre
+       colonne su 800 punti sarebbero tre strisce. */
+    .pila:not(.stretta) { display: contents; }
+    .pila:not(.stretta) > .tessera { grid-column: 2; }
   }
-  @media (min-width: 1200px) {
-    /* La prima colonna e' piu' larga perche' porta le due carte che si
-       LEGGONO — i soldi e la giornata — mentre le altre quattro si
-       guardano. */
-    .bento { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); }
+  /* TRE COLONNE da 1180: la giornata resta stretta — e' una lista, non ha
+     bisogno di larghezza — e le quattro carte si dividono in due pile.
+     Pile e non righe di griglia: due carte affiancate di altezza diversa
+     lascerebbero il buco sotto la piu' corta. */
+  @media (min-width: 1180px) {
+    .bento { grid-template-columns: minmax(0, 340px) minmax(0, 1fr) minmax(0, 1fr); }
+    .pila:not(.stretta) { display: flex; }
+    .pila:not(.stretta) > .tessera { grid-column: auto; }
   }
 
   /* La forma comune di una carta di modulo. Il `blocco` e' l'interno di una
      lastra: il padding lo mette lui, cosi' `Sezione` resta nuda e tutte le
      carte cominciano alla stessa quota. */
-  .blocco { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); }
-  .modulo { gap: 2px; }
-  .modulo .m-cifra { margin-top: 2px; }
+  .blocco { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-5) var(--space-4) var(--space-4); }
+
+  /* IL RITMO VERTICALE DI UNA CARTA, e non un `gap` solo per tutto.
+
+     Era `gap: 2px`: testata, numero, dettaglio e bottone tutti attaccati,
+     un blocco di testo senza respiro — e il bottone «Inizia ora» incollato
+     alla riga sopra. Le distanze non sono tutte uguali perche' i legami non
+     sono tutti uguali: il dettaglio appartiene al numero e gli sta vicino,
+     la testata e' un'altra cosa e sta lontana, l'azione e' un'altra cosa
+     ancora e sta piu' lontana di tutte.
+
+     Il `min-height` serve all'allineamento: quattro carte di stato affiancate
+     che vanno da ottanta a duecento punti si leggono come quattro cose
+     diverse. Con un fondo comune diventano quattro tessere. */
+  /* 196 e' la misura della carta piu' alta delle tre — Mobilita', che ha
+     anche il bottone. Dandola a tutte, la colonna delle tre tessere finisce
+     esattamente dove finisce Finanze accanto: la simmetria non e' un vezzo,
+     e' la differenza fra tre carte e una colonna. */
+  .modulo { gap: 0; min-height: 196px; }
+  .modulo .t-modulo { margin-bottom: var(--space-4); }
+  .modulo .m-cifra { margin-top: auto; }
+  .modulo .m-cifra + :global(*) { margin-top: var(--space-1); }
+  .modulo .m-barra { margin-top: var(--space-3); }
+  .modulo :global(.pulsante) { margin-top: var(--space-4); }
 
   /* LA TESTATA. Pastiglia del colore del modulo, nome, chevron. Era un
      titolo grigio: due carte accanto si distinguevano solo leggendole. Il
      colore si riconosce da lontano, il nome lo conferma. */
-  .t-modulo {
-    display: flex; align-items: center; gap: var(--space-2);
-    margin: -2px 0 var(--space-1);
-  }
+  .t-modulo { display: flex; align-items: center; gap: var(--space-2); }
   .t-icona {
     display: grid; place-items: center; width: 28px; height: 28px; flex: none;
     border-radius: 9px;
@@ -616,7 +663,7 @@
     display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .m-barra { height: 5px; border-radius: var(--radius-full); background: var(--fill-tertiary); overflow: hidden; margin-top: var(--space-1); }
+  .m-barra { height: 5px; border-radius: var(--radius-full); background: var(--fill-tertiary); overflow: hidden; }
   .m-barra i { display: block; height: 100%; border-radius: inherit; background: var(--accento); transition: width var(--duration-slow) var(--ease-default); }
   /* Piena vuol dire «ci sei»: verde, che in ATLAS vuol dire quello. Il
      colore del modulo serve a dire DI CHI e' la barra, non come va. */
@@ -630,16 +677,16 @@
 
      Una griglia a tre colonne: l'ora, il segno, il nome. Le ore incolonnate
      si leggono come un orario; in tre flex ognuna finirebbe dove capita. */
-  .g-testa { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+  .g-testa { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
   .g-titolo { color: var(--label-secondary); }
   .g-lista { display: grid; grid-template-columns: auto auto 1fr; gap: 0 var(--space-3); align-items: center; margin-top: 2px; }
   .g-voce { display: contents; }
-  .g-ora { color: var(--label-tertiary); font-variant-numeric: tabular-nums; min-width: 34px; padding: 7px 0; }
+  .g-ora { color: var(--label-tertiary); font-variant-numeric: tabular-nums; min-width: 38px; padding: 9px 0; }
   .g-segno {
     display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
     box-shadow: inset 0 0 0 1.5px var(--label-quaternary); color: transparent;
   }
-  .g-nome { padding: 7px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .g-nome { padding: 9px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .g-dentro { grid-column: 3; margin-top: -6px; padding-bottom: 5px; }
   .g-altre { display: block; padding: 2px 0 0 37px; }
   .g-link { color: var(--accento); }

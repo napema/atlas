@@ -7,7 +7,7 @@
 
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
-import { casella, stato, semina, regimeDi, FASCE } from "./dati.js";
+import { casella, stato, semina, regimeDi } from "./dati.js";
 import { bersagli, giornata, previstoFascia } from "./calcolo.js";
 import { assicuraPianiUtili } from "./piano.js";
 
@@ -110,39 +110,15 @@ function preparaQuandoPronto(canale) {
  * numero rosso su quanto hai sgarrato ieri è esattamente l'app che si
  * disinstalla a gennaio. Il tono è quello di un promemoria.
  */
-/**
- * I pasti di oggi per la lista della giornata della home.
- *
- * Ognuno ha la sua ORA, che e' il punto: sono gli unici appuntamenti fissi
- * della giornata, e senza di loro quella lista sarebbe una fila di cose da
- * fare senza orologio.
- *
- * «FATTA» QUI VUOL DIRE «PASSATA». E' la dottrina del modulo: l'assunzione
- * e' che hai mangiato quello che c'era nel piano, e l'archivio contiene solo
- * gli scostamenti. Chiedere una spunta per ogni pasto sarebbe l'app che
- * l'utente ha detto che non userebbe.
- */
-function giornataDiOggi(iso) {
-  const ora = new Date();
-  const adesso = ora.getHours() * 60 + ora.getMinutes();
-  const fuori = [];
-  for (const f of FASCE) {
-    const regime = regimeDi(iso, f.id);
-    if (regime === "salto") continue;
-    const p = regime === "casa" ? previstoFascia(iso, f.id) : null;
-    const m = Number(f.ora.slice(0, 2)) * 60 + Number(f.ora.slice(3, 5));
-    fuori.push({
-      chiave: `pasti:${f.id}`,
-      nome: p?.nome || f.nome,
-      dentro: p ? f.nome : `${f.nome} · fuori`,
-      ora: f.ora,
-      fatta: adesso >= m,
-      apre: "#/pasti",
-      tint: "rosa",
-    });
-  }
-  return fuori;
-}
+/* I PASTI NON ENTRANO NELLA GIORNATA.
+
+   Ci sono stati per mezza giornata, ed erano cinque righe su sette: la
+   lista diceva «hai mangiato» invece di «com'e' fatta oggi». La giornata
+   serve a vedere la FORMA del giorno — dove sei, cosa ti aspetta — e
+   mangiare non la cambia, succede e basta.
+
+   La cena e le proteine stanno nella carta di Pasti, che e' il posto in cui
+   si va a cercarle. */
 
 export function oggi() {
   const iso = giornoCorrente();
@@ -164,7 +140,6 @@ export function oggi() {
       : `proteine a posto · ${Math.round(t.kcal)} di ${b.kcal} kcal`,
     fatto: mancanoProt === 0,
     avanzamento: b.kcal ? Math.min(1, t.kcal / b.kcal) : 0,
-    giornata: giornataDiOggi(iso),
     // Mai urgente: questo modulo non ha emergenze, e un riquadro che si
     // accende ogni sera perché non hai ancora cenato è rumore.
     urgente: false,

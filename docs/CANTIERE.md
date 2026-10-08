@@ -2694,3 +2694,66 @@ In pratica:
   sfocatura: resta vetro, e copre. (Scritto, non calcolato con `color-mix`:
   due percentuali che superano il cento vengono normalizzate, e 100+55
   usciva 0,69 invece di 0,82.)
+
+---
+
+## 8 ottobre 2026, notte — la giornata è l'andamento, non un'agenda *(chat ATLAS)*
+
+Tre correzioni, e la prima è la più importante.
+
+### La giornata non è un calendario né una to-do list
+
+Era diventata la lista di tutto quello che oggi succede, e cinque righe su
+sette erano **pasti**: diceva «hai mangiato» invece di «com'è fatta oggi».
+
+Serve a una cosa sola: **il profilo del giorno**. Il lavoro, che training c'è
+e quale, se c'è la mobilità. Quattro righe, non dodici.
+
+```
+08:00 ✓ Lavoro       08:00 – 17:00
+08:30 ✓ Facile       Corsa
+17:00 ✓ Upper A      Palestra
+21:00 ○ Quotidiano   Mobilità · 14 min
+```
+
+Il **lavoro** non appartiene a nessun modulo — non è una cosa che si fa
+nell'app, è il blocco dentro cui il resto si incastra — quindi sta nella
+home, che è l'unica che ha il compito di dire com'è fatta la giornata
+(`LAVORO` in `giornata.ts`). È una riga e non uno sfondo: come sfondo
+avrebbe voluto dire disegnare una scala oraria vera, cioè un calendario.
+
+I pasti tornano dove si vanno a cercare: nella carta di Pasti, con la cena e
+le proteine.
+
+### A sinistra la giornata, e da sola
+
+Prima stava sotto Finanze nella stessa pila: la colonna di sinistra era alta
+il doppio delle altre due e a destra restava **mezza schermata vuota**.
+
+Adesso le tre colonne sono tre cose diverse, e non è solo equilibrio di
+altezze — è il motivo per cui si capisce dove guardare senza leggere i
+titoli:
+
+| | |
+|---|---|
+| **la giornata** | com'è fatto oggi. Si legge |
+| **quello che consumi** | Finanze, Pasti |
+| **il corpo** | Training, Mobilità — lo stesso gruppo che hanno già nella barra |
+
+Le colonne finiscono a 568 / 855 / 682 invece di 568 / 635 / 846.
+
+### Lo spacing
+
+Era `gap: 2px` per tutto: testata, numero, dettaglio e bottone attaccati, e
+«Inizia ora» incollato alla riga sopra. Un blocco di testo senza respiro.
+
+**Le distanze non sono tutte uguali perché i legami non sono tutti uguali**:
+il dettaglio appartiene al numero e gli sta a 4 punti, la testata è un'altra
+cosa e sta a 16, l'azione è un'altra cosa ancora e sta a 16 dal resto con
+sopra tutto lo spazio che avanza.
+
+E `min-height: 196px` su tutte e tre le tessere di stato, che è l'altezza
+della più alta: quattro carte affiancate che vanno da 80 a 200 punti si
+leggono come quattro cose diverse, con un fondo comune diventano tre
+tessere. La simmetria non è un vezzo — è la differenza fra tre carte e una
+colonna.

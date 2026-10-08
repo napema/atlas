@@ -100,8 +100,31 @@ const ORA_FASCIA: Record<string, number> = {
   mattina: 7, pomeriggio: 13, preWorkout: 17, sera: 20, qualsiasi: 23,
 };
 
-function giorno(conDati: Scheda[]): VoceGiorno[] {
-  const voci: VoceGiorno[] = [];
+/* LA CORNICE DELLA GIORNATA: il lavoro.
+ *
+ * Non appartiene a nessun modulo — non e' una cosa che si fa nell'app, e' il
+ * blocco dentro cui tutto il resto si incastra. Sta qui, nella home, perche'
+ * la home e' l'unica che ha il compito di dire com'e' fatta la giornata.
+ *
+ * E' una RIGA e non uno sfondo: come sfondo avrebbe voluto dire disegnare
+ * una scala oraria vera, cioe' un calendario — e questa non e' un
+ * calendario, e' il profilo del giorno. Quello che cade dentro quelle ore
+ * si mette in fila con lei, in ordine di orologio, e si legge lo stesso.
+ */
+export const LAVORO = { da: "08:00", a: "17:00" };
+
+const inMinuti = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+
+function giorno(conDati: Scheda[], adesso = new Date()): VoceGiorno[] {
+  const ora = adesso.getHours() * 60 + adesso.getMinutes();
+  const voci: VoceGiorno[] = [{
+    chiave: "oggi:lavoro",
+    nome: "Lavoro",
+    dentro: `${LAVORO.da} – ${LAVORO.a}`,
+    ora: LAVORO.da,
+    fatta: ora >= inMinuti(LAVORO.a),
+    modulo: "oggi",
+  }];
   for (const s of conDati) {
     for (const v of ((s.dati as any).giornata || []) as VoceGiorno[]) {
       voci.push({ ...v, modulo: s.voce.id });
