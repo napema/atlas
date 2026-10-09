@@ -2757,3 +2757,39 @@ della più alta: quattro carte affiancate che vanno da 80 a 200 punti si
 leggono come quattro cose diverse, con un fondo comune diventano tre
 tessere. La simmetria non è un vezzo — è la differenza fra tre carte e una
 colonna.
+
+---
+
+## 9 ottobre 2026 — la cornice di sistema seguiva un colore che non c'era più *(chat ATLAS)*
+
+La barra del titolo della PWA su Windows era nera sopra una pagina che nera
+non è più: dal rifacimento dello stile il fondo è `#08080c` — un filo di blu
+nel nero, perché il grigio neutro su un OLED vira al verde — e fra le due si
+vedeva la riga di stacco.
+
+Il colore di quella cornice (barra del titolo su Windows, barra di stato su
+Android, striscia sotto il notch su iOS) non lo decide il CSS: è l'unico
+pezzo di interfaccia che sta **fuori dalla pagina**, e lo legge il browser da
+`<meta name="theme-color">` e dal manifest. Erano scritti a mano a `#000000`,
+ed è bastato cambiare un token perché andassero fuori sincrono.
+
+Riscriverli a mano avrebbe solo spostato la prossima dimenticanza. Adesso
+`lib/core/tema.ts` **legge `--scena-fondo`** — il token che dipinge davvero
+la pagina — e scrive un `<meta>` suo: se il fondo cambia, cambia anche la
+cornice, e non c'è un secondo posto da ricordarsi.
+
+Risolve anche un caso che i due `<meta media="...">` non possono risolvere:
+quelli seguono il tema del **sistema**, mentre ATLAS ha anche un tema forzato
+(`data-tema`). Con «Chiaro» scelto a mano su un telefono in scuro, la pagina
+era chiara e la barra restava nera. Un `MutationObserver` su `data-tema` più
+l'ascolto di `prefers-color-scheme` coprono tutti e tre i momenti: all'avvio,
+al cambio in Impostazioni, al tramonto.
+
+I due `<meta media>` di `index.html` restano, allineati ai token, e servono
+al **primo disegno** — prima che il JavaScript parta. Il manifest passa a
+`#08080c` per `theme_color` e `background_color` (la schermata di avvio).
+
+**Nota per chi lo prova:** il `<meta>` vale da subito al ricaricamento, ma la
+barra del titolo di una PWA **installata** la dipinge Chrome dal manifest, e
+quello lo rilegge quando gli pare — può volerci un giro o una
+reinstallazione prima che si veda.

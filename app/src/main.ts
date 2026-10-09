@@ -11,6 +11,7 @@ import { avviaTuttiISync } from "./lib/core/registro";
 import { vaiA } from "./lib/core/router.svelte";
 import { caricaContratti } from "./lib/core/contratti.svelte";
 import { riallinea } from "./lib/core/notifiche";
+import { seguiIlTema } from "./lib/core/tema";
 
 /**
  * Il pizzico su Safari. `user-scalable=no` lo ignora per scelta, e
@@ -24,6 +25,10 @@ for (const e of ["gesturestart", "gesturechange", "gestureend"]) {
 }
 
 mount(App, { target: document.getElementById("app")! });
+
+// La barra del sistema prende il colore della pagina, e lo rilegge quando
+// il tema cambia: e' l'unico pezzo di interfaccia che sta fuori dal CSS.
+seguiIlTema();
 
 // In sottofondo: i dati di TUTTI i moduli, anche di quelli che non guardi,
 // altrimenti la home racconta la giornata di ieri.

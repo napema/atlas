@@ -10,10 +10,21 @@
 <meta name="description" content="Finanze, pasti, corpo e abitudini in una sola app.">
 
 <link rel="manifest" href="./manifest.webmanifest">
-<!-- Una per tema: con una sola, la barra di stato resta del colore
-     dell'altro tema e si vede una striscia sopra la pagina. -->
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<!-- IL COLORE DELLA CORNICE DI SISTEMA: la barra del titolo di una PWA su
+     Windows, la barra di stato su Android, la striscia sotto il notch.
+
+     Questi due valgono per il PRIMO disegno, prima che il JavaScript parta:
+     sono `--scena-fondo` dei due temi, copiato a mano. Appena la app e'
+     viva, `lib/core/tema.ts` scrive un terzo tag leggendo il token vero —
+     cosi' il giorno che il fondo cambia non resta una barra del colore di
+     prima, che e' esattamente quello che e' successo quando il nero
+     assoluto e' diventato #08080c.
+
+     Due e non uno perche' il `media` segue il tema del sistema: con uno
+     solo, la barra resta del colore dell'altro tema e si vede la riga di
+     stacco sopra la pagina. -->
+<meta name="theme-color" content="#08080c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#eceef4" media="(prefers-color-scheme: light)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
