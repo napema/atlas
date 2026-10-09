@@ -2793,3 +2793,33 @@ al **primo disegno** — prima che il JavaScript parta. Il manifest passa a
 barra del titolo di una PWA **installata** la dipinge Chrome dal manifest, e
 quello lo rilegge quando gli pare — può volerci un giro o una
 reinstallazione prima che si veda.
+
+---
+
+## 9 ottobre 2026 — la riga di stacco non era il `theme-color` *(chat ATLAS)*
+
+Allineato il `theme-color` al token, la riga **si vedeva ancora**. Il motivo
+è che stavo allineando un colore solo a una pagina che in cima non ne aveva
+uno: `.scena` dipingeva sopra `--scena-fondo` una fascia chiara di orizzonte
+e il bordo della pozza di luce del modulo, che è colorata e **cambia con il
+modulo**. Il colore da raggiungere non era fisso: era blu sulla home, arancio
+su Finanze. Nessun valore scritto nel `<meta>` poteva prenderli tutti.
+
+Quindi non si allinea, si costruisce. In cima alla pila dello sfondo c'è ora
+`linear-gradient(180deg, var(--scena-fondo), var(--scena-fondo-0) 160px)`: a
+zero l'alfa è 1, cioè il primo pixel della pagina **è** `--scena-fondo` per
+costruzione, e la luce comincia sotto. L'orizzonte chiaro è sparito — era
+proprio lui la fascia — e la grana si tiene fuori dagli stessi 160 punti con
+una maschera: all'1,8 % non si vede, ma a contatto con una barra piena
+sarebbe l'unica cosa a rendere visibile il punto di contatto.
+
+**`--scena-fondo-0` non è un lusso.** Sfumare verso `transparent` sembra la
+stessa cosa e non lo è: `transparent` è *nero* con alfa zero, e la sfumatura
+ci passa attraverso il grigio. In scuro non si nota; in chiaro, dove il fondo
+è `#eceef4`, si vedeva una fascia sporca dove non doveva esserci niente. Il
+token è lo stesso colore con `00` in coda, ed è usato anche dai `velo-bordi`,
+che avevano lo stesso difetto.
+
+Provato mettendo una striscia di `--scena-fondo` pieno sopra la metà sinistra
+del primo centimetro di pagina: se si vede, la giunzione è sbagliata. In
+scuro e in chiaro non si vede.

@@ -87,6 +87,12 @@
      sono fredde: su un fondo neutro il rosso e l'arancio sembrano sporchi.
   */
   --scena-fondo: #08080c;
+  /* LO STESSO FONDO, TRASPARENTE. Serve per sfumare il fondo nel nulla.
+     Scrivere `transparent` al posto suo sembra la stessa cosa e non lo e':
+     `transparent` e' NERO con alfa zero, e una sfumatura ci passa attraverso
+     il grigio. In scuro non si nota, in chiaro si vede una fascia sporca
+     dove non dovrebbe esserci niente. */
+  --scena-fondo-0: #08080c00;
 
   /* LE DUE POZZE DI LUCE.
 
@@ -103,9 +109,6 @@
      gradiente, non si vede affatto. */
   --scena-forza:   13%;
   --scena-pozza-2: rgba(86, 116, 190, 0.09);
-  /* L'orizzonte: la riga chiara in cima, dove in un'app nativa la luce
-     entra dalla status bar. */
-  --scena-orizzonte: rgba(255, 255, 255, 0.045);
   /* La grana. Un velo all'1,8%: senza, due gradienti larghi su un OLED
      fanno fasce visibili (banding), e le fasce si notano molto più della
      grana. */
@@ -229,9 +232,9 @@
   --separator-opaque: #c6c6c8;
 
   --scena-fondo:     #eceef4;
+  --scena-fondo-0:   #eceef400;
   --scena-forza:     16%;
   --scena-pozza-2:   rgba(255, 255, 255, 0.5);
-  --scena-orizzonte: rgba(255, 255, 255, 0.55);
   --scena-grana:     0.012;
 
   /* Nel chiaro il velo è BIANCO e più coprente: sotto il vetro chiaro passa
@@ -295,10 +298,10 @@
     --separator: rgba(0, 0, 0, 0.10); --separator-opaque: #c6c6c8;
 
     --scena-fondo: #eceef4;
+    --scena-fondo-0: #eceef400;
     --scena-forza: 16%;
     --scena-pozza-2: rgba(255, 255, 255, 0.5);
-    --scena-orizzonte: rgba(255, 255, 255, 0.55);
-    --scena-grana: 0.012;
+      --scena-grana: 0.012;
 
     --vetro-velo: rgba(255, 255, 255, 0.78); --vetro-velo-chiaro: rgba(255, 255, 255, 0.66);
     --vetro-barra: rgba(246, 247, 250, 0.86);

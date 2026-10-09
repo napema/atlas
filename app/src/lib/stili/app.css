@@ -137,13 +137,29 @@ img, svg { display: block; }
   position: fixed; inset: 0; z-index: 0;
   pointer-events: none;
   background:
+    /* LA GIUNZIONE COL SISTEMA, e sta in cima alla pila perche' deve
+       vincere su tutto il resto.
+
+       La cornice che il sistema disegna sopra la pagina — la barra del
+       titolo di una PWA, la barra di stato di un telefono — è un colore
+       PIENO: quello del `theme-color`, cioè `--scena-fondo`. Ma il primo
+       pixel della pagina non era `--scena-fondo`: c'erano sopra l'orizzonte
+       chiaro e il bordo della pozza del modulo, e il risultato era una riga
+       di stacco netta fra una barra nera e una pagina blu-grigia. Allineare
+       il `theme-color` non poteva bastare — il colore da raggiungere non
+       era un colore solo, cambiava col modulo.
+
+       Qui i primi pixel sono `--scena-fondo` pieno, e la luce comincia
+       sotto: a zero l'alfa è 1, quindi la giunzione è esatta per
+       costruzione, non per taratura. Centosessanta punti perché la pozza
+       entri senza che si veda il punto in cui comincia. */
+    linear-gradient(180deg, var(--scena-fondo), var(--scena-fondo-0) 160px),
     /* La pozza del modulo: la miscela si fa QUI perche' qui `--accento`
        esiste (lo mette il guscio). Vedi il commento in tokens.css. */
     radial-gradient(120vmax 85vmax at 88% -12%,
       color-mix(in srgb, var(--accento, var(--color-blue)) var(--scena-forza), transparent),
       transparent 58%),
     radial-gradient(100vmax 70vmax at 2% 106%, var(--scena-pozza-2), transparent 56%),
-    linear-gradient(180deg, var(--scena-orizzonte), transparent 16%),
     var(--scena-fondo);
   /* La tinta cambia con il modulo: la si fa scivolare, non saltare. Mezzo
      secondo è il tempo in cui la dissolvenza d'ingresso della schermata
@@ -154,6 +170,11 @@ img, svg { display: block; }
   content: ""; position: absolute; inset: 0;
   opacity: var(--scena-grana);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Anche la grana si tiene lontana dalla giunzione: all'1,8 per cento non
+     si vede, ma proprio sul punto di contatto con una barra piena sarebbe
+     l'unica cosa che lo rende visibile. */
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 160px);
+  mask-image: linear-gradient(180deg, transparent, #000 160px);
 }
 
 /* =========================================================================
@@ -282,13 +303,13 @@ img, svg { display: block; }
 }
 .velo-bordi::before {
   top: 0;
-  background: linear-gradient(180deg, var(--scena-fondo), transparent);
+  background: linear-gradient(180deg, var(--scena-fondo), var(--scena-fondo-0));
   opacity: var(--velo-alto, 0);
   transition: opacity var(--duration-fast) var(--ease-default);
 }
 .velo-bordi::after {
   bottom: 0;
-  background: linear-gradient(0deg, var(--scena-fondo), transparent);
+  background: linear-gradient(0deg, var(--scena-fondo), var(--scena-fondo-0));
   opacity: var(--velo-basso, 0);
   transition: opacity var(--duration-fast) var(--ease-default);
 }
