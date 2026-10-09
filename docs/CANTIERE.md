@@ -2823,3 +2823,53 @@ che avevano lo stesso difetto.
 Provato mettendo una striscia di `--scena-fondo` pieno sopra la metà sinistra
 del primo centimetro di pagina: se si vede, la giunzione è sbagliata. In
 scuro e in chiaro non si vede.
+
+---
+
+## 9 ottobre 2026 — le righe si guardavano, non si toccavano *(chat ATLAS + Finanze)*
+
+«Non riesco a cliccare e fare tipo "paga", perché è il giorno e l'ho pagata.»
+iCloud+ scadeva oggi, la riga lo diceva, e non c'era niente da toccare.
+
+Il foglio **esisteva già** — `FoglioArrivo.svelte`, con «Paga», la correzione
+dell'importo e la via di riparazione «era già pagata, non registrare niente».
+Era cablato in `Vista.svelte` da settimane. Semplicemente non lo apriva
+nessuno: le righe di «In arrivo» erano `<span>` dentro un `<li>` senza
+scatola. Una schermata che si legge e basta non si distingue da una
+schermata rotta.
+
+**Adesso si apre tutto quello che ha un dentro.** In Finanze: le righe di
+«In arrivo» (prima e dopo la paga) aprono il foglio della scadenza, quelle di
+«Fuori piano» il movimento, quelle di «Pocket» i saldi, e la riga verde
+«GIORNO DI PAGA» i quattro travasi. In home: le due scadenze urgenti della
+carta Finanze, il numero grande di ogni carta, e il nome di ogni voce della
+giornata.
+
+Tre cose tecniche che valeva la pena risolvere bene:
+
+**`subgrid`.** Le righe stanno su una griglia a colonne perché le cifre a
+destra si confrontino con l'occhio. Un bottone con `display: contents` non ha
+area di tocco; un bottone normale avrebbe incolonnato per conto suo. Il
+bottone è una scatola vera con `grid-template-columns: subgrid`, e le sue
+celle restano sulle colonne di sopra. Il padding è solo verticale: uno
+orizzontale sposterebbe la subgriglia, cioè romperebbe la cosa per cui è lì.
+La quarta colonna è il chevron — senza, una riga che si apre e una che non si
+apre hanno lo stesso aspetto, ed è esattamente il guasto di partenza.
+
+**La home non apre un foglio di Finanze, ci naviga.** Nessun modulo ne importa
+un altro (regola 12), e il foglio vive dentro la vista del modulo. Quindi
+ogni riga si porta dietro la sua rotta — `#/finanze/arrivo/<origine>/<id>/<quando>` —
+e Finanze la ricompone con `voceInArrivo()`: lo stesso meccanismo delle
+notifiche, che è già provato. L'indirizzo torna `#/finanze` appena il foglio è
+aperto, se no «indietro» lo riaprirebbe.
+
+**Guardare e fare sono due rotte diverse.** La carta di Mobilità aveva
+testata, corpo e bottone che portavano tutti e tre a `#/mobilita/inizia`: da
+nessuna parte si poteva semplicemente guardare il modulo. Ora testata e corpo
+vanno alla schermata, il bottone fa la cosa.
+
+Due difetti trovati per strada e corretti: le voci di «In arrivo» **dopo** la
+paga non avevano `fra` né `stimato`, e il loro foglio scriveva «fra undefined
+giorni» (finché si potevano solo guardare non se n'era accorto nessuno); e
+«↓ altre 3» della giornata puntava a `#/abitudini`, che da ieri non c'è più —
+adesso apre la giornata intera, che è dove quelle voci stanno davvero.

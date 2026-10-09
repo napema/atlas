@@ -33,8 +33,10 @@
   import { maiuscola } from "$lib/core/ui";
   import { meseDi, spostaMese, nomeMese, cicloDi, spostaCiclo, nomeCiclo } from "$condivisi/finanze/calcolo.js";
   import { primoCiclo } from "$condivisi/finanze/analisi.js";
+  import { voceInArrivo } from "$condivisi/finanze/piano.js";
   import { migra } from "$condivisi/finanze/dati.js";
   import { fogli, apri } from "./fogli.svelte";
+  import { vaiA } from "$lib/core/router.svelte";
 
   let { resto = [] }: { resto?: string[] } = $props();
 
@@ -64,6 +66,26 @@
     if (r === "ricarica") queueMicrotask(() => apri({ tipo: "ricaricaSett" }));
     if (r === "chiusura") queueMicrotask(() => apri({ tipo: "chiusura" }));
     if (r === "lista") queueMicrotask(() => apri({ tipo: "lista" }));
+
+    /* UNA SCADENZA APERTA DA FUORI: `#/finanze/arrivo/<origine>/<id>/<quando>`.
+       La home non può aprire un foglio di Finanze — nessun modulo ne importa
+       un altro — quindi ci arriva per indirizzo, come una notifica. Le tre
+       parti identificano la voce; l'oggetto lo ricostruisce il modulo, che è
+       l'unico che sa cos'è una scadenza. */
+    if (r === "arrivo" && resto.length >= 4) {
+      const [, origine, id, quando] = resto;
+      queueMicrotask(() => {
+        const v = voceInArrivo(origine, id, quando);
+        // Una voce già pagata non esiste più: meglio la schermata di
+        // Finanze, dove si vede che non c'è, di un foglio vuoto.
+        if (v) apri({ tipo: "arrivo", voce: v });
+        /* L'indirizzo torna quello della schermata appena il foglio e'
+           aperto: se restasse quello della voce, chiudere il foglio e
+           premere indietro lo riaprirebbe, e un «indietro» che non torna
+           indietro e' la cosa che fa chiudere la app. */
+        vaiA("#/finanze", { sostituisci: true });
+      });
+    }
   });
   $effect(() => ascolta(EVENTI.GIORNO_CAMBIATO, () => { mese = meseDi(); ciclo = cicloDi().indice; }));
 

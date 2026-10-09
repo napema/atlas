@@ -226,10 +226,13 @@
       <ul class="elenco">
         {#each d.fp.voci.slice(0, 5) as m (m.id)}
           <li>
-            <span class="e-data cifre secondario">{gm(m.data)}</span>
-            <span class="e-nome">{m.nota || "—"}</span>
-            {#if m.daRiserva}<span class="tag">da ING</span>{/if}
-            <span class="e-cifra cifre">{euro(importoEffettivo(m))}</span>
+            <button type="button" class="e-riga" onclick={() => apri({ tipo: "dettaglio", id: m.id })}>
+              <span class="e-data cifre secondario">{gm(m.data)}</span>
+              <span class="e-nome">{m.nota || "—"}</span>
+              {#if m.daRiserva}<span class="tag">da ING</span>{/if}
+              <span class="e-cifra cifre">{euro(importoEffettivo(m))}</span>
+            <span class="e-chev" aria-hidden="true"><Icona nome="freccia" misura={13} tratto={2.4} /></span>
+            </button>
           </li>
         {/each}
         {#if d.fp.voci.length > 5}
@@ -260,29 +263,38 @@
       {#each d.arrivo.prima.voci as v (`${v.origine}:${v.id}:${v.quando}`)}
         {@const cop = (d.arrivo.prima.perPocket as any)[v.pocket || "principale"]}
         <li>
-          <span class="e-data cifre secondario">{gg(v.quando)}</span>
-          <span class="e-nome">{v.nome}</span>
-          <span class="e-nota text-footnote" class:male={cop && !cop.coperto}>
-            {nomePocket(v.pocket)}
-            · {cop && !cop.coperto ? `manca ${euro(cop.scoperto, { tondo: true })}` : "coperto"}
-          </span>
-          <span class="e-cifra cifre">{euro(v.importo)}</span>
+          <button type="button" class="e-riga" onclick={() => apri({ tipo: "arrivo", voce: v })}>
+            <span class="e-data cifre secondario">{gg(v.quando)}</span>
+            <span class="e-nome">{v.nome}</span>
+            <span class="e-nota text-footnote" class:male={cop && !cop.coperto}>
+              {nomePocket(v.pocket)}
+              · {cop && !cop.coperto ? `manca ${euro(cop.scoperto, { tondo: true })}` : "coperto"}
+            </span>
+            <span class="e-cifra cifre">{euro(v.importo)}</span>
+            <span class="e-chev" aria-hidden="true"><Icona nome="freccia" misura={13} tratto={2.4} /></span>
+          </button>
         </li>
       {/each}
 
       <!-- LA RIGA DELLA PAGA, e tutto quello che sta sotto non ha allarmi:
            una bolletta del 9 novembre la paga lo stipendio del 23 ottobre, e
            segnalarla scoperta oggi è un allarme su un mese che torna. -->
-      <li class="paga">
-        <span class="cifre">{gg(d.arrivo.paga)}</span>
-        <span>GIORNO DI PAGA</span>
+      <li class="paga-li">
+        <button type="button" class="paga" onclick={() => apri({ tipo: "paga", dataStip: d.arrivo.paga })}>
+          <span class="cifre">{gg(d.arrivo.paga)}</span>
+          <span>GIORNO DI PAGA</span>
+          <span class="e-chev" aria-hidden="true"><Icona nome="freccia" misura={13} tratto={2.4} /></span>
+        </button>
       </li>
 
       {#each d.arrivo.dopo as v (`${v.origine}:${v.id}:${v.quando}`)}
         <li class="dopo">
-          <span class="e-data cifre secondario">{gg(v.quando)}</span>
-          <span class="e-nome secondario">{v.nome}</span>
-          <span class="e-cifra cifre secondario">{euro(v.importo)}</span>
+          <button type="button" class="e-riga" onclick={() => apri({ tipo: "arrivo", voce: v })}>
+            <span class="e-data cifre secondario">{gg(v.quando)}</span>
+            <span class="e-nome secondario">{v.nome}</span>
+            <span class="e-cifra cifre secondario">{euro(v.importo)}</span>
+            <span class="e-chev" aria-hidden="true"><Icona nome="freccia" misura={13} tratto={2.4} /></span>
+          </button>
         </li>
       {/each}
     </ul>
@@ -302,9 +314,12 @@
     <ul class="elenco pocket">
       {#each d.pk as p (p.id)}
         <li>
-          <span class="e-nome">{p.nome}</span>
-          <span class="e-nota text-footnote secondario">{d.obi && p.id === d.obi.pocket ? `salvadanaio · ${d.obi.nome}` : NOTA_POCKET[p.id] ?? (TIPI_POCKET as any)[p.tipo]?.nome ?? ""}</span>
-          <span class="e-cifra cifre" class:male={p.saldoVero < 0}>{euro(p.saldoVero)}</span>
+          <button type="button" class="e-riga" onclick={() => apri({ tipo: "pocket" })}>
+            <span class="e-nome">{p.nome}</span>
+            <span class="e-nota text-footnote secondario">{d.obi && p.id === d.obi.pocket ? `salvadanaio · ${d.obi.nome}` : NOTA_POCKET[p.id] ?? (TIPI_POCKET as any)[p.tipo]?.nome ?? ""}</span>
+            <span class="e-cifra cifre" class:male={p.saldoVero < 0}>{euro(p.saldoVero)}</span>
+            <span class="e-chev" aria-hidden="true"><Icona nome="freccia" misura={13} tratto={2.4} /></span>
+          </button>
         </li>
       {/each}
     </ul>
@@ -396,10 +411,40 @@
      Le cifre a destra incolonnate si confrontano con l'occhio; in tre flex
      ognuna finisce dove capita e per leggere la terza bisogna rileggere la
      prima. --- */
-  .elenco { display: grid; grid-template-columns: auto 1fr auto; gap: 2px var(--space-3); margin-top: 2px; align-items: baseline; }
+  .elenco { display: grid; grid-template-columns: auto 1fr auto auto; gap: 2px var(--space-3); margin-top: 2px; align-items: baseline; }
   /* `display: contents` e non `subgrid`: le celle delle righe devono stare
      sulla griglia del genitore, e questo lo fa su tutto quello che esiste. */
   .elenco li { display: contents; }
+
+  /* UNA RIGA CHE SI APRE.
+
+     Le righe erano `<span>` dentro un `<li>` senza scatola: si leggevano e
+     basta, e davanti a una bolletta pagata stamattina non c'era niente da
+     toccare. Ora ogni riga e' un bottone — il foglio che apre esisteva
+     gia', non lo apriva nessuno.
+
+     `subgrid` perche' servono tutte e due le cose: il bottone dev'essere
+     una scatola vera (un'area di tocco non si fa con `display: contents`)
+     e le sue celle devono restare sulle colonne dell'elenco, se no ogni
+     riga incolonna per conto suo e le cifre a destra non si confrontano
+     piu'.
+
+     Il padding e' solo verticale: uno orizzontale sposterebbe le colonne
+     della subgriglia rispetto a quelle di sopra, cioe' romperebbe proprio
+     la cosa per cui `subgrid` e' li'. */
+  .e-riga {
+    grid-column: 1 / -1;
+    display: grid; grid-template-columns: subgrid;
+    align-items: baseline; gap: 2px var(--space-3);
+    padding: 5px 0; margin: -5px 0;
+    width: 100%; text-align: left; color: inherit;
+    transition: opacity var(--duration-fast) var(--ease-default);
+  }
+  .e-riga:active { opacity: 0.45; }
+  /* Il chevron e' il motivo per cui la quarta colonna esiste: senza, una
+     riga che si apre e una che non si apre hanno lo stesso aspetto. Spento,
+     perche' sono tante. */
+  .e-chev { align-self: center; color: var(--label-quaternary); display: inline-flex; }
   .e-data { font-size: var(--text-footnote); white-space: nowrap; }
   .e-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .e-cifra { justify-self: end; font-variant-numeric: tabular-nums; font-weight: var(--weight-semibold); }
@@ -410,16 +455,21 @@
      margine, e una scatola che non esiste non si può bordare. */
   .piu { display: block; grid-column: 1 / -1; }
 
-  .pocket { grid-template-columns: 1fr auto; }
+  .pocket { grid-template-columns: 1fr auto auto; }
   .pocket .e-nota { grid-column: 1 / 2; }
 
-  /* La riga del giorno di paga: è un separatore, non una voce. */
+  /* La riga del giorno di paga: è un separatore, non una voce — ma apre il
+     foglio dei travasi, che è quello che quel giorno ti chiede. */
+  .paga-li { display: contents; }
   .paga {
-    display: flex; gap: var(--space-3); grid-column: 1 / -1;
-    margin: 6px 0; padding-top: 7px; border-top: 0.5px solid var(--separator);
-    color: var(--color-green);
+    display: flex; align-items: center; gap: var(--space-3); grid-column: 1 / -1;
+    width: 100%; margin: 6px 0; padding-top: 7px; border-top: 0.5px solid var(--separator);
+    color: var(--color-green); text-align: left;
     font-size: var(--text-footnote); font-weight: var(--weight-semibold); letter-spacing: 0.6px;
+    transition: opacity var(--duration-fast) var(--ease-default);
   }
+  .paga .e-chev { margin-left: auto; color: color-mix(in srgb, var(--color-green) 55%, transparent); }
+  .paga:active { opacity: 0.45; }
   .dopo .e-nome, .dopo .e-cifra { font-weight: var(--weight-regular); }
 
   /* --- fuori piano --- */

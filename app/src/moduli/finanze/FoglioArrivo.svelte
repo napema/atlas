@@ -64,7 +64,10 @@
   {#if voce && cop}
     <div class="testa">
       <Importo centesimi={voce.importo} misura={44} />
-      <span class="text-subheadline secondario">{maiuscola(dataUmana(voce.quando))} · {quando}</span>
+      <!-- «Oggi · oggi»: `dataUmana` dice gia' «Oggi» per le date vicine, e
+           il relativo accanto diventava un'eco. Si mostra solo quando
+           aggiunge qualcosa. -->
+      <span class="text-subheadline secondario">{maiuscola(dataUmana(voce.quando))}{dataUmana(voce.quando).toLowerCase() === quando ? "" : ` · ${quando}`}</span>
     </div>
 
     <Sezione>

@@ -1660,6 +1660,18 @@ export function comeEvento(v) {
       ? NOMI_POCKET[v.pocket] || v.pocket
       : `${NOMI_POCKET[v.pocket] || v.pocket} · mancano ${eu(cop.manca)}`,
     tono: !cop.coperto ? "male" : v.fra <= 2 ? "avviso" : "",
+
+    /* L'INDIRIZZO DELLA RIGA, e non il foglio.
+
+       La home non puo' aprire un foglio di Finanze: nessun modulo ne importa
+       un altro, e il foglio vive dentro la vista di Finanze. Ma puo'
+       navigare. Quindi ogni riga si porta dietro la rotta che apre il suo
+       foglio, e la home si limita a seguirla — lo stesso meccanismo delle
+       notifiche, che e' gia' provato.
+
+       I pezzi si codificano: un id puo' contenere qualunque cosa, e una
+       barra dentro un id spezzerebbe la rotta in due. */
+    rotta: `#/finanze/arrivo/${encodeURIComponent(v.origine)}/${encodeURIComponent(v.id)}/${encodeURIComponent(v.quando)}`,
   };
 }
 

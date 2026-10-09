@@ -179,6 +179,11 @@
   /* La giornata, con il posto in cui sei adesso. `corrente` e' la prima
      non fatta: tutto quello che viene prima e' passato, il resto e' da
      venire. Una lista in cui niente e' «adesso» non e' una giornata. */
+  /* «↓ altre 3» portava a `#/abitudini`, che da oggi non c'e' piu'. E non
+     era giusto nemmeno prima: quelle voci non sono di un modulo solo, sono
+     il resto della GIORNATA. Si aprono qui. */
+  let giornataIntera = $state(false);
+
   const giorno = $derived.by(() => {
     const voci = q.giornata as any[];
     const i = voci.findIndex((v) => !v.fatta && !v.saltata);
@@ -192,16 +197,17 @@
        Due dietro e non zero: senza niente di fatto sopra, la prima riga
        sembra l'inizio della giornata anche alle nove di sera. */
     const DIETRO = 2, AVANTI = 5;
-    const da = Math.max(0, corrente - DIETRO);
-    const a = Math.min(voci.length, corrente + AVANTI);
-    const finestra = voci.length <= DIETRO + AVANTI + 1 ? voci : voci.slice(da, a);
+    const intera = giornataIntera || voci.length <= DIETRO + AVANTI + 1;
+    const da = intera ? 0 : Math.max(0, corrente - DIETRO);
+    const a = intera ? voci.length : Math.min(voci.length, corrente + AVANTI);
+    const finestra = intera ? voci : voci.slice(da, a);
 
     return {
       voci: finestra,
       // L'indice del «adesso» dentro la finestra, non dentro l'elenco.
       corrente: finestra.indexOf(voci[corrente]),
-      prima: voci.length <= DIETRO + AVANTI + 1 ? 0 : da,
-      dopo: voci.length <= DIETRO + AVANTI + 1 ? 0 : voci.length - a,
+      prima: da,
+      dopo: voci.length - a,
       fatte: voci.filter((v) => v.fatta).length,
       totale: voci.length,
       restano: voci.filter((v) => !v.fatta && !v.saltata).length,
@@ -307,13 +313,30 @@
                 onclick={() => !v.ora && tocca(v as any)}>
                 {#if v.fatta || v.saltata}<Icona nome="spunta" misura={13} tratto={3} />{/if}
               </button>
-              <span class="g-nome">{v.nome}</span>
-              {#if v.dentro}<span class="g-dentro text-footnote secondario">{v.dentro}</span>{/if}
+              <!-- IL NOME PORTA ALLA COSA. Il cerchio a sinistra la spunta,
+                   il nome la apre: due gesti diversi, due bersagli diversi.
+                   Il lavoro non apre niente — non e' di nessun modulo — e
+                   allora resta testo, invece di essere un link che non va da
+                   nessuna parte. -->
+              {#if v.apre || v.modulo !== "oggi"}
+                <a class="g-vai" href={v.apre ?? `#/${v.modulo}`}>
+                  <span class="g-nome">{v.nome}</span>
+                  {#if v.dentro}<span class="g-dentro text-footnote secondario">{v.dentro}</span>{/if}
+                </a>
+              {:else}
+                <span class="g-vai">
+                  <span class="g-nome">{v.nome}</span>
+                  {#if v.dentro}<span class="g-dentro text-footnote secondario">{v.dentro}</span>{/if}
+                </span>
+              {/if}
             </li>
           {/each}
         </ol>
-        {#if giorno.dopo}
-          <a class="g-altre g-link text-footnote cifre" href="#/abitudini">↓ altre {giorno.dopo}</a>
+        {#if giorno.dopo || giornataIntera}
+          <button type="button" class="g-altre g-link text-footnote cifre"
+            onclick={() => (giornataIntera = !giornataIntera)}>
+            {giornataIntera ? "↑ mostra meno" : `↓ altre ${giorno.dopo}`}
+          </button>
         {/if}
       </div>
     </Sezione>
@@ -330,12 +353,24 @@
     <div style:--accento={c2.voce.accento}>
       <Sezione>
         <div class="blocco modulo">
-          {@render testa(c2.voce, c2.d.azione?.rotta ?? null, c2.d.fatto === true)}
-          <span class="m-cifra cifre" class:lungo={v.length > 14}>{v}</span>
-          {#if c2.d.dettaglio}<span class="text-subheadline secondario">{c2.d.dettaglio}</span>{/if}
-          {#if typeof c2.d.avanzamento === "number" && c2.d.avanzamento > 0}
-            <span class="m-barra" class:piena={c2.d.fatto === true}><i style:width="{Math.round(Math.min(1, c2.d.avanzamento) * 100)}%"></i></span>
-          {/if}
+          <!-- `#/<modulo>` e non `azione.rotta`: su Mobilità quella rotta è
+               `#/mobilita/inizia`, cioè il player. Con la testata, il corpo e
+               il bottone che portavano tutti e tre allo stesso posto, da
+               nessuna parte si poteva semplicemente GUARDARE il modulo. -->
+          {@render testa(c2.voce, null, c2.d.fatto === true)}
+          <!-- TUTTO IL CORPO E' IL BERSAGLIO, non solo la testata. Il numero
+               grande e' la cosa che si guarda, quindi e' anche la cosa che si
+               tocca: cercare il nome in cima per entrare e' il gesto che non
+               fa nessuno. Il bottone sotto resta fuori dal link — un bottone
+               dentro un link non e' HTML valido, e soprattutto fa due cose
+               diverse. -->
+          <a class="m-corpo" href="#/{c2.voce.id}">
+            <span class="m-cifra cifre" class:lungo={v.length > 14}>{v}</span>
+            {#if c2.d.dettaglio}<span class="text-subheadline secondario">{c2.d.dettaglio}</span>{/if}
+            {#if typeof c2.d.avanzamento === "number" && c2.d.avanzamento > 0}
+              <span class="m-barra" class:piena={c2.d.fatto === true}><i style:width="{Math.round(Math.min(1, c2.d.avanzamento) * 100)}%"></i></span>
+            {/if}
+          </a>
           {#if azione}
             <Pulsante variante="tinto" misura="media" larga href={azione}>Inizia ora</Pulsante>
           {/if}
@@ -356,9 +391,11 @@
              capiva quale rispondesse a «posso spendere stasera». -->
         <div class="soldi">
           {@render testa(voceDi("finanze"), "#/finanze")}
-          <span class="eti-oggi text-footnote semibold">Puoi spendere oggi</span>
-          <span class="cifra cifre">{f.oggiPuoi ?? f.valore ?? "—"}</span>
-          <span class="text-subheadline secondario">{f.oggiFino ?? f.eti ?? ""}</span>
+          <a class="s-corpo" href="#/finanze">
+            <span class="eti-oggi text-footnote semibold">Puoi spendere oggi</span>
+            <span class="cifra cifre">{f.oggiPuoi ?? f.valore ?? "—"}</span>
+            <span class="text-subheadline secondario">{f.oggiFino ?? f.eti ?? ""}</span>
+          </a>
         </div>
 
         <!-- Solo le uscite che bruciano: quelle scoperte e quelle entro due
@@ -368,7 +405,10 @@
         {#if f.urgenti?.length}
           <div class="avvolge" style:--inizio-l="38px">
           {#each f.urgenti as e (e.chiave)}
-            <Riga>
+            <!-- `e.rotta` apre la scadenza DENTRO Finanze, dove c'e' «Paga».
+                 Era la riga che si guardava il giorno dell'addebito senza
+                 poterci fare niente. -->
+            <Riga href={e.rotta} freccia>
               {#snippet inizio()}
                 <span class="data" data-tono={e.tono} class:oggi={e.oggi}>
                   <span class="data-g">{e.giornoNome}</span>
@@ -609,7 +649,13 @@
      e' la differenza fra tre carte e una colonna. */
   .modulo { gap: 0; min-height: 196px; }
   .modulo .t-modulo { margin-bottom: var(--space-4); }
-  .modulo .m-cifra { margin-top: auto; }
+  /* IL CORPO SCENDE IN FONDO. E' questo che allinea i numeri delle carte su
+     una riga sola invece di lasciarli dove finisce il testo di ognuna. */
+  .modulo .m-corpo {
+    margin-top: auto; display: flex; flex-direction: column; color: inherit;
+    transition: opacity var(--duration-fast) var(--ease-default);
+  }
+  .modulo .m-corpo:active { opacity: 0.55; }
   .modulo .m-cifra + :global(*) { margin-top: var(--space-1); }
   .modulo .m-barra { margin-top: var(--space-3); }
   .modulo :global(.pulsante) { margin-top: var(--space-4); }
@@ -679,16 +725,25 @@
      si leggono come un orario; in tre flex ognuna finirebbe dove capita. */
   .g-testa { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
   .g-titolo { color: var(--label-secondary); }
-  .g-lista { display: grid; grid-template-columns: auto auto 1fr; gap: 0 var(--space-3); align-items: center; margin-top: 2px; }
+  /* `start` e non `center`: una voce con la sua sotto-riga e' alta il
+     doppio, e con `center` la sua ora scendeva a meta' — le ore non si
+     leggevano piu' come un orario. */
+  .g-lista { display: grid; grid-template-columns: auto auto 1fr; gap: 0 var(--space-3); align-items: start; margin-top: 2px; }
   .g-voce { display: contents; }
   .g-ora { color: var(--label-tertiary); font-variant-numeric: tabular-nums; min-width: 38px; padding: 9px 0; }
   .g-segno {
     display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+    margin-top: 8px;
     box-shadow: inset 0 0 0 1.5px var(--label-quaternary); color: transparent;
   }
-  .g-nome { padding: 9px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .g-dentro { grid-column: 3; margin-top: -6px; padding-bottom: 5px; }
-  .g-altre { display: block; padding: 2px 0 0 37px; }
+  /* Nome e sotto-riga in una cella sola: sono la stessa cosa, e devono
+     essere lo stesso bersaglio. Prima erano due celle su due righe della
+     griglia, tenute insieme da un margine negativo. */
+  .g-vai { grid-column: 3; display: flex; flex-direction: column; min-width: 0; padding: 7px 0; }
+  .g-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .g-dentro { margin-top: 1px; }
+  a.g-vai:active { opacity: 0.5; }
+  .g-altre { display: block; padding: 2px 0 0 37px; text-align: left; }
   .g-link { color: var(--accento); }
 
   /* VERDE TINTO, NON VERDE PIENO.
@@ -718,6 +773,11 @@
 
   /* ========================================================= FINANZE ==== */
   .soldi { display: flex; flex-direction: column; gap: 2px; padding: var(--space-4); }
+  .s-corpo {
+    display: flex; flex-direction: column; gap: 2px; color: inherit;
+    transition: opacity var(--duration-fast) var(--ease-default);
+  }
+  .s-corpo:active { opacity: 0.55; }
   .eti-oggi { color: var(--label-secondary); letter-spacing: 0.7px; text-transform: uppercase; }
   .soldi .cifra {
     font-family: var(--font-display); font-size: 46px; line-height: 1.05;

@@ -504,20 +504,44 @@ export function inArrivoDiviso(giorni = 14, iso = oggiISO()) {
   const limite = piuGiorni(iso, giorni);
   const a = inArrivo(giorni, iso);
 
+  /* `fra` E `stimato` ANCHE QUI, e non sono di lusso: sono i due campi che
+     il foglio di una voce legge per dire «fra 14 giorni» e «stima». Finche'
+     le righe di «dopo» si potevano solo guardare nessuno se n'e' accorto;
+     dal momento che si aprono, senza `fra` il foglio scriveva «fra
+     undefined giorni». */
   const dopo = [];
   for (const r of ricorrentiVivi()) {
     if (!r.attivo) continue;
     let q = prossimaScadenza(r, paga);
-    if (q && q <= limite) dopo.push({ ...r, quando: q, importo: importoRicorrente(r), origine: "ricorrente" });
+    if (q && q <= limite) {
+      dopo.push({
+        ...r, quando: q, importo: importoRicorrente(r), origine: "ricorrente",
+        stimato: r.tipo === "variabile", fra: giorniFra(iso, q),
+      });
+    }
   }
   for (const x of previsti()) {
     if (x.quando && x.quando >= paga && x.quando <= limite) {
-      dopo.push({ ...x, importo: x.imp || 0, origine: "previsto" });
+      dopo.push({ ...x, importo: x.imp || 0, origine: "previsto", stimato: false, fra: giorniFra(iso, x.quando) });
     }
   }
   dopo.sort((p, s) => p.quando.localeCompare(s.quando));
 
   return { prima: a, paga, dopo, finestra: limite };
+}
+
+/**
+ * Una voce di «In arrivo» ritrovata dal suo indirizzo.
+ *
+ * Serve alle rotte: `#/finanze/arrivo/<origine>/<id>/<quando>` arriva dalla
+ * home o da una notifica e porta tre stringhe, non l'oggetto. La finestra e'
+ * larga perche' il mittente puo' essere di ieri — una notifica aperta il
+ * giorno dopo deve trovare la sua voce, non una schermata vuota.
+ */
+export function voceInArrivo(origine, id, quando, iso = oggiISO()) {
+  const a = inArrivoDiviso(90, iso);
+  return [...a.prima.voci, ...a.dopo].find((v) =>
+    v.origine === origine && String(v.id) === String(id) && v.quando === quando) || null;
 }
 
 /* ========================================================================
