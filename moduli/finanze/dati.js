@@ -1418,6 +1418,121 @@ export function allineaV3() {
   return true;
 }
 
+/* ========================================================================
+   LE SOTTOCATEGORIE CHE MANCAVANO — 10 ottobre 2026
+
+   I cinque gruppi di `gruppi.js` sanno dire dove vanno i soldi, ma il
+   grafico dentro un gruppo si legge per sottocategoria, e li' l'archivio
+   aveva quattro buchi che rendevano illeggibile la meta' piu' grossa:
+
+   - sette movimenti in categoria Fisse senza sottocategoria, cioe'
+     «Altro · Fisse · 7 volte · 1.528 €»: il blocco piu' grande del ciclo
+     e dentro non c'era scritto niente;
+   - il Telepass in categoria Fisse, che non e' una spesa fissa: e' un
+     pedaggio, e ING lo copre;
+   - «Patente Droni» senza sottocategoria, perche' «Corsi» non esisteva;
+   - la rata AliExpress senza legame col suo pagamento differito, quindi
+     indistinguibile da una spesa decisa stamattina.
+
+   Gira UNA VOLTA SOLA (il marchio e' `config.bloccoGruppi`) e DOPO la
+   lettura del repo, per la ragione di sempre: una migrazione che scrive
+   prima di aver letto si marca come fatta su un archivio vuoto, e i
+   movimenti che arrivano dopo dal sync non li rimappa piu' nessuno.
+
+   Assegna solo CATEGORIA e SOTTOCATEGORIA. Non tocca gli importi, non
+   tocca i pocket, non tocca le date: un pocket sbagliato sposta dei saldi,
+   e un saldo lo si corregge guardando l'estratto, non indovinando.
+   ======================================================================== */
+
+export const BLOCCO_GRUPPI = "2026-10-10-gruppi";
+
+/* Da che pezzo di nota si riconosce una spesa fissa. L'ordine conta: la
+   prima che combacia vince, e «rata» sta prima di tutto perche' una nota
+   come «Rata prestito auto» contiene anche «auto». */
+const SUB_FISSE = [
+  [/\b(rata|prestito|finanziament)/, "Prestito"],
+  [/\b(affitto|canone|locazione|agenzia)/, "Affitto"],
+  [/\b(windtre|wind tre|wind|iliad|vodafone|tim|ho mobile|fastweb)\b/, "Telefono"],
+  [/(icloud|claude|wellhub|netflix|spotify|abbonament|apple one|chatgpt|youtube|prime|disney)/, "Abbonamenti"],
+];
+
+/** La sottocategoria di una spesa fissa, dedotta dalla nota. `null` se non si sa. */
+function subFisse(nota) {
+  const n = normalizza(nota);
+  for (const [re, sub] of SUB_FISSE) if (re.test(n)) return sub;
+  return null;
+}
+
+export function sistemaGruppi() {
+  if (stato().config?.bloccoGruppi === BLOCCO_GRUPPI) return false;
+
+  const ora = Date.now();
+  casella.aggiorna((s) => {
+    s.cats = s.cats || [];
+    s.movs = s.movs || [];
+    s.previsti = s.previsti || [];
+
+    /* --- 1. «Corsi»: la sottocategoria che mancava a Svago ------------- */
+    const svago = s.cats.find((c) => c.id === "svago");
+    if (svago && Array.isArray(svago.sub) && !svago.sub.includes("Corsi")) {
+      svago.sub = [...svago.sub, "Corsi"];
+    }
+
+    for (const m of s.movs) {
+      if (!m || m.del || m.tipo !== "out") continue;
+      const n = normalizza(m.nota);
+
+      /* --- 2. IL TELEPASS NON E' UNA SPESA FISSA ---------------------- */
+      if (n.includes("telepass") && m.cat === "fisse") {
+        m.cat = "auto";
+        m.sub = "Pedaggio";
+        m.up = ora;
+        continue;
+      }
+
+      /* --- 3. «Patente Droni» e i corsi ------------------------------- */
+      if (!m.sub && (n.includes("patente droni") || n.includes("corso"))) {
+        m.cat = "svago";
+        m.sub = "Corsi";
+        m.up = ora;
+        continue;
+      }
+
+      /* --- 4. LE FISSE SENZA SOTTOCATEGORIA --------------------------- */
+      if (m.cat === "fisse" && !m.sub) {
+        const sub = subFisse(m.nota);
+        if (sub) { m.sub = sub; m.up = ora; }
+      }
+    }
+
+    /* --- 5. LA RATA ALIEXPRESS 2/3 ------------------------------------
+       Non e' una spesa fissa anche se esce dalla tasca delle bollette: e'
+       una cosa comprata a giugno che si paga a rate. Il legame con un
+       previsto e' l'unica cosa che lo dice — il pocket, da solo, mente.
+
+       Il previsto nasce gia' `pagatoIl`: serve allo storico e al
+       raggruppamento, non a «In arrivo», dove una rata del 1 ottobre
+       comparirebbe come scaduta. */
+    const rata2 = s.movs.find((m) => m && !m.del && m.tipo === "out"
+      && normalizza(m.nota).includes("aliexpress") && m.data >= "2026-09-23" && !m.pian);
+    if (rata2) {
+      if (!s.previsti.some((p) => p && p.id === "v3-aliexpress-2")) {
+        s.previsti.push({
+          id: "v3-aliexpress-2", nome: "2/3 Rata AliExpress", imp: rata2.imp,
+          quando: rata2.data, pocket: rata2.pocket || "fisse", cat: rata2.cat || "fisse",
+          nota: "Pagamento differito in tre rate.", pagatoIl: rata2.data, up: ora,
+        });
+      }
+      rata2.pian = "v3-aliexpress-2";
+      rata2.up = ora;
+    }
+
+    s.config = { ...(s.config || {}), bloccoGruppi: BLOCCO_GRUPPI };
+    s.metaUp = ora;
+  });
+  return true;
+}
+
 /* ------------------------------------------------- i travasi della paga -- */
 /*
    Quali dei quattro travasi del giorno di paga sono stati fatti.

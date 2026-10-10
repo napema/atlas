@@ -2,7 +2,13 @@
 <script lang="ts">
   import { euro } from "$lib/core/ui";
 
-  let { voci, totale }: { voci: { etichetta: string; valore: number; colore: string }[]; totale: number } = $props();
+  /* `legenda: false` per chi la sua legenda ce l'ha già e la vuole
+     interattiva: l'Analisi ci mette delle chip che accendono e spengono le
+     fette, e due legende sotto lo stesso grafico sarebbero due verità. */
+  let { voci, totale, legenda = true, etichettaCentro = "USCITE" }: {
+    voci: { etichetta: string; valore: number; colore: string }[];
+    totale: number; legenda?: boolean; etichettaCentro?: string;
+  } = $props();
 
   const R = 56, SP = 24, C = R + SP / 2 + 2, S = C * 2;
   const archi = $derived.by(() => {
@@ -25,8 +31,9 @@
       {#each archi as a, i (i)}<path d={a.d} stroke-width={SP} fill="none" style:stroke={a.colore} />{/each}
     {/if}
     <text x={C} y={C - 2} text-anchor="middle" class="tot">{euro(totale, { tondo: true })}</text>
-    <text x={C} y={C + 15} text-anchor="middle" class="eti">USCITE</text>
+    <text x={C} y={C + 15} text-anchor="middle" class="eti">{etichettaCentro}</text>
   </svg>
+  {#if legenda}
   <ul class="legenda">
     {#each voci as v (v.etichetta)}
       <li class="text-subheadline">
@@ -37,10 +44,11 @@
       </li>
     {/each}
   </ul>
+  {/if}
 </div>
 
 <style>
-  .ciambella { display: flex; align-items: center; gap: var(--space-5); flex-wrap: wrap; }
+  .ciambella { display: flex; align-items: center; justify-content: center; gap: var(--space-5); flex-wrap: wrap; }
   svg { flex: none; }
   .tot { fill: var(--label-primary); font-size: 15px; font-weight: 700; font-family: var(--font-family); }
   .eti { fill: var(--label-tertiary); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; font-family: var(--font-family); }

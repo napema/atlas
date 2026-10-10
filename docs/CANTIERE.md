@@ -2873,3 +2873,109 @@ paga non avevano `fra` né `stimato`, e il loro foglio scriveva «fra undefined
 giorni» (finché si potevano solo guardare non se n'era accorto nessuno); e
 «↓ altre 3» della giornata puntava a `#/abitudini`, che da ieri non c'è più —
 adesso apre la giornata intera, che è dove quelle voci stanno davvero.
+
+---
+
+## 10 ottobre 2026 — l'Analisi metteva tutto in un calderone *(chat Finanze)*
+
+«È fatta bene graficamente ma non mi fa capire dove vanno i soldi.» Il
+motivo era uno solo: affitto, rata del prestito, Telepass pagato da ING, il
+monitor e il caffè finivano negli stessi totali, nelle stesse medie, nelle
+stesse proiezioni. «Ritmo +426 €», «media al giorno 98 €», «scontrino medio
+50 €», «giorno più caro 875 €»: numeri veri, tutti gonfiati dall'affitto, e
+nessuno dei quali dice niente su quello che si può cambiare.
+
+**La regola nuova, e non ha eccezioni:** nessuna media, proiezione,
+percentuale o confronto si calcola su un totale che contiene Fisse o spese
+da riserva. Si calcola solo su quello che decidi tu.
+
+### I cinque gruppi — `moduli/finanze/gruppi.js`
+
+Ogni uscita finisce in uno e un solo gruppo. L'ordine *è* la definizione, e
+ogni riga è lì per un caso vero:
+
+1. **`fuoriPiano: true` scritto a mano** vince su tutto. È una marca, non una
+   deduzione: se l'hai messa tu, sai qualcosa che il calcolo non sa. È anche
+   il caso del monitor — comprato dal Principale dopo averlo ricaricato da
+   ING — che resta una decisione tua, non un prelievo.
+2. **Fisse** (tasca Spese fisse, o legate a un ricorrente di categoria
+   Fisse), e *prima* della deduzione: un affitto da 850 € inserito a mano
+   supererebbe la soglia del fuori piano e si prenderebbe il posto di una
+   decisione.
+3. **Da riserva** (tasca ING, o legate a un ricorrente/previsto su ING), e
+   anche questa prima della deduzione: il Telepass da 368 € passa la soglia
+   ma non è una cosa scelta stasera.
+4. **Fuori piano dedotto** (`eFuoriPiano`): sopra soglia, non legato a una
+   scadenza, non alimentare, non uscito dalla lista d'attesa.
+5. **Pianificate**: legate a un previsto, o comprate dalla lista d'attesa.
+6. **Quotidiano**: il resto.
+
+Fuori piano + Quotidiano = **«Decise da te»**, le uniche due leve. Le uscite
+rimborsate per intero non entrano in nessun gruppo: zero non appartiene a
+niente, e metterlo in un gruppo gonfierebbe un conteggio senza spostare un
+euro. `controllaCopertura()` esiste per vedere il contrario — un'uscita che
+nessuna regola prende — perché il totale continuerebbe a tornare e il buco
+non si vedrebbe.
+
+### La schermata
+
+A: la barra impilata e le cinque righe, ognuna apribile sui suoi movimenti.
+B: il donut delle sole «decise», per categoria, con **due filtri che non si
+parlano** — i gruppi decidono quali soldi entrano, le categorie come si
+vedono — e il totale al centro sempre sulla somma del visibile. C: il ritmo
+del quotidiano contro la quota del piano, con l'andamento in cui i fuori
+piano sono **punti sopra la linea, non sommati** (una decisione presa una
+volta non alza il ritmo di tutti i giorni dopo). D: le sottocategorie del
+solo quotidiano, col medio accanto al conteggio. E: gli ultimi cicli in
+quattro colonne separate, senza totale unico.
+
+Via: i segnali «da tenere d'occhio» (le percentuali di categoria erano
+calcolate col fuori piano dentro), le tile media/scontrino/giorno più caro,
+«per giorno della settimana», le barre di budget per categoria — i budget
+vivono nella legenda del donut, dove servono. Con loro se n'è andato quasi
+tutto `analisi.js`, che resta di due funzioni: *quale* ciclo.
+
+### Le correzioni ai dati — `sistemaGruppi()`
+
+Una tantum, marchio `config.bloccoGruppi`, **dopo** la lettura del repo come
+tutte le altre. Assegna solo categoria e sottocategoria: non tocca importi,
+pocket né date. Un pocket sbagliato sposta dei saldi, e un saldo si corregge
+guardando l'estratto, non indovinando.
+
+- le Fisse senza sottocategoria (erano «Altro · Fisse · 7 volte · 1.528 €»,
+  il blocco più grosso del ciclo e dentro non c'era scritto niente) →
+  Affitto / Prestito / Abbonamenti / Telefono, dedotti dalla nota;
+- Telepass da categoria Fisse → **Auto › Pedaggio**;
+- «Patente Droni» → **Svago › Corsi**, sottocategoria nuova;
+- la rata AliExpress 2/3 → legata a un previsto (`v3-aliexpress-2`, già
+  `pagatoIl`), che è l'unica cosa che la distingue da una spesa fissa: esce
+  dalla stessa tasca delle bollette, e il pocket da solo mente.
+
+### Verifica
+
+`moduli/finanze/prova-gruppi.js` — 56 controlli, due secondi:
+
+```
+deno run --location http://localhost/ --allow-read moduli/finanze/prova-gruppi.js
+```
+
+L'archivio della prova non è l'export vero (quello sta sul telefono) ma ha
+la stessa forma, e torna ai numeri del documento: Fisse 1.159,97 · Da
+riserva 368,05 · Pianificate 79,41 · Fuori piano 240,54 · Quotidiano 426,87
+· totale 2.274,84 · decise 667,41 · 23,72 €/g contro un piano di 17,83 ·
++177 € · donut 667,41 che spegnendo «Fuori piano» diventa 426,87.
+
+La riprova che la forma è quella giusta: 1.159,97 (le sei fisse) + 368,05
+(il Telepass, che nella schermata vecchia era in categoria Fisse) fa
+esattamente 1.528,02 in sette movimenti, cioè la riga «Altro · Fisse» che
+c'era prima.
+
+**Resta da verificare sui dati veri**, che qui non ci sono: il PC ha solo
+l'archivio di allineamento a otto movimenti.
+
+### Una nota sul punto delle migliaia
+
+Il documento scrive «1.159,97 €», la app scrive «1159,97 €»: `Intl` in
+italiano non raggruppa i numeri di quattro cifre (`useGrouping: "min2"`), ed
+è la forma che usa tutta la app da sempre. Si cambia in una riga in
+`core/ui.js` — ma cambia ogni schermata, quindi è una decisione a sé.

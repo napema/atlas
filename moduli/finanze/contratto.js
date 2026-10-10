@@ -10,7 +10,7 @@ import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { annuncia } from "../../core/bus.js";
 import {
-  casella, stato, movimentiVivi, migra, completaTravasi, dividiPersonale, allineaV3,
+  casella, stato, movimentiVivi, migra, completaTravasi, dividiPersonale, allineaV3, sistemaGruppi,
   chiusuraFatta, vociLista, statoVoce,
 } from "./dati.js";
 import {
@@ -350,7 +350,10 @@ export function avviaSync() {
        sempre e' l'unica forma che non dipende dall'ordine. */
     const divisa = dividiPersonale();
     const allineata = allineaV3();
-    if (!divisa && !allineata) return;
+    // La terza, stesso trattamento: marchio suo, chiamata sua. Assegna le
+    // sottocategorie che mancavano ai cinque gruppi dell'Analisi.
+    const sistemata = sistemaGruppi();
+    if (!divisa && !allineata && !sistemata) return;
     pubblicaSullaLavagna();
     ridisegnaVista();
   }
