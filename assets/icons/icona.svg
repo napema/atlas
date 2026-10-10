@@ -1,25 +1,76 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ATLAS">
-  <title>ATLAS</title>
-  <!--
-    Una vetta. Sono le montagne dell'Atlante — il nome viene da lì — ed è la
-    prima forma di questa serie che sia una COSA e non una figura
-    geometrica: il rombo prima, il cerchio col punto, la A, i tre archi.
-    Una cosa si riconosce di sfuggita, una figura geometrica si confonde.
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <clipPath id="piastrella"><path d="M352.20 0.00 L671.80 0.00 C773.21 0.00 823.92 0.00 869.65 15.09 L878.50 17.26 C938.10 38.95 985.05 85.90 1006.74 145.50 L1008.91 154.35 C1024.00 200.08 1024.00 250.79 1024.00 352.20 L1024.00 671.80 C1024.00 773.21 1024.00 823.92 1008.91 869.65 L1006.74 878.50 C985.05 938.10 938.10 985.05 878.50 1006.74 L869.65 1008.91 C823.92 1024.00 773.21 1024.00 671.80 1024.00 L352.20 1024.00 C250.79 1024.00 200.08 1024.00 154.35 1008.91 L145.50 1006.74 C85.90 985.05 38.95 938.10 17.26 878.50 L15.09 869.65 C0.00 823.92 0.00 773.21 0.00 671.80 L0.00 352.20 C0.00 250.79 0.00 200.08 15.09 154.35 L17.26 145.50 C38.95 85.90 85.90 38.95 145.50 17.26 L154.35 15.09 C200.08 0.00 250.79 0.00 352.20 0.00 Z"/></clipPath>
 
-    NIENTE FONDO, MAI. Le versioni con il quadrato dietro su Windows
-    diventavano una piastrella — bianca sull'ultima, scura su quella prima —
-    perché lì nessuna maschera la ritaglia. Senza fondo il marchio sta su
-    qualunque superficie e non c'è un tema da indovinare: il file è uno solo
-    e va bene su chiaro e su scuro.
+    <!-- La piastrella: grafite, più chiara in alto. Una lastra illuminata,
+         non un nero piatto — sul nero il vetro non ha niente da mostrare. -->
+    <linearGradient id="fondo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2e2f35"/>
+      <stop offset="0.62" stop-color="#141418"/>
+      <stop offset="1" stop-color="#0a0a0d"/>
+    </linearGradient>
+    <radialGradient id="lucentezza" cx="512" cy="-140" r="840" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.13"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="orlo-piastrella" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.26"/>
+      <stop offset="0.3" stop-color="#fff" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
 
-    IL BLU È #2b86f0 per questo: 3,3:1 sul bianco e 5,6:1 sul nero. Per un
-    testo il primo non basterebbe, per una forma piena sì — e cercare un
-    colore che superi 4,5 su TUTTI E DUE i fondi vuol dire un blu spento che
-    non si vede bene da nessuna parte.
+    <!-- La montagna come MASCHERA: con un riempimento semitrasparente il
+         tratto che arrotonda gli angoli si sovrapporrebbe al pieno, e si
+         vedrebbe una fascia più chiara lungo i bordi. -->
+    <mask id="m-monte" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M282 708 L494 288 L790 708 Z" fill="#fff" stroke="#fff" stroke-width="70" stroke-linejoin="round" /></g>
+    </mask>
+    <!-- La lama di luce: la montagna meno sé stessa spostata appena in giù.
+         Resta un filo sui versanti, dove il vetro prende la luce dall'alto. -->
+    <mask id="m-luce" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M282 708 L494 288 L790 708 Z" fill="#fff" stroke="#fff" stroke-width="70" stroke-linejoin="round" /><path d="M282 708 L494 288 L790 708 Z" fill="#000" stroke="#000" stroke-width="70" stroke-linejoin="round" transform="translate(0 5)"/></g>
+    </mask>
+    <!-- E il suo opposto, appena accennato, sulla base. -->
+    <mask id="m-base" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M282 708 L494 288 L790 708 Z" fill="#fff" stroke="#fff" stroke-width="70" stroke-linejoin="round" /><path d="M282 708 L494 288 L790 708 Z" fill="#000" stroke="#000" stroke-width="70" stroke-linejoin="round" transform="translate(0 -5)"/></g>
+    </mask>
+    <mask id="m-neve" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <!-- Il tratto tondo smussa le punte della neve come il resto del
+           disegno: senza, erano tre denti da ritaglio di carta. -->
+      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M0 0 H1024 V452 L640 452 L596 486 L548 434 L500 480 L452 430 L404 470 L0 470 Z" fill="#fff" stroke="#fff" stroke-width="18" stroke-linejoin="round"/></g>
+    </mask>
 
-    L'inchiostro sta entro 179px dal centro, contro i 205 della zona sicura:
-    regge anche un ritaglio circolare.
-  -->
-  <path d="M118 332 L216 172 L286 278 L324 222 L396 332 Z"
-        fill="#2b86f0" stroke="#2b86f0" stroke-width="32" stroke-linejoin="round"/>
+    <!-- Il corpo: quasi pieno, e appena più leggero verso il basso. Il
+         gradiente di prima scendeva dal 96 al 30 per cento, e il fondo della
+         montagna diventava grigio metallo: sembrava cromo, non vetro. -->
+    <linearGradient id="corpo" x1="0" y1="260" x2="0" y2="740" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.86"/>
+      <stop offset="1" stop-color="#f1f3f8" stop-opacity="0.74"/>
+    </linearGradient>
+    <linearGradient id="luce" x1="0" y1="260" x2="0" y2="740" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0.35"/>
+    </linearGradient>
+
+    <filter id="ombra" x="-20%" y="-20%" width="140%" height="160%"><feGaussianBlur stdDeviation="14"/></filter>
+  </defs>
+
+  <g clip-path="url(#piastrella)">
+    <rect width="1024" height="1024" fill="url(#fondo)"/>
+    <rect width="1024" height="1024" fill="url(#lucentezza)"/>
+
+    <!-- L'ombra: corta e morbida. Lunga e scura staccava la montagna come un
+         adesivo in rilievo. -->
+    <g transform="translate(0 12)" opacity="0.42" filter="url(#ombra)">
+      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M282 708 L494 288 L790 708 Z" fill="#000" stroke="#000" stroke-width="70" stroke-linejoin="round" /></g>
+    </g>
+
+    <g mask="url(#m-monte)">
+      <rect width="1024" height="1024" fill="url(#corpo)"/>
+      <rect width="1024" height="1024" fill="#fff" fill-opacity="0.94" mask="url(#m-neve)"/>
+    </g>
+    <rect width="1024" height="1024" fill="url(#luce)" mask="url(#m-luce)"/>
+    <rect width="1024" height="1024" fill="#000" fill-opacity="0.16" mask="url(#m-base)"/>
+  </g>
+  <path d="M352.67 1.50 L671.33 1.50 C772.45 1.50 823.01 1.50 868.60 16.55 L877.43 18.71 C936.85 40.34 983.66 87.15 1005.29 146.57 L1007.45 155.40 C1022.50 200.99 1022.50 251.55 1022.50 352.67 L1022.50 671.33 C1022.50 772.45 1022.50 823.01 1007.45 868.60 L1005.29 877.43 C983.66 936.85 936.85 983.66 877.43 1005.29 L868.60 1007.45 C823.01 1022.50 772.45 1022.50 671.33 1022.50 L352.67 1022.50 C251.55 1022.50 200.99 1022.50 155.40 1007.45 L146.57 1005.29 C87.15 983.66 40.34 936.85 18.71 877.43 L16.55 868.60 C1.50 823.01 1.50 772.45 1.50 671.33 L1.50 352.67 C1.50 251.55 1.50 200.99 16.55 155.40 L18.71 146.57 C40.34 87.15 87.15 40.34 146.57 18.71 L155.40 16.55 C200.99 1.50 251.55 1.50 352.67 1.50 Z" fill="none" stroke="url(#orlo-piastrella)" stroke-width="3"/>
 </svg>
