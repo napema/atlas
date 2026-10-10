@@ -23,21 +23,21 @@
          tratto che arrotonda gli angoli si sovrapporrebbe al pieno, e si
          vedrebbe una fascia più chiara lungo i bordi. -->
     <mask id="m-monte" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
-      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M282 708 L494 288 L790 708 Z" fill="#fff" stroke="#fff" stroke-width="70" stroke-linejoin="round" /></g>
+      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M262 708 L512 288 L762 708 Z" fill="#fff" stroke="#fff" stroke-width="70" stroke-linejoin="round" /></g>
     </mask>
     <!-- La lama di luce: la montagna meno sé stessa spostata appena in giù.
          Resta un filo sui versanti, dove il vetro prende la luce dall'alto. -->
     <mask id="m-luce" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
-      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M282 708 L494 288 L790 708 Z" fill="#fff" stroke="#fff" stroke-width="70" stroke-linejoin="round" /><path d="M282 708 L494 288 L790 708 Z" fill="#000" stroke="#000" stroke-width="70" stroke-linejoin="round" transform="translate(0 5)"/></g>
+      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M262 708 L512 288 L762 708 Z" fill="#fff" stroke="#fff" stroke-width="70" stroke-linejoin="round" /><path d="M262 708 L512 288 L762 708 Z" fill="#000" stroke="#000" stroke-width="70" stroke-linejoin="round" transform="translate(0 5)"/></g>
     </mask>
     <!-- E il suo opposto, appena accennato, sulla base. -->
     <mask id="m-base" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
-      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M282 708 L494 288 L790 708 Z" fill="#fff" stroke="#fff" stroke-width="70" stroke-linejoin="round" /><path d="M282 708 L494 288 L790 708 Z" fill="#000" stroke="#000" stroke-width="70" stroke-linejoin="round" transform="translate(0 -5)"/></g>
+      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M262 708 L512 288 L762 708 Z" fill="#fff" stroke="#fff" stroke-width="70" stroke-linejoin="round" /><path d="M262 708 L512 288 L762 708 Z" fill="#000" stroke="#000" stroke-width="70" stroke-linejoin="round" transform="translate(0 -5)"/></g>
     </mask>
     <mask id="m-neve" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
       <!-- Il tratto tondo smussa le punte della neve come il resto del
            disegno: senza, erano tre denti da ritaglio di carta. -->
-      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M0 0 H1024 V452 L640 452 L596 486 L548 434 L500 480 L452 430 L404 470 L0 470 Z" fill="#fff" stroke="#fff" stroke-width="18" stroke-linejoin="round"/></g>
+      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M0 0 H1024 V456 L644 456 L600 488 L556 442 L512 490 L468 442 L424 488 L380 456 L0 456 Z" fill="#fff" stroke="#fff" stroke-width="18" stroke-linejoin="round"/></g>
     </mask>
 
     <!-- Il corpo: quasi pieno, e appena più leggero verso il basso. Il
@@ -62,7 +62,7 @@
     <!-- L'ombra: corta e morbida. Lunga e scura staccava la montagna come un
          adesivo in rilievo. -->
     <g transform="translate(0 12)" opacity="0.42" filter="url(#ombra)">
-      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M282 708 L494 288 L790 708 Z" fill="#000" stroke="#000" stroke-width="70" stroke-linejoin="round" /></g>
+      <g transform="translate(512 512) scale(1) translate(-512 -512)"><path d="M262 708 L512 288 L762 708 Z" fill="#000" stroke="#000" stroke-width="70" stroke-linejoin="round" /></g>
     </g>
 
     <g mask="url(#m-monte)">
