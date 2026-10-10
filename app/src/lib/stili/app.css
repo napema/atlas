@@ -52,6 +52,19 @@
 html {
   background: var(--scena-fondo);
   -webkit-text-size-adjust: 100%;
+  /* LA BARRA DELLE SCHEDE NON SI SPOSTA CAMBIANDO MODULO.
+
+     Su Windows la barra di scorrimento OCCUPA spazio — 15 punti — e su
+     iPhone e Mac no, perché lì si sovrappone. Una pagina che scorre ce l'ha,
+     una che non scorre no: la larghezza utile passava da 435 a 450 punti e
+     la capsula delle schede, centrata, si spostava di sette punti e mezzo.
+     Oggi sta in uno schermo alto senza scorrere, Finanze no: a ogni cambio
+     la barra compariva o spariva, e le schede ballavano sull'asse X. Non
+     era un'animazione, era l'impaginazione che saltava.
+
+     `stable` tiene il posto della barra anche quando non serve: la
+     larghezza non cambia mai. Dove la barra si sovrappone non fa niente. */
+  scrollbar-gutter: stable;
   /* LA PAGINA SCORRE SOLO IN VERTICALE, come un'app iOS. Tre righe, e
      servono tutte e tre:
 
