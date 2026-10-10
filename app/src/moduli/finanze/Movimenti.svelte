@@ -1,18 +1,28 @@
-<!-- I movimenti del mese, giorno per giorno, con il netto di ogni giorno. -->
+<!--
+  I movimenti del CICLO, giorno per giorno, con il netto di ogni giorno.
+
+  Erano del mese solare, ed era l'ultima schermata di Finanze a parlare una
+  lingua diversa da tutte le altre: il Riepilogo, l'Analisi, la quota, «in
+  arrivo» e le chiusure vivono tutte da stipendio a stipendio. Chi cercava
+  la spesa che ha fatto saltare il ciclo la trovava spezzata in due mesi, e
+  la somma dei giorni qui non tornava con nessun totale delle altre
+  schermate. Una finestra sola per tutta la app.
+-->
 <script lang="ts">
   import Sezione from "$lib/ui/Sezione.svelte";
   import Vuoto from "$lib/ui/Vuoto.svelte";
   import RigaMovimento from "./RigaMovimento.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { euro, dataUmana, maiuscola } from "$lib/core/ui";
-  import { movimentiDelMese, importoEffettivo } from "$condivisi/finanze/calcolo.js";
+  import { movimentiDelCiclo, importoEffettivo } from "$condivisi/finanze/calcolo.js";
+  import { cicloPerIndice } from "$condivisi/finanze/analisi.js";
 
-  let { mese, filtro }: { mese: string; filtro: string } = $props();
+  let { indice, filtro }: { indice: string; filtro: string } = $props();
 
 
   const giorni = $derived.by(() => {
     dati.versione;
-    let ms = movimentiDelMese(mese) as any[];
+    let ms = movimentiDelCiclo(cicloPerIndice(indice)) as any[];
     if (filtro === "altri") ms = ms.filter((m) => ["giro", "rimb", "reso"].includes(m.tipo));
     else if (filtro === "ecc") ms = ms.filter((m) => m.tipo === "out" && m.ecc);
     else if (filtro === "out") ms = ms.filter((m) => m.tipo === "out" && !m.ecc);

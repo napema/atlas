@@ -2979,3 +2979,100 @@ Il documento scrive «1.159,97 €», la app scrive «1159,97 €»: `Intl` in
 italiano non raggruppa i numeri di quattro cifre (`useGrouping: "min2"`), ed
 è la forma che usa tutta la app da sempre. Si cambia in una riga in
 `core/ui.js` — ma cambia ogni schermata, quindi è una decisione a sé.
+
+---
+
+## 10 ottobre 2026 — tre numeri che si smentivano *(chat Finanze)*
+
+«Che cazzo mi significa oggi 10,75, speso oggi 46,51, restano −35,76?»
+
+    OGGI  10,75 €
+    speso oggi 46,51 € · restano −35,76 €
+
+Tutti e tre esatti. La schermata mentiva lo stesso, perché **il numero
+grande era quello sbagliato**: 10,75 € non li puoi spendere, li hai già
+spesi. La quota è la *razione* del giorno — un dato di partenza, fermo
+dall'alba al tramonto — e sotto la scritta «puoi spendere oggi» ci va
+quello che ne avanza. Sono la stessa cosa solo la mattina presto, ed è per
+questo che la cosa è passata inosservata per settimane.
+
+Nessun controllo sui valori l'avrebbe presa: nessun valore era sbagliato.
+Da qui il terzo file di prove.
+
+### Cosa è cambiato
+
+**La giornata.** Il grande è `resta`, in rosso quando è negativo, con
+accanto «ancora oggi» oppure «oltre la quota». Sotto, il conto nell'ordine
+in cui lo si fa a mente — «quota del giorno 13,63 € · speso 46,51 €» — e
+solo se c'è un conto da fare: a giornata intatta erano lo stesso numero
+scritto due volte. Dopo uno sforo compare la riga che mancava, e che è la
+domanda vera: *e adesso?* «Hai sforato di 32,88 € · domani la quota scende
+a 10,89 €». Il sistema si raddrizza da sé, ma finché non si legge sembra
+che lo sforo resti lì per sempre.
+
+Stessa cosa sulla carta in home: il numero è `resta`, e **l'etichetta la
+scrive il modulo insieme al numero** (`oggiEti`). Era fissa nella home —
+«Puoi spendere oggi» — sopra un numero che può essere negativo.
+
+**L'obiettivo.** Il riquadro diceva, su una riga sola:
+
+    in linea · a questo ritmo arrivi a 2.860 €, mancano 640 €
+
+Due verdetti opposti attaccati da un punto, e nessuno dei due dichiarato.
+«In linea» guarda **indietro** (hai versato quello che dovevi) e con zero
+stipendi passati è vera per definizione: compariva verde accanto a
+«0 € / 3.500 €». «Mancano 640 €» guarda **avanti**, ed è l'unica delle due
+che chiede qualcosa. Adesso il verdetto è uno — ci arrivi o no — e sotto ci
+sono **le due leve con il loro prezzo**: «+64 € a stipendio per 10 volte»
+oppure «5 stipendi in più». Dirne una sola suggerisce che l'unica via sia
+stringere, ed è di solito il momento in cui si smette di guardare il
+riquadro. Nel foglio dell'obiettivo c'è la terza, «abbassare il traguardo»,
+perché il target è dichiarato una stima.
+
+**Il fuori piano contato in due modi.** Il Riepilogo usava `eFuoriPiano()`
+nudo, l'Analisi la gerarchia dei cinque gruppi: l'affitto (850 €, sopra
+soglia, nessuna scadenza collegata) e il Telepass da ING finivano fra «le
+decisioni prese sul momento» su una schermata e al loro posto sull'altra.
+La regola è salita in `piano.js`, dove vive il piano, e `gruppi.js` la
+ri-esporta: una regola, due schermate, lo stesso elenco.
+
+**I Movimenti andavano a mesi solari** — l'ultima schermata a parlare una
+lingua diversa da tutte le altre. Chi cercava la spesa che ha fatto saltare
+il ciclo la trovava spezzata in due mesi. Ora anche lei va da stipendio a
+stipendio, e il selettore del ciclo è uno solo per le tre schede.
+
+**Lo speso del giorno guardava meno tasche della quota.** La quota divide
+Principale + Contanti + Cassa, `spesoDiPiano` contava solo le prime due:
+un'uscita presa dalla Cassa spariva dal conto della giornata e ricompariva
+il giorno dopo come quota più bassa, senza che niente dicesse perché.
+
+**Parole.** «restano −35,76 €» non è un'informazione, è una sottrazione
+lasciata a metà: adesso è «hai sforato di 35,76 €». «= 134% del versamento
+mensile al fondo» cominciava con un uguale sospeso: «vale 1,3 versamenti al
+fondo». «Pocket 80 €» nel foglio di una categoria era il *budget*, e
+«pocket» in questa app è una tasca della banca. «totale 890 € · ciclo 23
+set – 22 ott» stava sotto la riga di ING e si leggeva come un suo
+dettaglio: «tutto insieme: 890 €». Nella pagella della domenica, «Fondo in
+linea» è diventato due righe, perché sono due domande.
+
+### `prova-coerenza.js`
+
+```
+deno run --location http://localhost/ --allow-read moduli/finanze/prova-coerenza.js
+```
+
+Non controlla che un numero sia giusto — a quello servono `prova.js` e
+`prova-gruppi.js`. Controlla che **due numeri mostrati insieme dicano la
+stessa cosa**, che è il guasto di oggi. L'archivio rimette l'app in quella
+giornata: 139,81 € per 13 giorni, 46,51 € già usciti. Fra i 36 controlli:
+il grande è `resta` e non `quota`; la carta in home e la schermata dicono
+lo stesso numero; nessuna frase scrive «restano» davanti a un negativo;
+Riepilogo e Analisi contano lo stesso fuori piano; l'aumento proposto per
+l'obiettivo chiude davvero il buco ed è il più piccolo che basta.
+
+### Una nota di cantiere
+
+`svelte-check` sposta `svelte.config.js` per girare, e Vite se ne accorge e
+si riavvia: farlo mentre l'anteprima è aperta l'ha fatta morire con un
+watcher su un file temporaneo sparito. Prima il controllo dei tipi, poi
+`preview_start` — o fermare l'anteprima.

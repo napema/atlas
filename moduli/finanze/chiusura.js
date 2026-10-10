@@ -24,7 +24,7 @@ import {
   inArrivo, tettoSettimanale,
 } from "./calcolo.js";
 import {
-  quotaDi, fuoriPianoDelCiclo, statoObiettivo, ingPrevisto, ricaricaLunedi, budgetVita,
+  quotaDi, fuoriPianoDelCiclo, tiroObiettivo, ingPrevisto, ricaricaLunedi, budgetVita,
 } from "./piano.js";
 import { oggiISO, daISO, piuGiorni, euro, nuovoId } from "../../core/ui.js";
 
@@ -137,14 +137,15 @@ export function pagella(iso = oggiISO()) {
   const fpSett = fp.voci.filter((m) => m.data >= sett.da && m.data <= sett.a);
   const ricSett = fp.ricariche.voci.filter((m) => m.data >= sett.da && m.data <= sett.a);
 
-  const o = statoObiettivo(iso);
+  const o = tiroObiettivo(iso);
 
   return {
     settimana: sett, ciclo,
     vita: { speso: spesoVita(sett.da, sett.a), budget: tettoSettimanale(iso).centesimi },
     fuoriPiano: { n: fpSett.length, totale: fpSett.reduce((t, m) => t + importoEffettivo(m), 0), voci: fpSett },
     ricariche: { n: ricSett.length, totale: ricSett.reduce((t, m) => t + m.imp, 0) },
-    fondo: o ? { inLinea: o.inLinea, scarto: o.scarto, saldo: o.saldo, previsto: o.previsto } : null,
+    fondo: o ? { inLinea: o.inLinea, scarto: o.scarto, saldo: o.saldo, previsto: o.previsto,
+      cela: o.cela, gap: o.gap, inPiu: o.inPiu } : null,
     serie: serieChiusure(sett.domenica),
   };
 }
@@ -169,7 +170,7 @@ export function report(iso = oggiISO()) {
   const ciclo = p.ciclo;
   const fp = fuoriPianoDelCiclo(ciclo, iso);
   const q = quotaDi(iso);
-  const o = statoObiettivo(iso);
+  const o = tiroObiettivo(iso);
   const ing = ingPrevisto(iso);
   const pk = pocketConSaldi();
 
@@ -181,7 +182,14 @@ export function report(iso = oggiISO()) {
   r.push(`Fuori piano     ${p.fuoriPiano.n} · ${eu(p.fuoriPiano.totale)}`);
   r.push(`Ricariche ING   ${p.ricariche.n}${p.ricariche.n ? ` · ${eu(p.ricariche.totale)}` : ""}`);
   if (p.fondo) {
-    r.push(`Fondo           ${p.fondo.inLinea ? "in linea" : `indietro di ${eu(-p.fondo.scarto)}`}`);
+    /* DUE RIGHE PERCHE' SONO DUE DOMANDE. «Versamenti» guarda indietro —
+       hai spostato quello che dovevi — e «alla data» guarda avanti. Su una
+       riga sola, attaccate da un punto, si leggevano come un verdetto che
+       si contraddice: «in linea · mancano 640 €». */
+    r.push(`Fondo           ${p.fondo.previsto > 0
+      ? (p.fondo.inLinea ? "versamenti in regola" : `indietro di ${eu(-p.fondo.scarto)}`)
+      : "non ancora cominciato"}`);
+    r.push(`  alla data     ${p.fondo.cela ? "ci arrivi" : `mancano ${eu(p.fondo.gap)}${p.fondo.inPiu ? ` · +${eu(p.fondo.inPiu)} a stipendio` : ""}`}`);
   }
   r.push("");
   r.push(`Quota di oggi   ${eu(q.quota)}/g · ${q.giorni} giorni al ${q.fine} · piano ${eu(q.piano)}/g`);
@@ -192,7 +200,11 @@ export function report(iso = oggiISO()) {
     for (const m of fp.voci) {
       r.push(`  ${m.data}  ${m.nota || "—"}  ${eu(importoEffettivo(m))}${m.daRiserva ? "  da ING" : ""}`);
     }
-    if (fp.pct != null) r.push(`  = ${Math.round(fp.pct * 100)}% del versamento mensile al fondo`);
+    if (fp.pct != null) {
+      r.push(fp.pct >= 0.95
+        ? `  vale ${(Math.round(fp.pct * 10) / 10).toLocaleString("it-IT")} versamenti al fondo`
+        : `  vale ${Math.round(fp.pct * 100)}% di un versamento al fondo`);
+    }
   } else {
     r.push("");
     r.push(`Fuori piano del ciclo · nessuno · ${fp.giorniSenza} giorni`);
@@ -205,8 +217,12 @@ export function report(iso = oggiISO()) {
   if (o) {
     r.push("");
     r.push(`${o.nome} · ${eu(o.saldo)} / ${eu(o.target)} entro il ${o.data}`);
-    r.push(`  previsto a oggi ${eu(o.previsto)} · ${o.inLinea ? "in linea" : `indietro di ${eu(-o.scarto)}`}`);
-    r.push(`  proiezione ${eu(o.proiezione)}${o.gap > 0 ? ` · mancano ${eu(o.gap)}` : " · arriva"}`);
+    r.push(`  versamenti dovuti finora ${eu(o.previsto)} · ${o.previsto > 0
+      ? (o.inLinea ? "in regola" : `indietro di ${eu(-o.scarto)}`)
+      : "nessuno"}`);
+    r.push(`  alla data ${eu(o.proiezione)}${o.gap > 0
+      ? ` · mancano ${eu(o.gap)}${o.inPiu ? `, cioe' +${eu(o.inPiu)} a stipendio` : ""}`
+      : " · ci arrivi"}`);
   }
 
   r.push("");
@@ -269,7 +285,7 @@ export { budgetVita };
 
 /** Quanto resta da versare al fondo prima della data obiettivo. */
 export function restaAlFondo(iso = oggiISO()) {
-  const o = statoObiettivo(iso);
+  const o = tiroObiettivo(iso);
   if (!o) return 0;
   return Math.max(0, o.target - o.saldo);
 }

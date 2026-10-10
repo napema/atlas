@@ -30,8 +30,7 @@
   import FoglioPocket from "./FoglioPocket.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
-  import { maiuscola } from "$lib/core/ui";
-  import { meseDi, spostaMese, nomeMese, cicloDi, spostaCiclo, nomeCiclo } from "$condivisi/finanze/calcolo.js";
+  import { cicloDi, spostaCiclo, nomeCiclo } from "$condivisi/finanze/calcolo.js";
   import { primoCiclo } from "$condivisi/finanze/analisi.js";
   import { voceInArrivo } from "$condivisi/finanze/piano.js";
   import { migra } from "$condivisi/finanze/dati.js";
@@ -43,8 +42,9 @@
   // Come stai GUARDANDO i dati, non un dato: niente casella, niente sync.
   // Altrimenti cambiare scheda sull'iPhone la cambierebbe sul PC.
   let scheda = $state<"home" | "movimenti" | "analisi">("home");
-  let mese = $state(meseDi());
-  // Il ciclo che l'Analisi sta guardando, per indice («2026-09»).
+  /* UN CICLO SOLO PER TUTTE E TRE LE SCHEDE. C'era anche un `mese`, per i
+     Movimenti: due finestre diverse nella stessa schermata, e passando da
+     «Movimenti» ad «Analisi» i totali non si parlavano. */
   let ciclo = $state(cicloDi().indice);
   let filtro = $state("tutti");
   const FILTRI = [
@@ -87,9 +87,8 @@
       });
     }
   });
-  $effect(() => ascolta(EVENTI.GIORNO_CAMBIATO, () => { mese = meseDi(); ciclo = cicloDi().indice; }));
+  $effect(() => ascolta(EVENTI.GIORNO_CAMBIATO, () => { ciclo = cicloDi().indice; }));
 
-  const corrente = $derived.by(() => { dati.versione; return meseDi(); });
   const cicloOra = $derived.by(() => { dati.versione; return cicloDi().indice; });
   const cicloPrimo = $derived.by(() => { dati.versione; return primoCiclo().indice; });
   const cicloVisto = $derived.by(() => { dati.versione; return spostaCiclo(ciclo, 0); });
@@ -102,17 +101,10 @@
     bind:valore={scheda}
     etichetta="Vista"
   />
-  {#if scheda === "movimenti"}
-    <!-- Il mese si sfoglia solo dove conta: il riepilogo guarda sempre oggi. -->
-    <div class="mese">
-      <Pulsante variante="grigio" misura="media" tondo icona="indietro" etichetta="Mese precedente" onclick={() => (mese = spostaMese(mese, -1))} />
-      <button type="button" class="mese-nome text-headline" title="Torna al mese corrente" onclick={() => (mese = corrente)}>{maiuscola(nomeMese(mese))}</button>
-      <Pulsante variante="grigio" misura="media" tondo icona="freccia" etichetta="Mese successivo" disabled={mese >= corrente} onclick={() => (mese = spostaMese(mese, 1))} />
-    </div>
-  {/if}
-  {#if scheda === "analisi"}
+  {#if scheda === "movimenti" || scheda === "analisi"}
     <!-- Si sfoglia per CICLO, da stipendio a stipendio: è la finestra di
-         tutta l'app, e indietro ci si ferma al primo ciclo con dei dati. -->
+         tutta l'app, e indietro ci si ferma al primo ciclo con dei dati.
+         Il riepilogo no: quello guarda sempre oggi. -->
     <div class="mese">
       <Pulsante variante="grigio" misura="media" tondo icona="indietro" etichetta="Ciclo precedente" disabled={ciclo <= cicloPrimo} onclick={() => (ciclo = spostaCiclo(ciclo, -1).indice)} />
       <button type="button" class="mese-nome text-headline" title="Torna al ciclo in corso" onclick={() => (ciclo = cicloOra)}>
@@ -137,7 +129,7 @@
   {#if scheda === "home"}
     <Riepilogo parte="resto" />
   {:else if scheda === "movimenti"}
-    <Movimenti {mese} {filtro} />
+    <Movimenti indice={ciclo} {filtro} />
   {:else}
     <Analisi indice={ciclo} parte="resto" />
   {/if}

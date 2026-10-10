@@ -391,9 +391,13 @@
              capiva quale rispondesse a «posso spendere stasera». -->
         <div class="soldi">
           {@render testa(voceDi("finanze"), "#/finanze")}
+          <!-- L'ETICHETTA LA SCRIVE IL MODULO, insieme al numero. Qui era
+               scritta a mano — «Puoi spendere oggi» — sopra un numero che
+               il modulo manda negativo quando la giornata è andata oltre:
+               «Puoi spendere oggi −35,76 €» non vuol dire niente. -->
           <a class="s-corpo" href="#/finanze">
-            <span class="eti-oggi text-footnote semibold">Puoi spendere oggi</span>
-            <span class="cifra cifre">{f.oggiPuoi ?? f.valore ?? "—"}</span>
+            <span class="eti-oggi text-footnote semibold" class:male={f.oggiMale}>{f.oggiEti ?? "Puoi spendere oggi"}</span>
+            <span class="cifra cifre" class:male={f.oggiMale}>{f.oggiPuoi ?? f.valore ?? "—"}</span>
             <span class="text-subheadline secondario">{f.oggiFino ?? f.eti ?? ""}</span>
           </a>
         </div>
@@ -779,6 +783,7 @@
   }
   .s-corpo:active { opacity: 0.55; }
   .eti-oggi { color: var(--label-secondary); letter-spacing: 0.7px; text-transform: uppercase; }
+  .soldi .male { color: var(--color-red); }
   .soldi .cifra {
     font-family: var(--font-display); font-size: 46px; line-height: 1.05;
     font-weight: var(--weight-bold); letter-spacing: -0.03em;

@@ -23,7 +23,7 @@
   import { avviso, euro, nuovoId, oggiISO, plurale, dataBreve } from "$lib/core/ui";
   import { scriviMeta, statoConfig } from "$condivisi/finanze/dati.js";
   import { ultimoStipendio } from "$condivisi/finanze/calcolo.js";
-  import { statoObiettivo, obiettivo, serieFondo, passoObiettivo } from "$condivisi/finanze/piano.js";
+  import { tiroObiettivo, obiettivo, serieFondo, passoObiettivo } from "$condivisi/finanze/piano.js";
   import { stato } from "$condivisi/finanze/dati.js";
   import GraficoFondo from "./GraficoFondo.svelte";
   import { apri } from "./fogli.svelte";
@@ -37,7 +37,7 @@
     return {
       iso,
       o: obiettivo(),
-      s: statoObiettivo(iso),
+      s: tiroObiettivo(iso),
       cfg: statoConfig(ultimoStipendio(iso)),
       fondo: serieFondo(iso),
       passo: passoObiettivo(iso),
@@ -84,10 +84,20 @@
       <span class="text-subheadline secondario cifre">
         di {euro(d.s.target, { tondo: true })} entro il {dataBreve(d.s.data)}
       </span>
-      <span class="text-footnote cifre" class:ok={d.s.inLinea} class:avviso={!d.s.inLinea}>
-        {d.s.inLinea ? "in linea" : `indietro di ${euro(-d.s.scarto, { tondo: true })}`}
-        · previsto a oggi {euro(d.s.previsto, { tondo: true })}
+      <!-- IL VERDETTO È UNO E GUARDA LA DATA. Qui c'era «in linea ·
+           previsto a oggi 0 €»: vero, inutile, e verde sopra un
+           salvadanaio vuoto. Se la domanda è «ci arrivo», la risposta non
+           può essere un conto sui versamenti già fatti. -->
+      <span class="text-footnote cifre" class:ok={d.s.cela} class:avviso={!d.s.cela}>
+        {d.s.cela
+          ? `ci arrivi · ${euro(d.s.proiezione, { tondo: true })} alla data`
+          : `mancano ${euro(d.s.gap, { tondo: true })} · a questo ritmo arrivi a ${euro(d.s.proiezione, { tondo: true })}`}
       </span>
+      {#if !d.s.cominciato}
+        <span class="text-footnote secondario">Il primo versamento è al prossimo stipendio: finora non ce n'erano da fare.</span>
+      {:else if d.s.scarto < 0}
+        <span class="text-footnote avviso cifre">Nel frattempo sei indietro di {euro(-d.s.scarto, { tondo: true })} sui versamenti già dovuti.</span>
+      {/if}
     </div>
 
     <!-- COME FUNZIONA. La domanda che è tornata indietro appena il fondo è
@@ -120,6 +130,27 @@
       <Riga titolo="Proiezione" valore={euro(d.s.proiezione, { tondo: true })} />
       <Riga titolo={d.s.gap > 0 ? "Mancano" : "Avanza"} valore={euro(Math.abs(d.s.target - d.s.proiezione), { tondo: true })} />
     </Sezione>
+
+    <!-- COSA SERVE PER ARRIVARCI.
+
+         «Mancano 640 €» era l'ultima riga della schermata, e lasciava la
+         domanda in mano a te. Le vie sono tre e sono tutte legittime: dare
+         di più, prenderci più tempo, volere meno. Dirne una sola — versa
+         di più — suggerisce che l'unica uscita sia stringere, e di solito
+         è il momento in cui si smette di aprire il riquadro. -->
+    {#if d.s.gap > 0 && d.s.inPiu}
+      <Sezione titolo="Cosa serve" piede="Tre vie per lo stesso buco. L'app non ne sceglie una: le mette in fila con il loro prezzo.">
+        <Riga titolo="Versare di più"
+          sottotitolo="{euro(d.s.inPiu, { tondo: true })} in più a stipendio, per {plurale(d.s.versamenti, 'volta', 'volte')}"
+          valore="+{euro(d.s.inPiu, { tondo: true })}" />
+        <Riga titolo="Prenderci più tempo"
+          sottotitolo="{plurale(d.s.stipendiInPiu, 'stipendio', 'stipendi')} oltre la data, allo stesso versamento"
+          valore="+{d.s.stipendiInPiu}" />
+        <Riga titolo="Abbassare il traguardo"
+          sottotitolo="Se la cifra vera fosse {euro(d.s.proiezione, { tondo: true })} ci saresti già"
+          valore={euro(d.s.proiezione, { tondo: true })} />
+      </Sezione>
+    {/if}
 
     {#if d.fondo}
       <Sezione titolo="I prossimi versamenti" piede="Quanto dovrebbe esserci nel fondo dopo ogni stipendio, se versi ogni volta.">

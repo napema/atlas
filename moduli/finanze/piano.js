@@ -17,7 +17,7 @@
 // la home deve poter leggere questi numeri senza montare Finanze.
 
 import {
-  stato, movimentiVivi, previsti, ricorrentiVivi, profiloDi,
+  stato, movimentiVivi, previsti, previstiTutti, ricorrentiVivi, profiloDi,
   SOGLIE_PREDEFINITE, CATEGORIE_CASSA, vociLista, statoVoce,
 } from "./dati.js";
 import {
@@ -121,7 +121,14 @@ export function copertaDaRicarica(m) {
  * dire dire «hai sforato di 105 €» a chi ha speso quello che aveva deciso.
  */
 export function spesoDiPiano(iso = oggiISO()) {
-  const dentro = pocketSpendibili();
+  /* LE STESSE TASCHE CHE LA QUOTA DIVIDE, non solo le spendibili.
+
+     La quota divide Principale + Contanti + Cassa; lo speso contava solo
+     le prime due. Un'uscita presa direttamente dalla Cassa spariva dal
+     conto della giornata e ricompariva il giorno dopo come quota più
+     bassa, senza che niente dicesse perché. Il numeratore e il
+     denominatore devono guardare lo stesso denaro. */
+  const dentro = tascheVita();
   return movimentiVivi()
     .filter((m) => m.tipo === "out" && m.data === iso && dentro.includes(m.pocket || "principale"))
     .filter((m) => !m.pian)
@@ -143,6 +150,92 @@ export function quotaDiPiano(iso = oggiISO()) {
 }
 
 /* ========================================================================
+   I CINQUE GRUPPI — a quale famiglia appartiene un'uscita.
+
+   LA REGOLA STA QUI, con il resto del piano, e non in `gruppi.js` che la
+   usa: `fuoriPianoDelCiclo()` (questo file, letto dal Riepilogo e dalla
+   home) e la ripartizione dell'Analisi devono dare lo STESSO elenco. Finché
+   la regola stava di là, il Riepilogo contava il fuori piano con
+   `eFuoriPiano()` nudo e l'Analisi con la gerarchia dei gruppi: il Telepass
+   da 368 € — sopra soglia, nessuna scadenza collegata — era «fuori piano»
+   su una schermata e «da riserva» sull'altra. Due numeri per la stessa
+   parola, nella stessa app.
+
+   `gruppi.js` resta il posto degli AGGREGATI per l'Analisi: la barra, il
+   donut, il ritmo. La regola è una e vive con il piano.
+   ======================================================================== */
+
+export const GRUPPI = [
+  { id: "fisse", nome: "Fisse", neutro: true },
+  { id: "riserva", nome: "Da riserva", neutro: true },
+  { id: "pianificate", nome: "Pianificate", neutro: true },
+  { id: "fuoriPiano", nome: "Fuori piano", neutro: false },
+  { id: "quotidiano", nome: "Quotidiano", neutro: false },
+];
+
+/** Le uniche due leve: quello che hai deciso tu. */
+export const DECISE = ["fuoriPiano", "quotidiano"];
+
+export const nomeGruppo = (id) => GRUPPI.find((g) => g.id === id)?.nome || id;
+
+/** Gli indici che servono a `gruppoDi()`, costruiti una volta sola. */
+export function contestoGruppi() {
+  const s = stato();
+  const ric = new Map();
+  for (const r of s.ricorrenti || []) if (r && !r.del) ric.set(r.id, r);
+  const pre = new Map();
+  for (const p of previstiTutti()) pre.set(p.id, p);
+  const daLista = new Set();
+  for (const v of s.lista || []) if (v && !v.del && v.movId) daLista.add(v.movId);
+  return { ric, pre, daLista };
+}
+
+/**
+ * A quale gruppo appartiene un'uscita. Uno e uno solo, sempre.
+ *
+ * L'ORDINE È LA DEFINIZIONE, e ogni riga è lì per un caso vero:
+ *
+ * 1. `fuoriPiano: true` scritto a mano vince su tutto. È una MARCA, non una
+ *    deduzione: se l'hai messa tu, sai qualcosa che il calcolo non sa. È
+ *    anche il caso del monitor — comprato dal Principale dopo averlo
+ *    ricaricato da ING — che resta una decisione tua, non un prelievo.
+ * 2. Le Fisse, PRIMA della deduzione: un affitto da 850 € inserito a mano
+ *    supererebbe la soglia e si prenderebbe il posto di una decisione.
+ * 3. La riserva, anche questa prima: il Telepass da 368 € passa la soglia
+ *    ma non è una cosa che hai scelto stasera.
+ * 4. Il fuori piano DEDOTTO: sopra soglia, nessuna scadenza, non
+ *    alimentare, non uscito dalla lista d'attesa.
+ * 5. Il già deciso: una rata differita, un previsto, la lista d'attesa.
+ * 6. Il resto, che è la vita di tutti i giorni.
+ *
+ * Torna `null` per quello che non è un'uscita e per quello che è stato
+ * rimborsato per intero: lo zero non appartiene a nessun gruppo.
+ */
+export function gruppoDi(m, ctx = contestoGruppi()) {
+  if (!m || m.del || m.tipo !== "out") return null;
+  if (importoEffettivo(m) <= 0) return null;
+
+  if (m.fuoriPiano === true) return "fuoriPiano";
+
+  const r = m.pian ? ctx.ric.get(m.pian) : null;
+  const p = m.pian ? ctx.pre.get(m.pian) : null;
+  const deciso = Boolean(m.pian || m.lista || ctx.daLista.has(m.id));
+
+  if (r && r.cat === "fisse") return "fisse";
+  // `!deciso` perché la rata AliExpress esce dalla stessa tasca delle
+  // bollette ma non è una spesa fissa: è una cosa comprata e pagata a
+  // rate. Il legame con un previsto lo dice, il pocket no.
+  if (m.pocket === "fisse" && !deciso) return "fisse";
+
+  if (m.pocket === "ing") return "riserva";
+  if ((r && r.pocket === "ing") || (p && p.pocket === "ing")) return "riserva";
+
+  if (eFuoriPiano(m)) return "fuoriPiano";
+  if (deciso) return "pianificate";
+  return "quotidiano";
+}
+
+/* ========================================================================
    LA QUOTA DI OGGI.
 
        spendibile = Principale + Contanti + Cassa − quello che esce da
@@ -159,6 +252,19 @@ export function quotaDiPiano(iso = oggiISO()) {
 
    Se oggi spendi meno, domani la quota sale da sé: i soldi non spesi
    restano nel saldo e i giorni sono uno di meno.
+
+   QUAL È IL NUMERO GRANDE. `resta`, non `quota`. Per mesi la schermata ha
+   mostrato la quota sotto la scritta «puoi spendere oggi», e il 10 ottobre
+   diceva questo:
+
+       OGGI  10,75 €
+       speso oggi 46,51 € · restano −35,76 €
+
+   Tre numeri che si smentiscono a vicenda, e il primo — quello grande, il
+   solo che si legge davvero — era falso: 10,75 € non li puoi spendere, li
+   hai già spesi. La quota è la RAZIONE del giorno, un dato di partenza che
+   non cambia dall'alba al tramonto; quello che puoi ancora spendere è
+   `resta`. Il grande è `resta`, la quota scende a riferimento.
    ======================================================================== */
 
 export function quotaDi(iso = oggiISO()) {
@@ -179,6 +285,9 @@ export function quotaDi(iso = oggiISO()) {
 
   return {
     iso, fine, giorni, spendibile, impegni, quota, speso, resta, piano,
+    /* «Hai sforato DI quanto»: un numero positivo, perché è così che si
+       dice. `resta` negativo lo si usa per il segno, non per la frase. */
+    sforo: resta < 0 ? -resta : 0,
     /* Tre stati, e il rosso costa caro: si accende solo quando la giornata
        è già oltre la quota o quando la quota è così bassa che non ci sta
        niente. Sotto il piano è ambra — stai stringendo, non hai sbagliato. */
@@ -186,6 +295,25 @@ export function quotaDi(iso = oggiISO()) {
       : piano > 0 && quota < piano ? "avviso"
       : "",
   };
+}
+
+/**
+ * La quota di domani, con quello che hai speso oggi già dentro.
+ *
+ * È la risposta alla domanda che nasce dopo uno sforo: «e adesso?». Il
+ * sistema si raddrizza da solo — i soldi spesi oggi non ci sono più domani
+ * e i giorni sono uno di meno — ma finché non lo si vede scritto sembra che
+ * lo sforo resti lì a pesare per sempre. `quotaDi` guarda il saldo
+ * all'INIZIO della giornata, quindi chiederglielo per domani è esatto:
+ * l'inizio di domani è la fine di oggi.
+ *
+ * Fuori dal ciclo non si chiede: il giorno dopo l'ultimo è un altro mondo,
+ * con dentro lo stipendio.
+ */
+export function quotaDomani(iso = oggiISO()) {
+  const domani = piuGiorni(iso, 1);
+  if (domani > cicloDi(iso).a) return null;
+  return quotaDi(domani);
 }
 
 /** Di quanto è cambiata la quota rispetto a ieri. */
@@ -222,8 +350,13 @@ export function copreFino(iso = oggiISO(), quota = null) {
 export function fuoriPianoDelCiclo(ciclo = cicloDi(), iso = oggiISO()) {
   const movs = movimentiDelCiclo(ciclo);
 
+  /* `gruppoDi` e non `eFuoriPiano`: la deduzione da sola non sa che il
+     Telepass esce da ING e che l'affitto è una spesa fissa, e li metteva
+     qui dentro — mentre l'Analisi, che la gerarchia ce l'ha, li metteva
+     altrove. Lo stesso elenco su tutte e due le schermate. */
+  const ctx = contestoGruppi();
   const voci = movs
-    .filter((m) => m.tipo === "out" && eFuoriPiano(m))
+    .filter((m) => gruppoDi(m, ctx) === "fuoriPiano")
     .map((m) => ({ ...m, daRiserva: copertaDaRicarica(m) }));
   const ricariche = movs.filter((m) => m.tipo === "extra" && eFuoriPiano(m));
 
@@ -316,6 +449,47 @@ export function statoObiettivo(iso = oggiISO()) {
     giorni: Math.max(0, giorniFra(iso, o.data) - 1),
     prossimo: futuri[0] || null,
     versamenti: futuri.length,
+  };
+}
+
+/**
+ * CE LA FAI? — il verdetto unico, e cosa serve se la risposta è no.
+ *
+ * IL GUASTO. Il riquadro dell'obiettivo diceva, su una riga sola:
+ *
+ *     in linea · a questo ritmo arrivi a 2.860 €, mancano 640 €
+ *
+ * Due verdetti opposti attaccati da un punto. Non è un errore di calcolo:
+ * sono due domande diverse e nessuna delle due era dichiarata. «In linea»
+ * guarda INDIETRO — hai versato quello che dovevi finora — e con zero
+ * stipendi passati è vera per definizione, quindi compariva verde accanto a
+ * «0 € / 3.500 €». «Mancano 640 €» guarda AVANTI, ed è l'unica delle due
+ * che chiede qualcosa.
+ *
+ * Qui la domanda è una: alla data, ci arrivi? E se no, di quanto devi
+ * alzare il versamento. Un numero su cui si può agire al posto di due che
+ * si contraddicono.
+ */
+export function tiroObiettivo(iso = oggiISO()) {
+  const o = statoObiettivo(iso);
+  if (!o) return null;
+  const n = o.versamenti;
+  return {
+    ...o,
+    /* `cominciato` è la differenza fra «sei in linea» e «non è ancora
+       cominciato». Senza, un obiettivo nato ieri apre con una spunta verde
+       su un salvadanaio vuoto. */
+    cominciato: o.previsto > 0,
+    cela: o.gap <= 0,
+    avanzo: o.gap > 0 ? 0 : o.proiezione - o.target,
+    /* Quanto in più a stipendio per chiudere il buco. Si arrotonda in SU,
+       all'euro: un versamento che arriva un centesimo corto non chiude
+       niente. */
+    inPiu: o.gap > 0 && n > 0 ? Math.ceil(o.gap / n / 100) * 100 : null,
+    /* L'altra leva, perché le leve sono due e tacere la seconda vuol dire
+       suggerire che l'unica via sia versare di più: quanti stipendi in più
+       servirebbero, cioè di quanto spostare la data. */
+    stipendiInPiu: o.gap > 0 && o.versamento > 0 ? Math.ceil(o.gap / o.versamento) : null,
   };
 }
 

@@ -19,106 +19,23 @@
 // Come `calcolo.js` e `piano.js`: funzioni pure, niente DOM, niente
 // scritture.
 
-import { stato, movimentiVivi, previstiTutti } from "./dati.js";
+import { stato, movimentiVivi } from "./dati.js";
 import {
   importoEffettivo, movimentiDelCiclo, giornoDelCiclo, categorieDelCiclo,
   spostaCiclo, nomeCiclo,
 } from "./calcolo.js";
-import { eFuoriPiano, budgetVita } from "./piano.js";
+import { budgetVita, GRUPPI, DECISE, gruppoDi, contestoGruppi } from "./piano.js";
 import { oggiISO, piuGiorni, MESI_BREVI } from "../../core/ui.js";
 
-/* ========================================================================
-   I CINQUE GRUPPI
-   ======================================================================== */
+/* LA REGOLA STA IN `piano.js`, QUI CI SONO GLI AGGREGATI.
 
-/**
- * `neutro` vuol dire: questo gruppo non è una leva.
- *
- * Non è un giudizio morale, è aritmetica. L'affitto lo paghi comunque, il
- * bollo lo paghi comunque, il parcheggio l'avevi già deciso. Metterli a
- * colori accanto al caffè vorrebbe dire invitare a guardarli, e guardarli
- * non serve a niente. Grigi: ci sono, si sommano, non si discutono.
- */
-export const GRUPPI = [
-  { id: "fisse", nome: "Fisse", neutro: true },
-  { id: "riserva", nome: "Da riserva", neutro: true },
-  { id: "pianificate", nome: "Pianificate", neutro: true },
-  { id: "fuoriPiano", nome: "Fuori piano", neutro: false },
-  { id: "quotidiano", nome: "Quotidiano", neutro: false },
-];
-
-/** Le uniche due leve. Tutto quello che si può cambiare è qui dentro. */
-export const DECISE = ["fuoriPiano", "quotidiano"];
-
-export const nomeGruppo = (id) => GRUPPI.find((g) => g.id === id)?.nome || id;
-
-/**
- * Gli indici che servono a `gruppoDi()`, costruiti una volta sola.
- *
- * Senza, ogni movimento rifarebbe la scansione di ricorrenti e previsti: su
- * un ciclo da quaranta uscite si vede, e `gruppoDi()` la chiamano cinque
- * blocchi della schermata.
- */
-export function contestoGruppi() {
-  const s = stato();
-  const ric = new Map();
-  for (const r of s.ricorrenti || []) if (r && !r.del) ric.set(r.id, r);
-  const pre = new Map();
-  for (const p of previstiTutti()) pre.set(p.id, p);
-  const daLista = new Set();
-  for (const v of s.lista || []) if (v && !v.del && v.movId) daLista.add(v.movId);
-  return { ric, pre, daLista };
-}
-
-/**
- * A quale gruppo appartiene un'uscita. Uno e uno solo, sempre.
- *
- * L'ORDINE È LA DEFINIZIONE, e ogni riga è lì per un caso vero:
- *
- * 1. `fuoriPiano: true` scritto a mano vince su tutto. È una MARCA, non una
- *    deduzione: se l'hai messa tu, sai qualcosa che il calcolo non sa. È
- *    anche il caso del monitor — comprato dal Principale dopo averlo
- *    ricaricato da ING — che resta una decisione tua, non un prelievo
- *    dalla riserva.
- * 2. Le Fisse. Prima della deduzione del fuori piano, se no un affitto da
- *    850 € inserito a mano (senza il «Paga» di una scadenza) supererebbe la
- *    soglia e si prenderebbe il posto di una decisione.
- * 3. La riserva. Anche questa prima della deduzione: il Telepass da 368 €
- *    passa la soglia del fuori piano ma non è una cosa che hai scelto
- *    stasera — è un addebito che ING copre.
- * 4. Il fuori piano DEDOTTO (`eFuoriPiano`): sopra soglia, non legato a una
- *    scadenza, non alimentare, non uscito dalla lista d'attesa.
- * 5. Il già deciso: una rata a pagamento differito, un parcheggio previsto,
- *    una cosa comprata dalla lista d'attesa.
- * 6. Il resto, che è la vita di tutti i giorni.
- *
- * Torna `null` per quello che non è un'uscita e per quello che è stato
- * rimborsato per intero: lo zero non appartiene a nessun gruppo, e metterlo
- * in uno gonfierebbe il conteggio dei movimenti senza spostare un euro.
- */
-export function gruppoDi(m, ctx = contestoGruppi()) {
-  if (!m || m.del || m.tipo !== "out") return null;
-  if (importoEffettivo(m) <= 0) return null;
-
-  if (m.fuoriPiano === true) return "fuoriPiano";
-
-  const r = m.pian ? ctx.ric.get(m.pian) : null;
-  const p = m.pian ? ctx.pre.get(m.pian) : null;
-  const deciso = Boolean(m.pian || m.lista || ctx.daLista.has(m.id));
-
-  if (r && r.cat === "fisse") return "fisse";
-  // `!deciso` perché la rata AliExpress esce dalla stessa tasca delle
-  // bollette ma non è una spesa fissa: è una cosa che hai comprato e che
-  // paghi a rate. Il legame con un previsto lo dice, il pocket no.
-  if (m.pocket === "fisse" && !deciso) return "fisse";
-
-  if (m.pocket === "ing") return "riserva";
-  if ((r && r.pocket === "ing") || (p && p.pocket === "ing")) return "riserva";
-
-  if (eFuoriPiano(m)) return "fuoriPiano";
-  if (deciso) return "pianificate";
-  return "quotidiano";
-}
+   `gruppoDi()` e la sua gerarchia sono salite in `piano.js` il 10 ottobre:
+   le usa anche `fuoriPianoDelCiclo()`, che il Riepilogo e la home leggono,
+   e finché la regola stava qui le due schermate contavano il fuori piano in
+   due modi diversi — il Telepass era «fuori piano» di là e «da riserva» di
+   qua. Si ri-esportano perché le viste dell'Analisi importano tutto da
+   questo file, e cambiare quello non aggiungeva niente. */
+export { GRUPPI, DECISE, gruppoDi, contestoGruppi, nomeGruppo } from "./piano.js";
 
 /** Le uscite del ciclo già etichettate, una volta sola per tutti i blocchi. */
 export function usciteDelCiclo(ciclo) {

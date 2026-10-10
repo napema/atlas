@@ -48,13 +48,13 @@
   {#if d}
     <div class="tre">
       <div><span class="text-footnote secondario">{d.ciclo.da <= oggiISO() && oggiISO() <= d.ciclo.a ? "Questo ciclo" : nomeCiclo(d.ciclo)}</span><b class="cifre">{euro(d.x.tot)}</b></div>
-      <div><span class="text-footnote secondario">Pocket</span><b class="cifre">{d.budget ? euro(d.budget, { tondo: true }) : "—"}</b></div>
+      <div><span class="text-footnote secondario">Budget</span><b class="cifre">{d.budget ? euro(d.budget, { tondo: true }) : "—"}</b></div>
       <div><span class="text-footnote secondario">Scontrino medio</span><b class="cifre">{d.x.movs.length ? euro(d.medio) : "—"}</b></div>
     </div>
     {#if d.budget > 0}
       <div class="avanzo">
         <Traccia valore={Math.min(1, d.x.tot / d.budget)} colore={d.x.tot >= d.budget ? "var(--color-red)" : d.x.tot >= d.budget * 0.9 ? "var(--color-orange)" : coloreCat(catId)} altezza={6} />
-        <span class="text-footnote secondario">{Math.round((d.x.tot / d.budget) * 100)}% del pocket · {d.x.tot <= d.budget ? `restano ${euro(d.budget - d.x.tot)}` : `sforato di ${euro(d.x.tot - d.budget)}`}</span>
+        <span class="text-footnote secondario">{Math.round((d.x.tot / d.budget) * 100)}% del budget · {d.x.tot <= d.budget ? `restano ${euro(d.budget - d.x.tot)}` : `sforato di ${euro(d.x.tot - d.budget)}`}</span>
       </div>
     {/if}
 

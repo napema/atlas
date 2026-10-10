@@ -18,7 +18,7 @@ import {
   inArrivo, ricorrentiDiOggi, calendarioUscite, prossimoStipendio, giorniFra,
 } from "./calcolo.js";
 import {
-  quotaDi, variazioneQuota, statoObiettivo, fuoriPianoDelCiclo, ingPrevisto, soglie,
+  quotaDi, variazioneQuota, tiroObiettivo, fuoriPianoDelCiclo, ingPrevisto, soglie,
 } from "./piano.js";
 import { pagaCompleta } from "./paga.js";
 import { allineamento, domenicaDaChiudere } from "./chiusura.js";
@@ -388,7 +388,7 @@ export function oggi() {
 
   const ciclo = cicloDi(iso);
   const q = quotaDi(iso);
-  const obi = statoObiettivo(iso);
+  const obi = tiroObiettivo(iso);
   const fp = fuoriPianoDelCiclo(ciclo, iso);
   const ing = ingPrevisto(iso);
   const sg = soglie();
@@ -401,15 +401,18 @@ export function oggi() {
      quello che conta sta in mezzo agli altri due. */
   let allarme = null;
   if (q.resta < 0) {
-    allarme = `Oggi hai speso ${euro(q.speso)}, la quota era ${euro(q.quota)}.`;
+    allarme = `Hai sforato la quota di oggi di ${euro(q.sforo)}.`;
   } else if (arrivo.scopertoTotale > 0) {
     allarme = `Mancano ${euro(arrivo.scopertoTotale)} per coprire quello che scade prima del ${dataBreve(ciclo.a)}.`;
   } else if (q.quota < (sg.quotaMinima || 0)) {
     allarme = `Quota di oggi ${euro(q.quota)}: ${plurale(q.giorni, "giorno", "giorni")} con ${euro(q.spendibile)}.`;
   } else if (ing.sotto) {
     allarme = `ING scende a ${euro(ing.minimo, { tondo: true })} il ${dataBreve(ing.quando)}.`;
-  } else if (obi && !obi.inLinea) {
-    allarme = `${obi.nome}: indietro di ${euro(-obi.scarto, { tondo: true })}.`;
+  } else if (obi && !obi.cela && obi.inPiu) {
+    // «Indietro di X» guardava i versamenti passati, che con un obiettivo
+    // giovane sono zero. Questo guarda la data, che è la cosa che chiede
+    // qualcosa — e dice subito quanto.
+    allarme = `${obi.nome}: mancano ${euro(obi.gap, { tondo: true })}, +${euro(obi.inPiu, { tondo: true })} a stipendio.`;
   }
 
   /* IL DETTAGLIO: quello che ribalta il numero, in ordine di quanto lo
@@ -421,7 +424,8 @@ export function oggi() {
       ? `Oggi esce ${oggiRic[0].nome.toLowerCase()} · ${euro(oggiRic[0].importo, { tondo: true })}`
       : `Oggi escono ${oggiRic.length} addebiti · ${euro(oggiRic.reduce((t, r) => t + r.importo, 0), { tondo: true })}`);
   }
-  if (q.speso > 0) pezzi.push(`speso ${euro(q.speso)}, restano ${euro(q.resta)}`);
+  if (q.resta < 0) pezzi.push(`quota ${euro(q.quota)}, speso ${euro(q.speso)}`);
+  else if (q.speso > 0) pezzi.push(`quota ${euro(q.quota)}, speso ${euro(q.speso)}`);
   else pezzi.push(`${euro(q.spendibile)} fino al ${dataBreve(q.fine)}`);
   if (fp.n) pezzi.push(`fuori piano ${fp.n} · ${euro(fp.totale, { tondo: true })}`);
 
@@ -431,16 +435,28 @@ export function oggi() {
     /* `valore` ed `eti` sono il numero grande della carta larga. L'etichetta
        la scrive il modulo e non la home: era «restano questa settimana»
        scritto a mano lì, e diceva una cosa falsa. */
-    valore: euro(q.quota),
-    eti: `quota di oggi · ${plurale(q.giorni, "giorno", "giorni")} allo stipendio`,
+    valore: euro(q.resta),
+    eti: q.resta < 0
+      ? `oltre la quota di oggi · ${plurale(q.giorni, "giorno", "giorni")} allo stipendio`
+      : `ancora oggi · ${plurale(q.giorni, "giorno", "giorni")} allo stipendio`,
 
     /* I due campi della carta piccola. Li formatta il modulo e non la home
        perché è il modulo a sapere che gli importi sono centesimi: passarli
        grezzi vorrebbe dire insegnarlo alla home. */
-    oggiPuoi: euro(q.quota),
+    /* IL NUMERO DELLA CARTA È QUELLO CHE RESTA, non la quota.
+
+       Era la quota, sotto la scritta «Puoi spendere oggi», e il 10 ottobre
+       la carta annunciava 10,75 € a uno che ne aveva già spesi 46,51. La
+       quota è la razione del giorno, ferma dall'alba al tramonto; «puoi
+       spendere» è quello che ne avanza, ed è la domanda che si fa aprendo
+       la app. L'etichetta la decide il modulo insieme al numero: quando è
+       negativo non è più «puoi spendere», è «sei oltre». */
+    oggiPuoi: euro(q.resta),
+    oggiEti: q.resta < 0 ? "Oltre la quota di oggi" : "Puoi ancora spendere oggi",
     oggiFino: q.speso > 0
-      ? `speso ${euro(q.speso)} · restano ${euro(q.resta)}`
+      ? `quota ${euro(q.quota)} · speso ${euro(q.speso)}`
       : `${euro(q.spendibile)} fino al ${dataBreve(q.fine)}`,
+    oggiMale: q.resta < 0,
 
     dettaglio: pezzi.join(" · "),
     allarme,
@@ -449,7 +465,7 @@ export function oggi() {
     /* La barra della carta: quanto della quota di oggi è già andato. Era
        l'avanzamento della settimana, che su una carta che mostra un numero
        giornaliero misurava un'altra cosa. */
-    avanzamento: q.quota > 0 ? Math.min(1, Math.max(0, q.speso / q.quota)) : 0,
+    avanzamento: q.quota > 0 ? Math.min(1, Math.max(0, q.speso / q.quota)) : q.speso > 0 ? 1 : 0,
 
     /* SOLO QUELLO CHE BRUCIA. `tono` lo assegna già `comeEvento()` — rosso
        se il pocket non la copre, ambra se esce entro due giorni — e quelle
@@ -465,6 +481,7 @@ export function oggi() {
     // costano niente e la carta larga della home puo' crescere senza
     // tornare qui.
     quota: q.quota,
+    resta: q.resta,
     spesoOggi: euro(q.speso),
     alGiorno: euro(q.quota),
     variazione: delta,
@@ -473,8 +490,9 @@ export function oggi() {
       saldo: euro(obi.saldo, { tondo: true }),
       target: euro(obi.target, { tondo: true }),
       frazione: obi.frazione,
-      inLinea: obi.inLinea,
+      cela: obi.cela,
       gap: euro(obi.gap, { tondo: true }),
+      inPiu: obi.inPiu ? euro(obi.inPiu, { tondo: true }) : null,
     } : null,
     fuoriPiano: { n: fp.n, totale: euro(fp.totale, { tondo: true }), giorniSenza: fp.giorniSenza },
     prossima: prossimaUscita(iso),
