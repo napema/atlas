@@ -3076,3 +3076,97 @@ l'obiettivo chiude davvero il buco ed è il più piccolo che basta.
 si riavvia: farlo mentre l'anteprima è aperta l'ha fatta morire con un
 watcher su un file temporaneo sparito. Prima il controllo dei tipi, poi
 `preview_start` — o fermare l'anteprima.
+
+---
+
+## 10 ottobre 2026 (sera) — le carte rifatte, e i travasi li calcola il modulo *(chat Finanze)*
+
+«Non si capisce assolutamente niente.» Aveva ragione: la carta OGGI era
+diventata sette righe in quattro colori — il numero, «oltre la quota», la
+quota con la sua freccia, lo sforo, il divisibile, il piano, «in tasca...
+basta fino a...» — e chi non sapeva già di cosa parlava non ci capiva
+niente. Il conto era giusto, la carta era un estratto conto scritto a mano.
+
+### OGGI: tre livelli e basta
+
+1. **il numero** — quanto puoi ancora spendere oggi; rosso se sei oltre;
+2. **l'anello** — quanto della razione è andato; pieno e rosso vuol dire
+   sforato, e si capisce senza leggere;
+3. **tre caselle** — Razione · Speso · Domani.
+
+Il colore del numero dice una cosa sola: rosso, sei oltre. L'arancione per
+«quota sotto il piano» era una regola che non si vedeva e faceva sembrare
+un allarme un numero tranquillo. «−1,91 € da ieri» non cambiava nessuna
+decisione. «In tasca, basta fino a» è la domanda dei travasi, e adesso ha
+una carta sua. «Quota» e «razione» erano la stessa cosa con due nomi: resta
+«razione», ovunque.
+
+### L'obiettivo: cosa fare, e se basta
+
+Due righe. La prima è **l'azione con la sua data**: «ven 23 ott: 156 € sul
+fondo». La seconda dice se basta, e quando non basta c'è un bottone con la
+cifra giusta — «Per arrivarci: 220 € a stipendio ›» — che apre il foglio
+dove il versamento si cambia.
+
+La prima riga dice la cifra che **la lista del giorno di paga chiederà
+davvero**, non quella consigliata: se dicesse 220 e il 23 la lista ne
+chiedesse 156, le due schermate si smentirebbero. E qui c'era un secondo
+guasto, sotto: la lista leggeva `config.versamenti.fondo`, l'obiettivo
+`config.obiettivo.versamento` — **due campi per lo stesso numero**. Cambiando
+il versamento dal foglio, la proiezione si aggiornava e la lista del 23 no.
+Ora `travasiPaga()` legge quello dell'obiettivo; le eccezioni per data
+(ottobre) restano sopra.
+
+### I travasi — `moduli/finanze/travasi.js`
+
+Quasi ogni domenica sera la domanda andava a una chat: «ho questi saldi,
+quanto butto dove?». È un conto, non un consiglio: lo fa il modulo.
+
+**Le regole, in ordine:** ING non si tocca (se il piano la usa per far
+quadrare la settimana, la riserva diventa uno stipendio — e se non quadra
+lo dice, con la cifra che manca e le due uscite: ING o stringere); prima le
+Fisse (un addebito che rimbalza costa una commissione, una settimana stretta
+un caffè); **la razione è una sola**, quella di `quotaDomani()`, cioè il
+«Domani» della carta OGGI — se il piano ne calcolasse una sua, la
+schermata direbbe due cifre per la stessa domanda; il Principale deve
+arrivare a domenica, non allo stipendio (la Cassa è dove aspettano i soldi
+delle settimane dopo); l'avanzo non si toglie.
+
+**La domenica si prepara la settimana dopo.** Il vecchio `ricaricaLunedi()`
+la domenica pianificava un giorno solo: la sera in cui si fanno i
+trasferimenti, diceva di ricaricare per stanotte. Adesso `ricaricaLunedi` è
+una vista del piano, e Riepilogo, chiusura della domenica e home dicono la
+stessa cifra. Le tre risposte a «quanto sposto» erano tre conti diversi.
+
+**Cifre tonde.** Il primo disegno proponeva «Cassa → Principale: 1 €». Il
+Principale va di 5 € in 5 €, e sotto i 3 € di differenza non si propone
+niente; le Fisse all'euro, perché 4,99 € di WindTRE vanno coperti tutti.
+
+**La quota vede le Fisse scoperte.** Se le Fisse non coprono quello che
+esce prima dello stipendio, la differenza la mettono le tasche della vita:
+`impegniSu()` adesso la conta, e la razione del piano e quella della carta
+restano la stessa cifra anche in quel caso.
+
+La carta «Da spostare» (`PianoTravasi.svelte`, usata nel Riepilogo e nella
+chiusura della domenica) disegna ogni mossa come il gesto che farai su
+Revolut: due tasche e una freccia con la cifra, sotto ogni tasca il saldo
+dopo, grande, e quello di prima, piccolo. Una riga di risultato — la
+razione, e che ING non si tocca — e «Fatto su Revolut», che registra i giri.
+Quando non c'è niente da fare è una riga sola; se la razione è sotto la
+soglia, la riga è arancione e lo dice, invece di dare una spunta verde a una
+settimana stretta.
+
+In home, la mossa da fare viene prima dello sforo: lo sforo si vede già dal
+numero rosso, la mossa è l'unica cosa su cui agire.
+
+### Verifica
+
+`prova-coerenza.js` è passata da 36 a 69 controlli: sabato senza niente da
+spostare ma con la razione stretta; domenica che prepara lun–dom, con 50 €
+dalla Cassa, il Principale che arriva a domenica e la Cassa che basta per i
+quattro giorni dopo; ING mai toccato e nessun soldo inventato; la ricarica
+del lunedì uguale alla mossa del piano; un buco di 3 centesimi che non
+diventa un travaso; Fisse vuote con WindTRE il 15 che passano per prime e
+abbassano la razione — la stessa del «Domani»; Cassa vuota e bolletta da
+80 € che danno «non basta» senza attingere a ING; la lista del 23 che segue
+il versamento dell'obiettivo quando lo cambi. Più 65 + 52 delle altre due.

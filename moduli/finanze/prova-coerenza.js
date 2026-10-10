@@ -182,6 +182,21 @@ ok("l'aumento proposto chiude il buco",
   `+${euro(o.inPiu)} × ${o.versamenti} = ${euro(o.inPiu * o.versamenti)} per ${euro(o.gap)}`);
 ok("l'aumento è il più piccolo che basta",
   (o.inPiu - 100) * o.versamenti < o.gap, euro(o.inPiu));
+/* UNA CIFRA SOLA PER IL VERSAMENTO. La lista del giorno di paga leggeva
+   `config.versamenti.fondo`, l'obiettivo `config.obiettivo.versamento`: due
+   campi per lo stesso numero, e cambiando il versamento dal foglio
+   dell'obiettivo la lista del 23 continuava a chiedere quello vecchio. */
+const { travasiPaga } = await import("./paga.js");
+const { prossimoStipendio } = await import("./calcolo.js");
+const fondoPaga = () => travasiPaga(prossimoStipendio(OGGI)).righe.find((r) => r.id === "fondo").imp;
+eq("la lista del 23 chiede il versamento dell'obiettivo", euro(fondoPaga()), euro(o.versamento));
+{
+  const prima = casella.leggi();
+  casella.scrivi({ ...prima, config: { ...prima.config, obiettivo: { ...prima.config.obiettivo, versamento: 22000 } } });
+  eq("cambiato il versamento, la lista segue", euro(fondoPaga()), "220,00 €");
+  casella.scrivi(prima);
+}
+
 ok("gli stipendi in più chiudono il buco",
   o.stipendiInPiu * o.versamento >= o.gap, `${o.stipendiInPiu} × ${euro(o.versamento)}`);
 
@@ -201,6 +216,100 @@ ok("l'orizzonte breve esiste solo se è davvero più corto", fin == null || fin 
 ok("la Cassa non è in tasca: i due orizzonti guardano denari diversi",
   q.spendibile > 13000 && fin == null, euro(q.spendibile));
 ok("lo stipendio chiude la finestra della quota", q.fine === ciclo.a, q.fine);
+
+/* ====================================================== 6. I TRAVASI ==== */
+/* La domanda della domenica sera — «ho questi saldi, quanto butto dove?» —
+   che prima si faceva a una chat. Le regole: ING non si tocca, prima le
+   Fisse, una razione sola (quella di domani), il Principale fino a
+   domenica e la Cassa per il resto. */
+console.log("\n— i travasi —");
+const { pianoTravasi, ricaricaLunedi } = await import("./travasi.js");
+
+/* Sabato 10: la giornata è già sforata, ma la domanda dei travasi è
+   un'altra — il Principale arriva a domani? */
+const sab = pianoTravasi(OGGI);
+ok("sabato: la finestra è la domenica", sab.f.da === "2026-10-11" && sab.f.a === "2026-10-11", `${sab.f.da}…${sab.f.a}`);
+/* LA REGOLA CHE TIENE INSIEME LE DUE CARTE: la razione del piano è il
+   «Domani» della carta di oggi. Una cifra sola per la stessa domanda. */
+ok("la razione del piano è il «Domani» della carta", sab.razione === dom.quota, euro(sab.razione));
+ok("sabato: 10,49 € bastano per domenica a 7,77", sab.mosse.length === 0 && sab.esito !== "non-basta",
+  `principale ${euro(sab.prima.principale)}`);
+/* Niente da spostare non vuol dire tutto bene: 7,77 € al giorno sono sotto
+   la soglia dei 10, e la carta lo deve dire anche quando non c'è una
+   mossa da fare. */
+eq("sabato: ma la razione è stretta", sab.esito, "stretto");
+
+/* Domenica 11: si prepara la settimana dopo. Il vecchio `ricaricaLunedi`
+   la domenica guardava un giorno solo, e diceva di ricaricare per stanotte. */
+const dom11 = pianoTravasi("2026-10-11");
+ok("domenica: si prepara lunedì → domenica", dom11.f.prepara && dom11.f.da === "2026-10-12" && dom11.f.a === "2026-10-18",
+  `${dom11.f.da}…${dom11.f.a}`);
+eq("domenica: giorni della settimana", dom11.f.giorni, 7);
+eq("domenica: la razione", euro(dom11.razione), "8,48 €");
+const verso = dom11.mosse.find((m) => m.a === "principale");
+ok("domenica: una mossa dalla Cassa al Principale", verso && verso.da === "cassa", verso ? euro(verso.imp) : "nessuna");
+eq("domenica: quanto", verso ? euro(verso.imp) : "—", "50,00 €");
+ok("domenica: a cifre tonde, di 5 in 5", verso && verso.imp % 500 === 0);
+ok("dopo il travaso il Principale arriva a domenica",
+  dom11.dopo.principale >= dom11.razione * dom11.f.giorni, euro(dom11.dopo.principale));
+/* La Cassa che resta deve bastare per i giorni dopo la settimana. Entro
+   un euro: è l'arrotondamento in su del travaso. */
+const restanti = dom11.f.allaPaga - dom11.f.giorni;
+ok("e la Cassa basta per i giorni dopo, entro i 5 € dell'arrotondamento",
+  dom11.dopo.cassa + 500 >= dom11.razione * restanti,
+  `${euro(dom11.dopo.cassa)} per ${restanti} × ${euro(dom11.razione)}`);
+ok("ING non si tocca", dom11.dopo.ing === dom11.prima.ing && !dom11.mosse.some((m) => m.da === "ing"));
+ok("niente soldi inventati: la somma non cambia",
+  dom11.dopo.principale + dom11.dopo.cassa + dom11.dopo.fisse === dom11.prima.principale + dom11.prima.cassa + dom11.prima.fisse);
+
+/* UN MOTORE SOLO. `ricaricaLunedi` era un conto a sé: la domenica, il
+   foglio della chiusura e il Riepilogo davano tre cifre. */
+eq("la ricarica del lunedì è la mossa del piano", euro(ricaricaLunedi("2026-10-11").importo), euro(verso?.imp || 0));
+
+/* --- sotto i 3 € non si sposta -------------------------------------- */
+/* Il primo disegno proponeva «Cassa → Principale: 1 €» con 10,59 € sul
+   Principale e una razione da 10,89. Nessuno apre Revolut per un euro. */
+{
+  const prima = casella.leggi();
+  casella.scrivi({ ...prima, movs: [...prima.movs,
+    { id: "z", data: OGGI, tipo: "out", imp: 300, nota: "Caffè e cornetto", cat: "cibo", sub: "Bar e colazioni", pocket: "principale", up: 1, ts: 1 }] });
+  const quasi = pianoTravasi(OGGI);
+  // Il buco c'è davvero — pochi centesimi — e non deve diventare un giro.
+  ok("c'è un buco, ma di pochi centesimi",
+    quasi.serve > quasi.prima.principale && quasi.serve - quasi.prima.principale < 300,
+    `serve ${euro(quasi.serve)}, sul Principale ${euro(quasi.prima.principale)}`);
+  ok("e non diventa un travaso", quasi.mosse.length === 0 && quasi.esito !== "non-basta");
+  casella.scrivi(prima);
+}
+
+/* --- le Fisse scoperte vengono prima ---------------------------------- */
+const archivioBase = casella.leggi();
+casella.scrivi({
+  ...archivioBase,
+  pockets: archivioBase.pockets.map((p) => p.id === "fisse" ? { ...p, saldo: 0 } : p),
+  ricorrenti: [{ id: "windtre", nome: "WindTRE", cat: "fisse", pocket: "fisse", tipo: "fissa",
+    imp: 499, cadenza: "mensile", giorno: 15, attivo: true, da: null, pagato: null, up: 1 }],
+});
+const fis = pianoTravasi("2026-10-11");
+ok("Fisse vuote e WindTRE il 15: la prima mossa va alle Fisse",
+  fis.mosse[0]?.a === "fisse" && fis.mosse[0]?.da === "cassa", fis.mosse.map((m) => `${m.da}→${m.a} ${euro(m.imp)}`).join(", "));
+eq("alle Fisse, all'euro", euro(fis.mosse[0]?.imp || 0), "5,00 €");
+ok("la razione tiene conto delle Fisse scoperte", fis.razione < dom11.razione,
+  `${euro(fis.razione)} contro ${euro(dom11.razione)}`);
+ok("e resta la stessa del «Domani» della carta", fis.razione === quotaDomani("2026-10-11").quota);
+
+/* --- quando neanche la Cassa basta ------------------------------------ */
+casella.scrivi({
+  ...archivioBase,
+  pockets: archivioBase.pockets.map((p) => p.id === "cassa" ? { ...p, saldo: 0 } : p),
+  ricorrenti: [{ id: "affitto-x", nome: "Bolletta", cat: "casa", pocket: "principale", tipo: "fissa",
+    imp: 8000, cadenza: "mensile", giorno: 14, attivo: true, da: null, pagato: null, up: 1 }],
+});
+const nb = pianoTravasi("2026-10-11");
+ok("Cassa vuota e una bolletta da 80 € martedì: non basta", nb.esito === "non-basta", nb.esito);
+ok("dice la cifra che manca", nb.manca > 0, euro(nb.manca));
+ok("e non la prende da ING da solo", !nb.mosse.some((m) => m.da === "ing") && nb.dopo.ing === nb.prima.ing);
+casella.scrivi(archivioBase);
 
 console.log(rotti ? `\n${rotti} controlli non passano.` : "\nNessuna contraddizione.");
 

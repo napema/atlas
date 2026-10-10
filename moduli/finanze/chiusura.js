@@ -24,8 +24,9 @@ import {
   inArrivo, tettoSettimanale,
 } from "./calcolo.js";
 import {
-  quotaDi, fuoriPianoDelCiclo, tiroObiettivo, ingPrevisto, ricaricaLunedi, budgetVita,
+  quotaDi, fuoriPianoDelCiclo, tiroObiettivo, ingPrevisto, budgetVita,
 } from "./piano.js";
+import { ricaricaLunedi, pianoTravasi, eseguiTravasi } from "./travasi.js";
 import { oggiISO, daISO, piuGiorni, euro, nuovoId } from "../../core/ui.js";
 
 /* ------------------------------------------------------- la settimana -- */
@@ -240,17 +241,19 @@ export function report(iso = oggiISO()) {
 
 export { ricaricaLunedi };
 
-/** Il giro Cassa → Principale di lunedì. */
+/**
+ * I travasi della settimana: quelli del piano, tutti.
+ *
+ * Era il solo giro Cassa → Principale, con un conto suo; adesso esegue il
+ * piano di `travasi.js`, che copre anche le Fisse scoperte. Il piano si
+ * legge PRIMA di scrivere: dopo, i saldi sono già cambiati e lo stesso
+ * conto direbbe che non c'è più niente da spostare.
+ */
 export function eseguiRicarica(iso = oggiISO()) {
-  const r = ricaricaLunedi(iso);
-  if (r.importo <= 0) return null;
-  salvaMovimento({
-    id: nuovoId("m"), tipo: "giro", imp: r.importo,
-    nota: "Ricarica settimanale", cat: null, sub: null,
-    pocket: "cassa", pocketTo: "principale", data: iso,
-    rif: null, ecc: false,
-  });
-  return r;
+  const p = pianoTravasi(iso);
+  if (!p.mosse.length) return null;
+  eseguiTravasi(p);
+  return { importo: p.mosse.reduce((t, m) => t + m.imp, 0), mosse: p.mosse };
 }
 
 /** Chiude la settimana. Il saldo ING resta scritto: serve al confronto. */

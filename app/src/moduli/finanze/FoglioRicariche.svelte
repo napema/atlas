@@ -19,7 +19,7 @@
   import { avviso, celebra, centesimi, dataBreve, euro, nuovoId, oggiISO, piuGiorni, plurale, tocco } from "$lib/core/ui";
   import { salvaMovimento, segnaRicarica, pocketPerId, riancoraPocket } from "$condivisi/finanze/dati.js";
   import { saldoPocket, cicloDi, settimana, sforamenti } from "$condivisi/finanze/calcolo.js";
-  import { ricaricaLunedi } from "$condivisi/finanze/piano.js";
+  import { ricaricaLunedi } from "$condivisi/finanze/travasi.js";
   import { testoDa, pulisciImporto } from "./comune";
 
   let { aperto = $bindable(false), quale }: { aperto: boolean; quale: "ricaricaSett" | "ricarica" | "saldoING" } = $props();

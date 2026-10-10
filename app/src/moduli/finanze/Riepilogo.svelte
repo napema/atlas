@@ -30,13 +30,18 @@
   import Pulsante from "$lib/ui/Pulsante.svelte";
   import Importo from "$lib/ui/Importo.svelte";
   import Icona from "$lib/ui/Icona.svelte";
+  import Anello from "$lib/ui/Anello.svelte";
+  import PianoTravasi from "./PianoTravasi.svelte";
+  import { pianoTravasi } from "$condivisi/finanze/travasi.js";
+  import { travasiPaga } from "$condivisi/finanze/paga.js";
+  import { prossimoStipendio } from "$condivisi/finanze/calcolo.js";
   import { dati } from "$lib/core/reattivo.svelte";
   import { euro, plurale, oggiISO, daISO, GIORNI, MESI_BREVI } from "$lib/core/ui";
   import { stato, TIPI_POCKET } from "$condivisi/finanze/dati.js";
   import { nomePocket } from "./comune";
   import { cicloDi, importoEffettivo, pocketConSaldi } from "$condivisi/finanze/calcolo.js";
   import {
-    quotaDi, quotaDomani, variazioneQuota, copreFino, tiroObiettivo, passoObiettivo,
+    quotaDi, quotaDomani, tiroObiettivo, passoObiettivo,
     fuoriPianoDelCiclo, ingPrevisto, inArrivoDiviso,
   } from "$condivisi/finanze/piano.js";
   import { allineamento } from "$condivisi/finanze/chiusura.js";
@@ -53,18 +58,20 @@
     const q = quotaDi(oggi);
     return {
       oggi, ciclo, pk, q,
-      // Quello che hai DAVVERO in mano adesso: senza la Cassa, che è un
-      // parcheggio, e al netto di quello che è già uscito oggi.
-      inTasca: pk.filter((p: any) => p.tipo === "spendibile" && !p.external)
-        .reduce((t: number, p: any) => t + p.saldoVero, 0),
+
       // Zero perché non è configurato non è zero perché hai finito i soldi:
       // senza un'ancora su un pocket il conto della quota non può partire.
       configurato: pk.some((p: any) => p.ancoraDa || p.saldo),
-      delta: variazioneQuota(oggi),
-      copre: copreFino(oggi, q.quota),
+
       obi: tiroObiettivo(oggi),
       passo: passoObiettivo(oggi),
       domani: quotaDomani(oggi),
+      travasi: pianoTravasi(oggi),
+      /* Quello che la lista del prossimo giorno di paga chiederà davvero di
+         mettere sul fondo. La riga «cosa fare» dell'obiettivo dice QUESTA
+         cifra e nessun'altra: se dicesse quella consigliata, il 23 la lista
+         ne chiederebbe un'altra e le due schermate si smentirebbero. */
+      versaProssimo: travasiPaga(prossimoStipendio(oggi)).righe.find((r: any) => r.id === "fondo")?.imp ?? 0,
       // Il nome vero del pocket («Fondo naso»): è quello che leggi su
       // Revolut e sulla riga del giorno di paga, e deve essere lo stesso.
       nomeFondo: ((stato().pockets || []) as any[]).find((p) => p.id === (tiroObiettivo(oggi)?.pocket || "fondo"))?.nome || "Fondo",
@@ -106,171 +113,164 @@
 
 {#if parte === "lato"}
 
-<!-- 1. L'OBIETTIVO ------------------------------------------------------- -->
-<!-- Due tocchi diversi, e per questo due bottoni: la parte alta apre
-     l'obiettivo (cos'è, il grafico, il piano), la riga sotto è il PROSSIMO
-     PASSO — l'unica cosa che l'obiettivo ti chiede di fare. Prima c'erano
-     quattro numeri e nessuna azione, e la domanda che tornava era «ma cosa
-     ci devo fare?». -->
+<!-- 1. L'OBIETTIVO -------------------------------------------------------
+     DUE RIGHE: COSA FARE, E SE BASTA.
+
+     Il riquadro diceva il saldo, il traguardo, la stima, una barra, un
+     verdetto, due leve («+64 € a stipendio / oppure 5 stipendi in più») e
+     il prossimo versamento con due righe di spiegazione. Nove pezzi per una
+     domanda sola — «cosa devo fare?» — e la risposta era il nono.
+
+     Adesso la prima riga è L'AZIONE, con la sua data e la sua cifra: è
+     quello che farai su Revolut. La seconda dice se basta, e quando non
+     basta dice la cifra GIUSTA da versare — il totale, non il «+64»: un
+     totale si scrive nel campo dell'importo, una differenza va prima
+     sommata a mente. Le alternative (spostare la data, abbassare il
+     traguardo) stanno nel foglio, a un tocco. -->
 {#if d.obi}
+  {@const giusto = d.obi.inPiu ? d.obi.versamento + d.obi.inPiu : d.obi.versamento}
+  {@const prossimo = d.passo?.prossimo ?? d.obi.prossimo}
   <Sezione>
-    <div class="blocco obi" data-tono={d.obi.cela ? "" : "avviso"}>
+    <div class="blocco obi">
       <button type="button" class="obi-apri" onclick={() => apri({ tipo: "obiettivo" })}>
         <span class="testa">
-          <span class="eti">OBIETTIVO · {d.obi.nome.toUpperCase()}</span>
+          <span class="eti">{d.obi.nome.toUpperCase()}</span>
           <span class="eti-dx cifre">entro {glma(d.obi.data)}</span>
         </span>
-
-        <span class="obi-cifre">
-          <b class="cifre">{euro(d.obi.saldo, { tondo: true })}</b>
-          <span class="secondario cifre">/ {euro(d.obi.target, { tondo: true })}</span>
-          {#if d.obi.provvisorio}<span class="tag">stima</span>{/if}
-          <span class="freccina" aria-hidden="true"><Icona nome="freccia" misura={14} tratto={2.4} /></span>
-        </span>
-        <span class="barra"><i style:width="{Math.round(d.obi.frazione * 100)}%"></i></span>
-
-        <!-- UNA DOMANDA SOLA: alla data, ci arrivi?
-
-             Qui c'erano due verdetti opposti attaccati da un punto — «in
-             linea · a questo ritmo arrivi a 2.860, mancano 640» — perché
-             «in linea» guarda indietro (hai versato quello che dovevi) e
-             «mancano» guarda avanti. Il primo con zero stipendi passati è
-             vero per definizione, e compariva verde accanto a un
-             salvadanaio vuoto. Se hai saltato un versamento te lo dice la
-             riga sotto, che è anche quella che ti fa rimediare. -->
-        <span class="text-subheadline esito">
-          {#if !d.obi.versamento}
-            <span class="secondario">nessun versamento impostato: l'obiettivo non si muove da solo</span>
-          {:else if d.obi.cela}
-            <span class="ok-testo">ci arrivi</span>
-            <span class="secondario">· {euro(d.obi.proiezione, { tondo: true })} alla data{#if d.obi.avanzo > 0}, {euro(d.obi.avanzo, { tondo: true })} di margine{/if}</span>
-          {:else}
-            <span class="avviso">mancano <b class="cifre">{euro(d.obi.gap, { tondo: true })}</b></span>
-            <span class="secondario">· a questo ritmo arrivi a {euro(d.obi.proiezione, { tondo: true })}</span>
-          {/if}
-        </span>
-
-        <!-- LE DUE LEVE, e si dicono tutte e due: dire solo «versa di più»
-             suggerisce che l'unica via sia stringere. Spostare la data è
-             una scelta legittima, e saperlo è il motivo per cui una delle
-             due la prendi invece di smettere di guardare il riquadro. -->
-        {#if !d.obi.cela && d.obi.inPiu}
-          <span class="leve text-footnote">
-            <span><b class="cifre">+{euro(d.obi.inPiu, { tondo: true })}</b> a stipendio per {plurale(d.obi.versamenti, "volta", "volte")}</span>
-            <span class="secondario">oppure {plurale(d.obi.stipendiInPiu, "stipendio", "stipendi")} in più</span>
+        <span class="obi-riga">
+          <span class="obi-cifre">
+            <b class="cifre">{euro(d.obi.saldo, { tondo: true })}</b>
+            <span class="secondario cifre">di {euro(d.obi.target, { tondo: true })}</span>
           </span>
-        {/if}
+          <Anello valore={d.obi.frazione} misura={40} spessore={6} />
+        </span>
       </button>
 
-      {#if d.passo}
-        <button type="button" class="passo" data-stato={d.passo.tipo}
-          onclick={() => d.passo?.tipo === "da-fare" ? apri({ tipo: "paga", dataStip: d.passo.dataStip }) : apri({ tipo: "obiettivo" })}>
-          <span class="passo-ico" aria-hidden="true">
-            <Icona nome={d.passo.tipo === "fatto" ? "spunta" : d.passo.tipo === "da-fare" ? "freccia" : "orologio"} misura={15} tratto={2.6} />
+      <!-- 1. COSA FARE. La cifra è quella che la lista del giorno di paga
+           ti chiederà, non quella consigliata: le due coincidono solo se
+           l'obiettivo è in linea, e se non coincidono la differenza la
+           dice la riga sotto, con il modo di cambiarla. -->
+      <div class="righe-obi">
+      {#if d.passo?.tipo === "da-fare"}
+        <button type="button" class="azione adesso" onclick={() => apri({ tipo: "paga", dataStip: d.passo!.dataStip })}>
+          <span class="a-ico" aria-hidden="true"><Icona nome="freccia" misura={14} tratto={2.8} /></span>
+          <span class="a-testo"><b>Adesso: {euro(d.passo.imp, { tondo: true })} sul fondo</b></span>
+          <span class="a-coda" aria-hidden="true"><Icona nome="freccia" misura={14} tratto={2.4} /></span>
+        </button>
+      {:else if d.passo}
+        <div class="azione">
+          <span class="a-ico" aria-hidden="true">
+            <Icona nome={d.passo.tipo === "fatto" ? "spunta" : "calendario"} misura={14} tratto={2.4} />
           </span>
-          <span class="passo-testo">
-            {#if d.passo.tipo === "da-fare"}
-              <b>Da fare: sposta {euro(d.passo.imp, { tondo: true })} su {d.nomeFondo}</b>
-              <span class="text-footnote secondario">Su Revolut, dal Principale. Poi tocca qui e spunta «{d.nomeFondo}».</span>
-            {:else if d.passo.tipo === "fatto"}
-              <b>Versamento di questo ciclo fatto</b>
-              <span class="text-footnote secondario">{d.passo.prossimo ? `Il prossimo: ${euro(d.obi.versamento, { tondo: true })} · ${glm(d.passo.prossimo)}` : ""}</span>
+          <span class="a-testo">
+            {#if d.passo.tipo === "fatto"}
+              <b>Fatto per questo ciclo</b>
+              {#if d.passo.prossimo}<span class="secondario cifre"> · il prossimo {glm(d.passo.prossimo)}</span>{/if}
             {:else}
-              <b>Prossimo versamento: {euro(d.passo.imp, { tondo: true })}{d.passo.prossimo ? ` · ${glm(d.passo.prossimo)}` : ""}</b>
-              <span class="text-footnote secondario">Il giorno di paga: lo trovi come primo travaso. Fino ad allora non devi fare niente.</span>
+              <b class="cifre">{prossimo ? glm(prossimo) : "Al prossimo stipendio"}: {euro(d.versaProssimo, { tondo: true })} sul fondo</b>
             {/if}
           </span>
-        </button>
+        </div>
       {/if}
+
+      <!-- 2. BASTA? Verde se ci arrivi. Se no, la cifra che manca e la
+           cifra giusta, e quella giusta è un BOTTONE: apre il foglio
+           dell'obiettivo, dove il versamento si cambia — e da lì in poi la
+           riga sopra e la lista del giorno di paga dicono la cifra nuova. -->
+      {#if d.obi.versamento}
+        {#if d.obi.cela}
+          <div class="basta">
+            <Icona nome="spunta" misura={14} tratto={2.8} />
+            <span>Così ci arrivi{#if d.obi.avanzo > 0}<span class="secondario cifre">, con {euro(d.obi.avanzo, { tondo: true })} di margine</span>{/if}</span>
+          </div>
+        {:else}
+          <div class="basta no">
+            <Icona nome="avviso" misura={14} tratto={2.4} />
+            <span class="cifre">Così arrivi a {euro(d.obi.proiezione, { tondo: true })}, non a {euro(d.obi.target, { tondo: true })}.</span>
+          </div>
+          {#if d.obi.inPiu}
+            <button type="button" class="correggi" onclick={() => apri({ tipo: "obiettivo" })}>
+              <span>Per arrivarci: <b class="cifre">{euro(giusto, { tondo: true })}</b> a stipendio</span>
+              <Icona nome="freccia" misura={14} tratto={2.4} />
+            </button>
+          {/if}
+        {/if}
+      {/if}
+      </div>
     </div>
   </Sezione>
 {/if}
 
-<!-- 2. OGGI -------------------------------------------------------------- -->
-<Sezione>
-  <div class="blocco oggi" data-tono={d.q.livello}>
-    <span class="testa"><span class="eti">OGGI</span></span>
+<!-- 2. OGGI --------------------------------------------------------------
+     TRE LIVELLI, E BASTA.
 
+     Era una carta da sette righe in quattro colori — il numero, «oltre la
+     quota», la quota con la sua freccia, lo sforo, il divisibile, il piano,
+     «in tasca... basta fino a...» — e chi non sapeva già di cosa parlava
+     non ci capiva niente. Adesso:
+
+       1. il numero: quanto puoi ancora spendere oggi. Rosso se sei oltre.
+       2. l'anello: quanto della razione di oggi è andato. Si capisce senza
+          leggere — pieno e rosso vuol dire sforato.
+       3. tre caselle, tre parole: la razione, lo speso, e domani.
+
+     Tutto il resto se n'è andato o è andato altrove. «In tasca, basta
+     fino a» è la domanda dei travasi, e sta nella carta sotto. Il piano
+     contro la razione sta nell'Analisi. «−1,91 € da ieri» non cambiava
+     nessuna decisione. Il colore del numero dice UNA cosa: rosso, sei
+     oltre. L'arancione per «quota sotto il piano» era una regola che non
+     si vedeva, e faceva sembrare un allarme un numero tranquillo. -->
+<Sezione>
+  <div class="blocco oggi">
     {#if !d.configurato}
+      <span class="testa"><span class="eti">OGGI</span></span>
       <span class="vuota cifre">—</span>
       <Pulsante variante="pieno" larga onclick={() => apri({ tipo: "pocket" })}>Imposta i saldi</Pulsante>
     {:else}
-      <!-- IL NUMERO GRANDE È QUELLO CHE RESTA, non la quota.
-
-           Era la quota, e il 10 ottobre la schermata diceva «OGGI 10,75 €»
-           sopra «speso oggi 46,51 € · restano −35,76 €»: tre numeri che si
-           smentiscono, e il solo che si legge davvero era falso. 10,75 non
-           li puoi spendere — li hai già spesi. La quota è la razione del
-           giorno, ferma dall'alba al tramonto; quello che puoi ancora
-           spendere è un'altra cosa, e la domanda è quella. -->
-      <span class="riga-grande">
-        <Importo centesimi={d.q.resta} misura={46} tono={d.q.livello as any} />
-        <span class="verdetto text-subheadline" class:male={d.q.resta < 0}>
-          {d.q.resta < 0 ? "oltre la quota" : "ancora oggi"}
-        </span>
+      {@const oltre = d.q.resta < 0}
+      <span class="testa">
+        <span class="eti">OGGI</span>
+        <span class="eti-dx cifre">{plurale(d.q.giorni, "giorno", "giorni")} allo stipendio</span>
       </span>
 
-      <span class="righe text-subheadline">
-        <!-- Il conto che porta a quel numero, nell'ordine in cui lo si fa a
-             mente: la razione, meno quello che è uscito. -->
-<!-- A giornata intatta il grande e questa riga erano lo stesso numero
-             scritto due volte. Il conto si mostra quando c'è un conto da
-             fare; prima della prima spesa c'è solo da dire com'è cambiata
-             la razione rispetto a ieri. -->
-        <span class="conto cifre">
-          {#if d.q.speso > 0}
-            <span class="secondario">quota del giorno</span>
-            <b>{euro(d.q.quota)}</b>
-            <span class="secondario">· speso</span>
-            <b>{euro(d.q.speso)}</b>
-          {:else}
-            <span class="secondario">niente speso finora</span>
-          {/if}
-          {#if d.delta !== 0}
-            <span class="delta" data-verso={d.delta > 0 ? "su" : "giu"}>
-              <Icona nome={d.delta > 0 ? "su" : "giu"} misura={12} tratto={2.6} />{d.delta > 0 ? "+" : ""}{euro(d.delta)} da ieri
-            </span>
-          {/if}
-        </span>
+      <div class="eroe">
+        <Anello valore={d.q.quota > 0 ? d.q.speso / d.q.quota : d.q.speso > 0 ? 1 : 0}
+          misura={64} spessore={9} colore={oltre ? "var(--color-red)" : "var(--accento)"} />
+        <div class="eroe-testo">
+          <Importo centesimi={d.q.resta} misura={44} tono={oltre ? "male" : ""} />
+          <span class="stato" class:male={oltre}>{oltre ? "oltre la razione di oggi" : "puoi ancora spendere"}</span>
+        </div>
+      </div>
 
-        <!-- DOPO UNO SFORO, LA DOMANDA È «E ADESSO?». Il sistema si
-             raddrizza da sé — i soldi spesi oggi domani non ci sono più e i
-             giorni sono uno di meno — ma finché non si legge sembra che lo
-             sforo resti lì a pesare per sempre. -->
-        {#if d.q.resta < 0 && d.domani}
-          <span class="male cifre">
-            hai sforato di {euro(d.q.sforo)} · domani la quota {d.domani.quota < d.q.quota ? "scende" : "risale"} a {euro(d.domani.quota)}
-          </span>
-        {/if}
-
-        <span class="due">
-          <span class="cifre">
-            <b>{euro(d.q.spendibile)}</b>
-            <span class="secondario">da dividere fino a {gg(d.q.fine)} · {plurale(d.q.giorni, "giorno", "giorni")}</span>
-          </span>
-          <span class="secondario cifre">il piano ne dava {euro(d.q.piano)}/g</span>
-        </span>
-        <!-- `copreFino` guarda SOLO le tasche spendibili, la quota divide
-             anche la Cassa: sono due numeri su due denari diversi, e messi
-             uno sotto l'altro senza dirlo sembravano contraddirsi («13
-             giorni» sopra «copre fino a lunedì»). Non si contraddicono:
-             questa riga dice quando serve la prossima ricarica. -->
-        {#if d.copre && d.copre < d.q.fine}
-          <span class="secondario cifre">
-            in tasca {euro(d.inTasca)} · basta fino a {gg(d.copre)}, poi serve una ricarica dalla Cassa
-          </span>
-        {:else if !d.copre && d.q.quota > 0}
-          <!-- `copreFino` torna `null` quando in tasca non c'è nemmeno una
-               quota, ed era il caso in cui la riga spariva: proprio quello
-               in cui c'era qualcosa da fare. -->
-          <span class="avviso cifre">
-            in tasca {euro(d.inTasca)} · non basta per un giorno, serve una ricarica dalla Cassa
-          </span>
-        {/if}
-      </span>
+      <div class="caselle">
+        <div class="casella">
+          <span>Razione</span>
+          <b class="cifre">{euro(d.q.quota)}</b>
+        </div>
+        <div class="casella">
+          <span>Speso</span>
+          <b class="cifre" class:male={oltre}>{euro(d.q.speso)}</b>
+        </div>
+        <!-- DOMANI risponde a «e adesso?» dopo uno sforo, e a «se mi fermo
+             qui?» negli altri giorni. È la stessa razione che usa il piano
+             dei travasi qui sotto: una cifra sola per la stessa domanda. -->
+        <div class="casella">
+          <span>{d.domani ? "Domani" : "Stipendio"}</span>
+          <b class="cifre">{d.domani ? euro(d.domani.quota) : "domani"}</b>
+        </div>
+      </div>
     {/if}
   </div>
 </Sezione>
+
+<!-- 2bis. DA SPOSTARE ------------------------------------------------------
+     La domanda della domenica sera, e di ogni giorno in cui il Principale
+     non arriva a domenica. Il conto lo fa `pianoTravasi()`. -->
+{#if d.configurato}
+  <Sezione>
+    <PianoTravasi piano={d.travasi} />
+  </Sezione>
+{/if}
 
 <!-- La lista d'attesa accanto ai due gesti: è il terzo gesto, e arriva nello
      stesso momento — davanti a una cosa che costa. -->
@@ -443,9 +443,6 @@
      non ci stanno sulla stessa riga: il primo andava a capo in mezzo, e
      «giorni» restava da solo sotto. Il primo non va a capo mai; quando non
      ci sta, e' il secondo a scendere, intero e allineato a destra. */
-  .due { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
-  .due > :first-child { white-space: nowrap; }
-  .due > :last-child { margin-left: auto; }
   .secondario { color: var(--label-secondary); }
   .male { color: var(--color-red); }
   .avviso { color: var(--color-orange); }
@@ -454,27 +451,46 @@
   /* La pressione la fa `.premibile` (app.css): la lastra cede di un
      filo e la luce si alza. Un `background` sull'elemento non si vedrebbe
      — il materiale gli sta davanti. */
+  .obi-riga { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
   .obi-cifre { display: flex; align-items: baseline; gap: 6px; }
+
+  /* Le due righe: l'azione e la verifica. Stessa forma — icona, testo —
+     perché si leggono insieme, una sotto l'altra, come una lista di due. */
+  .azione {
+    display: flex; align-items: center; gap: var(--space-2); width: 100%;
+    padding: 10px 12px; border-radius: var(--radius-xl); background: var(--fill-quaternary);
+    text-align: left; color: inherit; font-size: var(--text-subheadline);
+  }
+  .azione b { font-weight: var(--weight-semibold); }
+  .azione.adesso { background: color-mix(in srgb, var(--accento) 16%, transparent); color: var(--accento); }
+  .azione.adesso:active { opacity: 0.6; }
+  .a-ico { display: grid; place-items: center; flex: none; color: var(--accento); }
+  .a-testo { flex: 1; min-width: 0; }
+  .a-coda { display: inline-flex; opacity: 0.6; }
+  /* Le righe sotto la testata: stanno DENTRO il margine della carta. La
+     testata è un bottone a tutta larghezza (si tocca per aprire il
+     foglio), e le righe sotto ne ereditavano lo zero di padding — finivano
+     contro il bordo, l'icona dell'avviso appoggiata allo spigolo. */
+  .righe-obi { display: flex; flex-direction: column; gap: var(--space-2); padding: 0 var(--space-4) var(--space-4); }
+  .basta { display: flex; align-items: flex-start; gap: var(--space-2); font-size: var(--text-subheadline); color: var(--color-green); padding: 0 2px; }
+  .correggi {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+    padding: 10px 12px; border-radius: var(--radius-xl);
+    background: color-mix(in srgb, var(--color-orange) 15%, transparent); color: var(--color-orange);
+    font-size: var(--text-subheadline); text-align: left;
+  }
+  .correggi span { color: var(--label-primary); }
+  .correggi b { color: var(--color-orange); font-weight: var(--weight-semibold); }
+  .correggi:active { opacity: 0.6; }
+  .basta > span { color: var(--label-primary); }
+  .basta.no { color: var(--color-orange); }
   .obi-cifre b { font-family: var(--font-display); font-size: 30px; line-height: 34px; font-weight: var(--weight-bold); }
-  .barra { height: 6px; border-radius: 3px; overflow: hidden; background: var(--fill-tertiary); margin: 4px 0 2px; }
-  .barra i { display: block; height: 100%; border-radius: inherit; background: var(--accento); }
-  .obi[data-tono="avviso"] .barra i { background: var(--color-orange); }
   .obi { padding: 0; gap: 0; }
   .obi-apri { display: flex; flex-direction: column; gap: 6px; width: 100%; padding: var(--space-4); text-align: left; }
   .obi-apri:active { background: var(--fill-quaternary); }
-  .freccina { margin-left: auto; color: var(--label-tertiary); align-self: center; }
-  .ok-testo { color: var(--color-green); }
   /* IL PROSSIMO PASSO. Separato dal resto da un filo, perché è un'altra
      cosa: sopra si guarda, qui si fa. «Da fare» prende l'accento del modulo
      — è un invito, non un allarme —, «fatto» il verde, l'attesa niente. */
-  .passo { display: flex; align-items: center; gap: var(--space-3); width: 100%; padding: 12px var(--space-4) 14px; text-align: left; border-top: 0.5px solid var(--separator); }
-  .passo:active { background: var(--fill-quaternary); }
-  .passo-ico { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: var(--label-secondary); background: var(--fill-tertiary); }
-  .passo-testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-  .passo-testo b { font-weight: var(--weight-semibold); }
-  .passo[data-stato="da-fare"] .passo-ico { color: #fff; background: var(--accento); }
-  .passo[data-stato="da-fare"] b { color: var(--accento); }
-  .passo[data-stato="fatto"] .passo-ico { color: #fff; background: var(--color-green); }
   .tag {
     padding: 1px 6px; border-radius: var(--radius-sm); font-size: var(--text-caption2);
     font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.4px;
@@ -482,18 +498,21 @@
   }
 
   /* --- oggi --- */
-  .riga-grande { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
-  .delta { display: inline-flex; align-items: center; gap: 3px; color: var(--label-tertiary); }
-  .delta[data-verso="su"] { color: var(--color-green); }
-  .delta[data-verso="giu"] { color: var(--color-orange); }
 
-  .verdetto { color: var(--label-secondary); white-space: nowrap; }
-  .verdetto.male { color: var(--color-red); font-weight: var(--weight-semibold); }
-  .conto { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; }
-  .conto b { font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; }
-  .esito { display: block; }
-  .leve { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-2); margin-top: 2px; }
-  .leve b { color: var(--accento); }
+  /* --- OGGI: il numero, l'anello, tre caselle --- */
+  .eroe { display: flex; align-items: center; gap: var(--space-4); margin: var(--space-2) 0 var(--space-1); }
+  .eroe-testo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .stato { font-size: var(--text-subheadline); color: var(--label-secondary); }
+  .stato.male { color: var(--color-red); font-weight: var(--weight-semibold); }
+  .caselle { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); margin-top: var(--space-2); }
+  .casella {
+    display: flex; flex-direction: column; gap: 2px; min-width: 0;
+    padding: 10px 12px; border-radius: var(--radius-xl); background: var(--fill-quaternary);
+  }
+  .casella span { font-size: var(--text-caption1); font-weight: var(--weight-semibold); color: var(--label-secondary); }
+  .casella b { font-size: var(--text-headline); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .casella b.male { color: var(--color-red); }
+
   .vuota { font-family: var(--font-display); font-size: 46px; line-height: 52px; font-weight: var(--weight-bold); color: var(--label-tertiary); }
 
   .ico { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--fill-tertiary); color: var(--label-secondary); }

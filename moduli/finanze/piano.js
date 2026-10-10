@@ -60,7 +60,14 @@ function impegniSu(ids, iso) {
   // `inArrivo` si ferma da sé alla fine del ciclo: chiedergli dieci anni
   // vuol dire chiedergli «tutto quello che esce prima dello stipendio».
   const per = inArrivo(3650, iso).perPocket;
-  return ids.reduce((t, id) => t + (per[id]?.totale || 0), 0);
+  const sulleTasche = ids.reduce((t, id) => t + (per[id]?.totale || 0), 0);
+  /* E LO SCOPERTO DELLE FISSE. Se le Fisse non coprono quello che esce
+     prima dello stipendio, la differenza la devono mettere le tasche della
+     vita — o rimbalza. Senza questa riga la quota contava come spendibili
+     dei soldi che servivano a non far rimbalzare iCloud, e il piano dei
+     travasi (che le Fisse le copre per prime) dava una razione diversa da
+     quella del riquadro «Domani». */
+  return sulleTasche + (per.fisse?.scoperto || 0);
 }
 
 /* ========================================================================
@@ -632,35 +639,8 @@ export function listaConEffetto(iso = oggiISO(), adesso = Date.now()) {
     .map((v) => ({ ...v, effetto: effettoVoce(v.imp || 0, iso) }));
 }
 
-/* ========================================================================
-   LA RICARICA DEL LUNEDÌ.
-
-   Non è più un importo fisso. L'importo fisso è la ragione per cui
-   l'ultima settimana del mese era sempre quella povera: quattro giorni con
-   quello che era avanzato.
-
-   Adesso si porta il Principale a `quota × giorni fino a domenica`. Se lo
-   stipendio arriva prima di domenica, l'orizzonte è lo stipendio: ricaricare
-   per una settimana intera a tre giorni dalla paga vuol dire travasare
-   soldi che tornano indietro il venerdì.
-   ======================================================================== */
-
-export function ricaricaLunedi(iso = oggiISO()) {
-  const q = quotaDi(iso);
-  const dow = (daISO(iso).getDay() + 6) % 7;             // 0 = lunedì
-  const domenica = piuGiorni(iso, 6 - dow);
-  const fino = domenica < q.fine ? domenica : q.fine;
-  const giorni = Math.max(1, giorniFra(iso, fino));
-
-  const bersaglio = q.quota * giorni;
-  const saldo = pocketSpendibili().reduce((t, id) => t + saldoPocket(id), 0);
-  const cassa = pocketParcheggio().reduce((t, id) => t + saldoPocket(id), 0);
-  // Non si travasa più di quello che c'è in Cassa: un giro che porta la
-  // Cassa sotto zero non è una ricarica, è un numero inventato.
-  const importo = Math.max(0, Math.min(bersaglio - saldo, cassa));
-
-  return { fino, giorni, bersaglio, saldo, cassa, importo, quota: q.quota };
-}
+/* LA RICARICA DEL LUNEDÌ sta in `travasi.js`, insieme al resto delle
+   risposte a «quanto sposto, da dove, a dove». */
 
 /* ------------------------------------------------------- la copertura --- */
 

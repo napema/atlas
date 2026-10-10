@@ -20,6 +20,7 @@ import {
 import {
   quotaDi, variazioneQuota, tiroObiettivo, fuoriPianoDelCiclo, ingPrevisto, soglie,
 } from "./piano.js";
+import { pianoTravasi } from "./travasi.js";
 import { pagaCompleta } from "./paga.js";
 import { allineamento, domenicaDaChiudere } from "./chiusura.js";
 
@@ -395,13 +396,22 @@ export function oggi() {
   const arrivo = inArrivo(3650, iso);
   const oggiRic = ricorrentiDiOggi(iso);
   const delta = variazioneQuota(iso);
+  const tr = pianoTravasi(iso);
 
   /* L'ALLARME È UNO SOLO, e in ordine di quanto è urgente. Tre allarmi
      insieme non sono tre informazioni: sono un muro di testo rosso in cui
      quello che conta sta in mezzo agli altri due. */
+  /* LA MOSSA VIENE PRIMA DELLO SFORO. Lo sforo si vede già — il numero
+     della carta è rosso — e ripeterlo in una frase non cambia niente; una
+     mossa da fare invece è l'unica cosa su cui si può agire adesso. */
   let allarme = null;
-  if (q.resta < 0) {
-    allarme = `Hai sforato la quota di oggi di ${euro(q.sforo)}.`;
+  const mossaP = tr.mosse.find((m) => m.a === "principale");
+  if (tr.esito === "non-basta") {
+    allarme = `Mancano ${euro(tr.manca, { tondo: true })} per arrivare a domenica senza ING.`;
+  } else if (mossaP) {
+    allarme = `Sposta ${euro(mossaP.imp, { tondo: true })} dalla Cassa al Principale.`;
+  } else if (q.resta < 0) {
+    allarme = `Hai sforato la razione di oggi di ${euro(q.sforo)}.`;
   } else if (arrivo.scopertoTotale > 0) {
     allarme = `Mancano ${euro(arrivo.scopertoTotale)} per coprire quello che scade prima del ${dataBreve(ciclo.a)}.`;
   } else if (q.quota < (sg.quotaMinima || 0)) {
@@ -424,8 +434,7 @@ export function oggi() {
       ? `Oggi esce ${oggiRic[0].nome.toLowerCase()} · ${euro(oggiRic[0].importo, { tondo: true })}`
       : `Oggi escono ${oggiRic.length} addebiti · ${euro(oggiRic.reduce((t, r) => t + r.importo, 0), { tondo: true })}`);
   }
-  if (q.resta < 0) pezzi.push(`quota ${euro(q.quota)}, speso ${euro(q.speso)}`);
-  else if (q.speso > 0) pezzi.push(`quota ${euro(q.quota)}, speso ${euro(q.speso)}`);
+  if (q.speso > 0) pezzi.push(`razione ${euro(q.quota)}, speso ${euro(q.speso)}`);
   else pezzi.push(`${euro(q.spendibile)} fino al ${dataBreve(q.fine)}`);
   if (fp.n) pezzi.push(`fuori piano ${fp.n} · ${euro(fp.totale, { tondo: true })}`);
 
@@ -437,7 +446,7 @@ export function oggi() {
        scritto a mano lì, e diceva una cosa falsa. */
     valore: euro(q.resta),
     eti: q.resta < 0
-      ? `oltre la quota di oggi · ${plurale(q.giorni, "giorno", "giorni")} allo stipendio`
+      ? `oltre la razione di oggi · ${plurale(q.giorni, "giorno", "giorni")} allo stipendio`
       : `ancora oggi · ${plurale(q.giorni, "giorno", "giorni")} allo stipendio`,
 
     /* I due campi della carta piccola. Li formatta il modulo e non la home
@@ -452,9 +461,9 @@ export function oggi() {
        la app. L'etichetta la decide il modulo insieme al numero: quando è
        negativo non è più «puoi spendere», è «sei oltre». */
     oggiPuoi: euro(q.resta),
-    oggiEti: q.resta < 0 ? "Oltre la quota di oggi" : "Puoi ancora spendere oggi",
+    oggiEti: q.resta < 0 ? "Oltre la razione di oggi" : "Puoi ancora spendere oggi",
     oggiFino: q.speso > 0
-      ? `quota ${euro(q.quota)} · speso ${euro(q.speso)}`
+      ? `razione ${euro(q.quota)} · speso ${euro(q.speso)}`
       : `${euro(q.spendibile)} fino al ${dataBreve(q.fine)}`,
     oggiMale: q.resta < 0,
 

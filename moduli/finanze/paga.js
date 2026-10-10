@@ -21,7 +21,7 @@ import {
   cicloDi, prossimoStipendio, stipendiTra, prossimaScadenza, importoRicorrente,
   saldoPocket, giorniFra,
 } from "./calcolo.js";
-import { budgetVita } from "./piano.js";
+import { budgetVita, obiettivo } from "./piano.js";
 import { daISO, piuGiorni } from "../../core/ui.js";
 
 /**
@@ -88,7 +88,12 @@ export function travasiPaga(dataStip, entrata = null) {
   const ecc = cfg.eccezioni?.[dataStip] || null;
   const vers = { ...VERSAMENTI, ...(cfg.versamenti || {}) };
 
-  const fondo = ecc?.fondo ?? vers.fondo;
+  /* Il versamento al fondo è QUELLO DELL'OBIETTIVO. C'era anche
+     `config.versamenti.fondo`, scritto da v3 e mai più toccato: cambiando il
+     versamento dal foglio dell'obiettivo, la proiezione si aggiornava e
+     questa lista continuava a chiedere la cifra vecchia. Le eccezioni per
+     data restano sopra a tutto: sono scritte a mano per un mese preciso. */
+  const fondo = ecc?.fondo ?? (Number(obiettivo()?.versamento) || vers.fondo);
   const fisse = fabbisognoFisse(dataStip);
   const importoFisse = ecc?.fisse ?? fisse.importo;
   const vita = ecc?.vita ?? (budgetVita() || vers.vita);

@@ -13,6 +13,8 @@
   sopravvivere: un numero che cresce lo si difende.
 -->
 <script lang="ts">
+  import PianoTravasi from "./PianoTravasi.svelte";
+  import { pianoTravasi } from "$condivisi/finanze/travasi.js";
   import Foglio from "$lib/ui/Foglio.svelte";
   import Sezione from "$lib/ui/Sezione.svelte";
   import Riga from "$lib/ui/Riga.svelte";
@@ -25,7 +27,7 @@
   import { importoEffettivo } from "$condivisi/finanze/calcolo.js";
   import { leggiEstratto, riconcilia } from "$condivisi/finanze/revolut.js";
   import {
-    applicaEstratto, pagella, report, settimanaDi, eseguiRicarica, chiudi, ricaricaLunedi,
+    applicaEstratto, pagella, report, settimanaDi, chiudi,
   } from "$condivisi/finanze/chiusura.js";
   import { pulisciImporto, nomePocket } from "./comune";
 
@@ -49,7 +51,7 @@
   const d = $derived.by(() => {
     dati.versione;
     const iso = oggiISO();
-    return { iso, sett: settimanaDi(iso), p: pagella(iso), r: ricaricaLunedi(iso) };
+    return { iso, sett: settimanaDi(iso), p: pagella(iso), piano: pianoTravasi(iso) };
   });
 
   const gm = (iso: string) => {
@@ -267,27 +269,18 @@
 
   <!-- ===================================================== 4. RICARICA -->
   {#if passo === 4}
-    <Sezione titolo="La ricarica di lunedì"
-      piede="Non è un importo fisso: si porta il Principale a quota × giorni fino a {gg(d.r.fino)}. Con l'importo fisso l'ultima settimana del mese era sempre quella povera.">
-      <div class="ricarica">
-        <span class="cifre r-imp">{euro(d.r.importo)}</span>
-        <span class="text-subheadline secondario cifre">
-          dalla Cassa ({euro(d.r.cassa)}) al Principale
-        </span>
-        <span class="text-footnote secondario cifre">
-          quota {euro(d.r.quota)} × {plurale(d.r.giorni, "giorno", "giorni")} = {euro(d.r.bersaglio)}
-          · in tasca {euro(d.r.saldo)}
-        </span>
-      </div>
+    <!-- LO STESSO PIANO DEL RIEPILOGO, con lo stesso disegno. Qui c'era un
+         riquadro suo — «quota × giorni = bersaglio · in tasca» — che faceva
+         il conto con una formula diversa e, la domenica, per un giorno solo:
+         la sera in cui si preparano i trasferimenti diceva di ricaricare
+         per stanotte. -->
+    <Sezione titolo="I travasi della settimana">
+      {#if !ricaricato}
+        <PianoTravasi piano={d.piano} onfatto={() => (ricaricato = true)} />
+      {:else}
+        <p class="text-subheadline secondario fatto-travasi">Travasi registrati.</p>
+      {/if}
     </Sezione>
-
-    {#if !ricaricato}
-      <Pulsante variante="tinto" larga disabled={d.r.importo <= 0} onclick={() => {
-        const r = eseguiRicarica(d.iso);
-        ricaricato = true;
-        avviso(r ? `Travasati ${euro(r.importo)}.` : "Niente da travasare.");
-      }}>{d.r.importo > 0 ? `Travasa ${euro(d.r.importo)}` : "Niente da travasare"}</Pulsante>
-    {/if}
 
     {#if fatto}
       <div class="serie">
@@ -302,6 +295,7 @@
 </Foglio>
 
 <style>
+  .fatto-travasi { padding: var(--space-4); }
   .passi { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); }
   .p { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: var(--radius-lg); color: var(--label-tertiary); }
   .n { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--fill-tertiary); font-size: var(--text-caption1); font-weight: var(--weight-semibold); }
@@ -344,8 +338,6 @@
     line-height: 1.55; white-space: pre-wrap; word-break: break-word; color: var(--label-secondary);
   }
 
-  .ricarica { display: flex; flex-direction: column; gap: 2px; padding: var(--space-4); }
-  .r-imp { font-family: var(--font-display); font-size: 40px; line-height: 44px; font-weight: var(--weight-bold); color: var(--color-green); }
 
   .serie { display: flex; align-items: center; gap: var(--space-3); justify-content: center; padding: var(--space-3) 0; }
   .s-cifra { font-family: var(--font-display); font-size: 36px; line-height: 40px; font-weight: var(--weight-bold); color: var(--accento); }
