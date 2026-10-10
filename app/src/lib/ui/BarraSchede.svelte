@@ -27,10 +27,14 @@
 </script>
 
 <nav class="barra-schede" aria-label="Schede" style:--n={voci.length}>
+  <!-- LA PASTIGLIA NON VIAGGIA. Era un elemento solo, spostato con un
+       `translateX` e una curva che rimbalzava oltre il bersaglio: toccando
+       Corpo da Oggi strisciava sopra tutte le schede di mezzo e ci ballava
+       sopra. Non lo fa nessuna barra di Apple. Su iOS la scheda scelta si
+       accende DOVE l'hai toccata — e la lastrina compare sotto il dito già
+       alla pressione, prima ancora di alzarlo. Adesso ogni scheda ha la sua,
+       e cambiare scheda vuol dire spegnerne una e accenderne un'altra. -->
   <div class="capsula vetro">
-    {#if scelta >= 0}
-      <span class="pastiglia" style:--i={scelta} aria-hidden="true"></span>
-    {/if}
     {#each voci as v, i (v.id)}
       <a
         class="scheda"
@@ -62,29 +66,41 @@
        tre pezzi, speculare, ombra. Qui resta solo la forma. */
     border-radius: var(--radius-full);
   }
-  .pastiglia {
-    position: absolute; z-index: -1; top: 4px; bottom: 4px; left: 4px;
-    width: calc((100% - 8px) / var(--n));
-    transform: translateX(calc(100% * var(--i)));
-    border-radius: var(--radius-full);
-    /* GRIGIA, NON TINTA. Provata con la tinta della scheda: l'arancio di
-       Finanze al venti per cento sopra un vetro scuro non e' arancione, e'
-       fango — e lo stesso vale per il rosso e per l'indaco. Il colore della
-       scheda si legge dove ha sempre vissuto, sull'icona e sull'etichetta;
-       la pastiglia e' una lastrina chiara appoggiata sulla barra, con il
-       suo anello, e basta quello a dire «sei qui». */
-    background: var(--fill-secondary);
-    box-shadow: inset 0 0 0 0.5px var(--vetro-rim-su);
-    transition: transform var(--duration-normal) var(--ease-spring),
-      background-color var(--duration-normal) var(--ease-default);
-  }
   .scheda {
+    position: relative; isolation: isolate;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
     min-width: 0; border-radius: var(--radius-full);
     color: var(--label-primary);
-    transition: color var(--duration-fast) var(--ease-default), transform var(--duration-fast) var(--ease-spring);
+    transition: color var(--duration-fast) var(--ease-default);
+    -webkit-tap-highlight-color: transparent;
   }
-  .scheda:active { transform: scale(0.92); }
+  /* LA LASTRINA DI OGNI SCHEDA.
+
+     GRIGIA, NON TINTA. Provata con la tinta della scheda: l'arancio di
+     Finanze al venti per cento sopra un vetro scuro non e' arancione, e'
+     fango — e lo stesso vale per il rosso e per l'indaco. Il colore della
+     scheda si legge dove ha sempre vissuto, sull'icona e sull'etichetta.
+
+     COMPARE SUL POSTO: si accende in dissolvenza e cresce appena, da poco
+     sotto la sua misura, con una curva che NON va oltre il bersaglio. La
+     curva di prima (`--ease-spring`) arrivava al 156 per cento e tornava
+     indietro: un rimbalzo da giocattolo, non da sistema. */
+  .scheda::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    border-radius: inherit;
+    background: var(--fill-secondary);
+    box-shadow: inset 0 0 0 0.5px var(--vetro-rim-su);
+    opacity: 0; transform: scale(0.86);
+    transition: opacity var(--duration-fast) var(--ease-default),
+      transform var(--duration-fast) var(--ease-default);
+  }
+  .scheda.scelta::before { opacity: 1; transform: none; }
+  /* SOTTO IL DITO, SUBITO. È quello che fa la barra di iOS: la lastrina
+     compare alla pressione, non al rilascio. Prima la scheda si
+     rimpiccioliva (`scale(0.92)`), che è il gesto di un bottone, non di
+     una scheda. Un filo più chiara di quella scelta, perché è un tocco in
+     corso e non ancora una scelta. */
+  .scheda:active::before { opacity: 0.7; transform: none; transition-duration: var(--duration-micro); }
   .scheda.scelta { color: var(--colore); }
   .nome {
     font-size: 10px; line-height: 12px; letter-spacing: 0.1px; font-weight: var(--weight-semibold);
@@ -96,7 +112,6 @@
      coperto per cinque bottoni. */
   @media (orientation: landscape) and (max-height: 500px) {
     .capsula { height: 44px; max-width: 600px; padding: 3px; }
-    .pastiglia { top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / var(--n)); }
     .scheda { flex-direction: row; gap: 6px; }
     .scheda :global(svg) { width: 20px; height: 20px; }
     .nome { font-size: 12px; line-height: 14px; }

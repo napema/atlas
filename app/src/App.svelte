@@ -4,7 +4,6 @@
 -->
 <script lang="ts">
   import type { Component } from "svelte";
-  import { fade } from "svelte/transition";
   import { router } from "$lib/core/router.svelte";
   import { MODULI, voceDi, gruppoDi, ricordaMembro } from "$lib/core/registro";
   import BarraSchede from "$lib/ui/BarraSchede.svelte";
@@ -65,8 +64,14 @@
   <div class="scena" aria-hidden="true"></div>
 
   {#if Schermata}
+    <!-- IL CAMBIO DI SCHEDA È ISTANTANEO, come su iOS: tocchi un'altra
+         scheda e c'è già. Qui c'era una dissolvenza di 160 ms, e messa
+         insieme alla pastiglia che strisciava sopra la barra faceva del
+         cambio di modulo una piccola animazione da guardare ogni volta. Il
+         `#key` resta: è quello che smonta la schermata vecchia — e con lei
+         i suoi ascoltatori — invece di riciclarla. -->
     {#key router.id}
-      <div class="schermata" in:fade={{ duration: 160 }}>
+      <div class="schermata">
         <Schermata resto={router.resto} />
       </div>
     {/key}
