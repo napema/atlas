@@ -228,6 +228,10 @@
     return x?.dati ? { voce: x.voce, d: x.dati } : null;
   };
 
+  /* Senza abitudini previste la carta non c'è, e il suo posto nella
+     griglia resterebbe un buco: Finanze prende anche la sua riga. */
+  const haAbitudini = $derived(((carta("abitudini")?.d as any)?.attese ?? 0) > 0);
+
   const dataLunga = $derived(maiuscola(ora.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })));
 
   function tocca(v: VoceResta) {
@@ -370,6 +374,7 @@
             <span class="m-cifra cifre" class:lungo={v.length > 14}>{v}</span>
             {#if c2.d.dettaglio}<span class="text-subheadline secondario">{c2.d.dettaglio}</span>{/if}
             {#if typeof c2.d.avanzamento === "number" && c2.d.avanzamento > 0}
+              <span class="m-spazio"></span>
               <span class="m-barra" class:piena={c2.d.fatto === true}><i style:width="{Math.round(Math.min(1, c2.d.avanzamento) * 100)}%"></i></span>
             {/if}
           </a>
@@ -413,6 +418,7 @@
       <Sezione>
         <div class="blocco modulo abitudini">
           {@render testa(c3.voce, null, pieno)}
+          <div class="ab-dentro">
           <a class="ab-corpo" href="#/abitudini">
             <Anello valore={righe.length ? fatte / righe.length : 0} misura={52} spessore={7}
               colore={pieno ? "var(--color-green)" : "var(--accento)"} />
@@ -433,10 +439,14 @@
                 aria-label="{r.nome}{r.ora ? ` alle ${r.ora}` : ''}{r.fatta ? ', fatta' : ''}"
                 title="{r.nome}{r.ora ? ` · ${r.ora}` : ''}"
                 onclick={() => tocca({ ...r, modulo: "abitudini" })}>
-                <span class="g-emoji">{r.emoji ?? "⭐️"}</span>
-                {#if r.ora}<span class="g-ora cifre">{r.ora}</span>{/if}
+                <!-- TUTTI I GETTONI HANNO LE DUE RIGHE. Prima l'orario c'era
+                     solo su alcuni, e le emoji di quelli senza scendevano a metà:
+                     una fila di icone a due altezze. Senza orario, il nome. -->
+                <span class="gt-emoji" aria-hidden="true">{r.emoji ?? "⭐️"}</span>
+                <span class="gt-etichetta" class:cifre={Boolean(r.ora)}>{r.ora ?? r.nome}</span>
               </button>
             {/each}
+          </div>
           </div>
         </div>
       </Sezione>
@@ -453,6 +463,7 @@
              tre — il disponibile grande, «Oggi» e «Al giorno» in due
              riquadri — tutti della stessa misura: a colpo d'occhio non si
              capiva quale rispondesse a «posso spendere stasera». -->
+        <div class="fin">
         <div class="soldi">
           {@render testa(voceDi("finanze"), "#/finanze")}
           <!-- L'ETICHETTA LA SCRIVE IL MODULO, insieme al numero. Qui era
@@ -470,6 +481,10 @@
              giorni, al massimo due. Sei righe di scadenze in home sono un
              estratto conto — si smettono di leggere, e con loro si smette
              di vedere quella che conta. -->
+        {#if f.urgenti?.length || q.allarme}
+        <!-- Il dettaglio: le uscite che bruciano e l'allarme. Sotto il numero
+             quando la carta è stretta, accanto quando è larga. -->
+        <div class="fin-lato">
         {#if f.urgenti?.length}
           <div class="avvolge" style:--inizio-l="38px">
           {#each f.urgenti as e (e.chiave)}
@@ -495,6 +510,9 @@
         {#if q.allarme}
           <div class="allarme text-subheadline"><span class="punto"></span>{q.allarme}</div>
         {/if}
+        </div>
+        {/if}
+        </div>
       </Sezione>
     </div>
   {/if}
@@ -552,50 +570,38 @@
        subisce. -->
   {@render strisciaAdesso()}
 
-  <!-- TRE PILE, non una griglia.
+  <!-- UNA GRIGLIA VERA, con le righe in comune — e la gerarchia nelle misure.
 
-       Una griglia condivide le righe: la seconda riga aspetta la carta piu'
-       alta della prima, e sotto quella corta resta il buco. Tre pile che non
-       sanno niente l'una dell'altra non hanno righe in comune, quindi non
-       hanno buchi: l'unico spazio che avanza e' in fondo alla pila piu'
-       corta, dove la pagina finisce comunque.
+       Prima erano tre pile che non sapevano niente l'una dell'altra: niente
+       buchi FRA le carte, ma ogni colonna finiva a una quota sua, e le
+       Abitudini restavano sole in basso a sinistra con mezza pagina vuota
+       accanto. Una pagina che finisce in tre punti diversi non si legge come
+       una pagina.
 
-       La prima e' piu' larga perche' porta le due carte che si LEGGONO —
-       i soldi e la giornata — e le altre due portano quelle che si
-       GUARDANO. -->
-  <div class="bento">
-    <!-- A SINISTRA LA GIORNATA, e da sola.
+       Qui le righe sono condivise e le carte di una riga sono alte uguali:
+       il fondo è uno solo. E la misura dice quanto conta una carta, come nei
+       widget di Apple:
 
-         E' la colonna che si legge: il profilo del giorno, dall'alto in
-         basso. Tutto il resto sta a destra, ed e' roba che si GUARDA — un
-         numero per carta, con la sua tinta sulla pastiglia.
+         LA GIORNATA      alta due righe, a sinistra. È il senso della home:
+                          com'è fatto oggi, dall'alto in basso.
+         FINANZE          larga, in alto: il numero che si guarda dieci volte
+         ABITUDINI        al giorno, e la cosa che si fa dieci volte al giorno.
+         TRAINING, MOBILITÀ, PASTI
+                          tre carte uguali in fondo: si guardano, raccontano
+                          come va, e nessuna delle tre conta più delle altre.
 
-         Prima la giornata stava sotto Finanze nella stessa pila, e la
-         colonna di sinistra era alta il doppio delle altre due: a destra
-         restava mezza schermata vuota. Con la giornata da sola le tre
-         colonne finiscono vicine, e soprattutto la gerarchia si vede —
-         «cos'e' oggi» a sinistra, «come vanno le cose» a destra. -->
-    <!-- LA PRIMA COLONNA È «COM'È FATTO OGGI»: la giornata e, sotto, le
-         abitudini. Con loro la griglia è 2 · 2 · 2 — la giornata, quello
-         che consumi, il corpo — invece di una carta sola a sinistra e due
-         pile da due a destra. Simmetria di numero e di senso insieme. -->
-    <div class="pila stretta">
-      <div class="tessera p-giornata">{@render cartaGiornata()}</div>
-      <div class="tessera p-abitudini">{@render cartaAbitudini()}</div>
-    </div>
-    <!-- Tre colonne, tre cose diverse: la GIORNATA, quello che CONSUMI
-         (soldi e cibo), il CORPO — che e' anche il gruppo che quei due
-         moduli hanno gia' nella barra. Non e' solo equilibrio di altezze:
-         e' il motivo per cui si capisce dove guardare senza leggere i
-         titoli. E le tre colonne finiscono vicine, che e' l'altra meta'. -->
-    <div class="pila">
-      <div class="tessera p-finanze">{@render cartaFinanze()}</div>
-      <div class="tessera p-pasti">{@render cartaModulo("pasti")}</div>
-    </div>
-    <div class="pila">
-      <div class="tessera p-training">{@render cartaModulo("allenamenti")}</div>
-      <div class="tessera p-mobilita">{@render cartaModulo("mobilita", mobilitaApre)}</div>
-    </div>
+       Le carte larghe NON sono carte strette allungate: quando c'è spazio si
+       aprono in due colonne — il numero a sinistra, il dettaglio a destra.
+       Lo decide la carta guardando la propria larghezza (container query),
+       non la finestra: una carta larga sul tablet e una sul PC sono la stessa
+       carta. -->
+  <div class="bento" class:senza-abitudini={!haAbitudini}>
+    <div class="tessera a-giornata">{@render cartaGiornata()}</div>
+    <div class="tessera a-finanze">{@render cartaFinanze()}</div>
+    <div class="tessera a-abitudini">{@render cartaAbitudini()}</div>
+    <div class="tessera a-training">{@render cartaModulo("allenamenti")}</div>
+    <div class="tessera a-mobilita">{@render cartaModulo("mobilita", mobilitaApre)}</div>
+    <div class="tessera a-pasti">{@render cartaModulo("pasti")}</div>
   </div>
 </Pagina>
 
@@ -649,63 +655,89 @@
     .a-azioni :global(.pulsante) { flex: 1; }
   }
 
-  /* ======================================================= LE CARTE =====
-     TRE PILE, non una griglia. Una griglia condivide le righe: la seconda
-     riga aspetta la carta piu' alta della prima, e sotto quella corta resta
-     il buco — su 1750 punti erano settanta di vuoto. Tre pile che non sanno
-     niente l'una dell'altra non hanno righe in comune, quindi non hanno
-     buchi fra le carte.
-
-     Sul telefono le pile spariscono (`display: contents`) e le carte
-     tornano figlie dirette, in colonna. L'ordine lo rimette `order`, perche'
-     nel DOM adesso stanno appaiate tre a tre. */
+  /* IL TELEFONO: una colonna, nell'ordine in cui si vive la giornata. */
   .bento { display: flex; flex-direction: column; gap: var(--space-5); }
-  .pila { display: contents; }
-  .tessera { min-width: 0; display: flex; flex-direction: column; }
-  /* UNA CARTA CHE NON C'E' NON OCCUPA SPAZIO. Lo snippet di un modulo
-     senza dati non disegna niente, ma il suo contenitore resta — e in una
-     pila con `gap` un contenitore vuoto e' un buco alto quanto il passo. */
+  .a-giornata  { order: 1; }
+  .a-abitudini { order: 2; }
+  .a-finanze   { order: 3; }
+  .a-training  { order: 4; }
+  .a-mobilita  { order: 5; }
+  .a-pasti     { order: 6; }
+
+  /* OGNI LIVELLO CRESCE COL SUO GENITORE: la tessera, il colore del modulo,
+     la sezione, la lastra, il blocco. Basta che uno non lo faccia e la
+     carta resta alta quanto il suo contenuto, dentro una riga più alta. */
+  .tessera { min-width: 0; display: flex; flex-direction: column; container-type: inline-size; }
   .tessera:empty { display: none; }
-  .tessera > :global(*) { min-height: 0; }
+  .tessera > :global(*) { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .tessera :global(.sezione) { flex: 1; }
+  .tessera :global(.lastra) { flex: 1; display: flex; flex-direction: column; }
+  .tessera :global(.lastra > *:last-child) { flex: 1; }
 
-  .p-giornata  { order: 1; }
-  .p-abitudini { order: 2; }
-  .p-finanze   { order: 3; }
-  .p-training  { order: 4; }
-  .p-mobilita  { order: 5; }
-  .p-pasti     { order: 6; }
-
-  /* DUE COLONNE da 760: la giornata a sinistra, tutto il resto a destra. */
+  /* IL TABLET: due colonne, e la stessa idea del PC. Finanze e Abitudini
+     larghe in alto — larghe vuol dire nella loro forma a due colonne, come
+     sul PC. Sotto, la giornata alta a sinistra accanto a Training e
+     Mobilità impilate: le due altezze si somigliano, e il fondo è uno.
+     Con la giornata accanto alle Abitudini, invece, la carta delle
+     abitudini si allungava fino alla lista e restava vuota a metà. */
   @media (min-width: 760px) {
     .bento {
-      display: grid;
-      grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
-      gap: var(--space-6);
-      align-items: start;
+      display: grid; gap: var(--space-5);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-areas:
+        "finanze   finanze"
+        "abitudini abitudini"
+        "giornata  training"
+        "giornata  mobilita"
+        "pasti     pasti";
     }
-    .pila { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+    .bento.senza-abitudini {
+      grid-template-areas:
+        "finanze   finanze"
+        "giornata  training"
+        "giornata  mobilita"
+        "pasti     pasti";
+    }
     .tessera { order: 0; }
-    /* Con due sole colonne le due pile di destra si fondono in una: tre
-       colonne su 800 punti sarebbero tre strisce. */
-    .pila:not(.stretta) { display: contents; }
-    .pila:not(.stretta) > .tessera { grid-column: 2; }
-  }
-  /* TRE COLONNE da 1180: la giornata resta stretta — e' una lista, non ha
-     bisogno di larghezza — e le quattro carte si dividono in due pile.
-     Pile e non righe di griglia: due carte affiancate di altezza diversa
-     lascerebbero il buco sotto la piu' corta. */
-  @media (min-width: 1180px) {
-    .bento { grid-template-columns: minmax(0, 340px) minmax(0, 1fr) minmax(0, 1fr); }
-    .pila:not(.stretta) { display: flex; }
-    .pila:not(.stretta) > .tessera { grid-column: auto; }
   }
 
-  /* La colonna stretta ha due carte: la giornata e le abitudini. */
-  @media (min-width: 760px) {
-    .pila.stretta { display: flex; flex-direction: column; gap: var(--space-6); }
+  /* IL PC: tre colonne uguali, e la gerarchia nelle misure. */
+  @media (min-width: 1180px) {
+    .bento {
+      gap: var(--space-6);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-areas:
+        "giornata finanze   finanze"
+        "giornata abitudini abitudini"
+        "training mobilita  pasti";
+    }
+    .bento.senza-abitudini {
+      grid-template-areas:
+        "giornata finanze  finanze"
+        "giornata finanze  finanze"
+        "training mobilita pasti";
+    }
+  }
+  .a-giornata  { grid-area: giornata; }
+  .a-finanze   { grid-area: finanze; }
+  .a-abitudini { grid-area: abitudini; }
+  .a-training  { grid-area: training; }
+  .a-mobilita  { grid-area: mobilita; }
+  .a-pasti     { grid-area: pasti; }
+
+  /* --- FINANZE: sopra e sotto quando è stretta, accanto quando è larga --- */
+  .fin { display: flex; flex-direction: column; flex: 1; }
+  .fin-lato { display: flex; flex-direction: column; justify-content: center; }
+  @container (min-width: 600px) {
+    .fin { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
+    .fin .soldi { justify-content: center; }
+    .fin-lato { border-left: 0.5px solid var(--separator); padding: var(--space-2) 0; }
+    .fin-lato :global(* + .riga::before),
+    .fin-lato :global(.avvolge > .riga:first-child::before) { left: var(--space-4); }
   }
 
   /* --- LA CARTA DELLE ABITUDINI --- */
+  .ab-dentro { display: flex; flex-direction: column; flex: 1; }
   .ab-corpo { display: flex; align-items: center; gap: var(--space-3); margin-top: auto; color: inherit; }
   .ab-corpo:active { opacity: 0.6; }
   .ab-testo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -713,37 +745,49 @@
   .abitudini .m-cifra.verde { color: var(--color-green); }
   .ab-poi { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .abitudini .m-cifra { margin-top: 0; }
+  @container (min-width: 600px) {
+    .ab-dentro { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-6); margin-top: auto; }
+    .ab-corpo { margin-top: 0; min-width: 200px; }
+    .ab-dentro .gettoni { margin-top: 0; }
+  }
 
-  /* I GETTONI. Una griglia e non una riga che va a capo a caso: le colonne
-     tengono i gettoni allineati anche quando sono undici. */
+  /* I GETTONI. Una griglia di colonne uguali, e TUTTI con le stesse due
+     righe — l'emoji in una scatola fissa, l'etichetta sotto — così le icone
+     stanno sulla stessa linea anche quando un gettone ha l'orario e un
+     altro no. */
   .gettoni {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
     gap: var(--space-2); margin-top: var(--space-4);
   }
   .gettone {
-    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-    height: 54px; border-radius: 14px;
+    display: grid; grid-template-rows: 30px 14px; justify-items: center; align-content: center; gap: 4px;
+    height: 68px; min-width: 0; padding: 0 6px; border-radius: 16px;
     background: var(--fill-quaternary);
     transition: background-color var(--duration-normal) var(--ease-default),
       box-shadow var(--duration-normal) var(--ease-default);
     -webkit-tap-highlight-color: transparent;
   }
-  .gettone:active { transform: scale(0.92); }
-  .g-emoji { font-size: 21px; line-height: 1; filter: grayscale(0.7); opacity: 0.55;
-    transition: filter var(--duration-normal) var(--ease-default), opacity var(--duration-normal) var(--ease-default); }
-  .g-ora { font-size: 10px; line-height: 12px; font-weight: var(--weight-semibold); color: var(--label-tertiary); }
-  /* Fatta: il colore torna, e il gettone prende il verde — in ATLAS verde
-     vuol dire una cosa sola. Il battito si accende solo quando la classe
-     arriva: è la spunta che si sente, non un'animazione che gira. */
+  .gettone:active { transform: scale(0.94); }
+  /* L'emoji in una scatola quadrata e centrata, con l'interlinea a 1: senza,
+     ogni glifo porta con sé la sua linea di base e due emoji vicine non
+     stanno mai alla stessa altezza. */
+  .gt-emoji {
+    display: grid; place-items: center; width: 30px; height: 30px;
+    font-size: 24px; line-height: 1;
+    filter: grayscale(0.7); opacity: 0.55;
+    transition: filter var(--duration-normal) var(--ease-default), opacity var(--duration-normal) var(--ease-default);
+  }
+  .gt-etichetta {
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 11px; line-height: 14px; font-weight: var(--weight-semibold); color: var(--label-tertiary);
+  }
   .gettone.fatta { background: color-mix(in srgb, var(--color-green) 20%, transparent); animation: battito 360ms var(--ease-fluido); }
-  .gettone.fatta .g-emoji { filter: none; opacity: 1; }
-  .gettone.fatta .g-ora { color: var(--color-green); }
-  .gettone.saltata .g-emoji { opacity: 0.35; }
-  /* La prossima: l'anello del modulo attorno, e il colore pieno — è la
-     cosa da fare, deve essere la più viva fra quelle che aspettano. */
+  .gettone.fatta .gt-emoji { filter: none; opacity: 1; }
+  .gettone.fatta .gt-etichetta { color: var(--color-green); }
+  .gettone.saltata .gt-emoji { opacity: 0.35; }
   .gettone.prossima { box-shadow: inset 0 0 0 2px var(--accento); }
-  .gettone.prossima .g-emoji { filter: none; opacity: 1; }
-  .gettone.prossima .g-ora { color: var(--accento); }
+  .gettone.prossima .gt-emoji { filter: none; opacity: 1; }
+  .gettone.prossima .gt-etichetta { color: var(--accento); }
   @keyframes battito { 0% { transform: scale(0.88); } 55% { transform: scale(1.06); } 100% { transform: scale(1); } }
 
   /* La forma comune di una carta di modulo. Il `blocco` e' l'interno di una
@@ -769,15 +813,19 @@
      e' la differenza fra tre carte e una colonna. */
   .modulo { gap: 0; min-height: 196px; }
   .modulo .t-modulo { margin-bottom: var(--space-4); }
-  /* IL CORPO SCENDE IN FONDO. E' questo che allinea i numeri delle carte su
-     una riga sola invece di lasciarli dove finisce il testo di ognuna. */
+  /* IL NUMERO SOTTO LA TESTATA, IL RESTO IN FONDO. Col corpo spinto in
+     basso, la carta col bottone teneva il numero in alto e le altre due in
+     basso: tre carte nella stessa riga con i numeri a tre quote. Così i
+     numeri stanno su una linea sola, e su un'altra la barra e il bottone. */
   .modulo .m-corpo {
-    margin-top: auto; display: flex; flex-direction: column; color: inherit;
+    flex: 1; display: flex; flex-direction: column; color: inherit;
     transition: opacity var(--duration-fast) var(--ease-default);
   }
   .modulo .m-corpo:active { opacity: 0.55; }
   .modulo .m-cifra + :global(*) { margin-top: var(--space-1); }
-  .modulo .m-barra { margin-top: var(--space-3); }
+  /* Uno spazio che cresce, ma mai sotto i 12 punti: un margine `auto` da
+     solo lascerebbe la barra attaccata al testo nella carta più piena. */
+  .modulo .m-spazio { flex: 1; min-height: var(--space-3); }
   .modulo :global(.pulsante) { margin-top: var(--space-4); }
 
   /* LA TESTATA. Pastiglia del colore del modulo, nome, chevron. Era un

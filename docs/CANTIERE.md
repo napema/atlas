@@ -29,6 +29,22 @@ Chi apre una chat comincia da `git log --oneline -20` e da questo file.
 
 ## Stato
 
+### ✅ 11 ottobre — La home è una griglia vera *(chat ATLAS)*
+
+- **Righe in comune, un fondo solo.** PC: giornata alta a sinistra,
+  Finanze e Abitudini larghe accanto, Training · Mobilità · Pasti uguali in
+  fondo. Tablet: Finanze e Abitudini larghe, giornata accanto a Training e
+  Mobilità impilate, Pasti largo. Telefono: una colonna. Le carte larghe si
+  aprono in due colonne con una container query, non con la finestra.
+- **Nelle tre carte in fondo** il numero sta sotto la testata e la barra o il
+  bottone in fondo: numeri su una linea, barre su un'altra.
+- **I gettoni delle abitudini** hanno tutti due righe (emoji in una scatola
+  30×30, sotto l'orario o il nome). Le classi sono `gt-*`: con `g-ora`
+  ereditavano il padding della timeline e l'orario usciva tagliato.
+- **Abitudini che si spuntano da sole** *(abitudini:)*: `fattaDaAltri()` in
+  `moduli/abitudini/calcolo.js` legge dalla lavagna `mobilita/sessione` e
+  `allenamenti/oggi-fatti ≥ oggi-previsti`. Niente import fra moduli.
+
 ### ✅ 8 ottobre — Finanze: torna l'Analisi (per ciclo), e il fondo dice cosa fare *(chat ATLAS, su richiesta diretta)*
 
 Fuori dal perimetro della chat ATLAS, ma chiesto esplicitamente: «la view
