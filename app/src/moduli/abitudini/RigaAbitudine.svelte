@@ -130,7 +130,7 @@
 
   {#if stato.gruppi.length}
     <div class="gruppi">
-      {#each stato.gruppi as g (g.fascia)}
+      {#each stato.gruppi as g (g.chiave)}
         {@const fatte = g.parti.filter((p: any) => p.fatta).length}
         <div class="gruppo" class:completo={fatte === g.parti.length}>
           <!-- Con un pezzo solo la testata del gruppo ripeteva il momento,

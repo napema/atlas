@@ -21,6 +21,7 @@
   import { avviso, nuovoId, GIORNI_INIZIALI } from "$lib/core/ui";
   import {
     abitudinePerId, salvaAbitudine, eliminaAbitudine, TINTE, FASCE, fasceUsate,
+    oraDiParte, fasciaDiOra,
   } from "$condivisi/abitudini/dati.js";
   import { pianoDi } from "$condivisi/abitudini/calcolo.js";
   import { attivo } from "$condivisi/abitudini/p50.js";
@@ -31,7 +32,7 @@
     id,
   }: { aperto: boolean; /** null = nuova */ id: string | null } = $props();
 
-  type Parte = { id: string; nome: string; fascia: string };
+  type Parte = { id: string; nome: string; fascia: string; ora: string };
   type Bozza = {
     id: string; name: string; emoji: string; tint: string;
     sched: { type: "daily" | "days" | "weekly"; days: number[]; times: number };
@@ -57,7 +58,7 @@
       ? {
           ...structuredClone(h),
           sched: { ...pianoDi(h), days: [...(pianoDi(h).days || [])] },
-          parti: (h.parti || []).map((p: Parte) => ({ ...p })),
+          parti: (h.parti || []).map((p: Parte) => ({ ...p, ora: oraDiParte(h, p) || "" })),
           orari: { ...(h.orari || {}) },
           remind: h.remind || "",
         }
@@ -83,8 +84,22 @@
     if (!bozza.name.trim()) { avviso("Serve un nome.", { tipo: "errore" }); return false; }
     // Le parti senza nome si buttano: una riga vuota è qualcuno che ha
     // toccato «aggiungi» e ci ha ripensato.
-    const parti = bozza.parti.filter((p) => p.nome.trim()).map((p) => ({ ...p, nome: p.nome.trim() }));
-    salvaAbitudine({ ...$state.snapshot(bozza), name: bozza.name.trim(), parti });
+    /* OGNI PARTE CON LA SUA ORA, e la fascia ricavata da quella. Gli
+       `orari` per fascia si riscrivono dalle parti — il più presto di ogni
+       fascia — perché il mittente delle notifiche di prima conosce solo
+       quelli, e finché non è sostituito deve continuare a funzionare. */
+    const parti = bozza.parti.filter((p) => p.nome.trim()).map((p) => {
+      const ora = (p.ora || "").trim();
+      return ora
+        ? { ...p, nome: p.nome.trim(), ora, fascia: fasciaDiOra(ora) }
+        : { id: p.id, nome: p.nome.trim(), fascia: p.fascia || "qualsiasi" };
+    });
+    const orari: Record<string, string> = {};
+    for (const p of parti) {
+      if (!("ora" in p) || !p.ora) continue;
+      if (!orari[p.fascia] || p.ora < orari[p.fascia]) orari[p.fascia] = p.ora;
+    }
+    salvaAbitudine({ ...$state.snapshot(bozza), name: bozza.name.trim(), parti, orari: parti.length ? orari : bozza.orari });
     avviso(esistente ? "Modificata." : "Aggiunta.");
   }
 
@@ -176,13 +191,18 @@
       </div>
     </Sezione>
 
-    <!-- LE PARTI: gli integratori sono quattro pastiglie in tre momenti. Con
-         una casella unica la spunti la sera per tutte e quattro; con le parti
-         la home sa dire «prendi il magnesio» alle dieci di sera. -->
+    <!-- LE PARTI, OGNUNA CON LA SUA ORA. Gli integratori sono quattro
+         pastiglie in tre momenti: con una casella unica la spunti la sera per
+         tutte e quattro; con le parti la home sa dire «prendi il magnesio»
+         alle dieci di sera. E dall'11 ottobre l'ora è della parte, non più
+         della fascia: «a ogni orario che imposto una notifica» vuol dire
+         poter mettere la creatina alle 13:00, che non è né mattina né
+         pre-allenamento. Le parti con la stessa ora arrivano insieme, in una
+         notifica sola. -->
     <Sezione
       titolo="Parti"
       piede={bozza.parti.length
-        ? "Ognuna si spunta da sé, e la home ricorda solo quella della fascia in corso."
+        ? "Ognuna con la sua ora. Quelle alla stessa ora arrivano in una notifica sola, e solo se non le hai già spuntate."
         : "Facoltative. Servono quando una spunta sola nasconde più cose in momenti diversi della giornata."}
     >
       {#each bozza.parti as p, i (p.id)}
@@ -195,18 +215,15 @@
             <Pulsante variante="grigio" misura="piccola" tondo icona="giu" etichetta="Sposta giù" disabled={i === bozza.parti.length - 1} onclick={() => sposta(i, i + 1)} />
             <Pulsante variante="grigio" misura="piccola" tondo distruttivo icona="cestino" etichetta="Togli" onclick={() => bozza?.parti.splice(i, 1)} />
           </div>
-          <Pillole
-            opzioni={OPZIONI_FASCE}
-            scelte={[p.fascia || "qualsiasi"]}
-            oncambio={(v) => { p.fascia = v[0]; }}
-            etichetta="Momento della giornata"
-          />
+          <!-- L'ora, non il momento: il momento si ricava da lei. Vuota =
+               nessuna notifica per questa parte, e in home sta in fondo. -->
+          <Campo etichetta="Ora" tipo="time" bind:valore={p.ora} />
         </div>
       {/each}
       <Riga
         titolo="Aggiungi una parte"
         accento
-        onclick={() => bozza?.parti.push({ id: nuovoId("pt"), nome: "", fascia: "qualsiasi" })}
+        onclick={() => bozza?.parti.push({ id: nuovoId("pt"), nome: "", fascia: "qualsiasi", ora: "" })}
       >
         {#snippet inizio()}<span class="piu"><Icona nome="piu" misura={16} tratto={2.4} /></span>{/snippet}
       </Riga>
@@ -215,18 +232,17 @@
     <!-- I PROMEMORIA: senza parti uno solo; con le parti uno per ogni fascia
          che le parti usano davvero — cinque orari di cui tre inutili sono un
          modo lento di nascondere i due che contano. -->
+    <!-- Con le parti gli orari stanno sulle parti, qui sopra: resta solo
+         «l'ordine conta». Senza parti, un'ora sola. -->
     <Sezione
-      titolo="Promemoria"
-      piede={fasce.length
-        ? "Uno per momento. Arriva solo se a quel momento resta qualcosa di aperto."
+      titolo={bozza.parti.length ? "Passaggi" : "Promemoria"}
+      piede={bozza.parti.length
+        ? "Con l'ordine, i passaggi si numerano e si spuntano in sequenza."
         : "Vuoto = nessuna notifica. Arriva solo se non l'hai ancora segnata."}
     >
-      {#if !fasce.length}
+      {#if !bozza.parti.length}
         <Campo etichetta="Ora" tipo="time" bind:valore={bozza.remind} />
       {:else}
-        {#each fasce as f (f)}
-          <Campo etichetta={NOMI_FASCE[f]?.nome ?? f} tipo="time" bind:valore={bozza.orari[f]} />
-        {/each}
         <Riga titolo="L'ordine conta" sottotitolo="Numera i passaggi, come in una ricetta.">
           {#snippet fine()}
             <Interruttore acceso={Boolean(bozza?.sequenza)} oncambio={(v) => { if (bozza) bozza.sequenza = v; }} etichetta="L'ordine conta" />

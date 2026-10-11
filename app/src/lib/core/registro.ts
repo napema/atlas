@@ -125,18 +125,15 @@ export const MODULI: VoceModulo[] = [
     impostazioni: () => import("../../moduli/allenamenti/Impostazioni.svelte"),
   },
   {
-    /* «Project 50», non più «Abitudini»: la sfida è la funzione principale
-       del modulo, e le abitudini di supporto ci stanno intorno. L'id resta
-       `abitudini` — sono il nome della casella, del file nel repo dati e
-       delle rotte delle notifiche, e nessuno di questi deve cambiare per un
-       nome sulla barra. */
-    id: "abitudini", nome: "Project 50", icona: "abitudini", accento: "var(--color-indigo)",
-    /* IN PAUSA dall'8 ottobre 2026. La sfida chiedeva otto spunte al giorno
-       e ricominciava da capo a ogni dimenticanza: una cosa che o la fai
-       intera o ti dice tutti i giorni che hai sbagliato. I dati restano in
-       `abitudini.json`, il codice resta qui, la rotta `#/abitudini`
-       funziona ancora. Si riaccende togliendo `pausa`. */
-    pausa: true,
+    /* DI NUOVO «ABITUDINI», dall'11 ottobre 2026, e senza Project 50.
+
+       Era in pausa dall'8: la sfida chiedeva otto spunte al giorno e
+       ricominciava da capo a ogni dimenticanza — una cosa che o la fai
+       intera o ti dice tutti i giorni che hai sbagliato. Torna come ai
+       vecchi tempi: le abitudini scelte, con i loro orari, e niente
+       contatore che riparte da uno. La sfida è spenta da un interruttore
+       solo (`SOSPESA` in p50.js) e i suoi dati restano dove sono. */
+    id: "abitudini", nome: "Abitudini", icona: "abitudini", accento: "var(--color-indigo)",
     vista: () => import("../../moduli/abitudini/Vista.svelte"),
     contratto: () => import("$condivisi/abitudini/contratto.js"),
     impostazioni: () => import("../../moduli/abitudini/Impostazioni.svelte"),

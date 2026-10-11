@@ -51,9 +51,21 @@ export const casella = apriCasella("abitudini", PREDEFINITO);
 export const stato = () => casella.leggi();
 
 /** Le abitudini vive, in ordine. Le viste leggono sempre questo. */
-export function abitudiniVive({ conArchiviate = false } = {}) {
+/* LE OTTO DELLA SFIDA, A SFIDA SOSPESA, NON CI SONO. Sono le regole di
+   Project 50 — morning routine, no phone in bed, read 10 pagine… — e senza
+   la sfida non sono abitudini che hai scelto: sono un regolamento che non
+   giochi più. Non si cancellano (tornerebbero con la sfida, con tutto il
+   loro storico): si tolgono dalla vista, da un punto solo, così la lista,
+   la home, la giornata e i conteggi le perdono tutti insieme.
+
+   Il flag sta qui e non in p50.js perché p50.js importa questo file: il
+   contrario farebbe un giro di import. Va tenuto uguale a `SOSPESA`. */
+export const SFIDA_SOSPESA = true;
+
+export function abitudiniVive({ conArchiviate = false, conSfida = !SFIDA_SOSPESA } = {}) {
   return stato().habits
     .filter((h) => h && !h.del && (conArchiviate || !h.archived))
+    .filter((h) => conSfida || h.blocco !== "p50")
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.name).localeCompare(String(b.name)));
 }
 
@@ -230,6 +242,64 @@ export const parteFatta = (habitId, parteId, data) =>
 export const alternaParte = (habitId, parteId, data) =>
   alterna(chiaveParte(habitId, parteId), data);
 
+/* ===========================================================================
+   L'ORA DI UNA PARTE — dall'11 ottobre 2026 ogni parte può avere la sua.
+
+   Prima l'orario era UNO PER FASCIA: la skincare del mattino alle 08:00,
+   quella della sera alle 22:30, e quattro fasce in tutto. Per gli
+   integratori non basta — «una notifica a ogni orario che imposto», e la
+   creatina alle 13:00 non è né «mattina» né «pre-allenamento». Adesso una
+   parte può portare il suo `ora: "HH:MM"`, e vince sulla fascia.
+
+   La fascia NON sparisce: si ricava dall'ora quando c'è, e resta quella
+   scritta quando non c'è. È quello che usano la home per dire «a posto per
+   la mattina» e il mittente vecchio delle notifiche, che conosce solo
+   `orari[fascia]` — e finché non è sostituito deve continuare a funzionare.
+   ========================================================================= */
+
+/** L'ora di una parte: la sua se ce l'ha, se no quella della sua fascia. */
+export const oraDiParte = (h, p) => p?.ora || h?.orari?.[p?.fascia || "qualsiasi"] || null;
+
+/** La fascia in cui cade un'ora «HH:MM». Solo le tre del giorno. */
+export function fasciaDiOra(hhmm) {
+  const h = Number(String(hhmm || "").slice(0, 2));
+  if (!Number.isFinite(h)) return "qualsiasi";
+  return h < 12 ? "mattina" : h < 18 ? "pomeriggio" : "sera";
+}
+
+/**
+ * Le parti di un'abitudine raggruppate per ORARIO, dal più presto.
+ *
+ * È l'unità di tutto quello che si vede e si riceve: UNA riga in home e UNA
+ * notifica per orario, non una per capsula. Cinque integratori alle 08:00
+ * sono una cosa sola da fare alle 08:00. Le parti senza orario stanno in un
+ * gruppo a sé, in fondo, con `ora: null`.
+ */
+export function gruppiDi(h) {
+  const per = new Map();
+  for (const p of partiDi(h)) {
+    const ora = oraDiParte(h, p);
+    const k = ora || "";
+    if (!per.has(k)) per.set(k, { ora, fascia: ora ? fasciaDiOra(ora) : (p.fascia || "qualsiasi"), parti: [] });
+    per.get(k).parti.push(p);
+  }
+  return [...per.values()].sort((a, b) => (a.ora || "99").localeCompare(b.ora || "99"));
+}
+
+/**
+ * Spunta un gruppo di parti con un tocco: se sono già tutte fatte le
+ * toglie, altrimenti spunta quelle che mancano. «Alternare» ognuna avrebbe
+ * tolto le fatte e messo le altre — un gruppo a metà resterebbe a metà,
+ * rovesciato.
+ */
+export function alternaGruppo(habitId, parteIds, data) {
+  const tutte = parteIds.every((id) => parteFatta(habitId, id, data));
+  for (const id of parteIds) {
+    if (tutte || !parteFatta(habitId, id, data)) alternaParte(habitId, id, data);
+  }
+  return !tutte;
+}
+
 /**
  * La fascia è «adesso»? Il pre-allenamento si sovrappone di proposito al
  * pomeriggio e alla sera: non si sa a che ora ci si allena, e un promemoria
@@ -276,25 +346,24 @@ export function statoFascia(fascia, ora = new Date().getHours()) {
    tutto, la protezione solare per ultima.
    ========================================================================= */
 
+/* PER ORARIO, non per fascia, dall'11 ottobre 2026: è lo stesso
+   raggruppamento di `gruppiDi()` — quello della home e delle notifiche —
+   con il nome del momento per l'intestazione. Due capsule al mattino a
+   orari diversi (08:00 e 10:30) sono due gruppi: per fascia sarebbero
+   finite sotto un'intestazione sola con un orario solo, cioè con un
+   promemoria che per una delle due mente. */
 export function gruppiParti(h) {
-  const gruppi = new Map();
-  for (const p of partiDi(h)) {
-    const f = p.fascia || "qualsiasi";
-    if (!gruppi.has(f)) gruppi.set(f, []);
-    gruppi.get(f).push(p);
-  }
-  return [...gruppi.entries()]
-    .map(([fascia, parti]) => ({
-      fascia,
-      nome: FASCE[fascia]?.nome || "",
-      ora: (h.orari || {})[fascia] || "",
-      parti,
-    }))
-    .sort((a, b) => (FASCE[a.fascia]?.ordine || 9) - (FASCE[b.fascia]?.ordine || 9));
+  return gruppiDi(h).map((g) => ({
+    chiave: g.ora || `f:${g.fascia}`,
+    fascia: g.fascia,
+    nome: FASCE[g.fascia]?.nome || "",
+    ora: g.ora || "",
+    parti: g.parti,
+  }));
 }
 
-/** Le fasce davvero usate dalle parti, in ordine di giornata. */
-export const fasceUsate = (h) => gruppiParti(h).map((g) => g.fascia);
+/** Le fasce davvero usate dalle parti, in ordine di giornata, senza doppioni. */
+export const fasceUsate = (h) => [...new Set(gruppiParti(h).map((g) => g.fascia))];
 
 /* =========================================================================
    I SEMI: le routine che ATLAS sa comporre da sé.

@@ -17,7 +17,7 @@ import { avviso, plurale } from "../../core/ui.js";
 import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { ascolta, EVENTI } from "../../core/bus.js";
-import { casella, stato, abitudiniVive, eFatta, alterna, alternaParte, semina, fasciaAdesso, FASCE } from "./dati.js";
+import { casella, stato, abitudiniVive, eFatta, alterna, alternaParte, alternaGruppo, semina, fasciaAdesso, FASCE } from "./dati.js";
 import { progressoGiorno, mancantiOggi, serie, promemoriaAdesso, restaOggi, giornataOggi } from "./calcolo.js";
 import * as p50 from "./p50.js";
 
@@ -221,6 +221,13 @@ export function spunta(habitId) {
   ridisegnaVista();
 }
 
+/** Un orario intero di parti — la riga «Integratori · 08:00» della home. */
+export function spuntaParti(habitId, parteIds) {
+  alternaGruppo(habitId, parteIds, giornoCorrente());
+  pubblicaSullaLavagna();
+  ridisegnaVista();
+}
+
 /**
  * PROJECT 50 PER LA HOME — una card sua, non la riga di Abitudini.
  *
@@ -327,6 +334,10 @@ export function oggi() {
   return {
     titolo: "Abitudini",
     valore: `${p.fatte} / ${p.attese}`,
+    // I due numeri separati, per la carta della home: «3 di 7» si scrive
+    // con due pesi diversi, e ricavarli dalla stringa sarebbe leggere un
+    // numero dal suo disegno.
+    fatte: p.fatte, attese: p.attese,
     dettaglio: tutte
       ? (migliore > 1 ? `Tutte spuntate · ${plurale(migliore, "giorno", "giorni")} di fila` : "Tutte spuntate")
       : mancano.length === 1 ? `Manca: ${mancano[0].name}`
@@ -344,7 +355,11 @@ export function oggi() {
     /* LA GIORNATA INTERA, spuntate comprese. La home ne fa la lista del
        giorno: `resta` risponde a «cosa manca», questa a «com'e' fatto
        oggi», e sono due domande diverse. */
-    giornata: giornataOggi(giornoCorrente()),
+    giornata: giornataOggi(giornoCorrente(), new Date().getHours(), { senzaSpecchi: true }),
+    /* I GETTONI della carta in home: la stessa giornata, specchi compresi.
+       Nella lista del giorno «Mobilità» sarebbe un doppione della sessione;
+       nella carta delle abitudini è un'abitudine come le altre. */
+    gettoni: giornataOggi(giornoCorrente(), new Date().getHours()),
     // `frazione` è già questo conto: due copie della stessa regola sono due
     // posti da cui può scappare.
     avanzamento: p.frazione,

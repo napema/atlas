@@ -55,7 +55,9 @@
 </script>
 
 <div class="lista intera" class:pieno>
-  <Sezione titolo={sfida ? "Project 50" : "Oggi"}>
+  <!-- Senza sfida niente titolo: «Oggi» lo dicono già il selettore in cima
+       e la testata, e un terzo «Oggi» sopra la lista era un'eco. -->
+  <Sezione titolo={sfida ? "Project 50" : undefined}>
     {#snippet coda()}
       {#if otto.length}
         <span class="conto cifre" class:tutte={pieno}>{fatte}/{otto.length}</span>
@@ -77,7 +79,11 @@
 
     {#if supporto.length}
       <!-- Il confine, non un secondo titolo: una riga sottile che dice dove
-           finisce quello che conta e comincia quello che aiuta. -->
+           finisce quello che conta e comincia quello che aiuta. Senza le
+           otto sopra non c'è niente da separare — e «Supporto» in cima a
+           una lista che è tutta supporto sarebbe un'etichetta senza
+           contrario. -->
+      {#if otto.length}
       <div class="confine">
         <span class="text-caption1 semibold">Supporto</span>
         <!-- «nessuna conseguenza» solo a sfida accesa: e' vero in rapporto
@@ -85,8 +91,9 @@
              direbbe qualcosa a cui non corrisponde niente. -->
         {#if sfida}<span class="text-caption1 secondario">nessuna conseguenza</span>{/if}
       </div>
+      {/if}
       {#each supporto as h (h.id)}
-        <RigaAbitudine {h} {giorno} compatta bloccata={bloccato} {onapri} />
+        <RigaAbitudine {h} {giorno} compatta={otto.length > 0} bloccata={bloccato} {onapri} />
       {/each}
     {/if}
 

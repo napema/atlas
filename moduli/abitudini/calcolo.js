@@ -16,7 +16,7 @@
 // `weekly` è l'unico che non si risolve guardando il solo giorno: per
 // sapere se è attesa oggi bisogna contare i log della settimana.
 
-import { abitudiniVive, eFatta, eSaltata, stato, partiDi, parteFatta, FASCE, statoFascia } from "./dati.js";
+import { abitudiniVive, eFatta, eSaltata, stato, partiDi, parteFatta, FASCE, statoFascia, gruppiDi } from "./dati.js";
 import { isoDi, daISO, piuGiorni, oggiISO } from "../../core/ui.js";
 import { leggiFatto } from "../../core/contesto.js";
 
@@ -387,34 +387,63 @@ export function partiDiOggi(iso = oggiISO()) {
    l'ora del giorno.
 */
 
-export function giornataOggi(iso = oggiISO(), ora = new Date().getHours()) {
+/* LE ABITUDINI-SPECCHIO: quelle che si spuntano da sole quando un altro
+   modulo ha fatto la sua parte — «Mobilità» con la sessione, «Workout» con
+   Training. Stesse regole di riconoscimento degli ascolti in contratto.js.
+   Nella giornata della home sarebbero un doppione: la sessione di Mobilità
+   ha già la sua riga, con la sua ora, e un secondo «Mobilità» sotto
+   direbbe due volte la stessa cosa. */
+export const eSpecchio = (h) => /mobilit|stretch|allungam/i.test(h?.name || "") || SEGUE_TRAINING.test(h?.name || "");
+
+export function giornataOggi(iso = oggiISO(), ora = new Date().getHours(), { senzaSpecchi = false } = {}) {
   const out = [];
   for (const h of abitudiniVive()) {
     if (!ePrevista(h, iso)) continue;
+    if (senzaSpecchi && eSpecchio(h)) continue;
     const parti = partiDi(h);
 
     if (!parti.length) {
       out.push({
         chiave: h.id, habitId: h.id, parteId: null,
         nome: h.name, emoji: h.emoji, tint: h.tint,
+        // L'ora del promemoria è l'ora dell'abitudine: senza, la home la
+        // metteva in fondo alla giornata anche se suona alle sette.
+        ora: h.remind || undefined,
         fascia: null, nomeFascia: "", quando: "adesso", ordine: 5,
         // Saltata e' chiusa quanto fatta, ma non e' la stessa cosa e la
         // lista lo deve dire: una spunta grigia, non verde.
         fatta: eFatta(h.id, iso), saltata: eSaltata(h.id, iso),
+        spuntabile: true,
       });
       continue;
     }
 
-    for (const p of parti) {
-      const f = p.fascia || "qualsiasi";
+    /* UNA RIGA PER ORARIO, non una per parte. Era una per parte, e la
+       skincare da sei passaggi faceva sei righe nella giornata della home —
+       la giornata diventava la lista della spesa del bagno. Le parti con lo
+       stesso orario sono una cosa sola da fare a quell'ora. */
+    for (const gr of gruppiDi(h)) {
+      const f = gr.fascia || "qualsiasi";
+      const ids = gr.parti.map((p) => p.id);
+      const fatte = ids.filter((id) => parteFatta(h.id, id, iso)).length;
       out.push({
-        chiave: `${h.id}#${p.id}`, habitId: h.id, parteId: p.id,
-        nome: p.nome, dentro: h.name, emoji: h.emoji, tint: h.tint,
+        chiave: `${h.id}@${gr.ora || f}`, habitId: h.id,
+        parteId: ids.length === 1 ? ids[0] : null,
+        parti: ids,
+        nome: h.name,
+        dentro: gr.parti.length === 1 ? gr.parti[0].nome
+          : fatte && fatte < ids.length ? `${fatte} di ${ids.length}`
+          : gr.parti.map((p) => p.nome).join(" · "),
+        emoji: h.emoji, tint: h.tint,
+        ora: gr.ora || undefined,
         fascia: f, nomeFascia: FASCE[f]?.nome || "",
         quando: statoFascia(f, ora),
         ordine: FASCE[f]?.ordine || 5,
         da: FASCE[f]?.da ?? 0,
-        fatta: parteFatta(h.id, p.id, iso), saltata: false,
+        fatta: fatte === ids.length, saltata: false,
+        // La home normalmente non spunta le righe con un orario: quelle di
+        // Training e Mobilità si APRONO. Queste no: si spuntano e basta.
+        spuntabile: true,
       });
     }
   }

@@ -21,6 +21,10 @@ export interface VoceResta {
   apre?: string;
   habitId?: string;
   parteId?: string;
+  /** Un orario intero di parti: «Integratori · 08:00» si spunta tutto insieme. */
+  parti?: string[];
+  /** Si spunta dal cerchio anche se ha un orario (le abitudini sì, Training no). */
+  spuntabile?: boolean;
   /** Il modulo che la possiede, per chiedergli di spuntarla. */
   modulo: string;
 }
@@ -111,20 +115,33 @@ const ORA_FASCIA: Record<string, number> = {
  * calendario, e' il profilo del giorno. Quello che cade dentro quelle ore
  * si mette in fila con lei, in ordine di orologio, e si legge lo stesso.
  */
-export const LAVORO = { da: "08:00", a: "17:00" };
+/* L'ORARIO VERO, giorno per giorno. Era «08:00 – 17:00» tutti i giorni, e
+ * la domenica la giornata cominciava con «Lavoro»: una cornice che non
+ * c'è mette in fila tutto il resto dentro ore sbagliate. Indice come
+ * `getDay()`: 0 = domenica. `null` = non si lavora. */
+export const LAVORO: ({ da: string; a: string } | null)[] = [
+  null,                              // domenica
+  { da: "08:00", a: "17:00" },       // lunedì
+  { da: "08:00", a: "17:00" },       // martedì
+  { da: "08:00", a: "17:00" },       // mercoledì
+  { da: "08:00", a: "17:00" },       // giovedì
+  { da: "08:00", a: "12:00" },       // venerdì
+  null,                              // sabato
+];
 
 const inMinuti = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
 
 function giorno(conDati: Scheda[], adesso = new Date()): VoceGiorno[] {
   const ora = adesso.getHours() * 60 + adesso.getMinutes();
-  const voci: VoceGiorno[] = [{
+  const turno = LAVORO[adesso.getDay()];
+  const voci: VoceGiorno[] = turno ? [{
     chiave: "oggi:lavoro",
     nome: "Lavoro",
-    dentro: `${LAVORO.da} – ${LAVORO.a}`,
-    ora: LAVORO.da,
-    fatta: ora >= inMinuti(LAVORO.a),
+    dentro: `${turno.da} – ${turno.a}`,
+    ora: turno.da,
+    fatta: ora >= inMinuti(turno.a),
     modulo: "oggi",
-  }];
+  }] : [];
   for (const s of conDati) {
     for (const v of ((s.dati as any).giornata || []) as VoceGiorno[]) {
       voci.push({ ...v, modulo: s.voce.id });

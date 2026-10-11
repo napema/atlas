@@ -42,8 +42,16 @@ export const TOTALE = 50;
 
 export const PREDEFINITO_P50 = { attivo: false, inizio: "", quotaSerate: 2 };
 
+/* PROJECT 50 È SOSPESO, dall'11 ottobre 2026: «le abitudini come ai vecchi
+   tempi, senza Project 50». Un interruttore solo, qui, e non i dati: le
+   chiusure, le serate e le otto voci restano in `abitudini.json` come sono.
+   Con `SOSPESA` a `true` la sfida per il resto dell'app semplicemente non
+   c'è — `attivo()` dice di no, e ogni ramo che ne dipende prende la strada
+   «senza sfida» che esisteva già. Per riaccenderla basta questa riga. */
+export const SOSPESA = true;
+
 export const config = () => stato().p50 || PREDEFINITO_P50;
-export const attivo = () => Boolean(config().attivo);
+export const attivo = () => !SOSPESA && Boolean(config().attivo);
 
 export function scriviConfig(patch) {
   casella.aggiorna((s) => {

@@ -34,6 +34,7 @@
   import Spunta from "$lib/ui/Spunta.svelte";
   import Pulsante from "$lib/ui/Pulsante.svelte";
   import Icona from "$lib/ui/Icona.svelte";
+  import Anello from "$lib/ui/Anello.svelte";
   import { MODULI_DATI, voceDi } from "$lib/core/registro";
   import { contratti } from "$lib/core/contratti.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
@@ -235,7 +236,8 @@
     const contr = contratti.pronti[v.modulo];
     // Parte e abitudine intera sono due chiamate diverse: unirle con un `??`
     // spuntava la parte `null`, sotto una chiave che nessuno rilegge.
-    if (v.parteId) contr?.spuntaParte?.(v.habitId, v.parteId);
+    if (v.parti && v.parti.length > 1) contr?.spuntaParti?.(v.habitId, v.parti);
+    else if (v.parteId) contr?.spuntaParte?.(v.habitId, v.parteId);
     else contr?.spunta?.(v.habitId);
     tocco(12);
   }
@@ -310,7 +312,7 @@
             <li class="g-voce" class:fatta={v.fatta} class:saltata={v.saltata} class:ora={i === giorno.corrente}>
               <span class="g-ora cifre text-footnote">{v.ora ?? ""}</span>
               <button type="button" class="g-segno" aria-label={v.fatta ? "Fatta" : "Segna fatta"}
-                onclick={() => !v.ora && tocca(v as any)}>
+                onclick={() => (v.spuntabile || !v.ora) && tocca(v as any)}>
                 {#if v.fatta || v.saltata}<Icona nome="spunta" misura={13} tratto={3} />{/if}
               </button>
               <!-- IL NOME PORTA ALLA COSA. Il cerchio a sinistra la spunta,
@@ -374,6 +376,68 @@
           {#if azione}
             <Pulsante variante="tinto" misura="media" larga href={azione}>Inizia ora</Pulsante>
           {/if}
+        </div>
+      </Sezione>
+    </div>
+  {/if}
+{/snippet}
+
+<!-- LA CARTA DELLE ABITUDINI: l'anello, «3 di 7», e la giornata in GETTONI.
+
+     Non la forma comune delle altre carte (numero + riga + barra), perché
+     qui la cosa da guardare non è un numero: sono le abitudini stesse. Un
+     gettone per ogni cosa da fare oggi, nell'ordine dell'orologio — pieno
+     e verde quando è fatta, spento quando aspetta, con l'anello del colore
+     del modulo attorno alla prossima. Si legge come l'anello di Fitness: a
+     colpo d'occhio, senza leggere.
+
+     E si TOCCA: un gettone si spunta da qui, con un piccolo battito quando
+     si accende. È la cosa che fa tornare ogni giorno — spuntare deve essere
+     più veloce che pensarci.
+
+     Un gettone per ORARIO e non per parte: gli integratori delle 08:00 sono
+     uno, quelli delle 13:00 un altro. È la stessa unità della giornata e
+     delle notifiche. -->
+{#snippet cartaAbitudini()}
+  {@const c3 = carta("abitudini")}
+  {#if c3 && (c3.d.attese ?? 0) > 0}
+    {@const righe = [...((c3.d.gettoni ?? c3.d.giornata ?? []) as any[])].sort((a, b) => (a.ora ?? "99").localeCompare(b.ora ?? "99"))}
+    <!-- Il conto è quello dei GETTONI, cioè degli orari: «0 di 3» sopra
+         cinque gettoni erano due unità diverse nella stessa carta. -->
+    {@const fatte = righe.filter((r) => r.fatta || r.saltata).length}
+    {@const hhmm = `${String(ora.getHours()).padStart(2, "0")}:${String(ora.getMinutes()).padStart(2, "0")}`}
+    {@const aperte = righe.filter((r) => !r.fatta && !r.saltata)}
+    {@const prossima = aperte.find((r) => r.ora && r.ora >= hhmm) ?? aperte[0] ?? null}
+    {@const pieno = righe.length > 0 && fatte >= righe.length}
+    <div style:--accento={c3.voce.accento}>
+      <Sezione>
+        <div class="blocco modulo abitudini">
+          {@render testa(c3.voce, null, pieno)}
+          <a class="ab-corpo" href="#/abitudini">
+            <Anello valore={righe.length ? fatte / righe.length : 0} misura={52} spessore={7}
+              colore={pieno ? "var(--color-green)" : "var(--accento)"} />
+            <span class="ab-testo">
+              <span class="m-cifra cifre" class:verde={pieno}>{fatte}<span class="ab-di">{` di ${righe.length}`}</span></span>
+              <span class="text-subheadline secondario ab-poi">
+                {#if pieno}tutto fatto
+                {:else if prossima}{prossima.ora && prossima.ora < hhmm ? "da fare" : "poi"}: {prossima.nome}{prossima.ora ? ` · ${prossima.ora}` : ""}{/if}
+              </span>
+            </span>
+          </a>
+          <div class="gettoni" role="group" aria-label="Le abitudini di oggi">
+            {#each righe as r (r.chiave)}
+              <button type="button" class="gettone" class:fatta={r.fatta} class:saltata={r.saltata}
+                class:prossima={r === prossima}
+                style:--tinta={tinta(r.tint)}
+                aria-pressed={Boolean(r.fatta)}
+                aria-label="{r.nome}{r.ora ? ` alle ${r.ora}` : ''}{r.fatta ? ', fatta' : ''}"
+                title="{r.nome}{r.ora ? ` · ${r.ora}` : ''}"
+                onclick={() => tocca({ ...r, modulo: "abitudini" })}>
+                <span class="g-emoji">{r.emoji ?? "⭐️"}</span>
+                {#if r.ora}<span class="g-ora cifre">{r.ora}</span>{/if}
+              </button>
+            {/each}
+          </div>
         </div>
       </Sezione>
     </div>
@@ -511,8 +575,13 @@
          restava mezza schermata vuota. Con la giornata da sola le tre
          colonne finiscono vicine, e soprattutto la gerarchia si vede —
          «cos'e' oggi» a sinistra, «come vanno le cose» a destra. -->
+    <!-- LA PRIMA COLONNA È «COM'È FATTO OGGI»: la giornata e, sotto, le
+         abitudini. Con loro la griglia è 2 · 2 · 2 — la giornata, quello
+         che consumi, il corpo — invece di una carta sola a sinistra e due
+         pile da due a destra. Simmetria di numero e di senso insieme. -->
     <div class="pila stretta">
       <div class="tessera p-giornata">{@render cartaGiornata()}</div>
+      <div class="tessera p-abitudini">{@render cartaAbitudini()}</div>
     </div>
     <!-- Tre colonne, tre cose diverse: la GIORNATA, quello che CONSUMI
          (soldi e cibo), il CORPO — che e' anche il gruppo che quei due
@@ -599,11 +668,12 @@
   .tessera:empty { display: none; }
   .tessera > :global(*) { min-height: 0; }
 
-  .p-giornata { order: 1; }
-  .p-finanze  { order: 2; }
-  .p-training { order: 3; }
-  .p-mobilita { order: 4; }
-  .p-pasti    { order: 5; }
+  .p-giornata  { order: 1; }
+  .p-abitudini { order: 2; }
+  .p-finanze   { order: 3; }
+  .p-training  { order: 4; }
+  .p-mobilita  { order: 5; }
+  .p-pasti     { order: 6; }
 
   /* DUE COLONNE da 760: la giornata a sinistra, tutto il resto a destra. */
   @media (min-width: 760px) {
@@ -629,6 +699,52 @@
     .pila:not(.stretta) { display: flex; }
     .pila:not(.stretta) > .tessera { grid-column: auto; }
   }
+
+  /* La colonna stretta ha due carte: la giornata e le abitudini. */
+  @media (min-width: 760px) {
+    .pila.stretta { display: flex; flex-direction: column; gap: var(--space-6); }
+  }
+
+  /* --- LA CARTA DELLE ABITUDINI --- */
+  .ab-corpo { display: flex; align-items: center; gap: var(--space-3); margin-top: auto; color: inherit; }
+  .ab-corpo:active { opacity: 0.6; }
+  .ab-testo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .ab-di { font-size: var(--text-headline); font-weight: var(--weight-semibold); color: var(--label-secondary); letter-spacing: 0; }
+  .abitudini .m-cifra.verde { color: var(--color-green); }
+  .ab-poi { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .abitudini .m-cifra { margin-top: 0; }
+
+  /* I GETTONI. Una griglia e non una riga che va a capo a caso: le colonne
+     tengono i gettoni allineati anche quando sono undici. */
+  .gettoni {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    gap: var(--space-2); margin-top: var(--space-4);
+  }
+  .gettone {
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    height: 54px; border-radius: 14px;
+    background: var(--fill-quaternary);
+    transition: background-color var(--duration-normal) var(--ease-default),
+      box-shadow var(--duration-normal) var(--ease-default);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .gettone:active { transform: scale(0.92); }
+  .g-emoji { font-size: 21px; line-height: 1; filter: grayscale(0.7); opacity: 0.55;
+    transition: filter var(--duration-normal) var(--ease-default), opacity var(--duration-normal) var(--ease-default); }
+  .g-ora { font-size: 10px; line-height: 12px; font-weight: var(--weight-semibold); color: var(--label-tertiary); }
+  /* Fatta: il colore torna, e il gettone prende il verde — in ATLAS verde
+     vuol dire una cosa sola. Il battito si accende solo quando la classe
+     arriva: è la spunta che si sente, non un'animazione che gira. */
+  .gettone.fatta { background: color-mix(in srgb, var(--color-green) 20%, transparent); animation: battito 360ms var(--ease-fluido); }
+  .gettone.fatta .g-emoji { filter: none; opacity: 1; }
+  .gettone.fatta .g-ora { color: var(--color-green); }
+  .gettone.saltata .g-emoji { opacity: 0.35; }
+  /* La prossima: l'anello del modulo attorno, e il colore pieno — è la
+     cosa da fare, deve essere la più viva fra quelle che aspettano. */
+  .gettone.prossima { box-shadow: inset 0 0 0 2px var(--accento); }
+  .gettone.prossima .g-emoji { filter: none; opacity: 1; }
+  .gettone.prossima .g-ora { color: var(--accento); }
+  @keyframes battito { 0% { transform: scale(0.88); } 55% { transform: scale(1.06); } 100% { transform: scale(1); } }
 
   /* La forma comune di una carta di modulo. Il `blocco` e' l'interno di una
      lastra: il padding lo mette lui, cosi' `Sezione` resta nuda e tutte le

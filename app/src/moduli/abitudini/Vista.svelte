@@ -1,21 +1,18 @@
 <!--
-  Project 50 — la sfida, e le abitudini che ci stanno intorno.
+  Abitudini — come ai vecchi tempi, senza Project 50.
 
-  Era «Abitudini» con la sfida accesa da un interruttore in Impostazioni, e
-  si vedeva: due liste, una per le otto e una per il supporto, e i pezzi
-  della sfida sparsi fra una testata, una carta per le serate e una riga di
-  chiusura in fondo alla pagina. Adesso il modulo È la sfida:
+  La sfida è sospesa dall'11 ottobre 2026 (`SOSPESA` in p50.js) e la
+  schermata non la nomina più: niente carta dei cinquanta giorni, niente
+  «le otto» in cima alla lista, niente chiusura del giorno. Il codice della
+  sfida resta dov'è, ogni ramo che ne dipende guarda `g.sfida` — che adesso
+  è sempre falso — e la riaccende chi riaccende l'interruttore.
 
-    la carta di Project 50   giorno, le otto di oggi, serate, chiusura
-                             (sul PC la colonna del riepilogo, sul
-                             telefono la prima cosa sotto il titolo)
-    la giornata              UNA lista, divisa per momento — mattina, in
-                             giornata, sera — con le otto segnate «50» in
-                             cima al loro momento
-
-  «Progressi» è l'altra faccia: i cinquanta giorni, che cosa ti ha fatto
-  ripartire, le chiusure. A sfida spenta la carta invita a cominciarla e
-  «Progressi» mostra le serie di ogni abitudine, come prima.
+    la testata   com'è andata oggi e cosa viene dopo (EroeAbitudini); sul
+                 PC è la colonna di sinistra, sul telefono la prima cosa
+    la lista     UNA lista, in ordine di orologio: è la stessa giornata che
+                 si legge in home, e due ordini diversi per le stesse cose
+                 sono due app
+    Progressi    le serie di ogni abitudine
 -->
 <script lang="ts">
   import Pagina from "$lib/ui/Pagina.svelte";
@@ -29,6 +26,8 @@
   import Chiusura from "./Chiusura.svelte";
   import Revisione from "./Revisione.svelte";
   import Eroe50 from "./Eroe50.svelte";
+  import EroeAbitudini from "./EroeAbitudini.svelte";
+  import { oraDiParte, partiDi } from "$condivisi/abitudini/dati.js";
   import Lista from "./Lista.svelte";
   import { dati } from "$lib/core/reattivo.svelte";
   import { ascolta, EVENTI } from "$lib/core/bus";
@@ -97,11 +96,20 @@
        della giornata faceva tre lastre e tre contatori — alle sette di
        mattina non si capiva quale fosse la cosa da fare, si leggeva un
        indice. */
+    /* In ordine di OROLOGIO: la prima ora di ogni abitudine (il suo
+       promemoria, o la parte più presto). È l'ordine della giornata in
+       home, e le stesse cose in due ordini diversi sono due app. Quelle
+       senza ora vanno in fondo, nell'ordine in cui le hai messe. */
+    const primaOra = (h: any) => {
+      const ore = [h.remind, ...partiDi(h).map((p: any) => oraDiParte(h, p))].filter(Boolean) as string[];
+      return ore.length ? ore.sort()[0] : "99:99";
+    };
+    const perOra = (a: any, b: any) => primaOra(a).localeCompare(primaOra(b)) || (a.order ?? 0) - (b.order ?? 0);
     return {
       sfida,
       tutte,
-      otto: previste.filter(delle8),
-      supporto: previste.filter((h: any) => !delle8(h)),
+      otto: sfida ? previste.filter(delle8) : [],
+      supporto: (sfida ? previste.filter((h: any) => !delle8(h)) : previste).sort(perOra),
       spente: tutte.filter((h) => !attesa(h)),
       chiuso: sfida && p50.giornoChiuso(giorno),
     };
@@ -141,7 +149,7 @@
     });
   });
 
-  const titolo = $derived(voceDi("abitudini")?.nome ?? "Project 50");
+  const titolo = $derived(voceDi("abitudini")?.nome ?? "Abitudini");
 </script>
 
 {#snippet strumenti()}
@@ -154,8 +162,10 @@
 {#snippet riepilogo()}
   {#if vista === "progressi" && !g.sfida}
     <Serie parte="eroe" onapri={apriDettaglio} />
-  {:else}
+  {:else if g.sfida}
     <Eroe50 {giorno} modo={vista} onchiudi={() => (chiusuraAperta = true)} />
+  {:else if g.tutte.length}
+    <EroeAbitudini {giorno} />
   {/if}
 {/snippet}
 
