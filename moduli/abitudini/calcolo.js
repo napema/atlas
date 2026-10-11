@@ -170,7 +170,7 @@ export function progressoGiorno(iso = oggiISO()) {
       continue;
     }
     attese++;
-    if (eFatta(h.id, iso)) fatte++;
+    if (eFatta(h.id, iso) || fattaDaAltri(h, iso)) fatte++;
   }
   /* UN GIORNO SENZA NIENTE IN PROGRAMMA NON È UN GIORNO COMPLETATO.
 
@@ -209,10 +209,33 @@ export function progressoGiorno(iso = oggiISO()) {
  * su di lei è sempre falso: serie, costanza e conteggi la davano per saltata
  * ogni singolo giorno. Tutto il modulo passa di qui.
  */
+/**
+ * FATTA PERCHÉ L'HA FATTA UN ALTRO MODULO — letto, non spuntato.
+ *
+ * «Mobilità» è fatta quando Mobilità dice che la sessione di oggi c'è;
+ * «Workout» quando Training dice che i suoi allenamenti di oggi sono fatti.
+ * Prima lo si sapeva solo da un EVENTO: la sessione finiva, l'evento
+ * arrivava, l'abitudine si spuntava. Ma un evento lo sente solo chi è acceso
+ * in quel momento — la sessione fatta sull'altro telefono, o mentre le
+ * Abitudini erano in pausa, non spuntava niente, e la stessa cosa risultava
+ * fatta in una carta e da fare nell'altra. Qui si legge la lavagna, che è
+ * sincronizzata e vale per tutti: è la regola del briefing del modulo.
+ */
+export function fattaDaAltri(h, iso) {
+  const nome = h?.name || "";
+  if (/mobilit|stretch|allungam/i.test(nome)) return Boolean(leggiFatto("mobilita", "sessione", iso));
+  if (SEGUE_TRAINING.test(nome)) {
+    const previsti = leggiFatto("allenamenti", "oggi-previsti", iso);
+    const fatti = leggiFatto("allenamenti", "oggi-fatti", iso);
+    return Boolean(previsti) && (fatti || 0) >= previsti;
+  }
+  return false;
+}
+
 export function fattaIl(h, iso) {
   const parti = partiDi(h);
   if (parti.length) return parti.every((p) => parteFatta(h.id, p.id, iso));
-  return eFatta(h.id, iso);
+  return eFatta(h.id, iso) || fattaDaAltri(h, iso);
 }
 
 /**
@@ -412,7 +435,7 @@ export function giornataOggi(iso = oggiISO(), ora = new Date().getHours(), { sen
         fascia: null, nomeFascia: "", quando: "adesso", ordine: 5,
         // Saltata e' chiusa quanto fatta, ma non e' la stessa cosa e la
         // lista lo deve dire: una spunta grigia, non verde.
-        fatta: eFatta(h.id, iso), saltata: eSaltata(h.id, iso),
+        fatta: eFatta(h.id, iso) || fattaDaAltri(h, iso), saltata: eSaltata(h.id, iso),
         spuntabile: true,
       });
       continue;
@@ -471,7 +494,7 @@ export function restaOggi(iso = oggiISO(), ora = new Date().getHours()) {
     if (!parti.length) {
       // Saltata vuol dire chiusa: sparisce da qui esattamente come una
       // fatta. È tutto il punto di poterla dichiarare.
-      if (eFatta(h.id, iso) || eSaltata(h.id, iso)) continue;
+      if (eFatta(h.id, iso) || fattaDaAltri(h, iso) || eSaltata(h.id, iso)) continue;
       out.push({
         chiave: h.id, habitId: h.id, parteId: null,
         nome: h.name, emoji: h.emoji, tint: h.tint,
