@@ -1,0 +1,69 @@
+# Le notifiche di ATLAS: il mittente, puntuale al minuto.
+#
+# CHI LO SVEGLIA. Un orologio esterno — cron-job.org — chiama
+# `workflow_dispatch` ogni cinque minuti, tutto il giorno. Lo `schedule` di
+# GitHub qui sotto NON è l'orologio: è la rete che evita il buio se quello
+# esterno si ferma. Il 12 settembre, su 144 giri chiesti a `schedule`, ne
+# arrivarono sei: GitHub li ritarda sotto carico e li può scartare.
+#
+# PERCHÉ IN QUESTO REPO. È pubblico, e su un repo pubblico i minuti di
+# Actions sono illimitati. Il mittente di prima stava in atlas-dati, che è
+# privato: 2000 minuti al mese, e per starci dentro girava solo fra le 7 e
+# le 9 e fra le 20 e le 23. Qui ogni giro dura fino a cinque minuti —
+# dorme fino al minuto esatto di ogni notifica — e non costa niente.
+#
+# I SECRET (Settings → Secrets and variables → Actions):
+#   DATI_TOKEN      token fine-grained, solo napema/atlas-dati,
+#                   «Contents: Read and write» (scrive solo stato-mittente.json)
+#   VAPID_PUBLIC    la chiave pubblica, la stessa di app/src/lib/core/config.ts
+#   VAPID_PRIVATE   la chiave privata
+#   VAPID_SUBJECT   (facoltativo) mailto:… del mittente
+# Finché mancano il mittente non fa niente e lo dice in una riga: niente
+# corse rosse prima di averlo acceso.
+#
+# I LOG SONO PUBBLICI, come tutto qui. `invia.ts` non stampa niente dei dati:
+# solo numeri. Non aggiungere `echo` di file o di risposte.
+
+name: Notifiche
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
+
+# Un giro alla volta, e in coda: due giri insieme manderebbero la stessa
+# notifica due volte prima che uno dei due abbia scritto di averla mandata.
+concurrency:
+  group: notifiche
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  invia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      # Solo quello che serve: il mittente e la logica dei moduli che usa.
+      # Il repo intero si porta dietro i video degli esercizi.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            notifiche
+            core
+            moduli/abitudini
+            moduli/finanze
+          sparse-checkout-cone-mode: false
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Manda
+        env:
+          DATI_TOKEN: ${{ secrets.DATI_TOKEN }}
+          VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+        run: deno run --allow-net --allow-env --allow-read --location http://localhost/ notifiche/invia.ts

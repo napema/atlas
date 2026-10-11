@@ -3170,3 +3170,96 @@ diventa un travaso; Fisse vuote con WindTRE il 15 che passano per prime e
 abbassano la razione — la stessa del «Domani»; Cassa vuota e bolletta da
 80 € che danno «non basta» senza attingere a ING; la lista del 23 che segue
 il versamento dell'obiettivo quando lo cambi. Più 65 + 52 delle altre due.
+
+---
+
+## 11 ottobre 2026 — le Abitudini tornano, e le notifiche cambiano casa *(chat ATLAS)*
+
+### Le Abitudini, senza Project 50
+
+Erano in pausa dall'8. Tornano come ai vecchi tempi: la sfida è sospesa da un
+interruttore solo (`SOSPESA` in `p50.js`, gemello `SFIDA_SOSPESA` in
+`dati.js`), le sue otto voci escono dalla vista e restano nei dati con il loro
+storico. La schermata non nomina più la sfida: testata nuova
+(`EroeAbitudini.svelte`, anello · «3 di 6» · la prossima con l'orario) e lista
+in ordine di orologio.
+
+**Un orario per parte.** Prima l'ora stava sulla fascia, quattro in tutto: la
+creatina alle 13:00 non era né mattina né pre-allenamento. Ora una parte può
+avere `ora: "HH:MM"`, la fascia si ricava da lei, e `orari[fascia]` si
+riscrive dalle parti per compatibilità. **Le parti alla stessa ora sono un
+gruppo** (`gruppiDi()`): una riga in home, un gettone, una notifica.
+
+**In home, due volte.** Nella Giornata una riga per orario (la skincare da sei
+passaggi faceva sei righe), spuntabile dal cerchio; le abitudini-specchio
+(Mobilità, Workout) non si ripetono. E una carta: anello, conto per orario,
+la giornata in gettoni che si toccano — tutte le capsule di quell'orario con
+un tocco. Sotto la Giornata: la griglia è 2 · 2 · 2.
+
+Il lavoro ha il suo orario: lun-gio 8-17, ven 8-12, niente nel fine settimana.
+
+### Le notifiche: perché non arrivavano, e il mittente nuovo
+
+**Cosa so e cosa no.** Il lato app è sano (verificato: il canale delle
+iscrizioni parte dal nucleo, non dalle Abitudini, quindi la pausa non
+c'entrava). Il guasto sta dove l'app non arriva: il mittente in atlas-dati
+o l'orologio esterno che lo sveglia, e senza token non si leggono. Il
+sospetto più forte è il **token fine-grained di cron-job.org**: creato il 12
+settembre, e quel tipo di token per impostazione scade a 30 giorni.
+
+**Un difetto vero, trovato per strada:** `tag: d.tag || d.modulo` nel service
+worker. Una notifica nuova con la stessa etichetta di una ancora nel Centro
+Notifiche la SOSTITUISCE, e senza `renotify` arriva muta — niente suono,
+niente banner. Ora l'etichetta è unica per notifica. C'era dal 21 agosto,
+quindi non spiega il silenzio di adesso, ma ne spiegava di sicuro una parte.
+
+**Il mittente nuovo — `notifiche/` in questo repo.** Perché qui: il repo è
+pubblico e i minuti di Actions sono illimitati. In atlas-dati (privato, 2000
+minuti al mese) il mittente girava solo 7-9 e 20-23, e un integratore a
+pranzo non poteva arrivare. Qui un giro ogni cinque minuti tutto il giorno,
+e dentro il giro si dorme fino al **minuto esatto** di ogni notifica; prima
+di mandare si rileggono i dati, così una cosa spuntata nel frattempo non
+suona. Un giro saltato non perde niente: il successivo recupera fino a 90
+minuti indietro.
+
+- **Non riscrive le regole dei moduli, le usa**: `giornataOggi()` delle
+  Abitudini, `inArrivoDiviso()` di Finanze, caricati con i dati veri sotto
+  Deno come i file di prova. Il mittente di prima le aveva ricopiate, ed è
+  lì che nascevano i suoi guasti (l'ora «24», la domenica sfasata).
+- Cosa manda: ogni abitudine/gruppo di parti alla sua ora, con dentro solo
+  quello che manca; i **riepiloghi** (nuovi, `orari.abitudini.riepiloghi`)
+  per abitudine e con i nomi; Mobilità; il riepilogo serale e i tre avvisi
+  dei pagamenti di Finanze.
+- I log sono pubblici: `invia.ts` stampa solo numeri.
+- Stato in un file suo, `stato-mittente.json` in atlas-dati: il vecchio
+  `stato-notifiche.json` resta al mittente vecchio.
+
+**Provato:** `notifiche/prova.ts` (37 controlli sul piano di un lunedì,
+compreso quello che NON deve arrivare) e `notifiche/prova-invio.ts` — la
+firma VAPID si verifica con la chiave pubblica, un telefono finto decifra il
+messaggio identico, e la spedizione HTTPS arriva fino a Google (410 su
+un'iscrizione finta). Sotto Deno, cioè come gira in CI.
+
+**Il segno di vita.** In Impostazioni → Notifiche, «Il server»: quando ha
+girato l'ultima volta, se è andata bene, cosa ha mandato e a quanti
+dispositivi. Ogni volta che le notifiche si sono zittite il guasto è durato
+giorni perché quando il mittente smette non lo dice nessuno.
+
+**Una chiave nuova, se serve.** I secret di GitHub non si rileggono: la
+VAPID privata di atlas-dati non si copia. Se non è salvata altrove,
+`notifiche/chiavi.ts` ne fa una coppia: la pubblica la scrive in
+`config.ts`, la privata la stampa solo nel terminale. I telefoni si
+reiscrivono da soli: `riallinea()` ora confronta la chiave a cui è legata
+l'iscrizione con quella della app, e se è cambiata la rifà.
+
+### Da fare (Ema) per accenderlo
+
+1. Secret in **napema/atlas** → Settings → Secrets and variables → Actions:
+   `DATI_TOKEN` (fine-grained, solo atlas-dati, Contents read/write),
+   `VAPID_PUBLIC`, `VAPID_PRIVATE`.
+2. **cron-job.org**: il job punta a
+   `POST https://api.github.com/repos/napema/atlas/actions/workflows/notifiche.yml/dispatches`
+   (body `{"ref":"main"}`), ogni 5 minuti tutto il giorno, con un token
+   fine-grained **solo napema/atlas, Actions read/write**.
+3. Disattivare `promemoria.yml` in atlas-dati (Actions → il workflow → ⋯ →
+   Disable): due mittenti accesi mandano tutto due volte.

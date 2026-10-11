@@ -16,6 +16,18 @@
 // Qui l'archivio e' costruito apposta per rimetterci in quella giornata: il
 // 10 ottobre 2026, 139,81 € da far durare 13 giorni, 46,51 € gia' usciti.
 
+/* L'OROLOGIO FERMO SUL 10 OTTOBRE. L'archivio racconta quella giornata, ma
+   `oggi()` della carta in home chiede la data VERA: l'11 ottobre questa
+   prova ha cominciato a fallire su cinque controlli senza che niente fosse
+   cambiato — leggeva la carta di un altro giorno. Ogni prova che passa da
+   una funzione col suo «oggi» dentro ha bisogno dell'orologio fermo. */
+const DataVera = Date;
+const FERMO = new DataVera("2026-10-10T18:00:00").getTime();
+globalThis.Date = class extends DataVera {
+  constructor(...a) { super(...(a.length ? a : [FERMO])); }
+  static now() { return FERMO; }
+};
+
 globalThis.window ??= globalThis;
 globalThis.document ??= {
   addEventListener() {}, removeEventListener() {},

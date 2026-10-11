@@ -68,6 +68,26 @@ export async function verificaAccesso(): Promise<{ ok: boolean; motivo: string }
   }
 }
 
+/**
+ * Legge un file del repo dei dati, SENZA aprirci un canale.
+ *
+ * Per i file che l'app guarda e non scrive mai: oggi `stato-mittente.json`,
+ * cioè cosa ha mandato il mittente delle notifiche. Un canale vorrebbe dire
+ * fonderlo e riscriverlo, e questo file è suo, non nostro. `null` se non
+ * c'è, se il token manca, o se la rete non risponde: chi chiama lo dice.
+ */
+export async function leggiFile(file: string): Promise<any | null> {
+  if (!configurato()) return null;
+  try {
+    const r = await fetch(`${urlDi(file)}?ref=${CFG.branch}`, { headers: intestazioni(), cache: "no-store" });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return JSON.parse(b64dec(j.content));
+  } catch {
+    return null;
+  }
+}
+
 // btoa da solo esplode sugli accenti: serve il giro via UTF-8.
 /**
  * Sveglia un workflow del repo dei dati.

@@ -662,7 +662,9 @@ export function inArrivoDiviso(giorni = 14, iso = oggiISO()) {
      il foglio di una voce legge per dire «fra 14 giorni» e «stima». Finche'
      le righe di «dopo» si potevano solo guardare nessuno se n'e' accorto;
      dal momento che si aprono, senza `fra` il foglio scriveva «fra
-     undefined giorni». */
+     undefined giorni». MENO UNO perché `giorniFra` conta gli estremi —
+     oggi→oggi fa 1 — mentre `fra` è la distanza, e oggi→oggi fa 0, come
+     nelle voci di `inArrivo`. */
   const dopo = [];
   for (const r of ricorrentiVivi()) {
     if (!r.attivo) continue;
@@ -670,13 +672,13 @@ export function inArrivoDiviso(giorni = 14, iso = oggiISO()) {
     if (q && q <= limite) {
       dopo.push({
         ...r, quando: q, importo: importoRicorrente(r), origine: "ricorrente",
-        stimato: r.tipo === "variabile", fra: giorniFra(iso, q),
+        stimato: r.tipo === "variabile", fra: giorniFra(iso, q) - 1,
       });
     }
   }
   for (const x of previsti()) {
     if (x.quando && x.quando >= paga && x.quando <= limite) {
-      dopo.push({ ...x, importo: x.imp || 0, origine: "previsto", stimato: false, fra: giorniFra(iso, x.quando) });
+      dopo.push({ ...x, importo: x.imp || 0, origine: "previsto", stimato: false, fra: giorniFra(iso, x.quando) - 1 });
     }
   }
   dopo.sort((p, s) => p.quando.localeCompare(s.quando));

@@ -161,8 +161,14 @@ self.addEventListener("push", (e) => {
     body: d.corpo || "",
     icon: "./icons/icon-192.png",
     badge: "./icons/icon-192.png",
-    tag: d.tag || d.modulo || "atlas",
-    renotify: Boolean(d.tag),
+    /* UN'ETICHETTA PER NOTIFICA, mai una per modulo. Con `d.modulo` come
+       etichetta, la notifica di oggi della Mobilità SOSTITUIVA quella di
+       ieri ancora nel Centro Notifiche — e una sostituzione senza
+       `renotify` arriva muta: niente suono, niente banner. Il mittente
+       nuovo manda un `tag` unico per notifica; per chi non lo manda,
+       l'etichetta si inventa qui, unica. */
+    tag: d.tag || `${d.modulo || "atlas"}-${Date.now()}`,
+    renotify: true,
     data: { rotta: d.rotta || (d.modulo ? `#/${d.modulo}` : "#/oggi") },
     actions: d.azioni || [],
   }));

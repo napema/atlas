@@ -43,6 +43,7 @@ jobs:
                    --exclude '.github' \
                    --exclude 'docs' \
                    --exclude 'legacy' \
+                   --exclude 'notifiche' \
                    --exclude 'app' \
                    --exclude 'node_modules' \
                    --exclude '_sito' \

@@ -84,7 +84,35 @@
     }
     n = { perm, attive, esito: es, altri };
   }
-  $effect(() => { if (pagina === "notifiche") leggiNotifiche(); });
+  $effect(() => { if (pagina === "notifiche") { leggiNotifiche(); leggiServer(); } });
+
+  /* IL SEGNO DI VITA DEL SERVER. Ogni volta che le notifiche si sono
+     zittite il guasto è durato giorni, perché quando il mittente smette non
+     lo dice nessuno. Qui lo si vede: quando ha girato l'ultima volta, se è
+     andata bene, cosa ha mandato. */
+  let server = $state<notifiche.SegnoDiVita | null>(null);
+  async function leggiServer() { server = null; server = await notifiche.segnoDiVita(); }
+
+  /** «12 min fa», «ieri alle 21:00». */
+  function fa(t: string | number) {
+    const d = new Date(t);
+    const min = Math.round((Date.now() - d.getTime()) / 60000);
+    if (min < 1) return "adesso";
+    if (min < 60) return `${min} min fa`;
+    const oggi = new Date().toDateString() === d.toDateString();
+    const ora = d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+    return oggi ? `oggi alle ${ora}` : `${d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric" })} alle ${ora}`;
+  }
+  /* Un giro ogni cinque minuti: se l'ultimo è più vecchio di venti, il
+     mittente è fermo — l'orologio esterno non lo sveglia più. */
+  const fermo = $derived(server?.giro ? Date.now() - new Date(server.giro.quando).getTime() > 20 * 60000 : false);
+  const NOMI_MODULO: Record<string, string> = { abitudini: "Abitudini", mobilita: "Mobilità", finanze: "Finanze" };
+
+  /* I RIEPILOGHI delle abitudini: una lista di orari. */
+  const riepiloghi = $derived.by(() => { dati.versione; return ((notifiche.stato().orari.abitudini?.riepiloghi || []) as string[]).slice().sort(); });
+  function scriviRiepiloghi(lista: string[]) {
+    notifiche.scriviOrari("abitudini", { riepiloghi: [...new Set(lista.filter(Boolean))].sort() });
+  }
 
   async function attiva() {
     const r3 = await notifiche.iscrivi();
@@ -205,6 +233,28 @@
         </Riga>
       {/each}
     </Sezione>
+    <!-- I RIEPILOGHI: a quest'ora, quello che è rimasto indietro fino a lì,
+         per abitudine e con i nomi — «Integratori: Vitamina D, Creatina».
+         Gli orari delle singole abitudini stanno sulle abitudini: qui solo
+         i momenti in cui fare il punto. -->
+    {#if orari.abitudini?.attiva}
+      <Sezione titolo="Riepiloghi · Abitudini"
+        piede="A ogni orario arriva quello che è rimasto indietro fino a lì. Se è tutto fatto non arriva niente. Gli orari delle singole abitudini e delle loro parti si mettono sull'abitudine.">
+        {#each riepiloghi as t, i (t)}
+          <Riga titolo="Riepilogo">
+            {#snippet fine()}
+              <span class="riepilogo">
+                <input class="ora" type="time" value={t} onchange={(e) => { const l = [...riepiloghi]; l[i] = e.currentTarget.value; scriviRiepiloghi(l); avviso("Orario salvato."); }} />
+                <button type="button" class="togli" aria-label="Togli il riepilogo delle {t}" onclick={() => scriviRiepiloghi(riepiloghi.filter((x) => x !== t))}>Togli</button>
+              </span>
+            {/snippet}
+          </Riga>
+        {/each}
+        {#if riepiloghi.length < 4}
+          <Riga titolo="Aggiungi un riepilogo" accento onclick={() => scriviRiepiloghi([...riepiloghi, riepiloghi.length ? "21:30" : "14:00"])} />
+        {/if}
+      </Sezione>
+    {/if}
     {#if orari.mobilita?.attiva}
       <Sezione titolo="Orari · Mobilità">
         <Riga titolo="Sessione">
@@ -236,6 +286,31 @@
     </Sezione>
   {/if}
 
+  <!-- Il server si guarda SEMPRE, anche da un dispositivo non iscritto:
+       serve proprio quando qualcosa non va. -->
+  <!-- IL SERVER, visto da qui. -->
+  <Sezione titolo="Il server"
+    piede="Il mittente gira ogni cinque minuti e manda ogni notifica al minuto esatto. Se l'ultimo giro è vecchio, l'orologio che lo sveglia si è fermato: le notifiche non partono, anche se qui sopra è tutto acceso.">
+    {#if !server}
+      <Riga titolo="Ultimo giro" valore="controllo…" />
+    {:else if !server.giro}
+      <Riga titolo="Ultimo giro" valore="mai, o non raggiungibile" />
+    {:else}
+      <Riga titolo="Ultimo giro" sottotitolo={server.invii === null ? "gira, ma non è ancora acceso: mancano i secret" : fermo ? "fermo: l'orologio esterno non lo sveglia" : server.giro.inCorso ? "in corso" : server.giro.esito === "success" ? "andato a buon fine" : `esito: ${server.giro.esito}`}>
+        {#snippet fine()}<span class="cifre" class:male={fermo || (server?.giro?.esito && server.giro.esito !== "success")}>{fa(server!.giro!.quando)}</span>{/snippet}
+      </Riga>
+    {/if}
+    {#if server?.invii?.length}
+      {#each server.invii as x (x.chiave + x.ts)}
+        <Riga titolo={NOMI_MODULO[x.modulo] ?? x.modulo} sottotitolo={x.ok === x.di ? `arrivata a ${x.di === 1 ? "1 dispositivo" : `${x.di} dispositivi`}` : `arrivata a ${x.ok} su ${x.di}`} valore={fa(x.ts)} />
+      {/each}
+    {:else if server && server.invii}
+      <Riga><span class="secondario">Nessuna notifica mandata dal mittente nuovo.</span></Riga>
+    {/if}
+    <Riga titolo="Ricontrolla" accento onclick={leggiServer} />
+  </Sezione>
+
+
 {:else if pagina === "dati"}
   <Sezione titolo="Spazio" piede="Su iOS un sito non aperto per settimane può perdere i dati locali. La persistenza lo rende molto meno probabile; il repo di sync resta comunque la copia che conta.">
     <Riga titolo="Usato" valore={occupato ? `${mb(occupato.usati)} su ${mb(occupato.totali)}` : "—"} />
@@ -266,6 +341,9 @@
 {/if}
 
 <style>
+  .riepilogo { display: inline-flex; align-items: center; gap: var(--space-3); }
+  .togli { color: var(--color-red); font-size: var(--text-subheadline); }
+  .togli:active { opacity: 0.5; }
   .blocco { padding: var(--space-4); }
   .token { display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-4); }
   .token input { flex: 1; min-width: 0; height: var(--list-row-height); font-size: 17px; background: none; outline: none; font-family: var(--font-mono); }
@@ -274,5 +352,6 @@
   .ora { font-size: 17px; background: var(--fill-tertiary); border-radius: var(--radius-sm); padding: 4px 8px; color: var(--accento); }
   .ok { color: var(--color-green); }
   .male { color: var(--color-red); }
+  .secondario { color: var(--label-secondary); }
   .attenzione { padding: var(--space-3) var(--space-4); border-radius: var(--radius-xl); background: color-mix(in srgb, var(--color-orange) 14%, transparent); }
 </style>

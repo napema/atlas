@@ -20,7 +20,7 @@
 // evitarlo.
 
 import { apriCasella } from "./storage";
-import { apriCanale, fondiRecord, potaLapidi } from "./sync";
+import { apriCanale, fondiRecord, potaLapidi, leggiFile, configurato } from "./sync";
 import { CFG } from "./config";
 
 type Iscrizione = { id: string; endpoint?: string; p256dh?: string; auth?: string; ua?: string; up: number; del?: boolean };
@@ -40,9 +40,12 @@ export const PREDEFINITO: { subs: Iscrizione[]; orari: Orari; up: number } = {
       attivaRecupero: true,
     },
     abitudini: {
-      // Le abitudini hanno il promemoria per abitudine (`remind`): qui c'è
-      // solo l'interruttore generale.
+      // Le abitudini hanno il promemoria per abitudine (`remind`) e per
+      // parte (`ora`): qui ci sono l'interruttore generale e i riepiloghi.
       attiva: false,
+      // A queste ore, quello che è rimasto indietro fino a lì. Solo se c'è
+      // qualcosa: un riepilogo che dice «tutto fatto» insegna a ignorarli.
+      riepiloghi: [] as string[],
     },
     finanze: {
       attiva: false,
@@ -196,6 +199,27 @@ export async function riallinea() {
   } catch { return { stato: "errore" }; }
   if (!sub) return { stato: "non-iscritto" };
 
+  /* LA CHIAVE GIUSTA. Un'iscrizione nasce legata a UNA chiave VAPID: se il
+     mittente firma con un'altra, il servizio push rifiuta il messaggio — e
+     il telefono continua a credersi iscritto. È la trappola del 19
+     settembre in un'altra forma. Se la chiave è cambiata (una coppia nuova
+     per il mittente nuovo), l'iscrizione si rifà da sola: il permesso c'è
+     già, non serve un tocco. Se il sistema non lo concede senza un gesto,
+     la schermata delle notifiche torna a mostrare «Attiva», e basta quello. */
+  const legata = sub.options?.applicationServerKey;
+  if (legata && CFG.vapidPublic && !stessiByte(new Uint8Array(legata), chiaveApplicativa(CFG.vapidPublic))) {
+    try {
+      await sub.unsubscribe();
+      const reg = await navigator.serviceWorker.ready;
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: chiaveApplicativa(CFG.vapidPublic) as BufferSource,
+      });
+    } catch {
+      return { stato: "da-reiscrivere" };
+    }
+  }
+
   const j = sub.toJSON();
   const id = impronaDi(j.endpoint!);
   const noto = stato().subs.find((x) => x.id === id && !x.del);
@@ -239,6 +263,48 @@ export async function riallinea() {
     }
   });
   return { stato: "riparato", id };
+}
+
+const stessiByte = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((x, i) => x === b[i]);
+
+/* =========================================================================
+   IL SEGNO DI VITA DEL MITTENTE.
+
+   Ogni volta che le notifiche si sono zittite — 11, 12, 19 settembre, e di
+   nuovo in ottobre — il guasto è durato giorni per la stessa ragione:
+   quando il mittente smette, non lo dice nessuno. Nessun errore sul
+   telefono, nessuna schermata rossa: solo notifiche che non arrivano mentre
+   pensi di aver fatto tutto. Qui l'app lo chiede.
+
+   Due fonti, e servono tutte e due:
+   - l'ULTIMO GIRO, dalle corse del workflow. Il repo dell'app è pubblico, e
+     la lista delle corse si legge senza token: dice se il mittente gira e
+     se l'ultima volta è andata a buon fine;
+   - gli ULTIMI INVII, da `stato-mittente.json` nel repo dei dati, che
+     scrive il mittente: dice cosa è partito davvero, e a quanti telefoni.
+   ========================================================================= */
+export interface SegnoDiVita {
+  giro: { quando: string; esito: string | null; inCorso: boolean } | null;
+  /** `null`: il file di stato non c'è, cioè il mittente non è mai stato
+   *  acceso. `undefined`: non lo si può sapere — su questo dispositivo manca
+   *  il token per leggere il repo dei dati. Sono due risposte diverse. */
+  invii?: { ts: number; chiave: string; modulo: string; ok: number; di: number }[] | null;
+}
+
+export async function segnoDiVita(): Promise<SegnoDiVita> {
+  let giro: SegnoDiVita["giro"] = null;
+  try {
+    const r = await fetch("https://api.github.com/repos/napema/atlas/actions/workflows/notifiche.yml/runs?per_page=1", {
+      headers: { Accept: "application/vnd.github+json" }, cache: "no-store",
+    });
+    if (r.ok) {
+      const c = (await r.json()).workflow_runs?.[0];
+      if (c) giro = { quando: c.run_started_at || c.created_at, esito: c.conclusion, inCorso: c.status !== "completed" };
+    }
+  } catch { /* resta null: la schermata dice «non so» */ }
+  if (!configurato()) return { giro, invii: undefined };
+  const s = await leggiFile("stato-mittente.json");
+  return { giro, invii: s ? (s.ultimiInvii || []).slice(-8).reverse() : null };
 }
 
 /** L'id dell'iscrizione di questo dispositivo, o null. Serve alla diagnosi. */
