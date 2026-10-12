@@ -245,3 +245,10 @@ try {
   console.log(`::error::${e?.message || "errore"}`);
   Deno.exit(1);
 }
+/* USCITA ESPLICITA. La logica dei moduli si porta dietro `core/contesto.js`,
+   che apre un `setInterval` per il cambio di giorno: nel browser serve, qui
+   tiene vivo il processo. Il 12 ottobre il primo giro senza secret ha
+   stampato «non configurato» e poi è rimasto appeso nove minuti, finché
+   GitHub non l'ha annullato — e con `concurrency` in coda, un giro appeso
+   ritarda tutti quelli dopo. */
+Deno.exit(0);

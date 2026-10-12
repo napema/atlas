@@ -29,6 +29,26 @@ Chi apre una chat comincia da `git log --oneline -20` e da questo file.
 
 ## Stato
 
+### ✅ 12 ottobre — la notifica di Project 50 suonava ancora *(chat ATLAS)*
+
+«Morning routine · Letto fatto · 100 push-up · Meditazione 10'» arrivava ogni
+mattina alle 7 anche a sfida sospesa. Non era il mittente nuovo: quello non
+gira ancora (mancano i secret `DATI_TOKEN`, `VAPID_PUBLIC`, `VAPID_PRIVATE`
+in napema/atlas). Era il **vecchio `promemoria.yml` in atlas-dati**, ancora
+svegliato da cron-job.org ogni dieci minuti, con la sua copia delle regole
+che non sapeva di `SFIDA_SOSPESA`. Corretto lì (`notifiche.js`, commit
+2165200): salta le voci `blocco: "p50"`. Provato a secco alle 7:30, 8:30,
+13:30 e 22:45: sparisce solo quella, il resto identico.
+
+**Non è stato disattivato**, di proposito: finché i secret del mittente nuovo
+non ci sono è l'unico che manda qualcosa, e lo stesso workflow specchia gli
+allenamenti sul calendario. Da spegnere (passo 3 qui sotto) solo dopo aver
+acceso il nuovo.
+
+Nel mittente nuovo: `invia.ts` ora esce da sé. Il `setInterval` di
+`core/contesto.js` teneva vivo il processo e il primo giro, senza secret, è
+rimasto appeso nove minuti fino all'annullamento.
+
 ### ✅ 11 ottobre — La home è una griglia vera *(chat ATLAS)*
 
 - **Righe in comune, un fondo solo.** PC: giornata alta a sinistra,
