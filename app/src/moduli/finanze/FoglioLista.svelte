@@ -12,7 +12,12 @@
   sopra soglia senza finire in «Fuori piano»: la lista non è un promemoria,
   è il piano.
 
-  Niente verdetti. Tre righe, una per serbatoio, ognuna un «da X a Y».
+  Nella lista, niente verdetti: tre righe, una per serbatoio, ognuna un
+  «da X a Y». Il verdetto sta UN TOCCO PIÙ IN LÀ: toccando una voce si apre
+  il suo peso (PesaVoce) — da dove escono i soldi, quali travasi, se ha
+  senso adesso o dopo lo stipendio, e i conti. Nello stesso foglio e non in
+  uno nuovo: un foglio sopra un foglio su un telefono non si legge, e
+  tornare alla lista deve essere un tocco, non una chiusura.
 -->
 <script lang="ts">
   import Foglio from "$lib/ui/Foglio.svelte";
@@ -26,6 +31,9 @@
     vociLista, statoVoce, oreAttesa, salvaVoce, cambiaStatoVoce, eliminaVoce, ATTESA_ORE,
   } from "$condivisi/finanze/dati.js";
   import { effettoVoce } from "$condivisi/finanze/piano.js";
+  import { pesaVoce } from "$condivisi/finanze/pesa.js";
+  import Icona from "$lib/ui/Icona.svelte";
+  import PesaVoce from "./PesaVoce.svelte";
   import { pulisciImporto } from "./comune";
   import { apri } from "./fogli.svelte";
 
@@ -34,13 +42,15 @@
   let nome = $state("");
   let testo = $state("");
   let aggiungo = $state(false);
+  /** La voce aperta nel dettaglio, o null per la lista. */
+  let scelta = $state<string | null>(null);
 
   let preparato = false;
   $effect(() => {
     if (!aperto) { preparato = false; return; }
     if (preparato) return;
     preparato = true;
-    nome = ""; testo = ""; aggiungo = false;
+    nome = ""; testo = ""; aggiungo = false; scelta = null;
   });
 
   /* `adesso` è uno stato e non `Date.now()` dentro il derivato: lo stato
@@ -60,6 +70,9 @@
   });
 
   const attive = $derived(d.voci.filter((v: any) => v.vista === "attesa" || v.vista === "sbloccata"));
+  const aperta = $derived(scelta ? d.voci.find((v: any) => v.id === scelta) ?? null : null);
+  const peso = $derived(aperta ? pesaVoce(aperta.imp || 0, d.iso, { id: aperta.id }) : null);
+
   const chiuse = $derived(d.voci.filter((v: any) => v.vista === "comprata" || v.vista === "scartata"));
 
   const ETICHETTA: Record<string, string> = {
@@ -90,7 +103,15 @@
   }
 </script>
 
-<Foglio bind:aperto titolo="Lista d'attesa">
+<Foglio bind:aperto titolo={aperta ? aperta.nome : "Lista d'attesa"}>
+  {#if aperta && peso}
+    <button type="button" class="torna" onclick={() => (scelta = null)}>
+      <Icona nome="indietro" misura={16} tratto={2.4} /> Lista
+    </button>
+    <PesaVoce voce={aperta} p={peso}
+      onscarta={() => { cambiaStatoVoce(aperta.id, "scartata"); scelta = null; avviso("Scartata."); }}
+      oncompra={() => compra(aperta)} />
+  {:else}
   {#if !attive.length && !aggiungo}
     <Vuoto icona="orologio" titolo="Lista vuota"
       testo="Una cosa sopra soglia si scrive qui, aspetta ventiquattro ore e poi si compra. È l'unico modo di comprarla senza che finisca in «Fuori piano»." />
@@ -100,6 +121,13 @@
     {@const e = effettoVoce(v.imp || 0, d.iso)}
     <Sezione>
       <div class="voce">
+        <!-- Tutta la parte alta è il bersaglio: nome, prezzo e i tre «da X a
+             Y» aprono il peso della voce. I bottoni restano fuori. -->
+        <!-- Un div e non un <button>: dentro ci sono una lista e un paragrafo,
+             che in un bottone non sono HTML valido. -->
+        <div class="apri" role="button" tabindex="0" aria-label="Pesa {v.nome}"
+          onclick={() => (scelta = v.id)}
+          onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); scelta = v.id; } }}>
         <div class="alto">
           <span class="nome">{v.nome}</span>
           <span class="cifre prezzo">{euro(v.imp)}</span>
@@ -135,6 +163,8 @@
             </li>
           {/if}
         </ul>
+        <span class="pesa text-footnote">Da dove escono, e se ha senso <Icona nome="chevron-r" misura={12} tratto={2.4} /></span>
+        </div>
 
         <div class="azioni">
           <Pulsante variante="testo" misura="piccola" onclick={() => { cambiaStatoVoce(v.id, "scartata"); avviso("Scartata."); }}>Scarta</Pulsante>
@@ -177,9 +207,19 @@
       {/each}
     </Sezione>
   {/if}
+  {/if}
 </Foglio>
 
 <style>
+  .torna {
+    display: inline-flex; align-items: center; gap: 2px; align-self: flex-start;
+    margin: calc(-1 * var(--space-2)) 0 0 -4px; padding: 4px 6px;
+    color: var(--accento); font-size: var(--text-body);
+  }
+  .torna:active { opacity: 0.5; }
+  .apri { display: flex; flex-direction: column; gap: 6px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .apri:active { opacity: 0.6; }
+  .pesa { display: inline-flex; align-items: center; gap: 2px; align-self: flex-start; margin-top: 4px; color: var(--accento); font-weight: var(--weight-semibold); }
   .voce { display: flex; flex-direction: column; gap: 6px; padding: var(--space-4); }
   .alto { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 2px var(--space-2); }
   .nome { grid-column: 1 / -1; }

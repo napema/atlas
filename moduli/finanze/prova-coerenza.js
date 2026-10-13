@@ -323,6 +323,36 @@ ok("dice la cifra che manca", nb.manca > 0, euro(nb.manca));
 ok("e non la prende da ING da solo", !nb.mosse.some((m) => m.da === "ing") && nb.dopo.ing === nb.prima.ing);
 casella.scrivi(archivioBase);
 
+/* --- la lista d'attesa: il dettaglio dice quello che dice la carta ----- */
+{
+  const { pesaVoce } = await import("./pesa.js");
+  const { effettoVoce, quotaDi: qd } = await import("./piano.js");
+  const { pianoTravasi: pt } = await import("./travasi.js");
+  for (const prezzo of [1500, 7000, 9548]) {
+    const p = pesaVoce(prezzo, OGGI);
+    const e = effettoVoce(prezzo, OGGI);
+    const s = p.per.settimana;
+    eq(`${euro(prezzo)}: la razione di partenza è quella della carta Oggi`, euro(s.da), euro(qd(OGGI).quota));
+    eq(`${euro(prezzo)}: la razione dopo è quella della lista`, euro(s.a), euro(e.settimana.a));
+    eq(`${euro(prezzo)}: il minimo di ING è quello della lista`, euro(p.per.ing.a), euro(e.ing.a));
+    eq(`${euro(prezzo)}: i conti in colonna tornano`,
+      euro(s.conti.inizio - s.conti.impegni - prezzo), euro(s.conti.dopo));
+    ok(`${euro(prezzo)}: il consiglio non pesca mai da ING se la settimana regge`,
+      !(s.verdetto === "regge" && !s.manca && p.consiglio.fonte !== "settimana"), p.consiglio.tipo);
+  }
+  // Senza acquisto, il piano dei travasi è quello vero.
+  const zero = pt(OGGI, { spesa: 0 }), vero = pt(OGGI);
+  eq("un acquisto da 0 € non cambia i travasi", JSON.stringify(zero.mosse), JSON.stringify(vero.mosse));
+  // Con un acquisto, servono più soldi sul Principale, mai meno.
+  const con = pt(OGGI, { spesa: 5000 });
+  const verso = (x) => x.mosse.filter((m) => m.a === "principale").reduce((t, m) => t + m.imp, 0);
+  ok("un acquisto da 50 € chiede almeno lo stesso travaso", verso(con) >= verso(vero),
+    `${euro(verso(con))} contro ${euro(verso(vero))}`);
+  const caro = pesaVoce(9548, OGGI);
+  ok("95,48 € con 139 € per 13 giorni: non si compra dalla settimana",
+    caro.consiglio.fonte !== "settimana", `${caro.consiglio.tipo} · settimana ${caro.per.settimana.verdetto}`);
+}
+
 console.log(rotti ? `\n${rotti} controlli non passano.` : "\nNessuna contraddizione.");
 
 /* `contratto.js` apre il canale di sync e lascia dei timer: senza questo

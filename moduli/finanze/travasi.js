@@ -92,7 +92,10 @@ export function finestra(iso = oggiISO()) {
  *   non-basta   neanche con tutta la Cassa: `manca` è la cifra
  *   stipendio   domani arriva lo stipendio, non c'è niente da pianificare
  */
-export function pianoTravasi(iso = oggiISO()) {
+export function pianoTravasi(iso = oggiISO(), { spesa = 0 } = {}) {
+  /* `spesa`: un acquisto IPOTETICO di oggi, dal Principale. Serve alla
+     lista d'attesa, che deve dire «se lo compri, questi sono i travasi»
+     senza scrivere niente. Zero è il piano vero. */
   const f = finestra(iso);
   const tasche = pocketSpendibili();
   const parcheggi = pocketParcheggio();
@@ -132,12 +135,15 @@ export function pianoTravasi(iso = oggiISO()) {
 
   /* --- 2. IL PRINCIPALE FINO A DOMENICA ------------------------------
      La razione è quella di domani — la stessa del riquadro «Domani». */
-  const razione = dom.quota;
+  const razione = spesa > 0
+    ? Math.floor(Math.max(0, dom.spendibile - spesa) / Math.max(1, dom.giorni))
+    : dom.quota;
+  const inTasca = prima.principale - spesa;
   const serve = razione * f.giorni + impP;
   const restaInCassa = Math.max(0, cassaLibera - versoFisse);
   let versoP = 0;
-  if (serve - prima.principale >= SOTTO_NON_SI_SPOSTA && restaInCassa > 0) {
-    versoP = Math.min(tondo5(serve - prima.principale), restaInCassa);
+  if (serve - inTasca >= SOTTO_NON_SI_SPOSTA && restaInCassa > 0) {
+    versoP = Math.min(tondo5(serve - inTasca), restaInCassa);
     mosse.push({ da: "cassa", a: "principale", imp: versoP, perche: "la settimana" });
   }
 
@@ -147,12 +153,12 @@ export function pianoTravasi(iso = oggiISO()) {
      che non arriva a domenica. */
   const fisseScoperte = Math.max(0, fisseManca - versoFisse);
   // Il buco sotto i 3 € non è un buco: è la soglia sotto cui non si sposta.
-  const buco = serve - prima.principale - versoP;
+  const buco = serve - inTasca - versoP;
   const principaleCorto = buco >= SOTTO_NON_SI_SPOSTA ? buco : 0;
   const manca = fisseScoperte + principaleCorto;
 
   const dopo = {
-    principale: prima.principale + versoP,
+    principale: inTasca + versoP,
     cassa: prima.cassa - versoFisse - versoP,
     fisse: prima.fisse + versoFisse,
     ing: prima.ing,
@@ -168,7 +174,7 @@ export function pianoTravasi(iso = oggiISO()) {
        TUTTO quello che c'è fuori da ING. È l'altra faccia di «mancano X»:
        si può prendere da ING, oppure stringere fino a qui. */
     razioneMinima: f.giorni > 0
-      ? Math.max(0, Math.floor((prima.principale + restaInCassa - impP) / f.giorni))
+      ? Math.max(0, Math.floor((inTasca + restaInCassa - impP) / f.giorni))
       : 0,
   };
 }

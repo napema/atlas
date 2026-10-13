@@ -29,6 +29,20 @@ Chi apre una chat comincia da `git log --oneline -20` e da questo file.
 
 ## Stato
 
+### ✅ 13 ottobre — La lista d'attesa pesa ogni voce *(chat ATLAS, su richiesta diretta)*
+
+- Toccando una voce si apre il suo peso, nello stesso foglio (`PesaVoce.svelte`):
+  verdetto, quanto vale (ore di lavoro, giorni di razione, giorni di Naso),
+  le quattro fonti (settimana, stipendio, ING, Fondo) con i travasi da fare,
+  i conti in colonna, e il contesto (resto della lista, fuori piano del ciclo,
+  voci lasciate perdere).
+- I numeri li fa `moduli/finanze/pesa.js`, funzioni pure. `pianoTravasi()`
+  accetta `{ spesa }`: un acquisto ipotetico, per dire i travasi senza scrivere.
+- Il consiglio: adesso se la settimana regge; stringi solo se costa al più un
+  quarto della razione; altrimenti aspetta lo stipendio; ING solo se il suo
+  minimo resta sopra il pavimento. `prova-coerenza.js` controlla che il
+  dettaglio dica gli stessi numeri della carta.
+
 ### ✅ 12 ottobre — la notifica di Project 50 suonava ancora *(chat ATLAS)*
 
 «Morning routine · Letto fatto · 100 push-up · Meditazione 10'» arrivava ogni
