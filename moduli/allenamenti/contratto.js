@@ -8,7 +8,7 @@
 import { avviso, plurale } from "../../core/ui.js";
 import { apriCanale, fondiRecord, potaLapidi, svegliaWorkflow } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
-import { agenda, casella, stato, settimanaDi, pianoDi, slotDi, fatto, giornoSlot, resetBlocco, oraDi, durataDi } from "./dati.js";
+import { agenda, casella, stato, settimanaDi, pianoDi, slotDi, fatto, giornoSlot, resetBlocco, spostaTest, oraDi, durataDi } from "./dati.js";
 import {
   progressoSettimana, restaSettimana, giorniRimasti, passoSettimana, kmFatti, km,
 } from "./calcolo.js";
@@ -184,7 +184,11 @@ export function avviaSync() {
      vorrebbe dire non resettare mai. */
   const resetQuandoPronto = () => {
     if (!canale.letturaFatta && canale.stato !== "off") return;
-    if (!resetBlocco()) return;
+    // Tutte e due, sempre: `||` salterebbe lo spostamento del test il
+    // giorno in cui il reset ha qualcosa da fare.
+    const resettato = resetBlocco();
+    const spostato = spostaTest();
+    if (!resettato && !spostato) return;
     pubblicaSullaLavagna();
     ridisegnaVista();
   };

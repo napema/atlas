@@ -29,6 +29,22 @@ Chi apre una chat comincia da `git log --oneline -20` e da questo file.
 
 ## Stato
 
+### ✅ 15 ottobre — FASE 5K: test al 5 novembre, cinque settimane *(chat ATLAS, su richiesta diretta)*
+
+- `moduli/allenamenti/dati.js`: settimane 2–5 dal CSV, la 1 intatta.
+  `SETTIMANE = 5`, `DATA_TEST = 2026-11-05`; la settimana 5 finisce il giorno
+  del test, gli slot di palestra lì sono `riposo` (fuori dai contatori, «—»).
+- Le spunte restano: le chiavi degli slot non cambiano e `BLOCCO` non è
+  stato toccato. La data del test nell'archivio la sposta `spostaTest()`,
+  dopo la prima lettura, solo se era quella di fabbrica (31/10).
+- Titoli dal testo anche quando comincia con un giorno («Lun 02/11»), e sotto
+  resta solo il resto. L'etichetta del nome slot non usa più la classe
+  `slot`, che è quella della riga (altezza 76 px: la pastiglia si allungava).
+- `passi.js`: legge «min», «s», «x», e spezza anche sul «·». Prima la
+  notazione della chat dava recuperi di 2 secondi e perdeva risc/defat.
+- Da decidere: l'intervallo SALTATO della settimana 2 conta ancora fra gli
+  slot da fare (come da CSV). Se va tolto dal conteggio, si marca `riposo`.
+
 ### ✅ 13 ottobre — La lista d'attesa pesa ogni voce *(chat ATLAS, su richiesta diretta)*
 
 - Toccando una voce si apre il suo peso, nello stesso foglio (`PesaVoce.svelte`):

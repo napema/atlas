@@ -52,7 +52,7 @@ const distanza = (metri, extra = {}) => ({ tipo: "distanza", metri, intensita: "
  * Un segmento di allenamento → uno o più passi.
  * Restituisce `null` se non riconosce niente, e chi chiama decide.
  */
-function leggiSegmento(pezzo) {
+function leggiSegmento(pezzo, { test = false } = {}) {
   const t = pezzo.trim();
   if (!t) return null;
 
@@ -68,14 +68,14 @@ function leggiSegmento(pezzo) {
     return [{ tipo: "ripeti", volte, passi: dentro }];
   }
 
-  // 2×8' Z3 (5:40/km) rec 3'   ·   6×30" allunghi
-  m = /(\d+)\s*[x×]\s*(\d+\s*['"])\s*(?:Z\d)?\s*(?:\(([\d:]+)\s*\/?\s*km\))?(?:.*?rec\s*([\d'"]+))?/i.exec(t);
+  // 2×8' Z3 (5:40/km) rec 3'   ·   2×12' @ 4:52/km rec 2'   ·   6×30" allunghi
+  m = /(\d+)\s*[x×]\s*(\d+\s*['"])\s*(?:Z\d)?\s*(?:\(([\d:]+)\s*\/?\s*km\)|@\s*([\d:]+)\s*\/?\s*km)?(?:.*?rec\s*([\d'"]+))?/i.exec(t);
   if (m) {
     const volte = Number(m[1]);
     const sec = durataSec(m[2]);
-    const ritmo = m[3] ? passoSec(m[3]) : null;
+    const ritmo = m[3] || m[4] ? passoSec(m[3] || m[4]) : null;
     // «allunghi · cammino 90"»: il recupero non si chiama sempre «rec».
-    const recTesto = m[4] || (/cammin|recup/i.test(t) ? (/(\d+\s*['"])/g.exec(t.split(/cammin|recup/i)[1] || "") || [])[1] : null);
+    const recTesto = m[5] || (/cammin|recup/i.test(t) ? (/(\d+\s*['"])/g.exec(t.split(/cammin|recup/i)[1] || "") || [])[1] : null);
     const rec = recTesto ? durataSec(recTesto) : null;
     if (!sec) return null;
     const veloce = /allungh/i.test(t);
@@ -88,10 +88,12 @@ function leggiSegmento(pezzo) {
   }
 
   // 4 allunghi  (senza durata: si assume 30" veloce + 60" piano, ed è detto)
+  // 6 allunghi da 20"  (la durata detta vince; il piano dopo resta assunto)
   m = /^(\d+)\s+allungh/i.exec(t);
   if (m) {
+    const detta = /da\s*(\d+)\s*"/i.exec(t);
     return [{ tipo: "ripeti", volte: Number(m[1]), assunto: true, passi: [
-      tempo(30, { intensita: "interval", nome: "Allungo" }),
+      tempo(detta ? Number(detta[1]) : 30, { intensita: "interval", nome: "Allungo" }),
       tempo(60, { intensita: "recovery", nome: "Piano" }),
     ] }];
   }
@@ -101,7 +103,7 @@ function leggiSegmento(pezzo) {
   if (m) {
     const metri = Math.round(Number(m[1].replace(",", ".")) * 1000);
     const ritmo = m[2] ? passoSec(m[2]) : (/sub-?20/i.test(t) ? 240 : null);
-    return [distanza(metri, { passoSec: ritmo, nome: /test/i.test(t) ? "Test 5 km" : null })];
+    return [distanza(metri, { passoSec: ritmo, nome: /test/i.test(t) || test ? "Test 5 km" : null })];
   }
 
   // 30' Z2 @ 7:00/km   ·   15' risc   ·   20' continui Z3 (5:30/km)   ·   10' defat
@@ -119,6 +121,31 @@ function leggiSegmento(pezzo) {
   return null;
 }
 
+/* ------------------------------------------------------- la notazione -- */
+/*
+   DUE MODI DI SCRIVERE LA STESSA SEDUTA. Il piano scritto a mano usa gli
+   apici — «15' risc», «rec 2'30"» — e quello che arriva dalla chat di
+   allenamento usa le parole: «15 min risc», «rec 2 min 30s», «5x1000 m».
+   Il lettore conosceva solo il primo, e il secondo non lo rifiutava: lo
+   SBAGLIAVA. «rec 2 min» diventava un recupero di 2 SECONDI — un numero
+   nudo e' in secondi — cioe' un orologio che fa ripartire la ripetuta
+   prima che tu abbia ripreso fiato. Si riscrive tutto nella prima forma,
+   prima di leggere.
+*/
+export function normalizza(testo) {
+  return String(testo || "")
+    .replace(/(\d+)\s*min\s*(\d+)\s*s\b/gi, `$1'$2"`)     // 2 min 30s
+    .replace(/(\d+)\s*min\b/gi, "$1'")                      // 15 min · 15-20 min
+    .replace(/(\d+)\s*s\b/g, '$1"');                         // 90s · da 20s
+}
+
+/* LE ETICHETTE NON SONO PASSI. «Lun 02/11», «RITMO GARA», «TEST 5000 m»
+   (il 5 km vero e' scritto dopo, col suo ritmo), «solo se la lunga della
+   sett 2 è stata 7.5 km»: servono a chi legge. Da leggere come passi
+   sarebbero un cronometro aperto, o — peggio — una corsa da 7,5 km in fondo
+   a una lunga da 8,2. */
+const ETICHETTA = /^((Lun|Mar|Mer|Gio|Ven|Sab|Dom)\w*\.?\s+\d{1,2}\/\d{1,2}|RITMO GARA|TEST\b(?!.*@)|solo se\b|SALTATA\b|FATTO\b)/i;
+
 /**
  * Il testo intero di uno slot di corsa → i passi.
  *
@@ -128,15 +155,25 @@ export function leggiAllenamento(testo) {
   const pulito = String(testo || "").trim();
   if (!pulito) return { passi: [], completo: false, assunzioni: false };
 
-  // I segmenti si separano con «+». Il punto mediano invece appartiene al
-  // segmento — «6×30" allunghi · cammino 90"» è una cosa sola, e spezzarla lì
-  // perderebbe il recupero.
-  const pezzi = pulito.split(/\s+\+\s+/);
+  /* I segmenti si separano con «+» E con il punto mediano. Prima solo col
+     «+», e «12' risc · 3×7' @ 4:55/km rec 2' · 8' defat» era UN segmento: il
+     lettore prendeva la prima cosa che riconosceva e perdeva il resto —
+     riscaldamento e defaticamento spariti dall'orologio. L'eccezione e' il
+     recupero detto a parole: «6×30" allunghi · cammino 90"» e' una cosa
+     sola, e il pezzo che comincia con «cammino» torna attaccato a quello
+     prima. */
+  const test = /\bTEST\b/.test(pulito);
+  const pezzi = [];
+  for (const p of normalizza(pulito).split(/\s+\+\s+|\s*·\s*/)) {
+    if (/^(cammin|recup|rec\b)/i.test(p) && pezzi.length) pezzi[pezzi.length - 1] += ` · ${p}`;
+    else if (p.trim()) pezzi.push(p.trim());
+  }
   const passi = [];
   let completo = true, assunzioni = false;
 
   for (const p of pezzi) {
-    const letti = leggiSegmento(p);
+    if (ETICHETTA.test(p)) continue;
+    const letti = leggiSegmento(p, { test });
     if (!letti) { completo = false; continue; }
     for (const x of letti) { if (x.assunto) assunzioni = true; passi.push(x); }
   }

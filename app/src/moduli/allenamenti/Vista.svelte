@@ -78,12 +78,18 @@
              giorno prima. Quando il testo comincia dicendo cos'e', e' lui
              il titolo — il nome dello slot resta sotto, piccolo, perche'
              serve solo a sapere quale casella stai spuntando. */
-          const capo = String(s.testo || "").split(/\s*·\s*/)[0] || "";
-          const titoloVero = /^(TEST\b|\d+ giorni? prima|Giorno prima|Inizio settimana)/i.test(capo) ? capo : null;
+          /* Dal 5 novembre anche un GIORNO apre il testo: nella settimana del
+             test ogni corsa ha il suo («Lun 02/11 · …»), ed e' quello che
+             serve leggere per primo. Il titolo esce dal testo, quindi sotto
+             resta solo il resto: ripeterlo direbbe la stessa cosa due volte. */
+          const pezzi = String(s.testo || "").split(/\s*·\s*/);
+          const capo = pezzi[0] || "";
+          const titoloVero = !s.riposo && /^(TEST\b|\d+ giorni? prima|Giorno prima|Inizio settimana|(Lun|Mar|Mer|Gio|Ven|Sab|Dom)\b)/i.test(capo) ? capo : null;
+          const testoSotto = titoloVero ? pezzi.slice(1).join(" · ") : null;
           const tetto = s.chiave === "lunga" ? tettoLunga(oggi) : null;
           return {
             ...s, quando: etichetta(s.giorno), ora: oraDi(s),
-            titoloVero,
+            titoloVero, testoSotto,
             tetto, oltreIlTetto: Boolean(tetto && s.km > tetto),
             serie: righe.length ? serieTotali(righe) : 0,
             top: gr.slice(0, 3).map((x: any) => ({ id: x.id, nome: NOMI_GRUPPI[x.id] ?? x.id })),
@@ -93,7 +99,7 @@
         /* Il contatore conta il PROGRAMMA. I bonus si contano a parte:
            «3/3 + 1 bonus» dice due cose vere, «4/4» ne dice una falsa —
            che il programma prevedeva quattro sedute. */
-        const delPiano = miei.filter((s: any) => !s.bonus);
+        const delPiano = miei.filter((s: any) => !s.bonus && !s.riposo);
         return {
           g, nome: NOMI_GENERE[g] ?? g, slot: miei,
           fatti: delPiano.filter((s: any) => s.fatto).length,
@@ -204,7 +210,9 @@
       <Sezione titolo={gr.nome}>
         {#snippet coda()}
           <span class="text-subheadline secondario cifre">
-            {gr.fatti}/{gr.totali}{#if gr.bonus}<span class="piu-bonus">{" + "}{gr.bonus} bonus</span>{/if}
+            <!-- Senza slot del programma il contatore non ha niente da
+                 contare: «—», non «0/0», che si legge come un ritardo. -->
+            {gr.totali ? `${gr.fatti}/${gr.totali}` : "—"}{#if gr.bonus}<span class="piu-bonus">{" + "}{gr.bonus} bonus</span>{/if}
           </span>
           {#if gr.g === "palestra"}
             <!-- Piccolo e in coda al titolo: e' una cosa che si trova
@@ -218,12 +226,22 @@
           {/if}
         {/snippet}
         {#each gr.slot as s (s.id)}
+          {#if s.riposo}
+            <!-- Il riposo del programma: si legge, non si tocca. -->
+            <div class="slot riposo">
+              <span class="trattino" aria-hidden="true">—</span>
+              <div class="corpo">
+                <span class="alto"><span class="nome">{s.nome}</span></span>
+                <span class="text-subheadline secondario testo">{s.testo}</span>
+              </div>
+            </div>
+          {:else}
           <div class="slot" class:fatto={s.fatto}>
             <Spunta fatta={s.fatto} etichetta={s.fatto ? `Riapri ${s.nome}` : `Segna ${s.nome} come fatto`} onclick={() => spunta(s)} />
             <button type="button" class="corpo" onclick={() => { slotId = s.id; fSlot = true; }}>
               <span class="alto">
                 <span class="nome">{s.titoloVero ?? s.nome}</span>
-                {#if s.titoloVero}<span class="etichetta slot text-caption2">{s.nome}</span>{/if}
+                {#if s.titoloVero}<span class="etichetta nome-slot text-caption2">{s.nome}</span>{/if}
                 {#if s.stella}<span class="stella" title="Seduta chiave"><Icona nome="bersaglio" misura={14} tratto={2.2} /></span>{/if}
                 {#if s.bonus}<span class="etichetta bonus text-caption2">bonus</span>{/if}
                 <!-- «importato» non vale piu' per tutti: lo scostamento
@@ -233,7 +251,7 @@
                 {#if s.cambiato}<span class="etichetta text-caption2">{s.aMano ? "cambiato" : "importato"}</span>{/if}
                 {#if s.quando}<span class="quando text-caption1">{s.quando} · {s.ora}</span>{/if}
               </span>
-              <span class="text-subheadline secondario testo">{s.lift ? s.lift : s.testo}</span>
+              <span class="text-subheadline secondario testo">{s.lift ? s.lift : (s.testoSotto ?? s.testo)}</span>
               {#if s.tetto}
                 <!-- Il freno, non una regola del piano: il salto di
                      distanza e' il modo piu' comune di rompersi, e in
@@ -258,6 +276,7 @@
               <span class="freccia"><Icona nome="freccia" misura={16} tratto={2.4} /></span>
             </span>
           </div>
+          {/if}
         {/each}
       </Sezione>
     {/each}
@@ -361,9 +380,13 @@
     background: var(--fill-tertiary); color: var(--label-secondary); font-weight: var(--weight-medium);
   }
   .testo { overflow-wrap: anywhere; }
+  /* Il riposo: lo stesso passo delle righe vere, il trattino al posto
+     della spunta, e niente che inviti a toccare. */
+  .trattino { flex: none; width: 28px; text-align: center; font-size: var(--text-title3); color: var(--label-tertiary); }
+  .riposo .nome { color: var(--label-secondary); }
 
 
   .tetto { color: var(--label-tertiary); }
   .tetto.oltre, .grande.oltre { color: var(--color-yellow); }
-  .etichetta.slot { color: var(--label-secondary); background: var(--fill-tertiary); }
+  .etichetta.nome-slot { color: var(--label-secondary); background: var(--fill-tertiary); }
 </style>

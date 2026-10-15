@@ -52,7 +52,9 @@ export function progressoSettimana(n) {
   /* SENZA I BONUS. Un allenamento in piu' non fa parte del programma:
      contarlo nel totale farebbe SCENDERE la percentuale della settimana
      appena lo aggiungi — cioe' il contrario di quello che e' successo. */
-  const slot = slotDi(n).filter((s) => !s.bonus);
+  /* E SENZA IL RIPOSO: le righe «Niente palestra» della settimana del
+     test non sono slot, e contarle direbbe 4 su 6 a chi ha fatto tutto. */
+  const slot = slotDi(n).filter((s) => !s.bonus && !s.riposo);
   const fatti = slot.filter((s) => fatto(s.id));
   return {
     fatti: fatti.length,
@@ -246,7 +248,7 @@ export function tettoLunga(iso = oggiISO()) {
 /* ------------------------------------------------------------- il resto -- */
 
 /** Gli slot ancora aperti nella settimana n, nell'ordine del piano. */
-export const restaSettimana = (n) => slotDi(n).filter((s) => !fatto(s.id));
+export const restaSettimana = (n) => slotDi(n).filter((s) => !s.riposo && !fatto(s.id));
 
 /** Quanti giorni mancano alla fine della settimana n (oggi compreso). */
 export function giorniRimasti(n, oggi = oggiISO()) {

@@ -10,9 +10,20 @@ Possiedi `moduli/allenamenti/` e **nient'altro**. Committa con il prefisso
 
 ## Cosa tiene
 
-Un **blocco** di 13 settimane verso i 5 km sotto i venti minuti. Parte lunedì
-**14 settembre 2026**, finisce domenica **13 dicembre**, e il test è dentro
-l'ultima settimana.
+La **FASE 5K**: cinque settimane dal **5 ottobre 2026** al test di **giovedì
+5 novembre**. La settimana 5 è corta (lun-gio, finisce il giorno del test) e
+non ha palestra: le righe Lower e Upper ci sono, marcate `riposo`, e nessun
+contatore le conta. Prima era un blocco di 13 settimane fino a dicembre, poi
+di quattro col test il 31 ottobre: il 15 ottobre il test è slittato al 5.
+
+**Cambiare il piano non vuol dire cambiare `BLOCCO`**: il reset mette la
+lapide su tutte le spunte. Le chiavi degli slot restano (`s02-intervalli`) e
+le spunte restano con loro; la data del test si sposta con `spostaTest()`,
+una volta, solo se è ancora quella di fabbrica.
+
+`passi.js` legge anche la notazione a parole della chat («15 min», «rec 2
+min 30s», «5x1000 m»): `normalizza()` la riporta agli apici prima di leggere.
+Senza, «rec 2 min» diventava un recupero di 2 secondi sull'orologio.
 
 ## Le tre cose che ti faranno perdere tempo se non le sai
 

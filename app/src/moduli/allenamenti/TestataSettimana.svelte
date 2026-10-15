@@ -79,7 +79,7 @@
 
   <div class="stat">
     <div><span class="v cifre">{d.p.corse}/{d.p.corseTotali}</span><span class="text-caption1 secondario">corse</span></div>
-    <div><span class="v cifre">{d.p.palestra}/{d.p.palestraTotali}</span><span class="text-caption1 secondario">palestra</span></div>
+    <div><span class="v cifre">{d.p.palestraTotali ? `${d.p.palestra}/${d.p.palestraTotali}` : "—"}</span><span class="text-caption1 secondario">palestra</span></div>
     <div><span class="v cifre">{km(d.fatti)}</span><span class="text-caption1 secondario">su {km(d.previsti)}</span></div>
   </div>
 

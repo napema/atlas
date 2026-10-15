@@ -183,7 +183,7 @@
     dati.versione;
     if (!s) return [];
     const altre = (slotDi(s.sett) as any[])
-      .filter((x) => x.id !== s.id && !x.bonus)
+      .filter((x) => x.id !== s.id && !x.bonus && !x.riposo)
       .map((x) => ({
         id: x.id, testo: x.nome, nome: x.nome, genere: x.genere,
         corpo: (x.lift ? [x.lift, ...(x.accessori || [])].join(" · ") : x.testo) || "",

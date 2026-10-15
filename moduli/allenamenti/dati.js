@@ -38,11 +38,12 @@ import { daISO, piuGiorni, oggiISO } from "../../core/ui.js";
    ========================================================================= */
 
 export const INIZIO = "2026-10-05";
-/* SETTE, non tredici. Il test dei 5 km e' stato anticipato a fine ottobre:
-   il blocco si accorcia, non si comprime. Le settimane 1 e 2 restano quelle
-   che sono — sono passate, e riscrivere il passato per farlo somigliare al
+/* CINQUE. La fase 5K era di quattro settimane col test il 31 ottobre; il
+   15 ottobre il test e' stato spostato a giovedi' 5 novembre e la fase ha
+   preso una settimana in piu', corta (lun-gio). La settimana 1 resta quella
+   che era — e' passata, e riscrivere il passato per farlo somigliare al
    piano nuovo vuol dire perdere cosa hai fatto davvero. */
-export const SETTIMANE = 4;
+export const SETTIMANE = 5;
 
 /* La firma del blocco. Cambiala e il reset riparte UNA volta sola, su ogni
    dispositivo, dopo che ha letto. Vedi `resetBlocco()`. */
@@ -114,7 +115,10 @@ export const ORDINE_CORSA = ["intervalli", "soglia", "facile", "lunga"];
 export const FASE = "FASE 5K";
 
 /** Il giorno del test. Si cambia in Impostazioni. */
-export const DATA_TEST = "2026-10-31";
+export const DATA_TEST = "2026-11-05";
+/* La data di prima. Chi ce l'ha ancora in archivio l'ha avuta di fabbrica
+   dal reset del blocco, non scelta: `spostaTest()` la porta al 5. */
+const DATA_TEST_PRIMA = "2026-10-31";
 export const dataTest = () => stato().config?.dataTest || DATA_TEST;
 
 /* I ritmi della fase, una volta sola: li legge la card «Ritmi» e li legge
@@ -142,7 +146,7 @@ export const ORDINE_PALESTRA = ["lower", "upper"];
 const kmDaTempo = (minuti, passoMinKm) => Math.round((minuti / passoMinKm) * 10) / 10;
 
 export const PIANO = [
-  /* FASE 5K — quattro settimane, dal 5 ottobre al test del 31.
+  /* FASE 5K — cinque settimane, dal 5 ottobre al test del 5 novembre.
 
      Quattro corse e due palestre. Ogni seduta e' scritta per esteso: in una
      fase cosi' corta non c'e' una progressione di carico da rendere
@@ -160,40 +164,64 @@ export const PIANO = [
       upper: "Panca 5×5 @ 45 kg · Trazioni 8×50% max · Military manubri 3×10 · Rematore manubrio 3×10 · Alzate 4×15 · Curl + Pushdown",
     } },
 
-  { n: 2, fase: "Picco",
+  /* DALLA 2 IN POI, il piano del 15 ottobre: il test spostato a giovedì
+     5 novembre, cinque settimane invece di quattro. La 2 cambia i
+     contenuti ma non le CHIAVI degli slot — `s02-intervalli` resta
+     `s02-intervalli` — ed è quello che tiene le spunte già date al loro
+     posto. La 1 non si tocca: è passata. */
+  { n: 2, fase: "Costruzione",
     corsa: {
-      intervalli: { testo: "15' risc + 4 allunghi · 5×1000 m @ 4:20/km rec 2' trotto · 10' defat", km: 8.6 },
-      soglia: { testo: "12' risc · 2×12' @ 4:52/km rec 2' trotto · 8' defat", km: 7.7 },
-      facile: { testo: "35' FC ≤155 + 6 allunghi da 20\"", km: 5.7 },
-      lunga: { testo: "9 km FC ≤155 · ultimo km progressivo", km: 9 },
+      intervalli: { testo: "SALTATA · sostituita dalla valutazione CAGSM del 15/10", km: 0 },
+      soglia: { testo: "12 min risc · 2x12 min @ 4:52/km rec 2 min trotto · 8 min defat", km: 7.7 },
+      facile: { testo: "Fondo lento della lezione di educazione fisica", km: 5 },
+      lunga: { testo: "7.5 km FC ≤155", km: 7.5 },
     },
     palestra: {
-      lower: "Squat 4×4 @ RPE 8 (+2,5 kg se la settimana 1 è stata pulita) · RDL 3×6 · Bulgarian split squat 3×6/gamba · Pogo jump 3×20 · Polpacci seduto 3×12 · Tibialis 3×20",
-      upper: "Panca 5×5 @ 47,5 kg · Trazioni 8×50% max · Military manubri 3×10 · Rematore manubrio 3×10 · Alzate 4×15 · Curl + Pushdown",
+      lower: "FATTO domenica 11/10",
+      upper: "Panca 5x5 @ 60 kg · Trazioni 6x50% max · Military manubri 3x10 · Rematore manubrio 3x10 · Alzate 4x15 · Curl + Pushdown",
     } },
 
-  { n: 3, fase: "Taper",
+  { n: 3, fase: "Picco",
     corsa: {
-      intervalli: { testo: "15' risc + 4 allunghi · 3×1600 m @ 4:22/km rec 2'30\" trotto · 10' defat", km: 8.4 },
-      soglia: { testo: "12' risc · 15' continui @ 4:52/km · 8' defat", km: 6 },
-      facile: { testo: "30' FC ≤155 + 4 allunghi da 20\"", km: 4.7 },
+      intervalli: { testo: "15 min risc + 4 allunghi · 5x1000 m @ 4:20/km rec 2 min trotto · 10 min defat", km: 8.6 },
+      soglia: { testo: "12 min risc · 25 min continui @ 4:52/km · 8 min defat", km: 8.3 },
+      facile: { testo: "35 min FC ≤155 + 6 allunghi da 20s", km: 5.7 },
+      lunga: { testo: "8.2 km FC ≤155 · solo se la lunga della sett 2 è stata 7.5 km", km: 8.2 },
+    },
+    palestra: {
+      lower: "Squat 4x4 @ RPE 8 rec 3 min · RDL 3x6 @ RPE 7-8 · Bulgarian split squat 3x6/gamba · Pogo jump 3x20 · Polpacci seduto 3x12 · Tibialis 3x20",
+      upper: "Panca 5x5 @ 62.5 kg · Trazioni 8x50% max · Military manubri 3x10 · Rematore manubrio 3x10 · Alzate 4x15 · Curl + Pushdown",
+    } },
+
+  { n: 4, fase: "Taper",
+    corsa: {
+      intervalli: { testo: "RITMO GARA · 15 min risc + 4 allunghi · 3x1600 m @ 4:22/km rec 2 min 30s trotto · 10 min defat", km: 8.4 },
+      soglia: { testo: "12 min risc · 15 min continui @ 4:52/km · 8 min defat", km: 6 },
+      facile: { testo: "30 min FC ≤155 + 4 allunghi da 20s", km: 4.7 },
       lunga: { testo: "7 km FC ≤155", km: 7 },
     },
     palestra: {
-      lower: "Squat 3×3 @ RPE 7 · RDL 2×6 · Polpacci seduto 2×12 · Tibialis 2×20 · niente pogo",
-      upper: "Panca 4×5 @ 47,5 kg · Trazioni 6×50% max · Military manubri 2×10 · Rematore manubrio 2×10 · Alzate 3×15",
+      lower: "ENTRO VEN 30/10 · Squat 3x3 @ RPE 7 · RDL 2x6 · Polpacci seduto 2x12 · Tibialis 2x20 · niente pogo",
+      upper: "Panca 4x5 @ 62.5 kg · Trazioni 6x50% max · Military manubri 2x10 · Rematore manubrio 2x10 · Alzate 3x15",
     } },
 
-  { n: 4, fase: "Test", test: true,
+  /* LA SETTIMANA DEL TEST È CORTA: lunedì → giovedì. Finisce il giorno del
+     test (vedi `fineSettimana()`), e la palestra non c'è: le due righe
+     restano a dirlo, ma non sono slot da chiudere — `riposo` le tiene fuori
+     da ogni contatore. Una casella che non si può spuntare dentro un «0/2»
+     farebbe sembrare persa una settimana fatta tutta. */
+  { n: 5, fase: "Test", test: true, senzaPalestra: true,
+    // Nell'ordine dei giorni, non in quello di peso: qui ogni corsa ha il suo.
+    ordineCorsa: ["intervalli", "facile", "soglia", "lunga"],
     corsa: {
-      intervalli: { testo: "3 giorni prima del test · 12' risc · 4×400 m @ 4:10/km rec 90\" · 5' defat", km: 4.5 },
-      soglia: { testo: "Giorno prima del test · 15-20' facilissimi + 3 allunghi", km: 3 },
-      facile: { testo: "2 giorni prima del test · 25' FC ≤155 + 4 allunghi", km: 4 },
-      lunga: { testo: "TEST 5000 m · 15' risc + 4 allunghi · 5 km @ 4:24/km · 10' defat", km: 8.5, stella: true },
+      intervalli: { testo: "Lun 02/11 · 12 min risc · 4x400 m @ 4:10/km rec 90s · 5 min defat", km: 4.5 },
+      facile: { testo: "Mar 03/11 · 25 min FC ≤155 + 4 allunghi", km: 4 },
+      soglia: { testo: "Mer 04/11 · 15-20 min facilissimi + 3 allunghi", km: 3 },
+      lunga: { testo: "TEST 5000 m · Gio 05/11 · 15 min risc + 4 allunghi · 5 km @ 4:22/km · 10 min defat", km: 8.5, stella: true },
     },
     palestra: {
-      lower: "NIENTE GAMBE nei 5 giorni prima del test",
-      upper: "Inizio settimana · Panca 3×5 al 70% · Trazioni 3×5 · Alzate 3×15",
+      lower: "Niente palestra · settimana del test",
+      upper: "Niente palestra · settimana del test",
     },
     avvertenza: "Niente gambe nei 5 giorni prima del test. Nessuno stacco, nessuno squat, nessun affondo." },
 ];
@@ -247,9 +275,19 @@ const domenicaDa = (iso) => {
   return piuGiorni(iso, 6 - dow);
 };
 
-export const fineSettimana = (n) =>
-  n <= 1 ? domenicaDa(inizioBlocco())
-         : piuGiorni(domenicaDa(inizioBlocco()), (n - 1) * 7);
+export const fineSettimana = (n) => {
+  const domenica = n <= 1 ? domenicaDa(inizioBlocco())
+    : piuGiorni(domenicaDa(inizioBlocco()), (n - 1) * 7);
+  /* L'ULTIMA SETTIMANA FINISCE COL TEST. Dal 5 novembre la settimana 5 e'
+     lunedi'-giovedi': i tre giorni dopo il test non sono «giorni per
+     piazzare gli slot», e contarli direbbe «in pari» a chi non ha ancora
+     corso le ripetute del lunedi'. */
+  if (n === SETTIMANE) {
+    const t = dataTest();
+    if (t < domenica && t >= piuGiorni(domenica, -6)) return t;
+  }
+  return domenica;
+};
 
 export const inizioSettimana = (n) =>
   n <= 1 ? inizioBlocco() : piuGiorni(fineSettimana(n - 1), 1);
@@ -261,7 +299,8 @@ export function settimanaDi(iso = oggiISO()) {
   if (iso <= prima) return 1;
   const giorni = Math.floor((daISO(iso) - daISO(prima)) / 86400000);
   const n = Math.ceil(giorni / 7) + 1;
-  return n <= SETTIMANE ? n : null;
+  if (n > SETTIMANE || iso > fineSettimana(SETTIMANE)) return null;
+  return n;
 }
 
 /** La settimana da mostrare: quella di oggi, o la prima/l'ultima se sei fuori. */
@@ -328,7 +367,7 @@ export function slotDi(n) {
   /* Solo le corse che la settimana prevede davvero: nella settimana del
      test non ce ne sono quattro, e una casella vuota con dentro «—» e'
      peggio di nessuna casella. */
-  for (const k of ORDINE_CORSA) {
+  for (const k of (p.ordineCorsa || ORDINE_CORSA)) {
     const c = p.corsa?.[k];
     if (!c) continue;
     fuori.push(conScostamento({
@@ -342,6 +381,15 @@ export function slotDi(n) {
        gli accessori fissi non si disegna: sono due modi di dire la stessa
        cosa, e messi insieme la dicono due volte. */
     const suo = p.palestra?.[k];
+    if (p.senzaPalestra) {
+      /* Una riga che dice perche' non c'e' niente, non uno slot. Niente
+         scostamento: non si cambia, non si spunta, non si conta. */
+      fuori.push({
+        id: idSlot(n, k), sett: n, genere: "palestra", chiave: k,
+        nome: p.nomi?.[k] || g.nome, testo: suo || "Niente palestra", km: 0, riposo: true,
+      });
+      continue;
+    }
     fuori.push(conScostamento({
       id: idSlot(n, k), sett: n, genere: "palestra", chiave: k,
       nome: p.nomi?.[k] || g.nome,
@@ -484,6 +532,33 @@ export function resetBlocco() {
 
     /* La fase 5K comincia il 5 ottobre: alla sua nascita non c'e' ancora
        niente di fatto. */
+  });
+  return true;
+}
+
+/**
+ * Il test dal 31 ottobre al 5 novembre, una volta sola.
+ *
+ * NON con un blocco nuovo: cambiare `BLOCCO` farebbe ripartire il reset, e
+ * il reset mette la lapide su tutte le spunte — anche su quelle della
+ * settimana 1 e della 2, che devono restare. Qui si tocca solo la data, e
+ * solo se e' ancora quella di fabbrica: una data scelta a mano in
+ * Impostazioni non si sovrascrive. Come il reset, la chiama contratto.js
+ * DOPO la prima lettura: prima, l'archivio vuoto avrebbe la data di
+ * fabbrica e il sync riporterebbe quella vera con un `up` piu' vecchio.
+ */
+export const TEST_SPOSTATO = "2026-11-05";
+export function spostaTest() {
+  const c = stato().config || {};
+  if (c.blocco !== BLOCCO || c.testSpostato === TEST_SPOSTATO) return false;
+  casella.aggiorna((s) => {
+    const vecchia = !s.config?.dataTest || s.config.dataTest === DATA_TEST_PRIMA;
+    s.config = {
+      ...(s.config || {}),
+      ...(vecchia ? { dataTest: DATA_TEST } : {}),
+      testSpostato: TEST_SPOSTATO,
+    };
+    s.configUp = Date.now();
   });
   return true;
 }
@@ -973,7 +1048,7 @@ export function scriviConfig(patch) {
 export function slotPerGiorno(iso, { km = 0, genere = "corsa" } = {}) {
   const n = settimanaDi(iso);
   if (!n) return null;
-  const slot = slotDi(n).filter((s) => !s.bonus);
+  const slot = slotDi(n).filter((s) => !s.bonus && !s.riposo);
 
   const suo = slot.find((s) => giornoSlot(s.id) === iso);
   if (suo) return suo;

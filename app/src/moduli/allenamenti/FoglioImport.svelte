@@ -45,7 +45,7 @@
   const slotPossibili = (data: string) => {
     const n = settimanaDi(data);
     if (!n) return [];
-    return (slotDi(n) as any[]).filter((x) => !x.bonus && x.genere === "corsa" && !fatto(x.id));
+    return (slotDi(n) as any[]).filter((x) => !x.bonus && !x.riposo && x.genere === "corsa" && !fatto(x.id));
   };
 
   function collega(p: any) {

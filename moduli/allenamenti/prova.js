@@ -198,5 +198,65 @@ eq("i km NON sono raddoppiati", kmFatti(1), 6);
 eq("e il tetto vede la seduta intera", tettoLunga(GIOVEDI), 6.6);
 eq("lo slot dice sei", slotDi(1).find((x) => x.id === INTERVALLI).km, 6);
 
+/* ------------------------------------------------------------------------
+   IL TEST SPOSTATO AL 5 NOVEMBRE: cinque settimane, la 5 corta e senza
+   palestra, e le spunte che c'erano restano dove erano.
+   ------------------------------------------------------------------------ */
+{
+  const d = await import("./dati.js");
+  const c = await import("./calcolo.js");
+  console.log("\n--- fase 5K: cinque settimane, test il 5 novembre ---");
+
+  /* L'archivio com'era il 15 ottobre: blocco attivo, data del test di
+     fabbrica, due spunte nella settimana 1 e due nella 2. */
+  casella.scrivi({
+    v: 1, settimane: [], bonus: [], corse: [], configUp: 1,
+    config: { inizio: INIZIO, blocco: d.BLOCCO, dataTest: "2026-10-31" },
+    slot: [
+      { id: idSlot(1, "lunga"), fatta: true, giorno: "2026-10-10", up: 1 },
+      { id: idSlot(1, "lower"), fatta: true, giorno: "2026-10-06", up: 1 },
+      { id: idSlot(2, "lower"), fatta: true, giorno: "2026-10-11", up: 1 },
+      { id: idSlot(2, "soglia"), fatta: true, giorno: "2026-10-13", up: 1 },
+    ],
+  });
+
+  eq("settimane", d.SETTIMANE, 5);
+  eq("lo spostamento del test parte", d.spostaTest(), true);
+  eq("e la data diventa il 5 novembre", d.dataTest(), "2026-11-05");
+  eq("una volta sola", d.spostaTest(), false);
+
+  // Una data scelta a mano non si tocca.
+  const scelta = casella.leggi();
+  casella.scrivi({ ...scelta, config: { ...scelta.config, dataTest: "2026-11-07", testSpostato: undefined } });
+  d.spostaTest();
+  eq("una data scelta a mano resta", d.dataTest(), "2026-11-07");
+  casella.scrivi({ ...scelta });
+
+  eq("settimana 1: km come prima", c.kmPrevisti(1), 27.6);
+  eq("settimana 1: spunte intatte", c.progressoSettimana(1).fatti, 2);
+  eq("settimana 1: testo intatto", d.slotDi(1).find((x) => x.chiave === "lunga").testo, "8,2 km FC ≤155");
+  eq("settimana 2: spunte preservate", c.progressoSettimana(2).fatti, 2);
+  eq("settimana 2: contenuti nuovi", d.slotDi(2).find((x) => x.chiave === "upper").testo.slice(0, 18), "Panca 5x5 @ 60 kg ");
+  eq("settimana 2: km dal CSV", c.kmPrevisti(2), 20.2);
+  eq("settimana 3: km dal CSV", c.kmPrevisti(3), 30.8);
+  eq("settimana 4: km dal CSV", c.kmPrevisti(4), 26.1);
+  eq("settimana 5: km dal CSV", c.kmPrevisti(5), 20);
+
+  eq("settimana 5 va dal 2 novembre", d.inizioSettimana(5), "2026-11-02");
+  eq("e finisce il giorno del test", d.fineSettimana(5), "2026-11-05");
+  eq("il 4 novembre e' la settimana 5", d.settimanaDi("2026-11-04"), 5);
+  eq("il 6 novembre il blocco e' finito", d.settimanaDi("2026-11-06"), null);
+  eq("la settimana 4 va fino al 1 novembre", d.fineSettimana(4), "2026-11-01");
+
+  const p5 = c.progressoSettimana(5);
+  eq("settimana 5: palestra non contata", p5.palestraTotali, 0);
+  eq("settimana 5: quattro corse", p5.corseTotali, 4);
+  eq("settimana 5: slot totali", p5.totali, 4);
+  eq("settimana 5: le righe di palestra ci sono", d.slotDi(5).filter((x) => x.riposo).length, 2);
+  eq("settimana 5: in ordine di giorno",
+    d.slotDi(5).filter((x) => x.genere === "corsa").map((x) => x.chiave).join(","), "intervalli,facile,soglia,lunga");
+  eq("settimana 5: il riposo non e' da fare", c.restaSettimana(5).some((x) => x.riposo), false);
+}
+
 console.log(rotti ? `\n${rotti} numeri non tornano.\n` : "\nTutto torna.\n");
 if (rotti) Deno.exit(1);
