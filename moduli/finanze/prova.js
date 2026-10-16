@@ -26,7 +26,7 @@ globalThis.document ??= {
   body: { appendChild() {} },
 };
 
-const { casella, allineaV3, allineaV31, allineaV32, BLOCCO_V3, pocketIniziali, stato } = await import("./dati.js");
+const { casella, allineaV3, allineaV31, allineaV32, allineaV33, BLOCCO_V3, pocketIniziali, stato } = await import("./dati.js");
 const { cicloDi, dataStipendio, saldoPocket, prossimoStipendio } = await import("./calcolo.js");
 const {
   quotaDi, copreFino, statoObiettivo, fuoriPianoDelCiclo, ingPrevisto,
@@ -215,12 +215,16 @@ eq("allineaV31 gira", allineaV31(), true);
 eq("allineaV31 non rigira", allineaV31(), false);
 const D17 = "2026-10-17";
 const cus = cuscinetto(D17);
-eq("cuscinetto: saldo", euro(cus.saldo), "567,96 €");
-eq("cuscinetto: target (1 mese di fisse)", euro(cus.target), "1235,00 €");
-eq("cuscinetto: %", Math.round(cus.frazione * 100), 46);
-eq("cuscinetto: minimo previsto", euro(cus.minimo), "894,76 €");
-eq("cuscinetto: quando", cus.quando, "2027-02-15");
-eq("cuscinetto: sopra target dal", cus.sopraDal, "2027-03-23");
+/* 229,71 e non i 567,96 del documento: quello era ING prima dei 338,25
+   presi per il corredo. Da li' cambiano anche minimo e «sopra target». */
+eq("allineaV33 gira", allineaV33(), true);
+const cus2 = cuscinetto(D17);
+eq("cuscinetto: saldo", euro(cus2.saldo), "229,71 €");
+eq("cuscinetto: target (1 mese di fisse)", euro(cus2.target), "1235,00 €");
+eq("cuscinetto: %", Math.round(cus2.frazione * 100), 19);
+eq("cuscinetto: minimo previsto", euro(cus2.minimo), "556,51 €");
+eq("cuscinetto: quando", cus2.quando, "2027-02-15");
+eq("cuscinetto: sopra target dal", cus2.sopraDal, "2027-04-23");
 eq("cuscinetto: prossimo versamento", euro(cus.prossimo.imp), "232,00 €");
 eq("cuscinetto: il 23 ottobre", cus.prossimo.quando, "2026-10-23");
 eq("il Naso non c'e' piu'", statoObiettivo(D17), null);

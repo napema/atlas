@@ -57,6 +57,9 @@ Chi apre una chat comincia da `git log --oneline -20` e da questo file.
   e 6 giri dei colleghi prendono la lapide (`allineaV32`, marchio `bloccoV32`);
   la v3.1 non li crea più. Ancore invariate. La riconciliazione col CSV
   mostrerà quelle righe come «non nell'app»: è voluto.
+- **v3.3**: ING riancorato a 229,71 (`allineaV33`). I 567,96 della spec erano
+  ING prima dei 338,25 del corredo. Cuscinetto: 19%, minimo 556,51 al 15/02,
+  sopra target dal 23/04/2027.
 
 ### ✅ 15 ottobre — FASE 5K: test al 5 novembre, cinque settimane *(chat ATLAS, su richiesta diretta)*
 

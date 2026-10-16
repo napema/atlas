@@ -10,7 +10,7 @@ import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { annuncia } from "../../core/bus.js";
 import {
-  casella, stato, movimentiVivi, migra, completaTravasi, dividiPersonale, allineaV3, sistemaGruppi, allineaV31, allineaV32,
+  casella, stato, movimentiVivi, migra, completaTravasi, dividiPersonale, allineaV3, sistemaGruppi, allineaV31, allineaV32, allineaV33,
   chiusuraFatta, vociLista, statoVoce,
 } from "./dati.js";
 import {
@@ -359,7 +359,9 @@ export function avviaSync() {
     const v31 = allineaV31();
     // E la quinta: del corredo resta solo la tua parte.
     const v32 = allineaV32();
-    if (!divisa && !allineata && !sistemata && !v31 && !v32) return;
+    // E la sesta: ING al saldo vero, dopo la quota del corredo.
+    const v33 = allineaV33();
+    if (!divisa && !allineata && !sistemata && !v31 && !v32 && !v33) return;
     pubblicaSullaLavagna();
     ridisegnaVista();
   }

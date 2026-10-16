@@ -1591,7 +1591,10 @@ export const BLOCCO_V31 = "2026-10-16-v31";
 
 /** «Fine del 16» = «inizio del 17»: l'ancora si scrive col giorno dopo. */
 const ANCORA_V31 = "2026-10-17";
-const SALDI_V31 = { principale: 2029, cassa: 0, fisse: 3, ing: 56796, contanti: 0, fondo: 0 };
+/* ING 229,71, non 567,96: il secondo era il saldo PRIMA dei 338,25 presi
+   per il corredo (567,96 − 338,25 = 229,71). Corretto la sera stessa, vedi
+   `allineaV33`. */
+const SALDI_V31 = { principale: 2029, cassa: 0, fisse: 3, ing: 22971, contanti: 0, fondo: 0 };
 
 const P_ = "principale";
 const uscita = (id, data, imp, nota, cat, sub, extra = {}) =>
@@ -1815,6 +1818,31 @@ export function allineaV32() {
     const ing = s.movs.find((m) => m && m.id === "v31-corredo-ing" && !m.del);
     if (ing && ing.copre !== CORREDO) { ing.copre = CORREDO; ing.up = ora; }
     s.config = { ...(s.config || {}), bloccoV32: BLOCCO_V32 };
+    s.metaUp = ora;
+  });
+  return true;
+}
+
+/* ========================================================================
+   v3.3 — ING E' 229,71 (16 ottobre, sera).
+
+   L'ancora della v3.1 diceva 567,96: il saldo di ING prima della ricarica
+   del corredo. Quella ricarica e' datata 16, l'ancora 17, quindi l'app non
+   la sottrae — e ING restava 338,25 € piu' ricco del vero. Si riancora al
+   numero letto sull'app di ING. I 141,80 € usciti e che tornano a inizio
+   novembre sono gia' dentro questo saldo (sono usciti) e dentro la
+   proiezione (l'entrata prevista del 2 novembre).
+   ======================================================================== */
+export const BLOCCO_V33 = "2026-10-16-v33";
+
+export function allineaV33() {
+  if (stato().config?.bloccoV33 === BLOCCO_V33) return false;
+  if (stato().config?.bloccoV31 !== BLOCCO_V31) return false;
+  const ora = Date.now();
+  casella.aggiorna((s) => {
+    const p = (s.pockets || []).find((x) => x && x.id === "ing");
+    if (p) { p.saldo = 22971; p.ancoraDa = ANCORA_V31; p.up = ora; }
+    s.config = { ...(s.config || {}), bloccoV33: BLOCCO_V33 };
     s.metaUp = ora;
   });
   return true;
