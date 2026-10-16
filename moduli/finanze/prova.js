@@ -226,6 +226,19 @@ eq("cuscinetto: minimo previsto", euro(cus2.minimo), "556,51 €");
 eq("cuscinetto: quando", cus2.quando, "2027-02-15");
 eq("cuscinetto: sopra target dal", cus2.sopraDal, "2027-04-23");
 eq("cuscinetto: prossimo versamento", euro(cus.prossimo.imp), "232,00 €");
+{
+  // Il rimborso «È arrivato»: ING sale subito, e la proiezione dopo il 2
+  // novembre non cambia — prima lo contava come atteso, adesso c'è.
+  const { salvaMovimento, segnaPrevistoPagato } = await import("./dati.js");
+  const { inArrivoDiviso } = await import("./piano.js");
+  eq("in arrivo: il rimborso c'e'", inArrivoDiviso(14, D17).entrate.map((x) => euro(x.importo)).join(","), "141,80 €");
+  const fine = cuscinetto(D17).punti.at(-1).saldo;
+  salvaMovimento({ id: "prova-rimb", data: D17, tipo: "in", imp: 14180, nota: "Rimborso", pocket: "ing", pian: "v31-rimborso" });
+  segnaPrevistoPagato("v31-rimborso", D17);
+  eq("arrivato: ING sale di 141,80", euro(saldoPocket("ing")), "371,51 €");
+  eq("arrivato: sparisce da In arrivo", inArrivoDiviso(14, D17).entrate.length, 0);
+  eq("arrivato: la proiezione finisce uguale", euro(cuscinetto(D17).punti.at(-1).saldo), euro(fine));
+}
 eq("cuscinetto: il 23 ottobre", cus.prossimo.quando, "2026-10-23");
 eq("il Naso non c'e' piu'", statoObiettivo(D17), null);
 const q17 = quotaDi(D17);

@@ -209,7 +209,10 @@ export function contestoGruppi() {
   for (const p of previstiTutti()) pre.set(p.id, p);
   const daLista = new Set();
   for (const v of s.lista || []) if (v && !v.del && v.movId) daLista.add(v.movId);
-  return { ric, pre, daLista };
+  // Le uscite che una ricarica da ING ha pagato apposta (`copre`).
+  const coperte = new Set();
+  for (const m of s.movs || []) if (m && !m.del && m.tipo === "extra" && m.copre) coperte.add(m.copre);
+  return { ric, pre, daLista, coperte };
 }
 
 /**
@@ -250,6 +253,10 @@ export function gruppoDi(m, ctx = contestoGruppi()) {
   if (m.pocket === "fisse" && !deciso) return "fisse";
 
   if (m.pocket === "ing") return "riserva";
+  /* PAGATA CON I SOLDI DI ING, anche se e' uscita dal Principale: il
+     corredo del 16 ottobre. Nel quotidiano gonfiava il ritmo del ciclo di
+     341 € che la Vita non ha mai speso. */
+  if (ctx.coperte?.has(m.id)) return "riserva";
   if ((r && r.pocket === "ing") || (p && p.pocket === "ing")) return "riserva";
 
   if (eFuoriPiano(m)) return "fuoriPiano";
@@ -782,7 +789,19 @@ export function inArrivoDiviso(giorni = 14, iso = oggiISO()) {
   }
   dopo.sort((p, s) => p.quando.localeCompare(s.quando));
 
-  return { prima: a, paga, dopo, finestra: limite };
+  /* LE ENTRATE ATTESE, con una finestra loro: un ciclo intero. Sono
+     poche e cambiano i conti — un rimborso del 2 novembre che restasse
+     fuori dai quattordici giorni sparirebbe dalla schermata proprio nel
+     periodo in cui ci conti. Non entrano nei totali (sono uscite) e non
+     hanno una copertura da controllare. */
+  const fineEntrate = piuGiorni(iso, 31);
+  const entrate = entratePreviste()
+    .filter((x) => x.quando && x.quando <= fineEntrate)
+    .map((x) => ({ ...x, importo: x.imp || 0, origine: "entrata", entrata: true, stimato: false,
+      fra: giorniFra(iso, x.quando) - 1 }))
+    .sort((p, s) => p.quando.localeCompare(s.quando));
+
+  return { prima: a, paga, dopo, entrate, finestra: limite };
 }
 
 /**
@@ -795,7 +814,7 @@ export function inArrivoDiviso(giorni = 14, iso = oggiISO()) {
  */
 export function voceInArrivo(origine, id, quando, iso = oggiISO()) {
   const a = inArrivoDiviso(90, iso);
-  return [...a.prima.voci, ...a.dopo].find((v) =>
+  return [...a.prima.voci, ...a.dopo, ...a.entrate].find((v) =>
     v.origine === origine && String(v.id) === String(id) && v.quando === quando) || null;
 }
 

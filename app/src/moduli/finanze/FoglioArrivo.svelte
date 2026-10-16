@@ -28,6 +28,22 @@
   const cop = $derived(voce ? coperturaDi({ ...voce, importo: imp || voce.importo }) : null);
   const quando = $derived(!voce ? "" : voce.fra === 0 ? "oggi" : voce.fra === 1 ? "domani" : voce.fra < 0 ? `${Math.abs(voce.fra)} giorni fa` : `fra ${voce.fra} giorni`);
 
+  /* UN'ENTRATA ATTESA: «È arrivato» registra l'entrata sul suo pocket,
+     legata al previsto (`pian`), e lo chiude. Il legame è quello che fa
+     salire ING, che altrimenti si muove solo coi giri. */
+  function arrivato() {
+    if (!imp) { avviso("Serve un importo.", { tipo: "errore" }); return; }
+    const oggi = oggiISO();
+    salvaMovimento({
+      id: nuovoId("m"), data: oggi, tipo: "in", imp,
+      nota: voce.nome, cat: null, sub: null,
+      pocket: voce.pocket || "principale", ecc: false, pian: voce.id,
+    });
+    segnaPrevistoPagato(voce.id, oggi);
+    aperto = false;
+    celebra("Arrivato");
+  }
+
   /** Il movimento vero + la voce che sparisce. Le due cose insieme, sempre. */
   function paga() {
     if (!imp) { avviso("Serve un importo.", { tipo: "errore" }); return; }
@@ -61,7 +77,30 @@
 </script>
 
 <Foglio bind:aperto titolo={voce?.nome ?? ""}>
-  {#if voce && cop}
+  {#if voce?.entrata}
+    <div class="testa">
+      <span class="piu cifre">+{euro(voce.importo)}</span>
+      <span class="text-subheadline secondario">{maiuscola(dataUmana(voce.quando))}{dataUmana(voce.quando).toLowerCase() === quando ? "" : ` · ${quando}`}</span>
+    </div>
+
+    <Sezione>
+      <Riga titolo="Entra su" valore={nomePocket(voce.pocket)} />
+      <Riga titolo="Tipo" valore="Entrata attesa" />
+      {#if voce.nota}<Riga titolo="Nota" valore={voce.nota} />{/if}
+    </Sezione>
+
+    <Sezione piede="Già scritto quello atteso. Correggilo se è arrivata un'altra cifra.">
+      <Campo etichetta="Arrivati" bind:valore={testo} modo="decimal" allinea="destra" unita="€" />
+    </Sezione>
+
+    <Pulsante variante="pieno" larga onclick={arrivato}>È arrivato</Pulsante>
+    <p class="text-footnote secondario spiega">
+      Registra l'entrata di oggi su {nomePocket(voce.pocket)}, che sale da subito, e toglie la voce da «In arrivo».
+    </p>
+    <div class="riparazione">
+      <Pulsante variante="testo" larga onclick={giaPagata}>Era già registrato, non aggiungere niente</Pulsante>
+    </div>
+  {:else if voce && cop}
     <div class="testa">
       <Importo centesimi={voce.importo} misura={44} />
       <!-- «Oggi · oggi»: `dataUmana` dice gia' «Oggi» per le date vicine, e
@@ -106,6 +145,7 @@
 
 <style>
   .testa { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: var(--space-2) 0; }
+  .piu { font-family: var(--font-display); font-size: 44px; line-height: 50px; font-weight: var(--weight-bold); }
   .copertura { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border-radius: var(--radius-xxl); color: var(--color-green); background: color-mix(in srgb, var(--color-green) 12%, transparent); }
   .copertura.male { color: var(--color-red); background: color-mix(in srgb, var(--color-red) 12%, transparent); }
   .copertura div { display: flex; flex-direction: column; color: var(--label-primary); }

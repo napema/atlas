@@ -808,7 +808,13 @@ export function deltaPocketTra(id, da, aEsclusa) {
       continue;
     }
 
-    if (p.external) continue;               // il resto non passa da ING
+    /* ING VIVE FUORI DALL'APP, e le sue spese non lo toccano: lo si
+       riancora guardando l'estratto. Con un'eccezione: quello che l'app
+       SA con certezza perche' e' passato da una scadenza o da un'entrata
+       prevista (`pian`). Il rimborso atteso del 2 novembre, segnato
+       «arrivato», deve far salire ING quel giorno — non alla prossima
+       chiusura della domenica. */
+    if (p.external && !m.pian) continue;    // il resto non passa da ING
     if ((m.pocket || "principale") !== id) continue;
     /* L'USCITA ESCE INTERA, il rimborso entra quando arriva. Qui c'era
        `importoEffettivo(m)` — l'uscita gia' al netto dei rimborsi — e poi i

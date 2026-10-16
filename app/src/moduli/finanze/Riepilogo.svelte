@@ -45,6 +45,7 @@
     fuoriPianoDelCiclo, ingPrevisto, inArrivoDiviso, cuscinetto,
   } from "$condivisi/finanze/piano.js";
   import { allineamento } from "$condivisi/finanze/chiusura.js";
+  import { ritmoQuotidiano, doveSiPerde } from "$condivisi/finanze/gruppi.js";
   import { apri } from "./fogli.svelte";
 
   /** `lato`: obiettivo e quota — la colonna sinistra sul PC. */
@@ -79,6 +80,8 @@
       fp: fuoriPianoDelCiclo(ciclo, oggi),
       ing: ingPrevisto(oggi),
       arrivo: inArrivoDiviso(14, oggi),
+      ritmo: ritmoQuotidiano(ciclo, oggi),
+      dove: doveSiPerde(ciclo, 3),
       all: allineamento(oggi),
       totale: pk.reduce((t: number, p: any) => t + p.saldoVero, 0),
     };
@@ -321,6 +324,54 @@
 
 {:else}
 
+<!-- 2. IL CICLO -----------------------------------------------------------
+     LA DOMANDA DI META' MESE: sto andando bene? La carta Oggi risponde per
+     oggi, questa per il ciclo — e con un numero solo da confrontare a occhio:
+     quanto del quotidiano è andato, e dove dovresti essere arrivato oggi
+     (la tacca sulla barra). Sotto, il ritmo in una riga e le tre voci dove
+     va più spesso il quotidiano. Si tocca per aprire l'Analisi. -->
+{#if d.ritmo.budget > 0}
+  {@const giaFrazione = Math.min(1, d.ritmo.quotidiano / d.ritmo.budget)}
+  {@const passo = Math.min(1, d.ritmo.giorni / Math.max(1, d.ciclo.giorni))}
+  {@const avanti = d.ritmo.quotidiano > d.ritmo.budget * passo}
+  <Sezione>
+    <a class="blocco ciclo" href="#/finanze/analisi">
+      <span class="testa">
+        <span class="eti">IL CICLO · QUOTIDIANO</span>
+        <span class="eti-dx cifre">giorno {d.ritmo.giorni} di {d.ciclo.giorni}</span>
+      </span>
+      <span class="cus-riga">
+        <span class="obi-cifre">
+          <b class="cifre">{euro(d.ritmo.quotidiano, { tondo: true })}</b>
+          <span class="secondario cifre">di {euro(d.ritmo.budget, { tondo: true })}</span>
+        </span>
+        <span class="cus-pct cifre" class:avviso={avanti}>{Math.round(giaFrazione * 100)}%</span>
+      </span>
+      <span class="ciclo-barra" aria-hidden="true">
+        <i style:width="{Math.round(giaFrazione * 100)}%" class:avanti></i>
+        <em style:left="{Math.round(passo * 100)}%"></em>
+      </span>
+      {#if d.ritmo.attendibile}
+        <span class="text-subheadline cifre ritmo">
+          <span class="secondario">{euro(d.ritmo.alGiorno)}/g · piano {euro(d.ritmo.piano)}/g</span>
+          {#if d.ritmo.proiezione > 0}
+            <span class="avviso">+{euro(d.ritmo.proiezione, { tondo: true })} a fine ciclo</span>
+          {:else}
+            <span class="secondario">dentro il piano</span>
+          {/if}
+        </span>
+      {/if}
+      {#if d.dove.length}
+        <span class="dove">
+          {#each d.dove as x (x.sub)}
+            <span class="voce-dove"><span class="vd-nome">{x.sub}</span><b class="cifre">{euro(x.totale, { tondo: true })}</b><span class="secondario cifre">{x.n}×</span></span>
+          {/each}
+        </span>
+      {/if}
+    </a>
+  </Sezione>
+{/if}
+
 <!-- 3. FUORI PIANO ------------------------------------------------------- -->
 <Sezione>
   <div class="blocco fp" data-tono={d.fp.n ? "male" : "ok"}>
@@ -381,8 +432,22 @@
     </span>
 
     <ul class="elenco">
-      {#each d.arrivo.prima.voci as v (`${v.origine}:${v.id}:${v.quando}`)}
-        {@const cop = (d.arrivo.prima.perPocket as any)[v.pocket || "principale"]}
+      <!-- LE ENTRATE STANNO NELLA STESSA LISTA, al loro giorno: «+» davanti
+           e niente copertura da controllare. Prima dello stipendio qui,
+           dopo lo stipendio sotto la riga della paga. -->
+      {#each [...d.arrivo.prima.voci, ...d.arrivo.entrate.filter((e: any) => e.quando < d.arrivo.paga)].sort((a: any, b: any) => a.quando.localeCompare(b.quando)) as v (`${v.origine}:${v.id}:${v.quando}`)}
+        {@const cop = v.entrata ? null : (d.arrivo.prima.perPocket as any)[v.pocket || "principale"]}
+        {#if v.entrata}
+          <li>
+            <button type="button" class="e-riga" onclick={() => apri({ tipo: "arrivo", voce: v })}>
+              <span class="e-data cifre secondario">{gg(v.quando)}</span>
+              <span class="e-nome">{v.nome}</span>
+              <span class="e-nota text-footnote secondario">su {nomePocket(v.pocket)} · in entrata</span>
+              <span class="e-cifra cifre">+{euro(v.importo)}</span>
+              <span class="e-chev" aria-hidden="true"><Icona nome="freccia" misura={13} tratto={2.4} /></span>
+            </button>
+          </li>
+        {:else}
         <li>
           <button type="button" class="e-riga" onclick={() => apri({ tipo: "arrivo", voce: v })}>
             <span class="e-data cifre secondario">{gg(v.quando)}</span>
@@ -395,6 +460,7 @@
             <span class="e-chev" aria-hidden="true"><Icona nome="freccia" misura={13} tratto={2.4} /></span>
           </button>
         </li>
+        {/if}
       {/each}
 
       <!-- LA RIGA DELLA PAGA, e tutto quello che sta sotto non ha allarmi:
@@ -408,12 +474,13 @@
         </button>
       </li>
 
-      {#each d.arrivo.dopo as v (`${v.origine}:${v.id}:${v.quando}`)}
-        <li class="dopo">
+      {#each [...d.arrivo.dopo, ...d.arrivo.entrate.filter((e: any) => e.quando >= d.arrivo.paga)].sort((a: any, b: any) => a.quando.localeCompare(b.quando)) as v (`${v.origine}:${v.id}:${v.quando}`)}
+        <li class="dopo" class:entra={v.entrata}>
           <button type="button" class="e-riga" onclick={() => apri({ tipo: "arrivo", voce: v })}>
             <span class="e-data cifre secondario">{gg(v.quando)}</span>
-            <span class="e-nome secondario">{v.nome}</span>
-            <span class="e-cifra cifre secondario">{euro(v.importo)}</span>
+            <span class="e-nome" class:secondario={!v.entrata}>{v.nome}</span>
+            {#if v.entrata}<span class="e-nota text-footnote secondario">su {nomePocket(v.pocket)} · in entrata</span>{/if}
+            <span class="e-cifra cifre" class:secondario={!v.entrata}>{v.entrata ? "+" : ""}{euro(v.importo)}</span>
             <span class="e-chev" aria-hidden="true"><Icona nome="freccia" misura={13} tratto={2.4} /></span>
           </button>
         </li>
@@ -448,12 +515,17 @@
     <!-- ING: il saldo non dice niente da solo. Il punto più basso dei
          prossimi dodici mesi è l'unico numero che risponde a «posso
          attingere». -->
+    <!-- Col cuscinetto il minimo di ING sta nella sua carta, con la sua
+         definizione: qui ripeterlo con un'altra ne faceva due numeri
+         diversi sotto lo stesso nome. -->
     <span class="righe text-subheadline">
-      <span class="cifre" class:avviso={d.ing.sotto}>
-        <span class="secondario">ING minimo previsto</span>
-        <b>{euro(d.ing.minimo, { tondo: true })}</b>
-        <span class="secondario">· {glm(d.ing.quando)}</span>
-      </span>
+      {#if !d.cus}
+        <span class="cifre" class:avviso={d.ing.sotto}>
+          <span class="secondario">ING minimo previsto</span>
+          <b>{euro(d.ing.minimo, { tondo: true })}</b>
+          <span class="secondario">· {glm(d.ing.quando)}</span>
+        </span>
+      {/if}
       <span class="secondario cifre">tutto insieme: {euro(d.totale, { tondo: true })}</span>
     </span>
   </div>
@@ -483,6 +555,23 @@
   .secondario { color: var(--label-secondary); }
   .male { color: var(--color-red); }
   .avviso { color: var(--color-orange); }
+
+  /* --- il ciclo --- */
+  .ciclo { display: flex; flex-direction: column; gap: 8px; color: inherit; text-decoration: none; }
+  .ciclo:active { background: var(--fill-quaternary); }
+  /* La barra: il quotidiano speso, e una tacca dove dovresti essere oggi.
+     Oltre la tacca la barra diventa arancione: stai spendendo più in fretta
+     dei giorni che passano. */
+  .ciclo-barra { position: relative; display: block; height: 6px; border-radius: 3px; background: var(--fill-tertiary); }
+  .ciclo-barra i { display: block; height: 100%; border-radius: inherit; background: var(--accento); }
+  .ciclo-barra i.avanti { background: var(--color-orange); }
+  .ciclo-barra em { position: absolute; top: -3px; width: 2px; height: 12px; margin-left: -1px; border-radius: 1px; background: var(--label-primary); }
+  .ritmo { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px var(--space-3); }
+  .dove { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); margin-top: 2px; }
+  .voce-dove { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; border-radius: var(--radius-lg); background: var(--fill-quaternary); min-width: 0; }
+  .vd-nome { font-size: var(--text-caption1); color: var(--label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .voce-dove b { font-size: var(--text-headline); font-weight: var(--weight-semibold); }
+  .voce-dove .secondario { font-size: var(--text-caption2); }
 
   /* --- il cuscinetto --- */
   .cus { display: flex; flex-direction: column; gap: 8px; width: 100%; text-align: left; color: inherit; }

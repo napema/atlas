@@ -60,6 +60,13 @@ Chi apre una chat comincia da `git log --oneline -20` e da questo file.
 - **v3.3**: ING riancorato a 229,71 (`allineaV33`). I 567,96 della spec erano
   ING prima dei 338,25 del corredo. Cuscinetto: 19%, minimo 556,51 al 15/02,
   sopra target dal 23/04/2027.
+- **Riepilogo più ricco**: carta «Il ciclo» (quotidiano speso vs tacca del
+  ritmo, €/g contro piano, le 3 voci più care, apre l'Analisi); in «In
+  arrivo» le entrate attese (`inArrivoDiviso().entrate`, finestra 31 giorni)
+  col «+», e il loro foglio ha «È arrivato» (movimento `in` con `pian`). ING
+  conta i movimenti con `pian` anche se è esterno. Le uscite pagate da una
+  ricarica ING (`copre`) stanno nel gruppo «Da riserva». Tolto il secondo
+  «ING minimo previsto» dal blocco Pocket quando c'è il cuscinetto.
 
 ### ✅ 15 ottobre — FASE 5K: test al 5 novembre, cinque settimane *(chat ATLAS, su richiesta diretta)*
 
