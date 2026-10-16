@@ -810,14 +810,22 @@ export function deltaPocketTra(id, da, aEsclusa) {
 
     if (p.external) continue;               // il resto non passa da ING
     if ((m.pocket || "principale") !== id) continue;
-    if (m.tipo === "out") s -= importoEffettivo(m);
+    /* L'USCITA ESCE INTERA, il rimborso entra quando arriva. Qui c'era
+       `importoEffettivo(m)` — l'uscita gia' al netto dei rimborsi — e poi i
+       rimborsi si sommavano anche come entrate: contati due volte. Coi 2.670
+       € del corredo e i 2.328 restituiti dai colleghi, il Principale sarebbe
+       salito di 2.328 € che non esistono. L'effettivo serve al budget (quanto
+       ti e' costato), non al saldo (quanto c'e' sul conto). */
+    if (m.tipo === "out") s -= m.imp;
     else s += m.imp;                        // in, rimb, reso
   }
   return s;
 }
 
+/* Gli ARCHIVIATI restano nell'archivio — lo storico li nomina — ma non
+   in nessuna lista: il Fondo naso dal 16 ottobre. */
 export const pocketConSaldi = () =>
-  (stato().pockets || []).map((p) => ({ ...p, saldoVero: saldoPocket(p.id) }));
+  (stato().pockets || []).filter((p) => p && !p.archiviato).map((p) => ({ ...p, saldoVero: saldoPocket(p.id) }));
 
 /**
  * I pocket da cui si spende davvero: Principale e Contanti.

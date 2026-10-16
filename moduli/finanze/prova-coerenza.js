@@ -353,6 +353,24 @@ casella.scrivi(archivioBase);
     caro.consiglio.fonte !== "settimana", `${caro.consiglio.tipo} · settimana ${caro.per.settimana.verdetto}`);
 }
 
+/* --- i rimborsi nel saldo si contano una volta sola ------------------ */
+{
+  const { saldoPocket: sp } = await import("./calcolo.js");
+  const prima = casella.leggi();
+  const base = sp("principale");
+  casella.scrivi({
+    ...prima,
+    movs: [...prima.movs,
+      { id: "rx-out", data: OGGI, tipo: "out", imp: 3672, nota: "Deliveroo", cat: "cibo", sub: "Delivery", pocket: "principale", up: 1, ts: 1 },
+      { id: "rx-r1", data: OGGI, tipo: "rimb", imp: 1800, nota: "Omar", pocket: "principale", rif: "rx-out", up: 1, ts: 1 },
+      { id: "rx-r2", data: OGGI, tipo: "rimb", imp: 1800, nota: "Stefano", pocket: "principale", rif: "rx-out", up: 1, ts: 1 },
+    ],
+  });
+  eq("36,72 € con 36 € restituiti: il conto scende di 0,72", euro(sp("principale") - base), "−0,72 €");
+  ok("e non e' fuori piano", !(await import("./piano.js")).eFuoriPiano(casella.leggi().movs.find((m) => m.id === "rx-out")));
+  casella.scrivi(prima);
+}
+
 console.log(rotti ? `\n${rotti} controlli non passano.` : "\nNessuna contraddizione.");
 
 /* `contratto.js` apre il canale di sync e lascia dei timer: senza questo

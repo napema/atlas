@@ -258,7 +258,7 @@
   .v-testo span { color: var(--label-primary); line-height: 1.35; }
 
   /* QUANTO VALE: tre tessere uguali. */
-  .vale { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+  .vale { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: var(--space-2); }
   .misura {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
     padding: var(--space-3) var(--space-2); border-radius: var(--radius-xl); background: var(--fill-quaternary);

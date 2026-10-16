@@ -85,7 +85,7 @@
 
   const daTastiera = typeof matchMedia !== "undefined" && matchMedia("(hover: hover) and (pointer: fine)").matches;
   const cat = $derived(b.cat ? categoriaPerId(b.cat) : null);
-  const pockets = $derived(((stato().pockets || []) as any[]).map((p) => ({ id: p.id, testo: p.nome })));
+  const pockets = $derived(((stato().pockets || []) as any[]).filter((p) => !p.archiviato).map((p) => ({ id: p.id, testo: p.nome })));
   const doppio = $derived(b.tipo === "giro" || b.tipo === "extra");
   const recenti = $derived(
     b.tipo === "rimb" || b.tipo === "reso"

@@ -19,13 +19,13 @@
   import { avviso, dataBreve, euro, centesimi, oggiISO } from "$lib/core/ui";
   import {
     stato, profiloDi, chiaveProfilo, scriviProfili, scriviMeta, SOGLIE_PREDEFINITE, TIPI_POCKET,
-    ricorrentiVivi, previsti, statoConfig, sbloccaConfig, ORE_LIBERE,
+    ricorrentiVivi, previsti, entratePreviste, statoConfig, sbloccaConfig, ORE_LIBERE,
   } from "$condivisi/finanze/dati.js";
   import {
     quadratura, meseDi, cicloDi, nomeCiclo, pocketConSaldi, coperturaDi,
     ultimoStipendio, prossimoStipendio,
   } from "$condivisi/finanze/calcolo.js";
-  import { statoObiettivo, budgetVita, ingPrevisto } from "$condivisi/finanze/piano.js";
+  import { statoObiettivo, budgetVita, ingPrevisto, cuscinetto } from "$condivisi/finanze/piano.js";
   import { MAPPA_PRODOTTI, MAPPA_CARTE } from "$condivisi/finanze/revolut.js";
   import { preparaImport, eseguiImport } from "$condivisi/finanze/importa.js";
   import { scaricaAnalisi, copiaAnalisi } from "$condivisi/finanze/esporta.js";
@@ -46,12 +46,15 @@
       ric: s.config?.ricarica || { giorno: 1, ora: "08:00" },
       pk: pocketConSaldi(),
       ricorrenti: ricorrentiVivi(),
-      previsti: (previsti() as any[]).slice().sort((a, b) => a.quando.localeCompare(b.quando)),
+      // Uscite ed entrate previste nella stessa lista, in ordine di data:
+      // l'entrata si riconosce dal «+».
+      previsti: ([...previsti(), ...entratePreviste()] as any[]).sort((a, b) => a.quando.localeCompare(b.quando)),
       regole: Object.keys(s.rules || {}).length,
       ciclo: nomeCiclo(c), cicloIndice: c.indice,
       ultimo: ultimoStipendio(iso), prossimo: prossimoStipendio(iso),
       cfg: statoConfig(ultimoStipendio(iso)),
       obi: statoObiettivo(iso),
+      cus: cuscinetto(iso),
       vita: budgetVita(),
       quotaPiano: Math.round(budgetVita() / Math.max(1, c.giorni)),
       chiaveDicembre: `${Number(iso.slice(0, 4))}-12`,
@@ -131,7 +134,14 @@
 <!-- L'OBIETTIVO, prima dei budget: e quello che rende costosa una spesa.
      105 euro non sono 105 euro, sono due terzi di un versamento al fondo. -->
 <Sezione titolo="Obiettivo">
-  {#if d.obi}
+  {#if d.cus}
+    <!-- Il cuscinetto non ha campi da scrivere qui: il target viene dalle
+         Fisse, il versamento dalla riga del budget qui sotto. Due posti per
+         lo stesso numero sono due numeri. -->
+    <Riga titolo={d.cus.nome} sottotitolo="target {euro(d.cus.target, { tondo: true })}{d.cus.regola ? ` · ${d.cus.regola}` : ''}"
+      valore="{Math.round(d.cus.frazione * 100)}%" freccia onclick={() => apri({ tipo: "obiettivo" })} />
+    <Riga titolo="Versamento per stipendio" sottotitolo="la riga «Cuscinetto ING» del budget" valore={euro(d.cus.versamento, { tondo: true })} />
+  {:else if d.obi}
     <Riga titolo={d.obi.nome} sottotitolo="{euro(d.obi.saldo, { tondo: true })} di {euro(d.obi.target, { tondo: true })} entro il {dataBreve(d.obi.data)}"
       valore={d.obi.inLinea ? "in linea" : `-${euro(-d.obi.scarto, { tondo: true })}`} freccia onclick={() => apri({ tipo: "obiettivo" })} />
     <Riga titolo="Versamento per stipendio" valore={euro(d.obi.versamento, { tondo: true })} />
@@ -142,7 +152,10 @@
 </Sezione>
 
 <Sezione titolo="Budget · profilo {d.p.nome}" piede="«Cassa» segna le categorie che dipendono da una decisione giornaliera: le fisse dentro un tetto settimanale lo farebbero sforare da sole il giorno dell'affitto.">
-  {#each d.s.cats as c (c.id)}
+  <!-- «Accantonamenti» e «Risparmio» non sono più righe del budget (v3.1):
+       la prima resta una categoria, per classificare bollo e assicurazione,
+       ma i soldi per loro sono il cuscinetto su ING, qui in fondo. -->
+  {#each d.s.cats.filter((c: any) => c.id !== "acc" && c.id !== "risp") as c (c.id)}
     <div class="budget">
       <span class="punto" style:background={coloreCat(c.id)}></span>
       <span class="nome">{c.nome}</span>
@@ -155,6 +168,12 @@
       <span class="secondario">€</span>
     </div>
   {/each}
+  <div class="budget">
+    <span class="punto" style:background="var(--accento)"></span>
+    <span class="nome">Cuscinetto ING</span>
+    <input type="text" inputmode="numeric" value={d.p.b.ing ?? 0} aria-label="Budget Cuscinetto ING" onchange={(e) => protetto(() => scriviProfili((st: any) => { st.profili[d.chiave].b.ing = Math.max(0, Number(e.currentTarget.value) || 0); }))} />
+    <span class="secondario">€</span>
+  </div>
   <RigaNumero etichetta="Entrate mensili attese" valore={d.s.config.entrate} unita="€" onsalva={(n) => protetto(() => scriviMeta((st: any) => { st.config.entrate = Math.max(0, n); }))} />
   <!-- «Vita» e la somma delle categorie marcate, ed e lo stesso numero che
        in home diventa la quota di piano: budget diviso i giorni del ciclo.
@@ -163,7 +182,7 @@
   <Riga titolo="Vita" sottotitolo="le categorie marcate · quota di piano {euro(d.quotaPiano)}/g" valore={euro(d.vita, { tondo: true })} />
   <div class="quadra" class:male={d.q.differenza < 0}>
     <span>{d.q.differenza < 0 ? "Sfori le entrate di" : "Ti resta"} <b class="cifre">{Math.abs(d.q.differenza).toLocaleString("it-IT")} €</b></span>
-    <span class="text-footnote secondario">{d.q.differenza < 0 ? "Il budget non quadra: taglia qualche voce finché non rientri." : d.q.differenza === 0 ? "Budget allocato al centesimo." : "Margine non allocato: puoi destinarlo a risparmio o accantonamenti."}</span>
+    <span class="text-footnote secondario">{d.q.differenza < 0 ? "Il budget non quadra: taglia qualche voce finché non rientri." : d.q.differenza === 0 ? "Budget allocato al centesimo." : "Margine non allocato: puoi destinarlo al cuscinetto."}</span>
   </div>
 </Sezione>
 
@@ -219,7 +238,11 @@
 <Sezione titolo="Pagamenti previsti" piede="Una tantum con una data: la maxi rata, una caparra, un acquisto già deciso. Entrano in «In arrivo» insieme ai ricorrenti.">
   {#each d.previsti as x (x.id)}
     {@const cop = coperturaDi(x)}
-    <Riga titolo={x.nome} sottotitolo="{dataBreve(x.quando)} · {nomePocket(x.pocket)}{cop.coperto ? '' : ` · mancano ${euro(cop.manca, { tondo: true })}`}" valore={euro(x.imp, { tondo: true })} freccia onclick={() => apriRic("previsto", x)} />
+    {#if x.tipo === "in"}
+      <Riga titolo={x.nome} sottotitolo="{dataBreve(x.quando)} · su {nomePocket(x.pocket)} · entrata" valore="+{euro(x.imp)}" />
+    {:else}
+      <Riga titolo={x.nome} sottotitolo="{dataBreve(x.quando)} · {nomePocket(x.pocket)}{cop.coperto ? '' : ` · mancano ${euro(cop.manca, { tondo: true })}`}" valore={euro(x.imp, { tondo: true })} freccia onclick={() => apriRic("previsto", x)} />
+    {/if}
   {/each}
   <Riga titolo="Aggiungi un pagamento previsto" accento onclick={() => apriRic("previsto")} />
 </Sezione>

@@ -42,7 +42,7 @@
   import { cicloDi, importoEffettivo, pocketConSaldi } from "$condivisi/finanze/calcolo.js";
   import {
     quotaDi, quotaDomani, tiroObiettivo, passoObiettivo,
-    fuoriPianoDelCiclo, ingPrevisto, inArrivoDiviso,
+    fuoriPianoDelCiclo, ingPrevisto, inArrivoDiviso, cuscinetto,
   } from "$condivisi/finanze/piano.js";
   import { allineamento } from "$condivisi/finanze/chiusura.js";
   import { apri } from "./fogli.svelte";
@@ -64,6 +64,7 @@
       configurato: pk.some((p: any) => p.ancoraDa || p.saldo),
 
       obi: tiroObiettivo(oggi),
+      cus: cuscinetto(oggi),
       passo: passoObiettivo(oggi),
       domani: quotaDomani(oggi),
       travasi: pianoTravasi(oggi),
@@ -107,7 +108,7 @@
 
   const NOTA_POCKET: Record<string, string> = {
     principale: "spendibile", contanti: "in tasca", cassa: "parcheggio",
-    fisse: "addebiti automatici", ing: "riserva", fondo: "obiettivo",
+    fisse: "addebiti automatici", ing: "riserva · cuscinetto", fondo: "obiettivo",
   };
 </script>
 
@@ -127,7 +128,41 @@
      totale si scrive nel campo dell'importo, una differenza va prima
      sommata a mente. Le alternative (spostare la data, abbassare il
      traguardo) stanno nel foglio, a un tocco. -->
-{#if d.obi}
+<!-- IL CUSCINETTO ING (v3.1). Al posto del Naso, e con un'altra forma:
+     non c'e' una data da raggiungere, c'e' un livello da tenere. Quindi niente
+     «ci arrivi?»: quanto c'e' rispetto al target, quanto in basso lo portano
+     le uscite grosse, da quando ci stai sopra per davvero, e il prossimo
+     versamento. Il colore sta sul minimo, che e' l'unico numero che puo'
+     andare male: ambra sotto il pavimento di ING, rosso sotto zero. -->
+{#if d.cus}
+  <Sezione>
+    <button type="button" class="blocco cus" data-tono={d.cus.livello} onclick={() => apri({ tipo: "obiettivo" })}>
+      <span class="testa">
+        <span class="eti">ING · CUSCINETTO</span>
+        <span class="eti-dx cifre">target {euro(d.cus.target, { tondo: true })}{d.cus.regola ? ` · ${d.cus.regola}` : ""}</span>
+      </span>
+      <span class="cus-riga">
+        <span class="obi-cifre">
+          <b class="cifre">{euro(d.cus.saldo)}</b>
+          <span class="secondario cifre">/ {euro(d.cus.target, { tondo: true })}</span>
+        </span>
+        <span class="cus-pct cifre">{Math.round(d.cus.frazione * 100)}%</span>
+      </span>
+      <span class="cus-barra" aria-hidden="true"><i style:width="{Math.round(d.cus.frazione * 100)}%"></i></span>
+      <span class="cus-righe text-subheadline">
+        <span class="cus-min cifre">minimo previsto <b>{euro(d.cus.minimo)}</b> · {gm(d.cus.quando)}</span>
+        {#if d.cus.sopraDal}
+          <span class="secondario cifre">{d.cus.sopraDal === d.oggi ? "sopra target" : `sopra target dal ${glma(d.cus.sopraDal)}`}</span>
+        {:else}
+          <span class="avviso">non resta sopra target nei prossimi 12 mesi</span>
+        {/if}
+        {#if d.cus.prossimo}
+          <span class="secondario cifre">prossimo versamento {euro(d.cus.prossimo.imp, { tondo: true })} · {glm(d.cus.prossimo.quando)}</span>
+        {/if}
+      </span>
+    </button>
+  </Sezione>
+{:else if d.obi}
   {@const giusto = d.obi.inPiu ? d.obi.versamento + d.obi.inPiu : d.obi.versamento}
   {@const prossimo = d.passo?.prossimo ?? d.obi.prossimo}
   <Sezione>
@@ -322,7 +357,9 @@
                spostato. Ma «= 134% del versamento» cominciava con un uguale
                sospeso e chiedeva una divisione a mente. -->
           <span class="secondario cifre">
-            {d.fp.pct >= 0.95
+            {d.cus
+              ? `= ${Math.round(d.fp.pct * 100)}% del versamento mensile`
+              : d.fp.pct >= 0.95
               ? `vale ${(Math.round(d.fp.pct * 10) / 10).toLocaleString("it-IT")} versamenti al fondo`
               : `vale ${Math.round(d.fp.pct * 100)}% di un versamento al fondo`}
           </span>
@@ -446,6 +483,18 @@
   .secondario { color: var(--label-secondary); }
   .male { color: var(--color-red); }
   .avviso { color: var(--color-orange); }
+
+  /* --- il cuscinetto --- */
+  .cus { display: flex; flex-direction: column; gap: 8px; width: 100%; text-align: left; color: inherit; }
+  .cus:active { background: var(--fill-quaternary); }
+  .cus-riga { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+  .cus-pct { font-size: var(--text-headline); font-weight: var(--weight-semibold); color: var(--label-secondary); }
+  .cus-barra { display: block; height: 6px; border-radius: 3px; overflow: hidden; background: var(--fill-tertiary); }
+  .cus-barra i { display: block; height: 100%; border-radius: inherit; background: var(--accento); }
+  .cus-righe { display: flex; flex-direction: column; gap: 1px; }
+  .cus-min b { font-weight: var(--weight-semibold); }
+  .cus[data-tono="avviso"] .cus-min { color: var(--color-orange); }
+  .cus[data-tono="male"] .cus-min { color: var(--color-red); }
 
   /* --- obiettivo --- */
   /* La pressione la fa `.premibile` (app.css): la lastra cede di un

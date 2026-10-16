@@ -29,6 +29,30 @@ Chi apre una chat comincia da `git log --oneline -20` e da questo file.
 
 ## Stato
 
+### ✅ 16 ottobre — Finanze v3.1: cuscinetto ING, budget nuovo, estratto al 16 *(chat ATLAS, su richiesta diretta)*
+
+- **Obiettivo**: via il Naso, `config.obiettivo` è il cuscinetto ING
+  (`regola: "fisse"` → target = budget Fisse). `cuscinetto()` in `piano.js`:
+  proiezione di ING, minimo = punto più basso DOPO un'uscita (non «oggi»),
+  «sopra target dal» = primo giorno dopo cui non scende più sotto. Il Naso
+  tace da solo: `statoObiettivo` senza data torna `null`.
+- **Budget**: `b.ing = 271` (la riga «Cuscinetto ING»), via `acc` e `risp`
+  dal budget (le categorie restano). Giorno di paga a tre travasi + la riga
+  «resta sul Principale» (7 giorni, arrotondata ai 5 €); a dicembre la
+  tredicesima su ING (entrata con «tredicesima» nella nota).
+- **Regole**: fuori piano sulla soglia dell'EFFETTIVO; previsti `tipo: "in"`
+  separati (`entratePreviste()`), contati solo dalla proiezione di ING; una
+  ricarica da ING con `copre: <id>` toglie la sua parte dallo speso del giorno.
+- **Guasto corretto**: `deltaPocketTra` sottraeva l'uscita già al netto dei
+  rimborsi e poi sommava i rimborsi: contati due volte nel saldo.
+- **Dati**: `allineaV31()` (marchio `bloccoV31`, dopo la lettura, id fissi
+  `v31-*`): movimenti 9–16 ottobre, corredo con 10 rimborsi, previsti nuovi,
+  utenze al 31/12, ancore al 17, Fondo archiviato. Provata sulla copia dello
+  stato vero: i numeri di «Come verifico» tornano tutti. Ripulisce anche due
+  doppioni nati in v3 (monitor del 6/10, rata AliExpress 3/3), aggancia il
+  parcheggio del 24/09 al suo previsto e corregge il giro del 10/10 a 21,28.
+- **Non verificato**: la riconciliazione col CSV 1–16 ottobre (serve il file).
+
 ### ✅ 15 ottobre — FASE 5K: test al 5 novembre, cinque settimane *(chat ATLAS, su richiesta diretta)*
 
 - `moduli/allenamenti/dati.js`: settimane 2–5 dal CSV, la 1 intatta.

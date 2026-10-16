@@ -49,7 +49,7 @@ export function categorieIniziali() {
        fare; shopping e tech sono cose che SCEGLI di fare. Sotto un budget
        solo non si capiva mai se avevi sforato per necessita' o per sfizio,
        e «Come spendi» le metteva nello stesso mucchio. */
-    { id: "cura",      nome: "Cura e necessità", sub: ["Barbiere", "Lavanderia", "Farmacia e salute", "Igiene e cosmetica", "Integratori", "Studio"] },
+    { id: "cura",      nome: "Cura e necessità", sub: ["Barbiere", "Lavanderia", "Farmacia e salute", "Igiene e cosmetica", "Integratori", "Studio", "Divisa e lavoro"] },
     { id: "svago",     nome: "Svago e shopping", sub: ["Uscite e serate", "Abbigliamento", "Shopping", "Tech", "Sport e attrezzatura", "Regali", "Viaggi e hotel"] },
     { id: "acc",       nome: "Accantonamenti",   sub: ["Assicurazione", "Bollo", "Tagliando", "Fondo emergenze"] },
     { id: "risp",      nome: "Risparmio",        sub: ["Deposito", "Investimenti"] },
@@ -116,7 +116,11 @@ export function profiliIniziali() {
   return {
     reg: {
       nome: "Regime",
-      b: { fisse: 1235, casa: 30, auto: 65, trasporti: 20, spesa: 220, cibo: 80, cura: 75, svago: 45, acc: 115, risp: 0 },
+      /* `ing` e' il cuscinetto (v3.1, 16 ottobre): i 115 degli
+         accantonamenti auto piu' i 156 del fondo. «Accantonamenti» e
+         «Risparmio» non sono piu' righe del budget — la prima resta una
+         categoria, per classificare bollo e assicurazione. */
+      b: { fisse: 1235, casa: 30, auto: 65, trasporti: 20, spesa: 220, cibo: 80, cura: 75, svago: 45, ing: 271 },
       cassaCats: [...CATEGORIE_CASSA], dal: 1, al: 31,
     },
   };
@@ -134,7 +138,7 @@ export function profiliIniziali() {
  * profilo chiama «acc»: e' la stessa cosa detta due volte, e qui vince
  * questa perche' e' quella che muove i soldi.
  */
-export const VERSAMENTI = { fondo: 15600, vita: 53500, ing: 11500 };
+export const VERSAMENTI = { vita: 53500, ing: 27100 };
 
 /* LE ECCEZIONI, per data di stipendio.
  *
@@ -146,7 +150,10 @@ export const VERSAMENTI = { fondo: 15600, vita: 53500, ing: 11500 };
  * sono scritti, e dal 23 novembre si torna al calcolo.
  */
 export const ECCEZIONI_STIPENDIO = {
-  "2026-10-23": { fondo: 15600, fisse: 132900, vita: 53500, ing: 2100 },
+  /* v3.1: le Fisse a mano a 1.274 — le scadenze fino al 22 novembre meno
+     gli 0,03 che ci sono — senza la quota per la bolletta di dicembre, che
+     parte da novembre. Il Fondo non c'e' piu'. */
+  "2026-10-23": { fisse: 127400, vita: 53500, ing: 23200 },
 };
 
 /**
@@ -161,15 +168,25 @@ export const ECCEZIONI_STIPENDIO = {
  * passati, in cui al fondo non e' mai andato niente, e l'obiettivo
  * nascerebbe gia' in ritardo di mesi.
  */
+/* IL CUSCINETTO ING (v3.1, 16 ottobre 2026), al posto del Naso.
+
+   Non ha una data: e' un livello da tenere, non un traguardo da
+   raggiungere. `regola: "fisse"` aggancia il target al budget delle Fisse —
+   un mese di spese fisse — e se il budget cambia il target lo segue. Il
+   versamento per stipendio e' la riga «Cuscinetto ING» del budget (`b.ing`):
+   un numero solo, perche' due (questo e quello del budget) sono gia' andati
+   in deriva una volta col Fondo. `extra` qui ha solo la tredicesima, FUORI
+   dalla proiezione finche' non arriva con l'importo vero; il rimborso del 2
+   novembre e' un'entrata prevista sul pocket ING e la proiezione la vede
+   da li'. */
 export const OBIETTIVO_INIZIALE = {
-  nome: "Naso",
-  target: 350000,
-  provvisorio: true,
-  data: "2027-08-01",
-  dal: "2026-10-07",
-  pocket: "fondo",
-  versamento: 15600,
-  extra: [{ id: "x-tredicesima", nome: "Tredicesima", imp: 130000, quando: "2026-12", stimato: true }],
+  nome: "Cuscinetto ING",
+  regola: "fisse",
+  target: 123500,
+  pocket: "ing",
+  versamento: 27100,
+  dal: "2026-10-16",
+  extra: [{ id: "x-tredicesima", nome: "Tredicesima", imp: 150000, quando: "2026-12", stimato: true, inProiezione: false }],
 };
 
 export const PREDEFINITO = {
@@ -344,7 +361,9 @@ export function pocketIniziali() {
     // IL FONDO. Non e' spendibile, non e' parcheggio, non e' riserva:
     // non entra in nessun calcolo di quota, e l'unica domanda a cui
     // risponde e' «sono in linea con l'obiettivo».
-    { id: "fondo",      nome: "Fondo naso",  tipo: "obiettivo",  saldo: 0, ancoraDa: null, external: false },
+    // Archiviato dal 16 ottobre: il Naso non e' piu' l'obiettivo. Resta
+    // per lo storico, e nessuna schermata lo mostra.
+    { id: "fondo",      nome: "Fondo naso",  tipo: "obiettivo",  saldo: 0, ancoraDa: null, external: false, archiviato: true },
     // ING ultimo: in home accanto al suo saldo c'e' il minimo previsto, ed
     // e' una riga in piu' che sta bene in fondo.
     { id: "ing",        nome: "ING",         tipo: "riserva",    saldo: 0, ancoraDa: null, external: true },
@@ -692,7 +711,7 @@ function aggiungiFondo() {
     const i = st.pockets.findIndex((p) => p.id === "ing");
     st.pockets.splice(i < 0 ? st.pockets.length : i, 0, {
       id: "fondo", nome: "Fondo naso", tipo: "obiettivo",
-      saldo: 0, ancoraDa: null, external: false, up: 0,
+      saldo: 0, ancoraDa: null, external: false, archiviato: true, up: 0,
     });
   });
 }
@@ -929,7 +948,15 @@ export function segnaScadenzaPagata(id, quando) {
    permette di rispondere alla domanda vera: quando arriva, i soldi ci sono?
    ========================================================================= */
 
-export const previsti = () => (stato().previsti || []).filter((p) => p && !p.del && !p.pagatoIl);
+export const previsti = () => (stato().previsti || []).filter((p) => p && !p.del && !p.pagatoIl && p.tipo !== "in");
+
+/* LE ENTRATE PREVISTE, a parte. Un previsto era sempre un'uscita, e tutto
+   quello che li legge — «In arrivo», la copertura, il fabbisogno delle
+   Fisse — li sottrae. Un rimborso atteso dentro quella lista sarebbe un
+   pagamento in piu'. Sta qui, e lo legge solo chi deve sommarlo: la
+   proiezione di ING. */
+export const entratePreviste = () =>
+  (stato().previsti || []).filter((p) => p && !p.del && !p.pagatoIl && p.tipo === "in");
 
 /** Anche quelli già pagati: servono allo storico, non a «In arrivo». */
 export const previstiTutti = () => (stato().previsti || []).filter((p) => p && !p.del);
@@ -1529,6 +1556,243 @@ export function sistemaGruppi() {
 
     s.config = { ...(s.config || {}), bloccoGruppi: BLOCCO_GRUPPI };
     s.metaUp = ora;
+  });
+  return true;
+}
+
+/* ========================================================================
+   v3.1 — IL CUSCINETTO ING E L'ESTRATTO FINO AL 16 OTTOBRE
+
+   Tre cose insieme, come la v3 del 7 ottobre e con le stesse regole:
+
+   1. LA CONFIGURAZIONE. Via il Naso, il nuovo obiettivo e' il cuscinetto
+      su ING. Il budget perde «Accantonamenti» e «Risparmio» e guadagna
+      «Cuscinetto ING» (271 = 115 + 156). Il Fondo si archivia. Lo stipendio
+      del 23 ottobre ha le Fisse scritte a mano.
+   2. I MOVIMENTI dal 12 al 16 ottobre, compreso il corredo — anticipato per
+      otto e rimborsato dai colleghi — e la serata del 9 rifatta come
+      l'estratto: due uscite e due rimborsi al posto di una cifra a occhio.
+   3. LE ANCORE della sera del 16. Il saldo di ING calcolato non torna con
+      quello vero, e non si inventa un movimento per farlo tornare: si
+      riancora.
+
+   E DUE DOPPIONI che lo stato vero si portava dietro, nati entrambi da una
+   corsa fra i due telefoni durante la v3: il monitor del 6 ottobre e la
+   rata AliExpress 3/3 erano registrati due volte. Il primo contava doppio
+   nel fuori piano, il secondo doppio nelle Fisse da coprire.
+
+   Gira UNA volta (`config.bloccoV31`) e DOPO la lettura del repo. Gli id
+   sono fissi e si salta chi c'e' gia', lapide compresa: cancellare un
+   movimento resta una decisione tua, e un secondo dispositivo che arriva
+   tardi non lo rimette.
+   ======================================================================== */
+
+export const BLOCCO_V31 = "2026-10-16-v31";
+
+/** «Fine del 16» = «inizio del 17»: l'ancora si scrive col giorno dopo. */
+const ANCORA_V31 = "2026-10-17";
+const SALDI_V31 = { principale: 2029, cassa: 0, fisse: 3, ing: 56796, contanti: 0, fondo: 0 };
+
+const P_ = "principale";
+const uscita = (id, data, imp, nota, cat, sub, extra = {}) =>
+  ({ id, data, tipo: "out", imp, nota, cat, sub, pocket: P_, ...extra });
+const rimborso = (id, data, imp, da, rif) =>
+  ({ id, data, tipo: "rimb", imp, nota: da, cat: null, sub: null, pocket: P_, rif });
+const giro = (id, data, imp, da, a) =>
+  ({ id, data, tipo: "giro", imp, nota: `${da === "cassa" ? "Cassa" : "Principale"} → ${a === "cassa" ? "Cassa" : "Principale"}`,
+    cat: null, sub: null, pocket: da, pocketTo: a });
+
+const CORREDO = "v31-corredo";
+const SERATA = "v31-serata-deliveroo";
+
+const DA_AGGIUNGERE_V31 = [
+  /* --- la serata del 9, come da estratto ------------------------------- */
+  uscita(SERATA, "2026-10-09", 3672, "Deliveroo", "cibo", "Delivery"),
+  rimborso("v31-serata-r1", "2026-10-09", 1800, "Omar Domenici", SERATA),
+  rimborso("v31-serata-r2", "2026-10-09", 1800, "Stefano Colasi", SERATA),
+  uscita("v31-serata-maior", "2026-10-09", 2000, "Maior Service", "svago", "Uscite e serate"),
+
+  /* --- il quotidiano dal 13 al 16 -------------------------------------- */
+  uscita("v31-01", "2026-10-13", 1500, "Barbiere (Lamantia Marco)", "cura", "Barbiere"),
+  uscita("v31-02", "2026-10-14", 630, "Ars Vivendi", "cibo", "Bar e colazioni"),
+  uscita("v31-03", "2026-10-15", 300, "Ars Vivendi", "cibo", "Bar e colazioni"),
+  uscita("v31-04", "2026-10-15", 2619, "Deliveroo", "cibo", "Delivery"),
+  uscita("v31-05", "2026-10-16", 260, "Ars Vivendi", "cibo", "Bar e colazioni", { pending: true }),
+  uscita("v31-06", "2026-10-16", 1159, "Deliveroo", "cibo", "Delivery", { pending: true }),
+  { id: "v31-07", data: "2026-10-16", tipo: "in", imp: 13, nota: "Interessi Cassa 8–16 ott",
+    cat: null, sub: null, pocket: "cassa", interessi: true },
+
+  /* --- il corredo ------------------------------------------------------
+     Una sola uscita, coi rimborsi agganciati: l'effettivo e' la quota tua
+     (338,25) piu' 3,11 di arrotondamento. `fuoriPiano: false` scritto, non
+     dedotto: e' una spesa obbligata, e 2.670 € sopra soglia la deduzione
+     li metterebbe fra gli strappi prima ancora di guardare i rimborsi. */
+  uscita(CORREDO, "2026-10-16", 267000, "Corredo bersagliere: bonifico Tomada Army (ordine per 8)",
+    "cura", "Divisa e lavoro", { ecc: true, fuoriPiano: false }),
+  rimborso("v31-corredo-r01", "2026-10-15", 33522, "Tangorra Tommaso", CORREDO),
+  rimborso("v31-corredo-r02", "2026-10-15", 32623, "Lorenzo Mereu", CORREDO),
+  rimborso("v31-corredo-r03", "2026-10-15", 33522, "Birbisi Salvatore", CORREDO),
+  rimborso("v31-corredo-r04", "2026-10-15", 32623, "Mandala Emanuela", CORREDO),
+  rimborso("v31-corredo-r05", "2026-10-15", 33522, "Porti Francesco", CORREDO),
+  rimborso("v31-corredo-r06", "2026-10-16", 300, "Tangorra Tommaso", CORREDO),
+  rimborso("v31-corredo-r07", "2026-10-16", 300, "Lorenzo Mereu", CORREDO),
+  rimborso("v31-corredo-r08", "2026-10-16", 600, "Mandala Emanuela", CORREDO),
+  rimborso("v31-corredo-r09", "2026-10-16", 32926, "Guarente Francesco Pio", CORREDO),
+  rimborso("v31-corredo-r10", "2026-10-16", 32926, "Poli Teodoro", CORREDO),
+  { id: "v31-corredo-ing", data: "2026-10-16", tipo: "extra", imp: 33825, nota: "Quota corredo",
+    cat: null, sub: null, pocket: "ing", pocketTo: P_, pianificata: true, copre: CORREDO },
+
+  /* I soldi dei colleghi, parcheggiati in Cassa e riportati indietro. Non
+     cambiano niente nei totali; senza, la riconciliazione con l'estratto
+     avrebbe sei righe che nell'app non esistono. */
+  giro("v31-giro-1", "2026-10-15", 66145, P_, "cassa"),
+  giro("v31-giro-2", "2026-10-15", 95000, P_, "cassa"),
+  giro("v31-giro-3", "2026-10-16", 32926, P_, "cassa"),
+  giro("v31-giro-4", "2026-10-16", 1200, P_, "cassa"),
+  giro("v31-giro-5", "2026-10-16", 32926, P_, "cassa"),
+  giro("v31-giro-6", "2026-10-16", 231280, "cassa", P_),
+];
+
+const PREVISTI_V31 = [
+  { id: "v31-bolletta-2810", nome: "Bolletta", imp: 3348, quando: "2026-10-28", pocket: "fisse", cat: "fisse",
+    nota: "Una delle due bollette di questo ciclo: l'accantonamento parte da novembre.", pagatoIl: null },
+  { id: "v31-bolletta-0211", nome: "Bolletta", imp: 6110, quando: "2026-11-02", pocket: "fisse", cat: "fisse",
+    nota: "Una delle due bollette di questo ciclo: l'accantonamento parte da novembre.", pagatoIl: null },
+  { id: "v31-rimborso", nome: "Rimborso da persona", imp: 14180, quando: "2026-11-02", pocket: "ing",
+    tipo: "in", cat: null, nota: "Data indicativa.", pagatoIl: null },
+];
+
+/** La firma che riconosce un movimento gia' registrato a mano: senza nota,
+ *  che a mano si scrive diversa. */
+const firmaV31 = (m) => [m.tipo, m.data, m.imp, m.pocket || P_, m.pocketTo || ""].join("|");
+
+export function allineaV31() {
+  if (stato().config?.bloccoV31 === BLOCCO_V31) return false;
+
+  const ora = Date.now();
+  casella.aggiorna((s) => {
+    s.movs = s.movs || [];
+    s.previsti = s.previsti || [];
+    s.ricorrenti = s.ricorrenti || [];
+
+    /* --- 1. la configurazione ------------------------------------------ */
+    const cfg = s.config || {};
+    const ecc = { ...(cfg.eccezioni || {}) };
+    ecc["2026-10-23"] = { ...ECCEZIONI_STIPENDIO["2026-10-23"] };
+    s.config = {
+      ...cfg,
+      obiettivo: { ...OBIETTIVO_INIZIALE, extra: OBIETTIVO_INIZIALE.extra.map((x) => ({ ...x })) },
+      versamenti: { ...VERSAMENTI },
+      eccezioni: ecc,
+      bloccoV31: BLOCCO_V31,
+    };
+
+    // Il budget: si toglie quello che non c'e' piu', si tiene il resto
+    // com'e' — i valori della Vita sono scelte tue, non di fabbrica.
+    for (const p of Object.values(s.profili || {})) {
+      if (!p || !p.b) continue;
+      delete p.b.acc;
+      delete p.b.risp;
+      p.b.ing = 271;
+    }
+
+    const cura = (s.cats || []).find((c) => c.id === "cura");
+    if (cura && Array.isArray(cura.sub) && !cura.sub.includes("Divisa e lavoro")) {
+      cura.sub = [...cura.sub, "Divisa e lavoro"];
+    }
+
+    /* La bolletta di «Gas, luce e acqua» si sposta a fine dicembre: le due
+       di questo ciclo sono i due previsti qui sotto. */
+    const ut = s.ricorrenti.find((r) => r && r.id === "utenze" && !r.del);
+    if (ut) { ut.da = "2026-12-31"; ut.up = ora; }
+
+    const idPrevisti = new Set(s.previsti.filter(Boolean).map((p) => p.id));
+    for (const p of PREVISTI_V31) {
+      if (!idPrevisti.has(p.id)) s.previsti.push({ ...p, up: ora });
+    }
+
+    // Il doppione della rata AliExpress 3/3: resta quella scritta da te.
+    const rate3 = s.previsti.filter((p) => p && !p.del && !p.pagatoIl && p.quando === "2026-11-01"
+      && /aliexpress/i.test(String(p.nome || "")));
+    if (rate3.length > 1) {
+      const via = rate3.find((p) => p.id === "v3-aliexpress-3") || rate3[rate3.length - 1];
+      const i = s.previsti.indexOf(via);
+      s.previsti[i] = { id: via.id, del: true, up: ora };
+    }
+
+    /* --- 2. i movimenti ------------------------------------------------- */
+    const lapida = (m) => {
+      const i = s.movs.indexOf(m);
+      if (i >= 0) s.movs[i] = { id: m.id, del: true, up: ora };
+    };
+
+    // La serata del 9: la cifra a occhio esce, entrano i quattro veri.
+    const serata = trovaMov(s.movs, "2026-10-09", 1890, "serata");
+    if (serata) lapida(serata);
+
+    // I due giri del 7 erano un piano, mai eseguito.
+    for (const m of [...s.movs]) {
+      if (!m || m.del || m.data !== "2026-10-07") continue;
+      if ((m.imp === 9000 && m.pocket === "ing" && m.pocketTo === P_)
+        || (m.imp === 7500 && m.tipo === "giro" && m.pocket === P_ && m.pocketTo === "cassa")) lapida(m);
+    }
+
+    // Il giro del 10: 23,10 sull'app, 21,28 sull'estratto.
+    const g10 = s.movs.find((m) => m && !m.del && m.tipo === "giro" && m.data === "2026-10-10"
+      && m.imp === 2310 && m.pocket === P_ && m.pocketTo === "cassa");
+    if (g10) { g10.imp = 2128; g10.up = ora; }
+
+    /* I PAGAMENTI PREVISTI GIA' PAGATI senza il loro movimento agganciato.
+       Il parcheggio del 24 settembre era un previsto, segnato pagato quel
+       giorno, ma l'uscita era stata scritta a parte: senza il legame la
+       deduzione la metteva fra gli strappi — 60,80 € «fuori piano» per una
+       cosa decisa una settimana prima. Si aggancia per giorno e importo, e
+       solo se l'uscita non e' gia' legata a qualcos'altro. */
+    for (const p of s.previsti) {
+      if (!p || p.del || !p.pagatoIl || p.tipo === "in") continue;
+      if (s.movs.some((m) => m && !m.del && m.pian === p.id)) continue;
+      const m = s.movs.find((x) => x && !x.del && x.tipo === "out" && !x.pian
+        && x.data === p.pagatoIl && x.imp === p.imp);
+      if (m) { m.pian = p.id; m.up = ora; }
+    }
+
+    // Il monitor del 6, registrato due volte: resta quello scritto da te.
+    const monitor = s.movs.filter((m) => m && !m.del && m.tipo === "out" && m.data === "2026-10-06"
+      && m.imp === 10590 && /monitor/i.test(String(m.nota || "")));
+    if (monitor.length > 1) lapida(monitor.find((m) => m.id === "v3-08") || monitor[monitor.length - 1]);
+
+    const ids = new Set(s.movs.filter(Boolean).map((m) => m.id));
+    const conta = new Map();
+    for (const m of s.movs) {
+      if (!m || m.del) continue;
+      const f = firmaV31(m);
+      conta.set(f, (conta.get(f) || 0) + 1);
+    }
+    for (const m of DA_AGGIUNGERE_V31) {
+      if (ids.has(m.id)) continue;
+      /* Gia' segnato a mano dal telefono? Stesso tipo, giorno, importo e
+         tasche: e' lui. Si consuma una corrispondenza per volta, cosi' due
+         rimborsi uguali dello stesso giorno restano due. Il corredo e i
+         suoi rimborsi si aggiungono sempre: i rimborsi puntano al suo id. */
+      const f = firmaV31(m);
+      if (m.id !== CORREDO && m.id !== SERATA && !String(m.rif || "").length && (conta.get(f) || 0) > 0) {
+        conta.set(f, conta.get(f) - 1);
+        continue;
+      }
+      s.movs.push({ rif: null, ecc: false, pocketTo: null, ...m, ts: ora, up: ora });
+    }
+
+    /* --- 3. le ancore e il Fondo archiviato ---------------------------- */
+    for (const p of s.pockets || []) {
+      if (!p || SALDI_V31[p.id] === undefined) continue;
+      p.saldo = SALDI_V31[p.id];
+      p.ancoraDa = ANCORA_V31;
+      if (p.id === "fondo") p.archiviato = true;
+      p.up = ora;
+    }
+
+    s.metaUp = ora;
+    s.profiliUp = ora;
   });
   return true;
 }

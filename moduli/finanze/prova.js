@@ -26,11 +26,11 @@ globalThis.document ??= {
   body: { appendChild() {} },
 };
 
-const { casella, allineaV3, BLOCCO_V3, pocketIniziali, stato } = await import("./dati.js");
+const { casella, allineaV3, allineaV31, BLOCCO_V3, pocketIniziali, stato } = await import("./dati.js");
 const { cicloDi, dataStipendio, saldoPocket, prossimoStipendio } = await import("./calcolo.js");
 const {
   quotaDi, copreFino, statoObiettivo, fuoriPianoDelCiclo, ingPrevisto,
-  quotaDiPiano, budgetVita, effettoVoce,
+  quotaDiPiano, budgetVita, effettoVoce, cuscinetto, eFuoriPiano,
 } = await import("./piano.js");
 const { travasiPaga, fabbisognoFisse } = await import("./paga.js");
 const { pagella, report, settimanaDi } = await import("./chiusura.js");
@@ -77,6 +77,23 @@ console.log("\n--- la migrazione ---");
 eq("allineaV3 gira", allineaV3(), true);
 eq("allineaV3 non rigira", allineaV3(), false);
 eq("marchio", stato().config.bloccoV3, BLOCCO_V3);
+
+/* LA CONFIGURAZIONE DI v3, FISSATA. Questa prova controlla i numeri del
+   documento del 7 ottobre, e quei numeri parlano del Naso, del Fondo e
+   degli accantonamenti a 115. Dal 16 ottobre (v3.1) le costanti di
+   fabbrica sono il cuscinetto ING: senza rimettere qui la configurazione di
+   allora, la prova controllerebbe il 7 ottobre con le regole del 16. La
+   v3.1 ha la sua sezione in fondo. */
+casella.aggiorna((s) => {
+  s.config.obiettivo = {
+    nome: "Naso", target: 350000, provvisorio: true, data: "2027-08-01", dal: "2026-10-07",
+    pocket: "fondo", versamento: 15600,
+    extra: [{ id: "x-tredicesima", nome: "Tredicesima", imp: 130000, quando: "2026-12", stimato: true }],
+  };
+  s.config.versamenti = { fondo: 15600, vita: 53500, ing: 11500 };
+  s.config.eccezioni = { "2026-10-23": { fondo: 15600, fisse: 132900, vita: 53500, ing: 2100 } };
+  for (const p of Object.values(s.profili)) { delete p.b.ing; p.b.acc = 115; p.b.risp = 0; }
+});
 
 console.log("\n--- il ciclo ---");
 eq("23 ottobre 2026", dataStipendio(2026, 9), "2026-10-23");
@@ -137,11 +154,11 @@ const imp = Object.fromEntries(t.righe.map((r) => [r.id, r.imp]));
 eq("al fondo", euro(imp.fondo), "156,00 €");
 eq("alle fisse", euro(imp.fisse), "1329,00 €");
 eq("su ING", euro(imp.ing), "21,00 €");
-/* 483,23 e non i 481,50 del documento: il ciclo del 23 ottobre e' di 31
-   giorni (23 ott → 22 nov), non di 30, quindi la quota di piano e' 17,26 e
-   la prima settimana ne vale 51,77. La formula e' quella del documento,
-   il calendario e' quello vero. */
-eq("vita → cassa (meno la prima settimana)", euro(imp.vita), "483,23 €");
+/* 410 e non i 481,50 del documento: dal 16 ottobre la prima settimana sono
+   sette giorni dallo stipendio (non fino alla domenica), arrotondati ai 5 €:
+   17,26 × 7 = 120,81 → 125, e 535 − 125 = 410. */
+eq("vita → cassa (meno la prima settimana)", euro(imp.vita), "410,00 €");
+eq("vita, resta sul Principale", euro(imp.principale), "125,00 €");
 // A regime, il 23 novembre: il calcolo deve riprodurre la tabella.
 const f = fabbisognoFisse("2026-11-23");
 eq("fabbisogno fisse a regime (23 nov)", euro(f.scadenze + f.quote), "1234,97 €");
@@ -188,6 +205,38 @@ eq("disponibile Attuale (meno il sospeso)", euro(est.disponibili.principale), "5
 const ric = riconcilia(est);
 eq("nessuna differenza sui movimenti noti", ric.nuovi.length, 0);
 eq("nessuna correzione", ric.correzioni.length, 0);
+
+/* ========================================================================
+   v3.1 — il cuscinetto ING e l'estratto fino al 16 ottobre. I numeri sono
+   quelli della sezione «Come verifico» del documento del 16 ottobre.
+   ======================================================================== */
+console.log("\n--- v3.1 ---");
+eq("allineaV31 gira", allineaV31(), true);
+eq("allineaV31 non rigira", allineaV31(), false);
+const D17 = "2026-10-17";
+const cus = cuscinetto(D17);
+eq("cuscinetto: saldo", euro(cus.saldo), "567,96 €");
+eq("cuscinetto: target (1 mese di fisse)", euro(cus.target), "1235,00 €");
+eq("cuscinetto: %", Math.round(cus.frazione * 100), 46);
+eq("cuscinetto: minimo previsto", euro(cus.minimo), "894,76 €");
+eq("cuscinetto: quando", cus.quando, "2027-02-15");
+eq("cuscinetto: sopra target dal", cus.sopraDal, "2027-03-23");
+eq("cuscinetto: prossimo versamento", euro(cus.prossimo.imp), "232,00 €");
+eq("cuscinetto: il 23 ottobre", cus.prossimo.quando, "2026-10-23");
+eq("il Naso non c'e' piu'", statoObiettivo(D17), null);
+const q17 = quotaDi(D17);
+eq("oggi 17 ottobre", euro(q17.resta), "3,38 €");
+eq("su", euro(q17.spendibile), "20,29 €");
+eq("giorni", q17.giorni, 6);
+const t31 = Object.fromEntries(travasiPaga("2026-10-23").righe.map((r) => [r.id, r.imp]));
+eq("23/10 · Fisse", euro(t31.fisse), "1274,00 €");
+eq("23/10 · Principale", euro(t31.principale), "125,00 €");
+eq("23/10 · Cassa", euro(t31.vita), "410,00 €");
+eq("23/10 · ING", euro(t31.ing), "232,00 €");
+eq("23/10 · niente Fondo", t31.fondo, undefined);
+const cor = stato().movs.find((m) => m.id === "v31-corredo");
+eq("corredo: non fuori piano", eFuoriPiano(cor), false);
+eq("deliveroo rimborsata: non fuori piano", eFuoriPiano(stato().movs.find((m) => m.id === "v31-serata-deliveroo")), false);
 
 console.log(rotti ? `\n${rotti} numeri non tornano.\n` : "\nTutto torna.\n");
 if (rotti) Deno.exit(1);

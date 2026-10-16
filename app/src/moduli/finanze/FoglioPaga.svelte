@@ -1,5 +1,6 @@
 <!--
-  Il giorno di paga: quattro travasi, uno per volta.
+  Il giorno di paga: tre travasi, uno per volta (v3.1). E a dicembre la
+  tredicesima, tutta su ING.
 
   Si apre registrando l'entrata marcata «stipendio», e si può riaprire dal
   blocco Pocket finché i quattro non sono fatti.
@@ -22,7 +23,7 @@
   import { dati } from "$lib/core/reattivo.svelte";
   import { avviso, euro, nuovoId, plurale, tocco, daISO, MESI_BREVI, GIORNI } from "$lib/core/ui";
   import { salvaMovimento, segnaTravaso } from "$condivisi/finanze/dati.js";
-  import { travasiPaga, travasiFatti } from "$condivisi/finanze/paga.js";
+  import { travasiPaga, travasiFatti, travasoTredicesima } from "$condivisi/finanze/paga.js";
   import { nomePocket } from "./comune";
 
   let { aperto = $bindable(false), dataStip, entrata = null }:
@@ -30,13 +31,15 @@
 
   const d = $derived.by(() => {
     dati.versione;
-    const t = travasiPaga(dataStip, entrata);
+    const t0 = travasiPaga(dataStip, entrata);
+    const tred = travasoTredicesima(dataStip);
+    const t = tred ? { ...t0, righe: [...t0.righe, tred] } : t0;
     const fatti = new Set(travasiFatti(dataStip));
     return {
       ...t,
       fatti,
       restano: t.righe.filter((r: any) => !fatti.has(r.id)).length,
-      allocato: t.righe.reduce((s: number, r: any) => s + (r.tipo === "extra" ? -r.imp : r.imp), 0),
+      allocato: t.righe.reduce((s: number, r: any) => s + (r.tipo === "extra" ? -r.imp : r.tipo === "resta" ? 0 : r.imp), 0),
     };
   });
 
@@ -47,7 +50,8 @@
 
   function fai(r: any) {
     if (d.fatti.has(r.id)) return;
-    if (r.imp <= 0) { segnaTravaso(dataStip, r.id); tocco(8); return; }
+    // «Resta sul Principale» non muove niente: si spunta e basta.
+    if (r.imp <= 0 || r.tipo === "resta") { segnaTravaso(dataStip, r.id); tocco(8); return; }
     salvaMovimento({
       id: nuovoId("m"), tipo: r.tipo, imp: r.imp, nota: r.nota,
       cat: null, sub: null, pocket: r.da, pocketTo: r.a,
@@ -71,9 +75,9 @@
     {/if}
   </div>
 
-  <Sezione titolo="I quattro travasi" piede={d.restano
+  <Sezione titolo="I travasi" piede={d.restano
     ? `Ogni spunta crea il giro. ${plurale(d.restano, "ne manca", "ne mancano")}.`
-    : "Fatti tutti e quattro."}>
+    : "Fatti tutti."}>
     {#each d.righe as r (r.id)}
       {@const fatto = d.fatti.has(r.id)}
       <button type="button" class="travaso" class:fatto disabled={fatto} onclick={() => fai(r)}>
@@ -82,7 +86,7 @@
         </span>
         <span class="corpo">
           <span class="nome">{r.nome}</span>
-          <span class="text-footnote secondario">{nomePocket(r.da)} → {nomePocket(r.a)} · {r.perche}</span>
+          <span class="text-footnote secondario">{r.tipo === "resta" ? "resta sul Principale" : `${nomePocket(r.da)} → ${nomePocket(r.a)}`} · {r.perche}</span>
         </span>
         <span class="cifre imp" class:male={r.allarme}>{euro(r.imp)}</span>
       </button>

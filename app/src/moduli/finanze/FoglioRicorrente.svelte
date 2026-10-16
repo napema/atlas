@@ -39,7 +39,7 @@
     imp = testoDa(b.imp); min = testoDa(b.stimaMin || 0); max = testoDa(b.stimaMax || 0);
   });
 
-  const pockets = $derived(((stato().pockets || []) as any[]).map((p) => ({ id: p.id, testo: p.nome })));
+  const pockets = $derived(((stato().pockets || []) as any[]).filter((p) => !p.archiviato).map((p) => ({ id: p.id, testo: p.nome })));
   const cats = $derived(((stato().cats || []) as any[]).map((c) => ({ id: c.id, testo: c.nome })));
   const cop = $derived(genere === "previsto" && centesimi(imp) ? coperturaDi({ ...b, imp: centesimi(imp) }) : null);
 

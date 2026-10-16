@@ -1,4 +1,4 @@
-// moduli/finanze/paga.js — il giorno di paga, in quattro travasi.
+// moduli/finanze/paga.js — il giorno di paga, in tre travasi.
 //
 // Lo stipendio arriva tutto sul Principale, e per mezza giornata il conto
 // dice duemila euro. È il momento più pericoloso del mese: ogni spesa fatta
@@ -12,16 +12,16 @@
 // quali scadenze cadono prima del prossimo stipendio è esattamente la cosa
 // che non si fa e che poi lascia il pocket scoperto.
 //
-// L'ordine conta: il Fondo per primo. Mettendolo per ultimo prende quello
-// che resta, e quello che resta è la definizione di risparmio che non
-// funziona.
+// Dal 16 ottobre (v3.1) i travasi sono tre: le Fisse, la Vita, e ING. Il
+// Fondo non c'è più — l'obiettivo è il cuscinetto su ING, che riceve
+// quello che resta dopo le Fisse e la Vita: a regime i 271 del budget.
 
 import { stato, VERSAMENTI, ricorrentiVivi, previsti } from "./dati.js";
 import {
   cicloDi, prossimoStipendio, stipendiTra, prossimaScadenza, importoRicorrente,
   saldoPocket, giorniFra,
 } from "./calcolo.js";
-import { budgetVita, obiettivo } from "./piano.js";
+import { budgetVita, obiettivo, eCuscinetto } from "./piano.js";
 import { daISO, piuGiorni } from "../../core/ui.js";
 
 /**
@@ -88,12 +88,11 @@ export function travasiPaga(dataStip, entrata = null) {
   const ecc = cfg.eccezioni?.[dataStip] || null;
   const vers = { ...VERSAMENTI, ...(cfg.versamenti || {}) };
 
-  /* Il versamento al fondo è QUELLO DELL'OBIETTIVO. C'era anche
-     `config.versamenti.fondo`, scritto da v3 e mai più toccato: cambiando il
-     versamento dal foglio dell'obiettivo, la proiezione si aggiornava e
-     questa lista continuava a chiedere la cifra vecchia. Le eccezioni per
-     data restano sopra a tutto: sono scritte a mano per un mese preciso. */
-  const fondo = ecc?.fondo ?? (Number(obiettivo()?.versamento) || vers.fondo);
+  /* IL FONDO, solo se l'obiettivo e' ancora un salvadanaio a parte. Col
+     cuscinetto ING non c'e' un quarto travaso: il cuscinetto e' l'ultimo,
+     quello che resta. */
+  const conFondo = !eCuscinetto() && obiettivo()?.pocket === "fondo";
+  const fondo = conFondo ? (ecc?.fondo ?? (Number(obiettivo()?.versamento) || vers.fondo || 0)) : 0;
   const fisse = fabbisognoFisse(dataStip);
   const importoFisse = ecc?.fisse ?? fisse.importo;
   const vita = ecc?.vita ?? (budgetVita() || vers.vita);
@@ -108,20 +107,24 @@ export function travasiPaga(dataStip, entrata = null) {
   const dow = (daISO(dataStip).getDay() + 6) % 7;
   const domenica = piuGiorni(dataStip, 6 - dow);
   const fino = domenica < ciclo.a ? domenica : ciclo.a;
-  const giorniPrimi = Math.max(1, giorniFra(dataStip, fino));
-  const primaSettimana = Math.round((vita / Math.max(1, ciclo.giorni)) * giorniPrimi);
+  /* LA PRIMA SETTIMANA sono sette giorni dallo stipendio, non fino alla
+     domenica: con lo stipendio di venerdì, «fino a domenica» erano tre
+     giorni, e il lunedì si doveva già ricaricare. Arrotondata in su ai 5 €,
+     come ogni cifra che si scrive a mano su Revolut. */
+  const giorniPrimi = Math.min(7, ciclo.giorni);
+  const primaSettimana = Math.min(vita, Math.ceil(((vita / Math.max(1, ciclo.giorni)) * giorniPrimi) / 500) * 500);
 
   return {
     dataStip, entrate, eccezione: Boolean(ecc), ciclo,
     fisse,
     primaSettimana, finoA: fino,
     righe: [
-      {
-        id: "fondo", nome: "Fondo naso", imp: fondo,
+      ...(conFondo ? [{
+        id: "fondo", nome: "Fondo", imp: fondo,
         da: "principale", a: "fondo", tipo: "giro",
         nota: "Versamento al fondo",
         perche: "Per primo: se prende quello che resta, non resta niente.",
-      },
+      }] : []),
       {
         id: "fisse", nome: "Spese fisse", imp: importoFisse,
         da: "principale", a: "fisse", tipo: "giro",
@@ -130,11 +133,20 @@ export function travasiPaga(dataStip, entrata = null) {
           ? "Importo scritto a mano per questo stipendio."
           : `${fisse.dettaglio.length} scadenze fino al prossimo stipendio, saldo attuale già tolto.`,
       },
+      /* LA PRIMA SETTIMANA NON SI MUOVE, ma si spunta: è la riga che dice
+         quanto della Vita resta dov'è, e con lei la lista si legge come il
+         budget — Fisse, Vita in due parti, ING — e la somma fa lo stipendio. */
+      {
+        id: "principale", nome: "Vita · resta sul Principale", imp: primaSettimana,
+        da: "principale", a: "principale", tipo: "resta",
+        nota: "Vita, prima settimana",
+        perche: `La prima settimana (${giorniPrimi} giorni). Non si sposta niente.`,
+      },
       {
         id: "vita", nome: "Vita → Cassa", imp: Math.max(0, vita - primaSettimana),
         da: "principale", a: "cassa", tipo: "giro",
         nota: "Vita, settimane successive",
-        perche: `La prima settimana (${giorniPrimi} giorni) resta sul Principale.`,
+        perche: "Le settimane dopo la prima, in parcheggio.",
       },
       /* IL QUARTO VA IN DUE DIREZIONI. Se avanza, va su ING. Se non
          avanza, ING deve coprire — e quel travaso è `extra`, perché è un
@@ -142,9 +154,9 @@ export function travasiPaga(dataStip, entrata = null) {
          non è uno strappo, e non deve finire in «Fuori piano». */
       ing >= 0
         ? {
-            id: "ing", nome: "ING", imp: ing,
+            id: "ing", nome: eCuscinetto() ? "Cuscinetto ING" : "ING", imp: ing,
             da: "principale", a: "ing", tipo: "giro",
-            nota: "Accantonamenti auto",
+            nota: eCuscinetto() ? "Cuscinetto ING" : "Accantonamenti auto",
             perche: "Quello che resta.",
           }
         : {
@@ -163,8 +175,30 @@ export const travasiFatti = (dataStip) => (stato().config?.pagaFatta || {})[data
 
 export const pagaCompleta = (dataStip) => {
   const fatti = new Set(travasiFatti(dataStip));
-  return ["fondo", "fisse", "vita", "ing"].every((id) => fatti.has(id));
+  return travasiPaga(dataStip).righe.every((r) => fatti.has(r.id));
 };
+
+/**
+ * LA TREDICESIMA, a dicembre: un'entrata a parte, e va TUTTA su ING.
+ *
+ * Non sta dentro `travasiPaga` perché non è lo stipendio: arriva come
+ * un'entrata sua, con l'importo vero che si sa solo quel giorno. Il foglio
+ * del giorno di paga la mostra come travaso in più quando nel ciclo c'è
+ * un'entrata con «tredicesima» nella nota.
+ */
+export function travasoTredicesima(dataStip) {
+  if (!dataStip || dataStip.slice(5, 7) !== "12") return null;
+  const ciclo = cicloDi(dataStip);
+  const m = (stato().movs || []).find((x) => x && !x.del && x.tipo === "in"
+    && (x.tredicesima || /tredicesim/i.test(String(x.nota || ""))) && x.data >= ciclo.da && x.data <= ciclo.a);
+  if (!m) return null;
+  return {
+    id: "tredicesima", nome: "Tredicesima → ING", imp: m.imp,
+    da: m.pocket || "principale", a: "ing", tipo: "giro",
+    nota: "Tredicesima al cuscinetto",
+    perche: "Tutta su ING: è il cuscinetto, non la Vita di dicembre.",
+  };
+}
 
 /**
  * Le scadenze del pocket Fisse che cadono prima del prossimo stipendio e

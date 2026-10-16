@@ -18,7 +18,7 @@
 
 import {
   stato, movimentiVivi, previsti, previstiTutti, ricorrentiVivi, profiloDi,
-  SOGLIE_PREDEFINITE, CATEGORIE_CASSA, vociLista, statoVoce,
+  SOGLIE_PREDEFINITE, CATEGORIE_CASSA, vociLista, statoVoce, entratePreviste,
 } from "./dati.js";
 import {
   cicloDi, prossimoStipendio, stipendiTra, dataStipendio, giorniFra,
@@ -97,7 +97,11 @@ export function eFuoriPiano(m) {
   if (m.tipo === "extra") return m.pianificata !== true;
 
   if (m.tipo !== "out") return false;
-  if (m.imp < (soglie().fuoriPiano || 0)) return false;
+  /* SULL'EFFETTIVO, non sul lordo. Una Deliveroo da 36,72 rimborsata dagli
+     amici fino a 0,72 non e' uno strappo da 36,72: ti e' costata settanta
+     centesimi. Col lordo finiva in «Fuori piano» una spesa che hai solo
+     anticipato. */
+  if (importoEffettivo(m) < (soglie().fuoriPiano || 0)) return false;
   if (m.pian) return false;                   // nata dal «Paga» di una scadenza
   if (m.cat === "spesa") return false;        // la spesa alimentare non è una scelta
   if (m.lista) return false;                  // era in lista d'attesa, sbloccata
@@ -140,7 +144,18 @@ export function spesoDiPiano(iso = oggiISO()) {
     .filter((m) => m.tipo === "out" && m.data === iso && dentro.includes(m.pocket || "principale"))
     .filter((m) => !m.pian)
     .filter((m) => !(eFuoriPiano(m) && copertaDaRicarica(m)))
-    .reduce((t, m) => t + importoEffettivo(m), 0);
+    /* E QUELLO CHE UNA RICARICA DA ING HA PAGATO PER LEI. Il corredo del 16
+       ottobre: 341,36 € effettivi, 338,25 arrivati da ING apposta. La quota
+       del giorno non ha pagato niente di quei soldi, se non i 3,11 di
+       arrotondamento — e senza questa riga la giornata diceva «−352 €
+       oltre la razione». Il legame e' esplicito (`copre` sulla ricarica):
+       per importo non combaciano, ed e' giusto che non combacino. */
+    .reduce((t, m) => {
+      const pagato = movimentiVivi()
+        .filter((x) => x.tipo === "extra" && x.copre === m.id)
+        .reduce((u, x) => u + x.imp, 0);
+      return t + Math.max(0, importoEffettivo(m) - pagato);
+    }, 0);
 }
 
 /** Il budget «Vita» del profilo, in centesimi. È la somma delle categorie cassa. */
@@ -368,7 +383,9 @@ export function fuoriPianoDelCiclo(ciclo = cicloDi(), iso = oggiISO()) {
   const ricariche = movs.filter((m) => m.tipo === "extra" && eFuoriPiano(m));
 
   const totale = voci.reduce((t, m) => t + importoEffettivo(m), 0);
-  const vers = Number(obiettivo()?.versamento) || 0;
+  // Il paragone e' col versamento dell'obiettivo che c'e': col cuscinetto
+  // ING, i 271 a stipendio.
+  const vers = eCuscinetto() ? versamentoCuscinetto() : Number(obiettivo()?.versamento) || 0;
 
   /* I GIORNI SENZA. Lo zero da solo non si vede; «11 giorni senza fuori
      piano» è un numero che cresce, e un numero che cresce lo si difende.
@@ -404,6 +421,80 @@ export function fuoriPianoDelCiclo(ciclo = cicloDi(), iso = oggiISO()) {
    ======================================================================== */
 
 export const obiettivo = () => stato().config?.obiettivo || null;
+
+/* ========================================================================
+   IL CUSCINETTO ING (v3.1).
+
+   Un obiettivo diverso dal Naso, e non solo nel nome: non ha una data e non
+   ha un salvadanaio suo. E' un LIVELLO da tenere sul conto che fa da
+   riserva — un mese di spese fisse — e la domanda non e' «ci arrivo
+   entro agosto?» ma «da quando ci sto sopra, e quanto scendo nel frattempo».
+   Per questo vive accanto alla proiezione di ING e non a `statoObiettivo`,
+   che senza una data non ha niente da dire (e torna `null`: tutto quello
+   che parlava del Naso tace da solo).
+   ======================================================================== */
+
+export const eCuscinetto = (o = obiettivo()) => Boolean(o && o.pocket === "ing");
+
+/** I versamenti al cuscinetto, a stipendio: la riga «Cuscinetto ING» del budget. */
+export function versamentoCuscinetto() {
+  const b = Number(profiloDi().b?.ing);
+  return b > 0 ? b * 100 : Number(obiettivo()?.versamento) || 0;
+}
+
+/** Il target: agganciato alle Fisse se la regola lo dice. */
+export function targetObiettivo(o = obiettivo()) {
+  if (!o) return 0;
+  if (o.regola === "fisse") return (Number(profiloDi().b?.fisse) || 0) * 100 || Number(o.target) || 0;
+  return Number(o.target) || 0;
+}
+
+/**
+ * Il cuscinetto, con i numeri della sua carta.
+ *
+ * SOPRA TARGET DAL: il primo giorno dopo il quale la proiezione non scende
+ * piu' sotto il target. Non il primo giorno in cui ci arriva — a dicembre ci
+ * arriva, e il bollo lo riporta sotto: dire «sopra target dal 23 dicembre»
+ * sarebbe vero per otto giorni.
+ */
+export function cuscinetto(iso = oggiISO()) {
+  const o = obiettivo();
+  if (!eCuscinetto(o)) return null;
+  const target = targetObiettivo(o);
+  const p = ingPrevisto(iso);
+  const punti = [{ quando: iso, saldo: p.saldo }, ...p.serie];
+  let ultimoSotto = -1;
+  punti.forEach((x, i) => { if (x.saldo < target) ultimoSotto = i; });
+  const sopraDal = ultimoSotto === -1 ? iso
+    : ultimoSotto < punti.length - 1 ? punti[ultimoSotto + 1].quando
+    : null;
+  const prossimo = stipendiTra(iso, piuGiorni(iso, 40))[0] || null;
+  const pavimento = soglie().ingPrevistoMin || 0;
+  /* IL MINIMO E' IL FONDO DI UNA DISCESA. Il cuscinetto si sta riempiendo:
+     il punto piu' basso della proiezione sarebbe oggi, o il primo
+     stipendio, e dirlo non insegna niente — e' solo «non ancora pieno». La
+     domanda e' quanto lo fanno scendere le uscite grosse: il punto dopo
+     ogni uscita, e il piu' basso di quelli. Il 15 febbraio, con
+     l'assicurazione. Senza uscite in vista, il saldo di oggi. */
+  const discese = p.serie.filter((x) => x.delta < 0);
+  const futuri = discese.length ? discese : [{ quando: iso, saldo: p.saldo }];
+  const basso = futuri.reduce((b, x) => (x.saldo < b.saldo ? x : b), futuri[0]);
+  return {
+    nome: o.nome || "Cuscinetto ING",
+    regola: o.regola === "fisse" ? "1 mese di fisse" : null,
+    target, saldo: p.saldo,
+    frazione: target > 0 ? Math.max(0, Math.min(1, p.saldo / target)) : 0,
+    minimo: basso.saldo, quando: basso.quando,
+    sopraDal, fine: p.fine,
+    prossimo: prossimo ? { quando: prossimo, imp: versamentoRiserva(prossimo) } : null,
+    versamento: versamentoCuscinetto(),
+    livello: basso.saldo < 0 ? "male" : basso.saldo < pavimento ? "avviso" : "",
+    punti,
+    // Quello che c'e' ma non e' nella proiezione: la tredicesima, finche'
+    // non arriva con l'importo vero.
+    fuori: (o.extra || []).filter((x) => x.inProiezione === false),
+  };
+}
 
 /** Un extra previsto può essere datato «2026-12»: quel mese vale il giorno di paga. */
 function quandoExtra(x) {
@@ -554,6 +645,7 @@ export function passoObiettivo(iso = oggiISO()) {
 export function versamentoRiserva(dataStip) {
   const ecc = stato().config?.eccezioni?.[dataStip];
   if (ecc && ecc.ing != null) return Number(ecc.ing) || 0;
+  if (eCuscinetto()) return versamentoCuscinetto();
   return (Number(profiloDi().b?.acc) || 0) * 100;
 }
 
@@ -567,7 +659,7 @@ export function ingPrevisto(iso = oggiISO(), delta = 0) {
   let saldo = ids.reduce((t, id) => t + saldoPocket(id), 0) + delta;
 
   const eventi = [];
-  for (const d of stipendiTra(iso, fine)) eventi.push({ quando: d, delta: versamentoRiserva(d) });
+  for (const d of stipendiTra(iso, fine)) eventi.push({ quando: d, delta: versamentoRiserva(d), nome: "Stipendio" });
 
   for (const r of ricorrentiVivi()) {
     if (!r.attivo || !ids.includes(r.pocket)) continue;
@@ -575,7 +667,7 @@ export function ingPrevisto(iso = oggiISO(), delta = 0) {
     // Il tetto a 24 è una rete: `prossimaScadenza` non può restituire più
     // di una scadenza al mese, e dodici mesi ne fanno dodici.
     for (let k = 0; k < 24 && q && q <= fine; k++) {
-      eventi.push({ quando: q, delta: -importoRicorrente(r) });
+      eventi.push({ quando: q, delta: -importoRicorrente(r), nome: r.nome });
       const p = prossimaScadenza(r, piuGiorni(q, 1));
       if (!p || p <= q) break;
       q = p;
@@ -583,21 +675,28 @@ export function ingPrevisto(iso = oggiISO(), delta = 0) {
   }
   for (const x of previsti()) {
     if (!ids.includes(x.pocket) || !x.quando || x.quando <= iso || x.quando > fine) continue;
-    eventi.push({ quando: x.quando, delta: -(x.imp || 0) });
+    eventi.push({ quando: x.quando, delta: -(x.imp || 0), nome: x.nome });
+  }
+  // Le entrate attese sulla riserva: il rimborso del 2 novembre.
+  for (const x of entratePreviste()) {
+    if (!ids.includes(x.pocket) || !x.quando || x.quando <= iso || x.quando > fine) continue;
+    eventi.push({ quando: x.quando, delta: x.imp || 0, nome: x.nome });
   }
 
   eventi.sort((a, b) => a.quando.localeCompare(b.quando));
 
   let minimo = saldo;
   let quando = iso;
+  const serie = [];
   for (const e of eventi) {
     saldo += e.delta;
+    serie.push({ quando: e.quando, saldo, delta: e.delta, nome: e.nome });
     if (saldo < minimo) { minimo = saldo; quando = e.quando; }
   }
 
   return {
     saldo: ids.reduce((t, id) => t + saldoPocket(id), 0),
-    minimo, quando, fine,
+    minimo, quando, fine, serie,
     sotto: minimo < (soglie().ingPrevistoMin || 0),
   };
 }

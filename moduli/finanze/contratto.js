@@ -10,7 +10,7 @@ import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { annuncia } from "../../core/bus.js";
 import {
-  casella, stato, movimentiVivi, migra, completaTravasi, dividiPersonale, allineaV3, sistemaGruppi,
+  casella, stato, movimentiVivi, migra, completaTravasi, dividiPersonale, allineaV3, sistemaGruppi, allineaV31,
   chiusuraFatta, vociLista, statoVoce,
 } from "./dati.js";
 import {
@@ -354,7 +354,10 @@ export function avviaSync() {
     // La terza, stesso trattamento: marchio suo, chiamata sua. Assegna le
     // sottocategorie che mancavano ai cinque gruppi dell'Analisi.
     const sistemata = sistemaGruppi();
-    if (!divisa && !allineata && !sistemata) return;
+    // La quarta: il cuscinetto ING e l'estratto fino al 16 ottobre. DOPO la
+    // v3, che ancora al 7: al contrario, le ancore del 16 tornerebbero al 7.
+    const v31 = allineaV31();
+    if (!divisa && !allineata && !sistemata && !v31) return;
     pubblicaSullaLavagna();
     ridisegnaVista();
   }

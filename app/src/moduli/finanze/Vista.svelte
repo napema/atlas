@@ -22,6 +22,8 @@
   import FoglioArrivo from "./FoglioArrivo.svelte";
   import FoglioLista from "./FoglioLista.svelte";
   import FoglioObiettivo from "./FoglioObiettivo.svelte";
+  import FoglioCuscinetto from "./FoglioCuscinetto.svelte";
+  import { eCuscinetto } from "$condivisi/finanze/piano.js";
   import FoglioPaga from "./FoglioPaga.svelte";
   import FoglioChiusura from "./FoglioChiusura.svelte";
   import FoglioCategoria from "./FoglioCategoria.svelte";
@@ -156,6 +158,8 @@
 
 {#if f?.tipo === "lista"}
   <FoglioLista bind:aperto={fogli.aperto} />
+{:else if f?.tipo === "obiettivo" && eCuscinetto()}
+  <FoglioCuscinetto bind:aperto={fogli.aperto} />
 {:else if f?.tipo === "obiettivo"}
   <FoglioObiettivo bind:aperto={fogli.aperto} />
 {:else if f?.tipo === "paga"}
