@@ -10,7 +10,7 @@ import { apriCanale, fondiRecord, potaLapidi } from "../../core/sync.js";
 import { scriviFatto, leggiFatto, giornoCorrente } from "../../core/contesto.js";
 import { annuncia } from "../../core/bus.js";
 import {
-  casella, stato, movimentiVivi, migra, completaTravasi, dividiPersonale, allineaV3, sistemaGruppi, allineaV31,
+  casella, stato, movimentiVivi, migra, completaTravasi, dividiPersonale, allineaV3, sistemaGruppi, allineaV31, allineaV32,
   chiusuraFatta, vociLista, statoVoce,
 } from "./dati.js";
 import {
@@ -357,7 +357,9 @@ export function avviaSync() {
     // La quarta: il cuscinetto ING e l'estratto fino al 16 ottobre. DOPO la
     // v3, che ancora al 7: al contrario, le ancore del 16 tornerebbero al 7.
     const v31 = allineaV31();
-    if (!divisa && !allineata && !sistemata && !v31) return;
+    // E la quinta: del corredo resta solo la tua parte.
+    const v32 = allineaV32();
+    if (!divisa && !allineata && !sistemata && !v31 && !v32) return;
     pubblicaSullaLavagna();
     ridisegnaVista();
   }

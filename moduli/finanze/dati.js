@@ -1602,7 +1602,18 @@ const giro = (id, data, imp, da, a) =>
   ({ id, data, tipo: "giro", imp, nota: `${da === "cassa" ? "Cassa" : "Principale"} → ${a === "cassa" ? "Cassa" : "Principale"}`,
     cat: null, sub: null, pocket: da, pocketTo: a });
 
-const CORREDO = "v31-corredo";
+/* Il corredo e' SOLO LA TUA PARTE (16 ottobre, sera). Prima era l'intero
+   bonifico da 2.670 € coi dieci rimborsi dei colleghi e i sei giri di
+   passaggio in Cassa: tutto vero, ma soldi non tuoi che attraversavano il
+   conto. Nell'app resta quello che e' uscito per te — 341,36 €, cioe' i
+   338,25 presi da ING piu' 3,11 di arrotondamento — e i record di prima
+   prendono la lapide (`allineaV32`). */
+const CORREDO = "v31-corredo-quota";
+const CORREDO_COLLEGHI = [
+  "v31-corredo",
+  ...Array.from({ length: 10 }, (_, i) => `v31-corredo-r${String(i + 1).padStart(2, "0")}`),
+  ...Array.from({ length: 6 }, (_, i) => `v31-giro-${i + 1}`),
+];
 const SERATA = "v31-serata-deliveroo";
 
 const DA_AGGIUNGERE_V31 = [
@@ -1622,35 +1633,14 @@ const DA_AGGIUNGERE_V31 = [
   { id: "v31-07", data: "2026-10-16", tipo: "in", imp: 13, nota: "Interessi Cassa 8–16 ott",
     cat: null, sub: null, pocket: "cassa", interessi: true },
 
-  /* --- il corredo ------------------------------------------------------
-     Una sola uscita, coi rimborsi agganciati: l'effettivo e' la quota tua
-     (338,25) piu' 3,11 di arrotondamento. `fuoriPiano: false` scritto, non
-     dedotto: e' una spesa obbligata, e 2.670 € sopra soglia la deduzione
-     li metterebbe fra gli strappi prima ancora di guardare i rimborsi. */
-  uscita(CORREDO, "2026-10-16", 267000, "Corredo bersagliere: bonifico Tomada Army (ordine per 8)",
+  /* --- il corredo: la tua parte ---------------------------------------
+     `fuoriPiano: false` scritto, non dedotto: e' una spesa obbligata. La
+     ricarica da ING la «copre»: dalla razione del giorno escono solo i
+     3,11 di arrotondamento. */
+  uscita(CORREDO, "2026-10-16", 34136, "Corredo bersagliere: la mia quota",
     "cura", "Divisa e lavoro", { ecc: true, fuoriPiano: false }),
-  rimborso("v31-corredo-r01", "2026-10-15", 33522, "Tangorra Tommaso", CORREDO),
-  rimborso("v31-corredo-r02", "2026-10-15", 32623, "Lorenzo Mereu", CORREDO),
-  rimborso("v31-corredo-r03", "2026-10-15", 33522, "Birbisi Salvatore", CORREDO),
-  rimborso("v31-corredo-r04", "2026-10-15", 32623, "Mandala Emanuela", CORREDO),
-  rimborso("v31-corredo-r05", "2026-10-15", 33522, "Porti Francesco", CORREDO),
-  rimborso("v31-corredo-r06", "2026-10-16", 300, "Tangorra Tommaso", CORREDO),
-  rimborso("v31-corredo-r07", "2026-10-16", 300, "Lorenzo Mereu", CORREDO),
-  rimborso("v31-corredo-r08", "2026-10-16", 600, "Mandala Emanuela", CORREDO),
-  rimborso("v31-corredo-r09", "2026-10-16", 32926, "Guarente Francesco Pio", CORREDO),
-  rimborso("v31-corredo-r10", "2026-10-16", 32926, "Poli Teodoro", CORREDO),
   { id: "v31-corredo-ing", data: "2026-10-16", tipo: "extra", imp: 33825, nota: "Quota corredo",
     cat: null, sub: null, pocket: "ing", pocketTo: P_, pianificata: true, copre: CORREDO },
-
-  /* I soldi dei colleghi, parcheggiati in Cassa e riportati indietro. Non
-     cambiano niente nei totali; senza, la riconciliazione con l'estratto
-     avrebbe sei righe che nell'app non esistono. */
-  giro("v31-giro-1", "2026-10-15", 66145, P_, "cassa"),
-  giro("v31-giro-2", "2026-10-15", 95000, P_, "cassa"),
-  giro("v31-giro-3", "2026-10-16", 32926, P_, "cassa"),
-  giro("v31-giro-4", "2026-10-16", 1200, P_, "cassa"),
-  giro("v31-giro-5", "2026-10-16", 32926, P_, "cassa"),
-  giro("v31-giro-6", "2026-10-16", 231280, "cassa", P_),
 ];
 
 const PREVISTI_V31 = [
@@ -1793,6 +1783,39 @@ export function allineaV31() {
 
     s.metaUp = ora;
     s.profiliUp = ora;
+  });
+  return true;
+}
+
+/* ========================================================================
+   v3.2 — IL CORREDO E' SOLO LA TUA PARTE (16 ottobre, sera).
+
+   Chi ha gia' fatto girare la v3.1 ha il bonifico intero, i rimborsi e i
+   giri dei colleghi: qui prendono la lapide, ed entra la quota sola. Le
+   ancore non si toccano — Principale 20,29 e ING 567,96 erano gia' giusti,
+   e quei record stavano tutti prima dell'ancora. Chi la v3.1 non l'ha
+   ancora vista la fa gia' nella forma nuova, e qui non trova niente.
+   ======================================================================== */
+export const BLOCCO_V32 = "2026-10-16-v32";
+
+export function allineaV32() {
+  if (stato().config?.bloccoV32 === BLOCCO_V32) return false;
+  // Solo dopo la v3.1: prima le lapidi resterebbero orfane di contesto, e
+  // la v3.1 rimetterebbe la quota comunque.
+  if (stato().config?.bloccoV31 !== BLOCCO_V31) return false;
+  const ora = Date.now();
+  casella.aggiorna((s) => {
+    s.movs = s.movs || [];
+    const via = new Set(CORREDO_COLLEGHI);
+    s.movs = s.movs.map((m) => (m && via.has(m.id) && !m.del ? { id: m.id, del: true, up: ora } : m));
+    if (!s.movs.some((m) => m && m.id === CORREDO)) {
+      const q = DA_AGGIUNGERE_V31.find((m) => m.id === CORREDO);
+      s.movs.push({ rif: null, ecc: false, pocketTo: null, ...q, ts: ora, up: ora });
+    }
+    const ing = s.movs.find((m) => m && m.id === "v31-corredo-ing" && !m.del);
+    if (ing && ing.copre !== CORREDO) { ing.copre = CORREDO; ing.up = ora; }
+    s.config = { ...(s.config || {}), bloccoV32: BLOCCO_V32 };
+    s.metaUp = ora;
   });
   return true;
 }

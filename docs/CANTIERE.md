@@ -52,6 +52,11 @@ Chi apre una chat comincia da `git log --oneline -20` e da questo file.
   doppioni nati in v3 (monitor del 6/10, rata AliExpress 3/3), aggancia il
   parcheggio del 24/09 al suo previsto e corregge il giro del 10/10 a 21,28.
 - **Non verificato**: la riconciliazione col CSV 1–16 ottobre (serve il file).
+- **v3.2, la sera stessa**: del corredo resta solo la parte di Ema (341,36 €,
+  `v31-corredo-quota`, coperta dai 338,25 da ING). Bonifico intero, 10 rimborsi
+  e 6 giri dei colleghi prendono la lapide (`allineaV32`, marchio `bloccoV32`);
+  la v3.1 non li crea più. Ancore invariate. La riconciliazione col CSV
+  mostrerà quelle righe come «non nell'app»: è voluto.
 
 ### ✅ 15 ottobre — FASE 5K: test al 5 novembre, cinque settimane *(chat ATLAS, su richiesta diretta)*
 

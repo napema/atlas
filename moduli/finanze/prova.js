@@ -26,7 +26,7 @@ globalThis.document ??= {
   body: { appendChild() {} },
 };
 
-const { casella, allineaV3, allineaV31, BLOCCO_V3, pocketIniziali, stato } = await import("./dati.js");
+const { casella, allineaV3, allineaV31, allineaV32, BLOCCO_V3, pocketIniziali, stato } = await import("./dati.js");
 const { cicloDi, dataStipendio, saldoPocket, prossimoStipendio } = await import("./calcolo.js");
 const {
   quotaDi, copreFino, statoObiettivo, fuoriPianoDelCiclo, ingPrevisto,
@@ -234,8 +234,23 @@ eq("23/10 · Principale", euro(t31.principale), "125,00 €");
 eq("23/10 · Cassa", euro(t31.vita), "410,00 €");
 eq("23/10 · ING", euro(t31.ing), "232,00 €");
 eq("23/10 · niente Fondo", t31.fondo, undefined);
-const cor = stato().movs.find((m) => m.id === "v31-corredo");
+/* Il corredo e' solo la tua parte: niente bonifico da 2.670, niente
+   rimborsi e giri dei colleghi. Si simula anche il telefono che aveva gia'
+   la v3.1 di prima, coi record dei colleghi dentro. */
+eq("v3.1: niente bonifico intero", stato().movs.some((m) => m.id === "v31-corredo"), false);
+eq("v3.1: niente rimborsi dei colleghi", stato().movs.filter((m) => m.tipo === "rimb" && /corredo/.test(m.id)).length, 0);
+casella.aggiorna((s) => {
+  s.movs.push({ id: "v31-corredo", data: "2026-10-16", tipo: "out", imp: 267000, nota: "Corredo", pocket: "principale", up: 1, ts: 1 });
+  s.movs.push({ id: "v31-corredo-r01", data: "2026-10-15", tipo: "rimb", imp: 33522, nota: "x", pocket: "principale", rif: "v31-corredo", up: 1, ts: 1 });
+  s.movs.push({ id: "v31-giro-6", data: "2026-10-16", tipo: "giro", imp: 231280, pocket: "cassa", pocketTo: "principale", up: 1, ts: 1 });
+});
+eq("allineaV32 gira", allineaV32(), true);
+eq("allineaV32 non rigira", allineaV32(), false);
+eq("v3.2: i record dei colleghi hanno la lapide", ["v31-corredo", "v31-corredo-r01", "v31-giro-6"].every((id) => stato().movs.find((m) => m.id === id)?.del), true);
+const cor = stato().movs.find((m) => m.id === "v31-corredo-quota");
+eq("corredo: la tua parte", euro(cor.imp), "341,36 €");
 eq("corredo: non fuori piano", eFuoriPiano(cor), false);
+eq("v3.2: il Principale resta 20,29", euro(quotaDi(D17).spendibile), "20,29 €");
 eq("deliveroo rimborsata: non fuori piano", eFuoriPiano(stato().movs.find((m) => m.id === "v31-serata-deliveroo")), false);
 
 console.log(rotti ? `\n${rotti} numeri non tornano.\n` : "\nTutto torna.\n");
