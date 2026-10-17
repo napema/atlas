@@ -181,15 +181,21 @@ export const PIANO = [
       upper: "Panca 5x5 @ 60 kg · Trazioni 6x50% max · Military manubri 3x10 · Rematore manubrio 3x10 · Alzate 4x15 · Curl + Pushdown",
     } },
 
+  /* LA 3 E' UN RIENTRO (17 ottobre): dopo qualche giorno di malattia si
+     riparte facile. Le chiavi restano quelle — `s03-soglia` e' la seconda
+     corsa di rientro, non una soglia — perche' da loro dipendono spunte e
+     giorni; il nome che si legge esce dal testo («RIENTRO …»). L'ordine e'
+     quello in cui farle: le due facili prima, gli intervalli solo dopo. */
   { n: 3, fase: "Picco",
+    ordineCorsa: ["facile", "soglia", "intervalli", "lunga"],
     corsa: {
-      intervalli: { testo: "15 min risc + 4 allunghi · 5x1000 m @ 4:20/km rec 2 min trotto · 10 min defat", km: 8.6 },
-      soglia: { testo: "12 min risc · 25 min continui @ 4:52/km · 8 min defat", km: 8.3 },
-      facile: { testo: "35 min FC ≤155 + 6 allunghi da 20s", km: 5.7 },
-      lunga: { testo: "8.2 km FC ≤155 · solo se la lunga della sett 2 è stata 7.5 km", km: 8.2 },
+      facile: { testo: "RIENTRO giorno 1 · 25 min FC ≤150", km: 4 },
+      soglia: { testo: "RIENTRO · 35 min FC ≤155 + 4 allunghi da 20s", km: 5.7, facile: true },
+      intervalli: { testo: "Solo dopo 2 corse facili normali · 15 min risc + 4 allunghi · 5x1000 m @ 4:20/km rec 2 min trotto · 10 min defat", km: 8.6 },
+      lunga: { testo: "7.5 km FC ≤155", km: 7.5 },
     },
     palestra: {
-      lower: "Squat 4x4 @ RPE 8 rec 3 min · RDL 3x6 @ RPE 7-8 · Bulgarian split squat 3x6/gamba · Pogo jump 3x20 · Polpacci seduto 3x12 · Tibialis 3x20",
+      lower: "Squat 3x4 @ RPE 7 · RDL 2x6 · Polpacci seduto 3x12 · Tibialis 3x20 · mai il giorno prima degli intervalli",
       upper: "Panca 5x5 @ 62.5 kg · Trazioni 8x50% max · Military manubri 3x10 · Rematore manubrio 3x10 · Alzate 4x15 · Curl + Pushdown",
     } },
 
@@ -373,6 +379,9 @@ export function slotDi(n) {
     fuori.push(conScostamento({
       id: idSlot(n, k), sett: n, genere: "corsa", chiave: k,
       nome: CORSA[k], testo: c.testo, km: c.km, stella: Boolean(c.stella),
+      // Una corsa che in questa settimana NON e' dura anche se la chiave
+      // lo dice (il rientro nella casella della soglia).
+      ...(c.facile ? { facile: true } : {}),
     }));
   }
   for (const k of (p.soloPalestra || ORDINE_PALESTRA)) {

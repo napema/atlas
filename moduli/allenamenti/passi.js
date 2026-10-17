@@ -144,7 +144,7 @@ export function normalizza(testo) {
    sett 2 è stata 7.5 km»: servono a chi legge. Da leggere come passi
    sarebbero un cronometro aperto, o — peggio — una corsa da 7,5 km in fondo
    a una lunga da 8,2. */
-const ETICHETTA = /^((Lun|Mar|Mer|Gio|Ven|Sab|Dom)\w*\.?\s+\d{1,2}\/\d{1,2}|RITMO GARA|TEST\b(?!.*@)|solo se\b|SALTATA\b|FATTO\b)/i;
+const ETICHETTA = /^((Lun|Mar|Mer|Gio|Ven|Sab|Dom)\w*\.?\s+\d{1,2}\/\d{1,2}|RITMO GARA|TEST\b(?!.*@)|solo se\b|solo dopo\b|RIENTRO\b|SALTATA\b|FATTO\b)/i;
 
 /**
  * Il testo intero di uno slot di corsa → i passi.

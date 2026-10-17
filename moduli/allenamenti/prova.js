@@ -238,7 +238,11 @@ eq("lo slot dice sei", slotDi(1).find((x) => x.id === INTERVALLI).km, 6);
   eq("settimana 2: spunte preservate", c.progressoSettimana(2).fatti, 2);
   eq("settimana 2: contenuti nuovi", d.slotDi(2).find((x) => x.chiave === "upper").testo.slice(0, 18), "Panca 5x5 @ 60 kg ");
   eq("settimana 2: km dal CSV", c.kmPrevisti(2), 20.2);
-  eq("settimana 3: km dal CSV", c.kmPrevisti(3), 30.8);
+  // 25,8 e non 30,8: dal 17 ottobre la 3 e' una settimana di rientro.
+  eq("settimana 3: km dal CSV", c.kmPrevisti(3), 25.8);
+  eq("settimana 3: prima le due facili",
+    d.slotDi(3).filter((x) => x.genere === "corsa").map((x) => x.chiave).join(","), "facile,soglia,intervalli,lunga");
+  eq("settimana 3: il rientro nella casella della soglia non e' duro", d.slotDi(3).find((x) => x.chiave === "soglia").facile, true);
   eq("settimana 4: km dal CSV", c.kmPrevisti(4), 26.1);
   eq("settimana 5: km dal CSV", c.kmPrevisti(5), 20);
 

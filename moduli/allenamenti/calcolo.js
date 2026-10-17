@@ -318,7 +318,8 @@ export function consiglio(n, oggi = oggiISO()) {
   /* LE DUE SEDUTE DURE. Nella fase 5K la «qualita'» si e' sdoppiata in
      intervalli e soglia: sono quelle che chiedono gambe fresche, e le
      regole che valevano per una valgono per tutte e due. */
-  const dura = aperti.find((s) => s.chiave === "intervalli" || s.chiave === "soglia");
+  // `facile`: la casella della soglia che questa settimana e' un rientro.
+  const dura = aperti.find((s) => (s.chiave === "intervalli" || s.chiave === "soglia") && !s.facile);
   const piano = pianoDi(n);
 
   // La settimana del test ha una regola sua, più forte di tutte le altre.

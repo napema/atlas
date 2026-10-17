@@ -84,7 +84,7 @@
              resta solo il resto: ripeterlo direbbe la stessa cosa due volte. */
           const pezzi = String(s.testo || "").split(/\s*·\s*/);
           const capo = pezzi[0] || "";
-          const titoloVero = !s.riposo && /^(TEST\b|\d+ giorni? prima|Giorno prima|Inizio settimana|(Lun|Mar|Mer|Gio|Ven|Sab|Dom)\b)/i.test(capo) ? capo : null;
+          const titoloVero = !s.riposo && /^(TEST\b|\d+ giorni? prima|Giorno prima|Inizio settimana|RIENTRO\b|(Lun|Mar|Mer|Gio|Ven|Sab|Dom)\b)/i.test(capo) ? capo : null;
           const testoSotto = titoloVero ? pezzi.slice(1).join(" · ") : null;
           const tetto = s.chiave === "lunga" ? tettoLunga(oggi) : null;
           return {

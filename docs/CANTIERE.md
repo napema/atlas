@@ -29,6 +29,14 @@ Chi apre una chat comincia da `git log --oneline -20` e da questo file.
 
 ## Stato
 
+### ✅ 17 ottobre — Training: la settimana 3 è un rientro *(chat ATLAS)*
+
+- Dopo la malattia: facile 25' FC ≤150, poi 35' FC ≤155 + allunghi (nella
+  casella `soglia`, marcata `facile: true` così `consiglio()` non la tratta
+  da seduta dura), intervalli solo dopo due facili, lunga 7,5 km. Lower
+  alleggerito. Ordine delle corse = ordine in cui farle (`ordineCorsa`).
+  25,8 km previsti. Il titolo esce dal testo anche per «RIENTRO».
+
 ### ✅ 16 ottobre — Finanze v3.1: cuscinetto ING, budget nuovo, estratto al 16 *(chat ATLAS, su richiesta diretta)*
 
 - **Obiettivo**: via il Naso, `config.obiettivo` è il cuscinetto ING
