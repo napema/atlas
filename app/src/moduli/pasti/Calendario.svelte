@@ -73,7 +73,7 @@
 </script>
 
 <!-- ----------------------------------------------------------- IL PC --- -->
-<div class="griglia" style:--giorni={giorni.length}>
+<div class="griglia calendario-pasti" style:--giorni={giorni.length}>
   <div class="angolo"></div>
   {#each settimana as g (g.iso)}
     <div class="testa-giorno" class:oggi={g.oggi} class:passato={g.passato}>
@@ -191,7 +191,11 @@
        settimana scende sotto invece di stare a fianco. Non è una
        preferenza: è che 155 punti non bastavano e nessuna scelta
        tipografica li avrebbe fatti bastare. */
-    :global(:root:has(.griglia)) { --larghezza-pagina: min(calc(100vw - 64px), 1900px); }
+    /* `.calendario-pasti` e non `.griglia`: «griglia» è un nome comune —
+       la usano anche i grafici di Finanze, Mobilità e Abitudini — e con
+       quello questa regola allargava la pagina dell'Analisi di Finanze:
+       passando da Riepilogo ad Analisi si spostava tutto, bottoni compresi. */
+    :global(:root:has(.calendario-pasti)) { --larghezza-pagina: min(calc(100vw - 64px), 1900px); }
 
     /* LE FASCE SONO LE RIGHE, I GIORNI LE COLONNE. Il contrario — un giorno
        per riga — sembra più naturale e non lo è: la domanda che ci si fa
