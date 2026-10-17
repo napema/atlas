@@ -273,7 +273,11 @@
       align-items: start;
     }
     .pagina:not(.larga) .contenuto.con-laterale { grid-template-columns: 380px minmax(0, 1fr); }
-    .strumenti { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: var(--space-8); row-gap: var(--space-4); }
+    /* ALTA SEMPRE QUANTO UN BOTTONE, come il titolo. In Finanze le schede
+       Movimenti e Analisi hanno accanto ai segmenti le frecce del ciclo,
+       alte 44: la riga cresceva, e passando dal Riepilogo (solo i segmenti,
+       36) le carte scendevano di otto punti e i segmenti di quattro. */
+    .strumenti { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: var(--space-8); row-gap: var(--space-4); min-height: var(--touch-target); }
     .strumenti > :global(.segmenti) { width: 420px; }
     .strumenti > :global(.settimana) { width: 520px; }
     .strumenti > :global(.nastro) { flex: 1 1 100%; margin: 0; padding: 4px 0; }
