@@ -264,6 +264,7 @@ carica da solo quando quella chat lavora lì dentro.
 | `docs/MIGRAZIONE.md` | la procedura di porting e la lista di controllo |
 | `docs/DESIGN.md` | il linguaggio visivo: iOS 27, token misurati. **Da leggere prima di aggiungere una schermata** |
 | `docs/SYNC.md` | come è configurato il sync e i guasti da cui nascono le sue regole |
+| `docs/PASSAGGIO.md` | il trasferimento in life_app (React, Supabase, Tauri, Vercel) senza perdere dati |
 
 ## 7. Note per chi scrive il codice
 
