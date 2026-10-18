@@ -28,6 +28,26 @@ che fa il porting. Va letto **prima** di scrivere codice, insieme a
    alto — la stessa regola di ATLAS. Così si rilancia finché ATLAS è ancora in
    uso, senza duplicare e senza tornare indietro.
 
+## 0bis. Com'è fatta life_app, e lo stile
+
+**All'apertura, un launcher**: icone grandi e cliccabili, una per app —
+**To do** e **Calendar** (che esistono già in life_app) e poi un'icona per
+ogni modulo di ATLAS: Finanze, Abitudini, Training, Mobilità, Pasti, e la
+schermata Oggi. Ogni icona apre la sua app dentro life_app.
+
+**Lo stile è quello di life_app, non quello di ATLAS.** To do e Calendar
+sono il riferimento: colori, tipografia, spaziature, componenti, icone,
+materiali. I moduli di ATLAS si ridisegnano in quello stile; non si porta
+niente di `app/src/lib/stili/`, del kit `app/src/lib/ui/` o di
+`docs/DESIGN.md`. Mai il contrario: To do e Calendar non si toccano per
+somigliare ad ATLAS.
+
+Di ATLAS si portano la logica, i dati e le regole — non l'aspetto. Due
+eccezioni, perché non sono stile ma significato, e vanno rese con i mezzi di
+life_app: un colore deve voler dire una cosa sola (in ATLAS il verde è
+«fatto» e il rosso uno stato negativo), e i campi di testo restano almeno a
+17 px su iPhone (sotto, iOS zooma e non torna indietro).
+
 ## 1. Le fasi
 
 | fase | cosa | chi scrive dove |
